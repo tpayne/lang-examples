@@ -71,7 +71,9 @@ foreach($array as $token) {
 }
 
 // Get value of last key
-$map = recurseFind($map,$lastKey);
+if (is_array($map)) {
+    $map = recurseFind($map,$lastKey);
+}
 
 // Print value
 $obj = $map;
