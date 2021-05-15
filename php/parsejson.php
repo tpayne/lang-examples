@@ -1,5 +1,8 @@
 <?php
 
+// This example will work with standard JSON or Azure IMDS urls, although it will need
+// a little tweaking to add the 'GET' options for -H Metadata:True...
+
 // Function to load JSON from a file (or URL)
 function loadMetadata($url) {
     $content = file_get_contents("$url", true);
