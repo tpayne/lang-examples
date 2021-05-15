@@ -1,11 +1,14 @@
 <?php
+
+// Function to load JSON from a file (or URL)
 function loadMetadata($url) {
     $content = file_get_contents("$url", true);
     $obj = json_decode($content,true);
     return $obj;
 }
 
-
+// Function to parse JSON and find value to match key
+// Can match value or array 
 function recurseFind($arr,$searchKey) {
     if ($arr != null) {
         foreach ($arr as $key => $val) {
@@ -25,10 +28,10 @@ function recurseFind($arr,$searchKey) {
     return null;
 }
 
-
 $url = "";
 $queryStr = "";
 
+// Parse for args
 for ($i=0; $i < $argc; $i++) {
     if ($argv[$i] == "--url") {
         $url = $argv[$i+1];
@@ -38,6 +41,7 @@ for ($i=0; $i < $argc; $i++) {
     }
 }
 
+// Check args
 if ($url == "" || $queryStr == "") {
     echo "Error: No arguments specified\n";
     exit(1);
@@ -66,8 +70,10 @@ foreach($array as $token) {
     $map = recurseFind($map,$token);
 }
 
+// Get value of last key
 $map = recurseFind($map,$lastKey);
 
+// Print value
 $obj = $map;
 if ($obj == null) {
     echo "No match found";
