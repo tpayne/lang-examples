@@ -3,6 +3,19 @@
 // This example will work with standard JSON or Azure IMDS urls, although it will need
 // a little tweaking to add the 'GET' options for -H Metadata:True...
 
+function loadMetadataURL($url) {
+    $opts = array(
+        "http" => array(
+            "method" => "GET",
+            "header" => "Metadata:True"
+        )
+    );
+    $context = stream_context_create($opts);
+    $content = file_get_contents($url,false, $context);
+    $obj = json_decode($content,true);
+    return $obj;
+}
+
 // Function to load JSON from a file (or URL)
 function loadMetadata($url) {
     $content = file_get_contents("$url", true);
@@ -53,6 +66,7 @@ if ($url == "" || $queryStr == "") {
 echo "File = $url\n";
 echo "queryStr = $queryStr\n";
 
+// $url = "http://169.254.169.254/metadata/instance?api-version=2019-03-11";
 // Load metadata
 $obj =  loadMetadata($url);
 $map = $obj;
