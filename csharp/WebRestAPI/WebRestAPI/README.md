@@ -31,6 +31,11 @@ If everything has worked as expected, then you can run services like the followi
       -d '{"machineType": "linux","inetInterface": "test","zoneId": "us-central-a1","instanceName": "testme5","imageName": "testj"}' "localhost:5555/api/test/compute"    
 
     curl localhost:5555/api/test/compute
+    curl "localhost:5555/api/test/list?projectId=proj1&zone=zone1"
+    curl "localhost:5555/api/test/list?projectId=proj2&zone=zone2"
+    curl "localhost:5555/api/test/list?projectId=proj3&zone=zone3"
+    curl "localhost:5555/api/test/list?projectId=proj4&zone=zone4"
+    curl "localhost:5555/api/test/list"
 
 Cleaning Up
 -----------

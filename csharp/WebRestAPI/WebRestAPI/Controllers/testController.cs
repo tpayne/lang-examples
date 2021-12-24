@@ -71,7 +71,10 @@ namespace WebRestAPI.Controllers
             if (projectId != null)
             {
                 ServiceCache.AppCache.Push(projectId);
-                return "This is project " + projectId + " in zone " + ((zone != null) ? zone : "null");
+                return "This is project "
+                    + projectId
+                    + " in zone "
+                    + ((zone != null) ? zone : "null");
             }
             else
             {
@@ -94,11 +97,11 @@ namespace WebRestAPI.Controllers
             string str = "These are the computers -> ";
             foreach (var f in ServiceinstanceCache.InstanceCache)
             {
-                if (count>0)
+                if (count > 0)
                     str += ",";
                 ComputeInstance x = f.Value;
                 str += "['" + x.instanceName + "," + x.zoneId + "," + x.imageName;
-                str += "," + x.machineType+ "," + x.inetInterface+ "']";
+                str += "," + x.machineType + "," + x.inetInterface + "']";
                 count++;
             }
             return str;
@@ -128,20 +131,14 @@ namespace WebRestAPI.Controllers
 
         // POST: api/test
         [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
+        public void Post([FromBody] string value) { }
 
         // PUT: api/test/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
+        public void Put(int id, [FromBody] string value) { }
 
         // DELETE: api/test/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+        public void Delete(int id) { }
     }
 }
