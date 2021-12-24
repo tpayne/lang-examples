@@ -9,6 +9,7 @@ COPY *.sln ./WebRestAPI/
 
 COPY Controllers ./WebRestAPI/
 COPY Properties ./WebRestAPI/
+COPY Models ./WebRestAPI/
 
 WORKDIR /source/WebRestAPI/
 RUN dotnet clean
