@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using WebRestAPI.Models;
 
 namespace WebRestAPI.Controllers
 {
@@ -25,6 +26,27 @@ namespace WebRestAPI.Controllers
                         cache = new ConcurrentStack<string>();
                     }
                     return cache;
+                }
+            }
+        }
+    }
+
+    public static class ServiceinstanceCache
+    {
+        public static ConcurrentDictionary<string, ComputeInstance> instances;
+
+        private static object cacheLock = new object();
+        public static ConcurrentDictionary<string, ComputeInstance> InstanceCache
+        {
+            get
+            {
+                lock (cacheLock)
+                {
+                    if (instances == null)
+                    {
+                        instances = new ConcurrentDictionary<string, ComputeInstance>();
+                    }
+                    return instances;
                 }
             }
         }
@@ -63,6 +85,25 @@ namespace WebRestAPI.Controllers
             }
         }
 
+        // GET: api/test/compute
+        // api/test/list?projectId=<string>&zone=<string>
+        [HttpGet("compute/")]
+        public string ListComputers()
+        {
+            int count = 0;
+            string str = "These are the computers -> ";
+            foreach (var f in ServiceinstanceCache.InstanceCache)
+            {
+                if (count>0)
+                    str += ",";
+                ComputeInstance x = f.Value;
+                str += "['" + x.instanceName + "," + x.zoneId + "," + x.imageName;
+                str += "," + x.machineType+ "," + x.inetInterface+ "']";
+                count++;
+            }
+            return str;
+        }
+
         // GET: api/test
         [HttpGet]
         public IEnumerable<string> Get()
@@ -75,6 +116,14 @@ namespace WebRestAPI.Controllers
         public string Get(int id)
         {
             return "value";
+        }
+
+        // POST: api/test
+        [HttpPost("compute/")]
+        public void PostCompute([FromBody] ComputeInstance cs)
+        {
+            ServiceinstanceCache.InstanceCache.TryAdd(cs.instanceName, cs);
+            return;
         }
 
         // POST: api/test
