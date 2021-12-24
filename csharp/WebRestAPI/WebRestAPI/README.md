@@ -45,6 +45,14 @@ To clean up the installation, do the following...
         
 This will delete all the items created in your session.
 
+Notes
+-----
+- The JSON parser that c# uses is extremely paranoid about obeying the JSON format rules and will often error for no good reason. To fix just try playing with the format string a bit
+
 References
 ----------
-TBD
+- https://github.com/dotnet/dotnet-docker
+- https://docs.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentstack-1?view=net-6.0
+- https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/write?view=aspnetcore-6.0
+- https://docs.microsoft.com/en-us/aspnet/core/tutorials/first-web-api?view=aspnetcore-5.0&tabs=visual-studio-mac#examine-the-get-methods
+
