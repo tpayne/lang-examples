@@ -12,7 +12,7 @@ To run this solution please do the following steps.
     docker build . --tag csharpwsapi:1.0
     docker run --rm -p 5555:80 csharpwsapi:1.0
 
-If everything has worked as expected, then you can run services like the followingg...
+If everything has worked as expected, then you can run services like the following...
 
     curl localhost:5555/api/test/version
     curl -k -X POST -H "Content-Type: application/json" \
@@ -36,6 +36,12 @@ If everything has worked as expected, then you can run services like the followi
     curl "localhost:5555/api/test/list?projectId=proj3&zone=zone3"
     curl "localhost:5555/api/test/list?projectId=proj4&zone=zone4"
     curl "localhost:5555/api/test/list"
+
+The following will demo a http relay and JSON processing. The sample will interact with the
+GitHub API using HTTP API and JSON format the result.
+
+    curl localhost:5555/api/repo/list
+    curl localhost:5555/api/repo/repostring
 
 Cleaning Up
 -----------

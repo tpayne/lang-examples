@@ -16,4 +16,7 @@
   <ItemGroup>
     <Folder Include="Models\" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Controllers\repoController.cs" />
+  </ItemGroup>
 </Project>

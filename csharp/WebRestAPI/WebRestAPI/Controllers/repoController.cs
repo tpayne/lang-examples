@@ -1,11 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.IO;
+using Newtonsoft.Json;
 
 using WebRestAPI.Models;
 
@@ -17,16 +20,16 @@ namespace WebRestAPI.Controllers
     {
         private static readonly HttpClient client = new HttpClient();
 
-        private static async Task<string> ListRepos()
+        private static async Task<Stream> ListRepos()
         {
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
             client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
 
-            var stringTask = client.GetStringAsync("https://api.github.com/users/tpayne/repos");
+            var streamTask = client.GetStreamAsync("https://api.github.com/users/tpayne/repos");
 
-            string msg = await stringTask;
+            Stream msg = await streamTask;
             return msg;
         }
 
@@ -37,12 +40,38 @@ namespace WebRestAPI.Controllers
             return "This is repo version 1.0";
         }
 
-        // GET: api/repo/version
+        // GET: api/repo/list
         [HttpGet("list/")]
         public async Task<string> GetRepoList()
         {
-            string repoList = await ListRepos();
-            return repoList;
+            string str = "No repos";
+            int count = 0;
+            Stream repoList = await ListRepos();
+            var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<List<GithubRepos>>(repoList);
+
+            foreach(var repo in repositories)
+            {
+                if (count > 0)
+                    str += ",";
+                else
+                    str = "Git repos detected -> ";
+                str += "['" + repo.repoName + "," + repo.repoUrl+ ","
+                    + repo.lastUpdate + "']";
+                count++;
+            }
+
+            return str;
+        }
+
+        // GET: api/repo/repostring
+        [HttpGet("repostring/")]
+        public async Task<string> GetRepoListStr()
+        {
+            Stream repoList = await ListRepos();
+            StreamReader reader = new StreamReader(repoList);
+            string text = reader.ReadToEnd();
+            dynamic parsedJson = JsonConvert.DeserializeObject(text);
+            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
         }
 
     }
