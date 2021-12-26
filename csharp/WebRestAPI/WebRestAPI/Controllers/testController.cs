@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 using WebRestAPI.Models;
 
 namespace WebRestAPI.Controllers
@@ -60,7 +61,7 @@ namespace WebRestAPI.Controllers
         [HttpGet("version/")]
         public string GetVersion()
         {
-            return "This is version 1.0";
+            return "This is test version 1.0";
         }
 
         // GET: api/test/list
