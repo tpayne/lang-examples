@@ -13,7 +13,7 @@ namespace WebRestAPI.Controllers
     // Very simple persisted multi-threaded singleton cache implementation...
     public static class ServiceCache
     {
-        public static ConcurrentStack<string> cache;
+        private static ConcurrentStack<string> cache;
 
         private static object cacheLock = new object();
         public static ConcurrentStack<string> AppCache
@@ -34,7 +34,7 @@ namespace WebRestAPI.Controllers
 
     public static class ServiceinstanceCache
     {
-        public static ConcurrentDictionary<string, ComputeInstance> instances;
+        private static ConcurrentDictionary<string, ComputeInstance> instances;
 
         private static object cacheLock = new object();
         public static ConcurrentDictionary<string, ComputeInstance> InstanceCache
