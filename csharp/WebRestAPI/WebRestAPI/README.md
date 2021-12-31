@@ -41,6 +41,7 @@ The following will demo a http relay and JSON processing. The sample will intera
 GitHub API using HTTP API and JSON format the result.
 
     curl localhost:5555/api/repo/list
+    curl localhost:5555/api/repo/dump
     curl localhost:5555/api/repo/repostring
 
 Cleaning Up
