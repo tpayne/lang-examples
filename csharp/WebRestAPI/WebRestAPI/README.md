@@ -3,8 +3,8 @@ Web RESTAPI Sample
 
 This repo contains an example C# RESTful API.
 
-Running the Example
--------------------
+Running the Example with Basic Ops
+----------------------------------
 This example creates and runs a C# web server.
 
 To run this solution please do the following steps.
@@ -37,11 +37,18 @@ If everything has worked as expected, then you can run services like the followi
     curl "localhost:5555/api/test/list?projectId=proj4&zone=zone4"
     curl "localhost:5555/api/test/list"
 
+Running the Example with Advanced Ops
+-------------------------------------
 The following will demo a http relay and JSON processing. The sample will interact with the
 GitHub API using HTTP API and JSON format the result.
 
+This command will use a HTTP client command to interact with another web service...
     curl localhost:5555/api/repo/list
+    
+This command will create a custom object to represent information and dump it in JSON format for use by another WS if needed...
     curl localhost:5555/api/repo/dump
+    
+This command will create a JSON prettified string and dump it...
     curl localhost:5555/api/repo/repostring
 
 Cleaning Up
