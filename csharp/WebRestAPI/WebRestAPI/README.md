@@ -7,10 +7,9 @@ Running the Example with Basic Ops
 ----------------------------------
 This example creates and runs a C# web server.
 
-To run this solution please do the following steps.
+To run this solution please do the following steps. They will build and run the sample locally. You do not need a .NET environment installed.
 
-    docker build . --tag csharpwsapi:1.0
-    docker run --rm -p 5555:80 csharpwsapi:1.0
+    docker build . --tag csharpwsapi:1.0 && docker run --rm -p 5555:80 csharpwsapi:1.0
 
 If everything has worked as expected, then you can run services like the following...
 
@@ -43,12 +42,15 @@ The following will demo a http relay and JSON processing. The sample will intera
 GitHub API using HTTP API and JSON format the result.
 
 This command will use a HTTP client command to interact with another web service...
+
     curl localhost:5555/api/repo/list
     
 This command will create a custom object to represent information and dump it in JSON format for use by another WS if needed...
+
     curl localhost:5555/api/repo/dump
     
 This command will create a JSON prettified string and dump it...
+    
     curl localhost:5555/api/repo/repostring
 
 Cleaning Up
