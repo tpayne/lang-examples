@@ -40,6 +40,17 @@ namespace WebRestAPI.Controllers
             return "This is repo version 1.0";
         }
 
+
+        // GET: api/repo/dump
+        [HttpGet("dump/")]
+        public async Task<List<GithubRepos>> GetRepoDump()
+        {
+            // Dump the repo as a list of objects and return as JSON
+            Stream repoList = await ListRepos();
+            var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<List<GithubRepos>>(repoList);
+            return repositories;
+        }
+
         // GET: api/repo/list
         [HttpGet("list/")]
         public async Task<string> GetRepoList()
