@@ -76,5 +76,7 @@ References
 - https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.httppostattribute?view=aspnetcore-6.0
 - https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/routing?view=aspnetcore-5.0#verb
 - https://github.com/microsoft
+- https://github.com/azure/azure-sdk
+- https://github.com/Azure/azure-sdk-for-net
 
 
