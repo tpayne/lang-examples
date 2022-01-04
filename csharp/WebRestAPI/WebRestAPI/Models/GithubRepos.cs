@@ -11,6 +11,5 @@ namespace WebRestAPI.Models
         public string repoUrl { get; set; }
         [JsonPropertyName("updated_at")]
         public string lastUpdate { get; set; }
-        
     }
 }

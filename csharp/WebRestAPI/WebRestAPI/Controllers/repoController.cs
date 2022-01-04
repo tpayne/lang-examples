@@ -24,7 +24,8 @@ namespace WebRestAPI.Controllers
         {
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json"));
+                new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json")
+            );
             client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
 
             var streamTask = client.GetStreamAsync("https://api.github.com/users/tpayne/repos");
@@ -40,14 +41,15 @@ namespace WebRestAPI.Controllers
             return "This is repo version 1.0";
         }
 
-
         // GET: api/repo/dump
         [HttpGet("dump/")]
         public async Task<List<GithubRepos>> GetRepoDump()
         {
             // Dump the repo as a list of objects and return as JSON
             Stream repoList = await ListRepos();
-            var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<List<GithubRepos>>(repoList);
+            var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<
+                List<GithubRepos>
+            >(repoList);
             return repositories;
         }
 
@@ -58,16 +60,17 @@ namespace WebRestAPI.Controllers
             string str = "No repos";
             int count = 0;
             Stream repoList = await ListRepos();
-            var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<List<GithubRepos>>(repoList);
+            var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<
+                List<GithubRepos>
+            >(repoList);
 
-            foreach(var repo in repositories)
+            foreach (var repo in repositories)
             {
                 if (count > 0)
                     str += ",";
                 else
                     str = "Git repos detected -> ";
-                str += "['" + repo.repoName + "," + repo.repoUrl+ ","
-                    + repo.lastUpdate + "']";
+                str += "['" + repo.repoName + "," + repo.repoUrl + "," + repo.lastUpdate + "']";
                 count++;
             }
 
@@ -84,6 +87,5 @@ namespace WebRestAPI.Controllers
             dynamic parsedJson = JsonConvert.DeserializeObject(text);
             return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
         }
-
     }
 }
