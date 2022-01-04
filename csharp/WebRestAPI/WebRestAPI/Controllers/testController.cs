@@ -90,7 +90,6 @@ namespace WebRestAPI.Controllers
         }
 
         // GET: api/test/compute
-        // api/test/list?projectId=<string>&zone=<string>
         [HttpGet("compute/")]
         public string ListComputers()
         {
