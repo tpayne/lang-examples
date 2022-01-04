@@ -20,7 +20,7 @@ namespace WebRestAPI.Controllers
     {
         private static readonly HttpClient client = new HttpClient();
 
-        private static async Task<Stream> ListRepos()
+        private async Task<Stream> ListRepos()
         {
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(
