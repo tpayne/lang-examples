@@ -17,7 +17,7 @@ jobs:
     - name: Build the .Net Docker image
       run: (cd csharp/WebRestAPI/WebRestAPI && docker build . --file Dockerfile --tag tpayne666/webrestapi:latest && docker rmi tpayne666/webrestapi:latest)
     - name: Build the CPP Docker images
-      run: (cd CPPExamples && docker build . --file Dockerfile --tag tpayne666/cppdemo:latest && docker rmi tpayne666/cppdemo:latest)
+      run: (cd CPPExamples && docker build . --file Dockerfile --tag tpayne666/cppdemo:latest && docker run --rm -it tpayne666/cppdemo:latest && docker rmi tpayne666/cppdemo:latest)
     
     
     
