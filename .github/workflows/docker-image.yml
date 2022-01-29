@@ -16,3 +16,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the Docker image
       run: (cd csharp/WebRestAPI/WebRestAPI && docker build . --file Dockerfile --tag tpayne666/webrestapi:latest && docker rmi tpayne666/webrestapi:latest)
+    - name: Run CPP
+      run: (cd CPPExamples && docker build . --file Dockerfile --tag tpayne666/cppdemo:latest && docker rmi tpayne666/cppdemo:latest)
+    
+    
+    
