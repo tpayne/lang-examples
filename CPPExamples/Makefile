@@ -16,7 +16,7 @@ OBJ = \
 	testFuncs.o \
 	threadExShrPtr.o
 
-CFLAGS = -std=c++11
+CFLAGS = -std=c++11 -Wno-deprecated
 
 LIBS = libdemo.a
 LDFLAGS = -lm -lncurses -lpthread
