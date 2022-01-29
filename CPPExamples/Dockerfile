@@ -12,7 +12,7 @@ FROM ubuntu:latest
 RUN apt-get update
 
 WORKDIR /app
-COPY --from=build /src ./
+COPY --from=build /src/main ./main
 CMD ["./main"]
 
 
