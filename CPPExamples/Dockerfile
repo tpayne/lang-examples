@@ -8,7 +8,7 @@ COPY Makefile /src/
 
 RUN gmake clean all
 
-FROM ubuntu:latest
+FROM gcc:latest
 RUN apt-get update
 
 WORKDIR /app
