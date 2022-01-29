@@ -6,6 +6,7 @@
  */
 
 #include "threadExShrPtr.h"
+#include <functional>
 
 namespace uniqueExPtr {
 	// a function consuming a unique_ptr can take it by value or by rvalue reference

@@ -19,7 +19,7 @@ OBJ = \
 CFLAGS = -std=c++11
 
 LIBS = libdemo.a
-LDFLAGS = -lm -lncurses
+LDFLAGS = -lm -lncurses -lpthread
 
 %.o: %.cpp
 	$(CC) -c $(CFLAGS) $< -o $@
