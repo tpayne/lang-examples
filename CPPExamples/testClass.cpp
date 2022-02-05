@@ -7,55 +7,45 @@
 
 #include "testClass.h"
 
-testClass::testClass() :
-	iUid_(0), iClass_(0), iObjUid_(0) {
-}
+testClass::testClass() : iUid_(0), iClass_(0), iObjUid_(0) {}
 
 testClass::~testClass() {
-	// TODO Auto-generated destructor stub
+  // TODO Auto-generated destructor stub
 }
 
-inline bool
-testClass::operator> (const testClass& other) const {
-	if (iUid() > other.iUid() &&
-		iClass() > other.iClass() &&
-		iObjUid() > other.iObjUid())
-		return true;
+inline bool testClass::operator>(const testClass &other) const {
+  if (iUid() > other.iUid() && iClass() > other.iClass() &&
+      iObjUid() > other.iObjUid())
+    return true;
 
-	return false;
+  return false;
 }
 
-testClass&
-testClass::operator+= (const testClass& other) {
-	iUid(iUid()+other.iUid());
-	iClass(iClass()+other.iClass());
-	iObjUid(iObjUid()+other.iObjUid());
-	str(str()+" "+other.str());
-	sDate(sDate()+" "+other.sDate());
-	return *this;
+testClass &testClass::operator+=(const testClass &other) {
+  iUid(iUid() + other.iUid());
+  iClass(iClass() + other.iClass());
+  iObjUid(iObjUid() + other.iObjUid());
+  str(str() + " " + other.str());
+  sDate(sDate() + " " + other.sDate());
+  return *this;
 }
 
-bool
-testClass::operator< (const testClass& other) const {
-	if (iUid() < other.iUid() &&
-		iClass() < other.iClass() &&
-		iObjUid() < other.iObjUid())
-		return true;
+bool testClass::operator<(const testClass &other) const {
+  if (iUid() < other.iUid() && iClass() < other.iClass() &&
+      iObjUid() < other.iObjUid())
+    return true;
 
-	return false;
+  return false;
 }
 
-inline bool
-testClass::operator== (const testClass& other) const {
-	if (iUid() == other.iUid() &&
-		iClass() == other.iClass() &&
-		iObjUid() == other.iObjUid())
-		return true;
+inline bool testClass::operator==(const testClass &other) const {
+  if (iUid() == other.iUid() && iClass() == other.iClass() &&
+      iObjUid() == other.iObjUid())
+    return true;
 
-	return false;
+  return false;
 }
 
-inline bool
-testClass::operator!= (const testClass& other) const {
-	return(this != &other);
+inline bool testClass::operator!=(const testClass &other) const {
+  return (this != &other);
 }

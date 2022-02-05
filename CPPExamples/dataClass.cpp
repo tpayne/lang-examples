@@ -10,13 +10,13 @@
 namespace TestFuncs {
 
 dataClass::dataClass() : iUid_(0), iClass_(0) {
-	// TODO Auto-generated constructor stub
-	num_++;
+  // TODO Auto-generated constructor stub
+  num_++;
 }
 
 dataClass::~dataClass() {
-	// TODO Auto-generated destructor stub
-	num_--;
+  // TODO Auto-generated destructor stub
+  num_--;
 }
 
 } /* namespace TestFuncs */

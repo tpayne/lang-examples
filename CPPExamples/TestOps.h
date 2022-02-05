@@ -14,17 +14,18 @@ namespace TestFuncs {
 
 class TestOps {
 public:
-	TestOps(int xx=1) : x(xx) {}
-    TestOps(const TestOps &);
-	virtual ~TestOps() {}
+  TestOps(int xx = 1) : x(xx) {}
+  TestOps(const TestOps &);
+  virtual ~TestOps() {}
 
-	TestOps& operator++ (); // pre-increment ++a
-    TestOps operator++ (int); // post-increment a++
-    TestOps& operator= (const TestOps &);
+  TestOps &operator++();   // pre-increment ++a
+  TestOps operator++(int); // post-increment a++
+  TestOps &operator=(const TestOps &);
 
-	friend std::ostream& operator<< (std::ostream&,const TestOps);
+  friend std::ostream &operator<<(std::ostream &, const TestOps);
+
 private:
-	int x;
+  int x;
 };
 
 } /* namespace TestFuncs */

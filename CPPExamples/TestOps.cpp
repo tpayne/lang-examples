@@ -9,37 +9,30 @@
 
 namespace TestFuncs {
 
-TestOps::TestOps(const TestOps &p) :
-		x(p.x) {
+TestOps::TestOps(const TestOps &p) : x(p.x) {}
+
+TestOps &TestOps::operator=(const TestOps &p) {
+  if (this == &p)
+    return *this;
+
+  x = p.x;
+  return *this;
 }
 
-TestOps&
-TestOps::operator= (const TestOps &p) {
-	if (this == &p)
-		return *this;
-
-	x = p.x;
-	return *this;
+TestOps &TestOps::operator++() {
+  x++;
+  return *this;
 }
 
-TestOps&
-TestOps::operator++ () {
-	x++;
-	return *this;
+TestOps TestOps::operator++(int) {
+  TestOps old = *this;
+  ++(*this);
+  return old;
 }
 
-TestOps
-TestOps::operator++ (int) {
-	TestOps old = *this;
-	++(*this);
-	return old;
+std::ostream &operator<<(std::ostream &stream, const TestOps s) {
+  stream << s.x << std::endl;
+  return stream;
 }
-
-std::ostream&
-operator<< (std::ostream& stream, const TestOps s) {
-	stream << s.x << std::endl;
-	return stream;
-}
-
 
 } /* namespace TestFuncs */

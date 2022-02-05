@@ -25,7 +25,7 @@ LDFLAGS = -lm -lncurses -lpthread
 	$(CC) -c $(CFLAGS) $< -o $@
 
 libdemo.a: $(OBJ)
-	ar rcs libdemo.a $(OBJ)
+	ar rcs $@ $^
 
 main: $(LIBS)
 	$(CC) $(CFLAGS) $@.cpp $^ $(LDFLAGS) -o $@

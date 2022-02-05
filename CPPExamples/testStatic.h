@@ -12,14 +12,15 @@ namespace TestFuncs {
 
 class testStatic {
 public:
-	virtual ~testStatic();
-	static testStatic createTest(int,int);
-	static testStatic cloneTest(const testStatic &);
+  virtual ~testStatic();
+  static testStatic createTest(int, int);
+  static testStatic cloneTest(const testStatic &);
+
 private:
-	int iVar;
-	int iVar2;
-	testStatic();
-	testStatic(int,int);
+  int iVar;
+  int iVar2;
+  testStatic();
+  testStatic(int, int);
 };
 
 } /* namespace TestFuncs */

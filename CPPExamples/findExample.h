@@ -10,27 +10,21 @@
 
 #include <set>
 
-namespace findExamples
-{
-	class Tester
-	{
-	public:
-		Tester(int val) : tester_(val) {}
-		bool operator() (const int& val)
-		{
-			return val < tester_;
-		}
-	private:
-		int tester_;
-	};
+namespace findExamples {
+class Tester {
+public:
+  Tester(int val) : tester_(val) {}
+  bool operator()(const int &val) { return val < tester_; }
 
-	bool if_all(std::set<int>&, const Tester &);
-	bool if_any(std::set<int>&, const Tester &);
+private:
+  int tester_;
+};
 
-	bool if_all(std::set<int>&, int);
-	bool if_any(std::set<int>&, int);
-}
+bool if_all(std::set<int> &, const Tester &);
+bool if_any(std::set<int> &, const Tester &);
 
-
+bool if_all(std::set<int> &, int);
+bool if_any(std::set<int> &, int);
+} // namespace findExamples
 
 #endif /* FINDEXAMPLE_H_ */

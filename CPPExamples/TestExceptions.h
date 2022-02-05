@@ -8,10 +8,10 @@
 #ifndef TESTEXCEPTIONS_H_
 #define TESTEXCEPTIONS_H_
 
-#include <string>
-#include <stdexcept>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
 namespace TestFuncs {
 
@@ -20,16 +20,16 @@ class FileNotReadableException {};
 
 class FredException : public std::runtime_error {
 public:
-	FredException(std::string& str) : std::runtime_error(str) {}
+  FredException(std::string &str) : std::runtime_error(str) {}
 };
 
 class TestExceptions {
 public:
-	TestExceptions() throw();
-	virtual ~TestExceptions();
+  TestExceptions() throw();
+  virtual ~TestExceptions();
 
-	bool testFile(const std::string &) throw(FileNotExistException, FredException, FileNotReadableException);
-
+  bool testFile(const std::string &) throw(FileNotExistException, FredException,
+                                           FileNotReadableException);
 };
 
 } /* namespace TestFuncs */
