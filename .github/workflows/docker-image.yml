@@ -14,8 +14,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build the .Net Docker image
+    - name: Build the .Netv5 Docker image
       run: (cd csharp/WebRestAPI/WebRestAPI && docker build . --file Dockerfile --tag tpayne666/webrestapi:latest && docker rmi tpayne666/webrestapi:latest)
+    - name: Build the .Netv6 Docker image
+      run: (cd csharp/WebRestAPI/WebRestAPI && docker build . --file DockerfileV6 --tag tpayne666/webrestapi:csv6 && docker rmi tpayne666/webrestapi:csv6)
     - name: Build the CPP Docker image and test
       run: (cd CPPExamples && docker build . -f Dockerfile -t tpayne666/cppdemo:latest && docker run --rm -t tpayne666/cppdemo:latest && docker rmi tpayne666/cppdemo:latest)
     
