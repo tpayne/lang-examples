@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0-focal AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0.102-focal AS build
 WORKDIR /source
 
 # Do not want to copy everything, only what I need...
@@ -18,7 +18,7 @@ RUN dotnet publish -c release -o /app -r linux-x64 --self-contained true --no-re
 	/p:PublishReadyToRun=true /p:PublishSingleFile=true
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0-focal-amd64
+FROM mcr.microsoft.com/dotnet/aspnet:6.0.2-focal-amd64
 WORKDIR /app
 COPY --from=build /app ./
 CMD ["./WebRestAPI"]
