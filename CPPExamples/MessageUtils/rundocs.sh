@@ -1,0 +1,1 @@
+doxygen -b doxygen.config

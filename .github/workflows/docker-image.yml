@@ -20,6 +20,8 @@ jobs:
       run: (cd csharp/WebRestAPI/WebRestAPI && docker build . --file DockerfileV6 --tag tpayne666/webrestapi:csv6 && docker run --rm -t -d -p 5556:80 tpayne666/webrestapi:csv6 && sleep 10 && curl localhost:5556/api/repo/repostring && docker rmi -f tpayne666/webrestapi:csv6)
     - name: Build the CPP Docker image and test
       run: (cd CPPExamples/Std11 && docker build . -f Dockerfile -t tpayne666/cppdemo:latest && docker run --rm -t tpayne666/cppdemo:latest && docker rmi tpayne666/cppdemo:latest)
+    - name: Build the CPP MessageUtils Docker image and test
+      run: (cd CPPExamples/MessageUtils && docker build . -f Dockerfile -t tpayne666/MessageUtils:latest && docker rmi tpayne666/MessageUtils:latest)
     - name: Stop containers
       run: (docker stop $(docker container ls -q))
     
