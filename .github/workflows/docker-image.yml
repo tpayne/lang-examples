@@ -35,7 +35,7 @@ jobs:
     - name: Build the CPP Docker image and test
       run: |
         (cd CPPExamples/Std11 && \
-        docker build . -f Dockerfile -t tpayne666/cppdemo:latest && \
+        docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
         docker run --rm -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest)
     - name: Build the CPP MessageUtils Docker image
