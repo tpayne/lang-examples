@@ -1,13 +1,13 @@
 Web Server Sample
 ==================
 
-This repo contains a simple example Webserver.
+This repo contains a simple example Node.JS Webserver.
 
 Running the Example with Basic Ops
 ----------------------------------
-This example creates and runs a simple web server.
+This example creates and runs a simple Node.JS web server.
 
-To run this solution please do the following steps. They will build and run the sample locally. You do not need a .NET environment installed.
+To run this solution please do the following steps. They will build and run the sample locally. You do not need a Node.JS environment installed.
 
     docker build . --tag nodejs:1.0 && docker run --rm -p 5555:8080 nodejs:1.0
 
