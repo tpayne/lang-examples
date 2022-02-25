@@ -16,6 +16,7 @@ If everything has worked as expected, then you can run services like the followi
     curl localhost:5555/
     curl localhost:5555/cmd
     curl localhost:5555/version
+    curl localhost:5555/repostring
     
 Cleaning Up
 -----------
