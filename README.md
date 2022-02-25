@@ -9,10 +9,10 @@ This repo has examples of the following...
 - NodeJS
 - PHP
 
-# Build Status
+## Build Status
 
 [![Docker Image CI](https://github.com/tpayne/lang-examples/actions/workflows/docker-image.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/docker-image.yml)
 
-# Notes
+## Notes
 N/A
 
