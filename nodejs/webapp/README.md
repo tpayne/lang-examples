@@ -20,6 +20,7 @@ If everything has worked as expected, then you can run services like the followi
 The following demos a http relay server (re-directing to another HTTPS Web API)...
 
     curl localhost:5555/repostring
+    curl localhost:5555/api/repo
     
 Cleaning Up
 -----------
