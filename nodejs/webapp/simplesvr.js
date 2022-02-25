@@ -7,12 +7,12 @@ var server = http.createServer(function (req, res) {
     // Match the paths...
     if (req.url == '/') {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<html><body><p>This is the home Page.</p></body></html>');
+        res.write('<html><body><p>This is the home page.</p></body></html>');
         res.end();
     }
     else if (req.url == "/cmd") {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<html><body><p>This is the cmd Page.</p></body></html>');
+        res.write('<html><body><p>This is the cmd page.</p></body></html>');
         res.end();
     }
     else if (req.url == "/version") {
@@ -20,7 +20,8 @@ var server = http.createServer(function (req, res) {
         res.write('<html><body><p>version 1.0</p></body></html>');
         res.end();
     }
-    else if (req.url == "/repostring") {
+    // This is a relay HTTP request example...
+    else if (req.url == "/api/repo") {
         const options = {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         };
@@ -33,7 +34,6 @@ var server = http.createServer(function (req, res) {
                 resp.on('end', () => {
                     res.writeHead(200, { 'Content-Type': 'text/html' });
                     res.write('<html><body><p>');
-                    //res.write(JSON.stringify(data, null, 4));
                     res.write(data);
                     res.write('</p></body></html>');
                     res.end();
@@ -42,8 +42,30 @@ var server = http.createServer(function (req, res) {
                 console.log("Error: ", err.message);
             });
     }
+    // This is a relay HTTP request example...
+    else if (req.url == "/repostring") {
+        const options = {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        };
+        https.get("https://api.github.com/users/tpayne/repos",
+            options, function (resp) {
+                let data = '';
+                resp.on('data', (chunk) => {
+                    data += chunk;
+                });
+                resp.on('end', () => {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    var jsonParsed = JSON.parse(data);
+                    res.write(JSON.stringify(jsonParsed, null, 4));
+                    res.end();
+                });
+            }).on("error", (err) => {
+                console.log("Error: ", err.message);
+            });
+    }
     else
         res.end('Invalid Request!');
+
 }).on("error", (err) => {
     console.log("Error: ", err.message);
 });
