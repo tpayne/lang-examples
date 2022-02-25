@@ -8,3 +8,5 @@ Some of the examplea are compile tested using Docker images, but only some of th
 [![Docker Image CI](https://github.com/tpayne/lang-examples/actions/workflows/docker-image.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/docker-image.yml)
 
 # Notes
+
+
