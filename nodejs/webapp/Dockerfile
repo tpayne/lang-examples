@@ -18,6 +18,7 @@ RUN adduser ${account} ${account}
 WORKDIR /app
 
 COPY --from=imagebuilder /source/nodeexe ./
+COPY html ./html
 
 USER ${account}:${account}
 

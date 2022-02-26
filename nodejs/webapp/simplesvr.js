@@ -1,14 +1,18 @@
 // Import required core modules
 var http = require('http');
 var https = require('https');
+var fs = require('fs');
+const PORT = 8080;
 
 // Launch the server
 var server = http.createServer(function (req, res) {
     // Match the paths...
     if (req.url == '/') {
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<html><body><p>This is the home page.</p></body></html>');
-        res.end();
+        fs.readFile('html/index.html', function (herr, html) {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.write(html);
+            res.end();
+        });
     }
     else if (req.url == "/cmd") {
         res.writeHead(200, { 'Content-Type': 'text/html' });
@@ -83,6 +87,6 @@ process.on('SIGINT', () => {
     })
 })
 
-server.listen(8080);
+server.listen(PORT);
 
-console.log('Node.js web server at port 8080 is running...')
+console.log('Node.js web server is running...')
