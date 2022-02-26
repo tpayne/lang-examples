@@ -1,6 +1,6 @@
 # Image builder...
 FROM node:stretch AS imagebuilder
-RUN apt update 
+RUN apt-get update 
 WORKDIR /source
 
 COPY *.js .
@@ -10,7 +10,7 @@ RUN pkg *.js -o nodeexe
 
 # Image runner...
 FROM node:slim
-RUN apt update 
+RUN apt-get update 
 ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system
 RUN adduser ${account} ${account} 
