@@ -6,6 +6,7 @@ WORKDIR /source
 COPY *.js .
 
 RUN npm install -g pkg
+RUN npm install properties-reader 
 RUN pkg *.js -o nodeexe 
 
 # Image runner...
