@@ -2,7 +2,11 @@
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
+var PropertiesReader = require('properties-reader');
+var properties = PropertiesReader('config/app.properties');
+
 const PORT = 8080;
+const URL = properties.get("apiURL");
 
 // Launch the server
 var server = http.createServer(function (req, res) {
@@ -29,7 +33,7 @@ var server = http.createServer(function (req, res) {
         const options = {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         };
-        https.get("https://api.github.com/users/tpayne/repos",
+        https.get(URL,
             options, function (resp) {
                 let data = '';
                 resp.on('data', (chunk) => {
@@ -51,7 +55,7 @@ var server = http.createServer(function (req, res) {
         const options = {
             headers: { 'User-Agent': 'Mozilla/5.0' }
         };
-        https.get("https://api.github.com/users/tpayne/repos",
+        https.get(URL,
             options, function (resp) {
                 let data = '';
                 resp.on('data', (chunk) => {
