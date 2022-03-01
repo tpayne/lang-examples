@@ -6,8 +6,6 @@ name: Docker
 # documentation.
 
 on:
-  schedule:
-    - cron: '41 8 * * *'
   push:
     branches: [ master ]
     # Publish semver tags as releases.
@@ -19,12 +17,10 @@ env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
-
+  IMAGE_NAME:  ${{ github.actor }}/nodejs
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -78,4 +74,3 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
