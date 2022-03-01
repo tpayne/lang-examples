@@ -1,8 +1,9 @@
-name: Test image
+name: Pull the Image and Test
 #
 # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#registry_package
 on:
   registry_package:
+    types: [published]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
