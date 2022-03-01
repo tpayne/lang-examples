@@ -16,14 +16,7 @@ jobs:
     - name: Run Test
       uses: addnab/docker-run-action@v3
       with:
-        registry: gcr.io
+        registry: ${{ github.event.repository.name }}
         image: ${{ github.event.repository.name }}
-      run: |
-        echo "Running Script"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: This is a test
-      run: |
-      ls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
