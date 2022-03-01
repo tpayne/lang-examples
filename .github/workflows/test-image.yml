@@ -1,4 +1,4 @@
-name: Run image
+name: Test image
 
 # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#registry_package
 on:
