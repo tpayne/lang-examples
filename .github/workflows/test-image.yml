@@ -3,7 +3,7 @@ name: Pull the Image and Test
 # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#registry_package
 on:
   registry_package:
-    types: [published]
+    types: [published , updated]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GT_TOKEN }}
