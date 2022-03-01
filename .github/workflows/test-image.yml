@@ -3,20 +3,18 @@ name: Test image
 # https://docs.github.com/en/actions/reference/events-that-trigger-workflows#registry_package
 on:
   registry_package:
-    types: [ published , updated]
-    
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
 jobs:
   Test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout 
       uses: actions/checkout@v2 # Required to mount the Github Workspace to a volume 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Run Test
       uses: addnab/docker-run-action@v3
       with:
         registry: ${{ github.event.repository.name }}
         image: ${{ github.event.repository.name }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
