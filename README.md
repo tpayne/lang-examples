@@ -11,7 +11,7 @@ This repo has examples of the following...
 
 ## Build Status
 
-[![Docker Image CI](https://github.com/tpayne/lang-examples/actions/workflows/docker-image.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/docker-image.yml)
+[![Docker Image CI](https://github.com/tpayne/lang-examples/actions/workflows/main.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/main.yml)
 [![CodeQL](https://github.com/tpayne/lang-examples/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/codeql-analysis.yml)
 
 ## Notes
