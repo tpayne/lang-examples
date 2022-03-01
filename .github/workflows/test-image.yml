@@ -18,3 +18,6 @@ jobs:
       with:
         registry: ${{ github.event.repository.name }}
         image: ${{ github.event.repository.name }}
+    - name: Run a command
+      run: |
+        ls
