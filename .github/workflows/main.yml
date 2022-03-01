@@ -1,0 +1,29 @@
+name: Run image
+
+# https://docs.github.com/en/actions/reference/events-that-trigger-workflows#registry_package
+on:
+  registry_package:
+    types: [ published , updated]
+    
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout 
+      uses: actions/checkout@v2 # Required to mount the Github Workspace to a volume 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run Test
+      uses: addnab/docker-run-action@v3
+      with:
+        registry: gcr.io
+        image: ${{ github.event.repository.name }}
+      run: |
+        echo "Running Script"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: This is a test
+      run: |
+      ls
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
