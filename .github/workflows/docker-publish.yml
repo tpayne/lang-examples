@@ -14,11 +14,11 @@ on:
     branches: [ master ]
 
 env:
-  # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   # github.repository as <account>/<repo>
-  IMAGE_NAME:  ${{ github.actor }}/nodejs
-
+  # IMAGE_NAME:  ${{ github.actor }}/nodejs
+  
 jobs:
   build:
     runs-on: ubuntu-latest
