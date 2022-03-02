@@ -32,12 +32,13 @@ This will delete all the items created in your session.
 
 Notes
 -----
+N/A
+
+References
+----------
 - https://docs.npmjs.com
 - https://www.w3schools.io/file/properties-read-write-javascript/
 - https://nodejs.org/en/docs/
 
-References
-----------
-NA
 
 
