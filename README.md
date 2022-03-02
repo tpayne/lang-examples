@@ -13,7 +13,7 @@ This repo has examples of the following...
 
 [![Docker Image CI](https://github.com/tpayne/lang-examples/actions/workflows/main.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/main.yml)
 [![CodeQL](https://github.com/tpayne/lang-examples/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/codeql-analysis.yml)
-[![GHCR Push](https://github.com/tpayne/lang-examples/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/docker-publish.yml)
+[![GHCR_Push](https://github.com/tpayne/lang-examples/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/docker-publish.yml)
 
 ## Notes
 N/A
