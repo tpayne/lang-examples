@@ -21,3 +21,4 @@ N/A
 ## References
 - https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#registry_package
 - https://crontab.guru/once-a-month
+- https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments
