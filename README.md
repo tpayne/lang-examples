@@ -18,3 +18,6 @@ This repo has examples of the following...
 ## Notes
 N/A
 
+## References
+- https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#registry_package
+- https://crontab.guru/once-a-month
