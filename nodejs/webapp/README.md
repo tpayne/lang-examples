@@ -32,7 +32,7 @@ This will delete all the items created in your session.
 
 Notes
 -----
-N/A
+This code does not have any unit testing or SA analysis run as part of the process
 
 References
 ----------
