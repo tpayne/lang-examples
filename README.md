@@ -5,7 +5,7 @@ Some of the examplea are compile tested using Docker images, but only some of th
 
 This repo has examples of the following...
 - .Net C#
-- C/CPP
+- C/C++
 - NodeJS
 - PHP
 
