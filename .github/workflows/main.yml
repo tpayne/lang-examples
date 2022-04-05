@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Login to DockerHub...
+    - name: Login to DockerHub for CR image repo...
       run: |
         echo ${{ secrets.DOCKERHUB_PASSWORD }} | \
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
