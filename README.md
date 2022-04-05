@@ -19,6 +19,7 @@ This repo has examples of the following...
 N/A
 
 ## References
+The following are references that can be used for the work
 - https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#registry_package
 - https://crontab.guru/once-a-month
 - https://docs.github.com/en/actions/managing-workflow-runs/reviewing-deployments
