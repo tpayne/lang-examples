@@ -25,6 +25,7 @@ jobs:
       run: |
         echo ${{ secrets.DOCKERHUB_PASSWORD }} | \
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+      # Build tasks to run...
     - name: Build the .Netv5 Docker image...
       run: |
         (cd csharp/WebRestAPI/WebRestAPI && \
