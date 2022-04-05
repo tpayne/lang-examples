@@ -23,32 +23,32 @@ jobs:
       run: |
         echo ${{ secrets.DOCKERHUB_PASSWORD }} | \
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-    - name: Build the .Netv5 Docker image
+    - name: Build the .Netv5 Docker image...
       run: |
         (cd csharp/WebRestAPI/WebRestAPI && \
         docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest && \
         docker run --rm -t -d -p 5555:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest && \
         sleep 10 && curl localhost:5555/api/repo/repostring && \
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest)
-    - name: Build the .Netv6 Docker image
+    - name: Build the .Netv6 Docker image...
       run: |
         (cd csharp/WebRestAPI/WebRestAPI && \
         docker build . --file DockerfileV6 --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:csv6 && \
         docker run --rm -t -d -p 5556:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:csv6 && \
         sleep 10 && curl localhost:5556/api/repo/repostring && \
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:csv6)
-    - name: Build the CPP Docker image and test
+    - name: Build the CPP Docker image and test...
       run: |
         (cd CPPExamples/Std11 && \
         docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
         docker run --rm -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest)
-    - name: Build the CPP MessageUtils Docker image
+    - name: Build the CPP MessageUtils Docker image...
       run: |
         (cd CPPExamples/MessageUtils && \
         docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest && \
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest)
-    - name: Build the NodeJS Docker image
+    - name: Build the NodeJS Docker image...
       run: |
         (cd nodejs/webapp && \
         docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0 && \
@@ -56,7 +56,7 @@ jobs:
         sleep 10 && curl localhost:5557/repostring && \
         curl localhost:5557/ &&
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0)
-    - name: Stop containers
+    - name: Stop containers...
       run: (docker stop $(docker container ls -q))
     
     
