@@ -62,5 +62,5 @@ jobs:
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0)
     - name: Stop containers...
       run: (docker stop $(docker container ls -q))
-    
+
 # End of job 
