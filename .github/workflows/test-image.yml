@@ -22,3 +22,5 @@ jobs:
     - name: Run a command
       run: |
         ls
+
+# End of job
