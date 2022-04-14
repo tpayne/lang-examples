@@ -4,7 +4,7 @@ Some examples of programming languages created for practice purposes only.
 Some of the examplea are compile tested using Docker images, but only some of them.
 
 This repo has examples of the following...
-- .Net C#
+- .Net C# (Dotnet)
 - C/C++
 - NodeJS
 - PHP
