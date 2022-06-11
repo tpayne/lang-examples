@@ -64,7 +64,7 @@ jobs:
         with:
           context: csharp/WebRestAPI/WebRestAPI/
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }},latest
           labels: ${{ steps.meta.outputs.labels }}
 
       # Extract metadata (tags, labels) for Docker
@@ -83,7 +83,7 @@ jobs:
         with:
           context: CPPExamples/Std11/
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta1.outputs.tags }}
+          tags: ${{ steps.meta1.outputs.tags }},latest
           labels: ${{ steps.meta1.outputs.labels }}
 
       # Extract metadata (tags, labels) for Docker
@@ -102,7 +102,7 @@ jobs:
         with:
           context: CPPExamples/MessageUtils
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta2.outputs.tags }}
+          tags: ${{ steps.meta2.outputs.tags }},latest
           labels: ${{ steps.meta2.outputs.labels }}
 
       # Extract metadata (tags, labels) for Docker
@@ -121,5 +121,5 @@ jobs:
         with:
           context: nodejs/webapp/
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta3.outputs.tags }}
+          tags: ${{ steps.meta3.outputs.tags }},latest
           labels: ${{ steps.meta3.outputs.labels }}
