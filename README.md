@@ -1,5 +1,5 @@
 # lang-examples
-Some examples of programming languages created for practice purposes only.
+Some examples of programming languages created for practice and demo purposes only.
 
 Some of the examplea are compile tested using Docker images, but only some of them (you can see by the presence of a Dockerfile).
 
