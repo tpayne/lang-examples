@@ -7,7 +7,7 @@ COPY *.js .
 
 RUN npm install -g pkg
 RUN npm install properties-reader 
-RUN pkg *.js -o nodeexe 
+RUN pkg -t node16 *.js -o nodeexe 
 
 # Image runner...
 FROM node:slim
