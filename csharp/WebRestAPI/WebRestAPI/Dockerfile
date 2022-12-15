@@ -22,7 +22,7 @@ RUN dotnet publish -c release -o /app -r linux-x64 --self-contained true --no-re
 	/p:PublishReadyToRun=true /p:PublishSingleFile=true
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:5.0-focal-amd64
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-focal-amd64
 
 # If you are building on M1 chipsets (Mac), then use this instead
 #FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:5.0-focal-amd64
