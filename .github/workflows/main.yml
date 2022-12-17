@@ -27,13 +27,13 @@ jobs:
         echo ${{ secrets.DOCKERHUB_PASSWORD }} | \
           docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
       # Build tasks to run... 
-    - name: Build the .Netv5 Docker image...
-      run: |
-        (cd csharp/WebRestAPI/WebRestAPI && \
-        docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest && \
-        docker run --rm -t -d -p 5555:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest && \
-        sleep 10 && curl localhost:5555/api/repo/repostring && \
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest)
+    #- name: Build the .Netv5 Docker image...
+    #  run: |
+    #    (cd csharp/WebRestAPI/WebRestAPI && \
+    #    docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest && \
+    #    docker run --rm -t -d -p 5555:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest && \
+    #    sleep 10 && curl localhost:5555/api/repo/repostring && \
+    #    docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:latest)
     - name: Build the .Netv6 Docker image...
       run: |
         (cd csharp/WebRestAPI/WebRestAPI && \
