@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0-focal AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0-focal AS build
 
 # If you are building on M1 chipsets (Mac), then use this instead
 #FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:5.0-focal AS build
