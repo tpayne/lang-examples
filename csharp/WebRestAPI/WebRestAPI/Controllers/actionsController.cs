@@ -36,6 +36,38 @@ namespace WebRestAPI.Controllers
             return client;
         }
 
+        private async Task<Stream> ListJobs(string owner, string repoName, 
+                                            string creds, DateTime dateTime)
+        {
+            try
+            {
+                HttpClient client = GetHttpClient(creds);
+                string iso;
+                
+                if (dateTime == DateTime.MinValue)
+                {
+                    iso = DateTime.UtcNow.ToString("s");
+                }
+                else
+                {
+                    iso = dateTime.ToString("s");
+                }
+
+                string uri = "https://api.github.com/repos/" + owner + "/" + repoName + 
+                    "/actions/runs?created=%3E" + iso;
+
+                var streamTask = client.GetStreamAsync(uri);
+                Stream msg = await streamTask;
+
+                return msg;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;
+            }
+        }
+
         private async Task<Stream> ListActions(string owner, string repoName, string creds)
         {
             try
@@ -98,7 +130,28 @@ namespace WebRestAPI.Controllers
             return "This is workflow version 1.0";
         }
 
-        // GET: api/workflow/query/{owner}/{repo}/list
+        // GET: api/actions/{owner}/{repo}/jobs/list
+        [HttpGet("{owner}/{repoName}/jobs/list")]
+        public async Task<GithubWorkflowRuns> GetJobs(string owner, string repoName,
+                                                      [FromQuery] DateTime runDate)
+        {
+            try
+            {
+                var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
+                var creds = header.Parameter;
+
+                Stream jobsList = await ListJobs(owner, repoName, creds, runDate);
+                var jobs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
+                return jobs;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;                
+            }
+        }
+
+        // GET: api/actions/{owner}/{repo}/list
         [HttpGet("{owner}/{repoName}/list")]
         public async Task<GitHubActions> GetActions(string owner, string repoName)
         {
@@ -117,7 +170,6 @@ namespace WebRestAPI.Controllers
                 return null;                
             }
         }
-
 
         // POST: api/actions/submit/{owner}/{repoName}/{workflow_id}/execute
         [HttpPost("{owner}/{repoName}/{workflowId:int}/execute")]
