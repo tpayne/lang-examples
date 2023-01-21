@@ -171,7 +171,7 @@ namespace WebRestAPI.Controllers
 
         // POST: api/actions/submit/{owner}/{repoName}/{workflow_id}/execute
         [HttpPost("{owner}/{repoName}/{workflowId:int}/execute")]
-        public async Task<HttpResponseMessage> PostStartWorkflow(string owner, string repoName,
+        public async Task<dynamic> PostStartWorkflow(string owner, string repoName,
                                                    int workflowId,
                                                    [FromBody] RunWorkflowsCmd cmdParams)
         {
@@ -179,10 +179,12 @@ namespace WebRestAPI.Controllers
             {
                 HttpResponseMessage resp = await DispatchWorkflow(owner,repoName,
                                                                   workflowId,cmdParams);
-                if (resp.StatusCode != HttpStatusCode.OK)
+                if (resp.StatusCode == HttpStatusCode.OK ||
+                    resp.StatusCode == HttpStatusCode.NoContent)
                 {
+                    return resp.StatusCode;
                 }
-                return resp;
+                return resp.ReasonPhrase;
             }
             catch (Exception e)
             {
