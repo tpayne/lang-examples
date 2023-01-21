@@ -22,6 +22,13 @@ namespace WebRestAPI.Controllers
     [ApiController]
     public class actionsController : ControllerBase
     {
+        private string GetCreds(HttpRequest request)
+        {
+            var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
+            string creds = header.Parameter;
+            return creds;
+        }
+
         private HttpClient GetHttpClient(string creds)
         {
             HttpClient client = new HttpClient();
@@ -92,10 +99,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                var creds = header.Parameter;
-
-                HttpClient client = GetHttpClient(creds);
+                HttpClient client = GetHttpClient(GetCreds(Request));
 
                 string uri = "https://api.github.com/repos/" + owner + "/" +
                                 repoName + "/actions/workflows/" + workflowId +
@@ -137,10 +141,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                var creds = header.Parameter;
-
-                Stream jobsList = await ListJobs(owner, repoName, creds, runDate);
+                Stream jobsList = await ListJobs(owner, repoName, GetCreds(Request), runDate);
                 var jobs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
                 return jobs;
             }
@@ -157,10 +158,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                var creds = header.Parameter;
-
-                Stream actionsList = await ListActions(owner, repoName, creds);
+                Stream actionsList = await ListActions(owner, repoName, GetCreds(Request));
                 var actions = await System.Text.Json.JsonSerializer.DeserializeAsync<GitHubActions>(actionsList);
                 return actions;
             }
