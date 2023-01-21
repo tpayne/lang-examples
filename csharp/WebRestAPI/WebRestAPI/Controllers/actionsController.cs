@@ -22,18 +22,25 @@ namespace WebRestAPI.Controllers
     [ApiController]
     public class actionsController : ControllerBase
     {
+        private HttpClient GetHttpClient(string creds)
+        {
+            HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Accept.Clear();
+            client.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json")
+            );
+            client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
+            client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+            client.DefaultRequestHeaders.Add("Authorization", "Bearer " + creds);
+
+            return client;
+        }
+
         private async Task<Stream> ListActions(string owner, string repoName, string creds)
         {
             try
             {
-                HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Accept.Clear();
-                client.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json")
-                );
-                client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
-                client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + creds);
+                HttpClient client = GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName + "/actions/workflows";
                 var streamTask = client.GetStreamAsync(uri);
@@ -53,18 +60,10 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = new HttpClient();
-
                 var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                var credentials = header.Parameter;
+                var creds = header.Parameter;
 
-                client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
-                client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + credentials);
-                client.DefaultRequestHeaders.Accept.Clear();
-                client.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/vnd.github+json")
-                );
+                HttpClient client = GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" +
                                 repoName + "/actions/workflows/" + workflowId +
