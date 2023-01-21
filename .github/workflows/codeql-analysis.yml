@@ -26,6 +26,7 @@ on:
       id:
         description: 'run identifier'
         required: false
+        default: "Default"
         
 jobs:
   analyze:
@@ -44,6 +45,8 @@ jobs:
         # Learn more about CodeQL language support at https://git.io/codeql-language-support
 
     steps:
+    - name: ${{github.event.inputs.id}}
+      run: echo Running job ${inputs.id}       
     - name: Checkout repository
       uses: actions/checkout@v3
 

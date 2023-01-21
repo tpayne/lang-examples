@@ -12,6 +12,7 @@ on:
       id:
         description: 'run identifier'
         required: false
+        default: "Default"
         
 env:
   GITHUB_TOKEN: ${{ secrets.GT_TOKEN }}
@@ -20,6 +21,8 @@ jobs:
   Test:
     runs-on: ubuntu-latest
     steps:
+    - name: ${{github.event.inputs.id}}
+      run: echo Running job ${inputs.id}       
     - name: Checkout 
       uses: actions/checkout@v3 # Required to mount the Github Workspace to a volume 
     - name: Run Test

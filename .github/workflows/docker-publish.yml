@@ -21,6 +21,7 @@ on:
       id:
         description: 'run identifier'
         required: false
+        default: "Default"
         
 env:
   REGISTRY: ghcr.io
@@ -38,6 +39,8 @@ jobs:
         id-token: write
 
     steps:
+      - name: ${{github.event.inputs.id}}
+        run: echo Running job ${inputs.id}       
       - name: Checkout repository
         uses: actions/checkout@v3
 
