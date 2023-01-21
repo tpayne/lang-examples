@@ -25,4 +25,5 @@ WORKDIR /app
 COPY --from=build /app ./
 CMD ["./WebRestAPI"]
 EXPOSE 80
+EXPOSE 443
 

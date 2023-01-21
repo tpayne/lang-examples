@@ -48,8 +48,7 @@ namespace WebRestAPI.Controllers
             // Dump the repo as a list of objects and return as JSON
             Stream repoList = await ListRepos();
             var repositories = await System.Text.Json.JsonSerializer.DeserializeAsync<
-                List<GithubRepos>
-            >(repoList);
+                List<GithubRepos>>(repoList);
             return repositories;
         }
 

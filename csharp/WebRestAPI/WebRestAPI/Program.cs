@@ -13,7 +13,12 @@ namespace WebRestAPI
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            IHostBuilder builder = CreateHostBuilder(args);
+            var _logger = LoggerFactory.Create(config =>
+            {
+                config.AddConsole();
+            }).CreateLogger("Program");
+            builder.Build().Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
