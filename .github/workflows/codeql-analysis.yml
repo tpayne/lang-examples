@@ -20,6 +20,13 @@ on:
   schedule:
     - cron: '41 19 * * 3'
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'run identifier'
+        required: false
+        
 jobs:
   analyze:
     name: Analyze

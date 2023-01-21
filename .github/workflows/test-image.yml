@@ -6,6 +6,13 @@ on:
   registry_package:
     types: [published , updated]
 
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'run identifier'
+        required: false
+        
 env:
   GITHUB_TOKEN: ${{ secrets.GT_TOKEN }}
   
