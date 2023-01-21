@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: ${{github.event.inputs.id}}
-      run: echo Running job ${inputs.id}   
+      run: echo Running job ${{github.event.inputs.id}}      
     - uses: actions/checkout@v3
     - name: Login to DockerHub for CR image repo...
       run: |

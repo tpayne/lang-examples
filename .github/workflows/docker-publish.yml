@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: ${{github.event.inputs.id}}
-        run: echo Running job ${inputs.id}       
+        run: echo Running job ${{github.event.inputs.id}}      
       - name: Checkout repository
         uses: actions/checkout@v3
 

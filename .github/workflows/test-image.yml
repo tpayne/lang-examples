@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: ${{github.event.inputs.id}}
-      run: echo Running job ${inputs.id}       
+      run: echo Running job ${{github.event.inputs.id}}      
     - name: Checkout 
       uses: actions/checkout@v3 # Required to mount the Github Workspace to a volume 
     - name: Run Test
