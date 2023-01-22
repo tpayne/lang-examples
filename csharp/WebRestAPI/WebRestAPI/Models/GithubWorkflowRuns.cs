@@ -6,8 +6,10 @@ namespace WebRestAPI.Models
 {
     public class GithubWorkflowRuns
     {
-        public int total_count { get; set; }
-        public List<WorkflowRun> workflow_runs { get; set; }
+        [JsonPropertyName("total_count")]
+        public int noRuns { get; set; }
+        [JsonPropertyName("workflow_runs")]
+        public List<WorkflowRun> runs { get; set; }
     }
 
     public class WorkflowRun

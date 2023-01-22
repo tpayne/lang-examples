@@ -27,7 +27,7 @@ namespace WebRestAPI.Controllers
         //
         // Private implementation classes
         //
-        private async Task<Stream> GetJob(string owner, string repoName,
+        private async Task<Stream> GetJobImpl(string owner, string repoName,
                                           string creds, long jobId)
         {
             try
@@ -49,25 +49,15 @@ namespace WebRestAPI.Controllers
             }
         }
 
-        private async Task<Stream> ListJobs(string owner, string repoName,
-                                            string creds, DateTime dateTime)
+        private async Task<Stream> GetJobRunImpl(string owner, string repoName,
+                                          string creds, long jobId)
         {
             try
             {
                 HttpClient client = util.GetHttpClient(creds);
-                string iso;
-
-                if (dateTime == DateTime.MinValue)
-                {
-                    iso = DateTime.UtcNow.ToString("s");
-                }
-                else
-                {
-                    iso = dateTime.ToString("s");
-                }
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
-                    "/actions/runs?created=%3E" + iso;
+                    "/actions/runs/" + jobId + "/jobs";
 
                 var streamTask = client.GetStreamAsync(uri);
                 Stream msg = await streamTask;
@@ -88,6 +78,38 @@ namespace WebRestAPI.Controllers
                 HttpClient client = util.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName + "/actions/workflows";
+                var streamTask = client.GetStreamAsync(uri);
+                Stream msg = await streamTask;
+
+                return msg;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;
+            }
+        }
+
+        private async Task<Stream> ListJobsImpl(string owner, string repoName,
+                                            string creds, DateTime dateTime)
+        {
+            try
+            {
+                HttpClient client = util.GetHttpClient(creds);
+                string iso;
+
+                if (dateTime == DateTime.MinValue)
+                {
+                    iso = DateTime.UtcNow.ToString("s");
+                }
+                else
+                {
+                    iso = dateTime.ToString("s");
+                }
+
+                string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
+                    "/actions/runs?created=%3E" + iso;
+
                 var streamTask = client.GetStreamAsync(uri);
                 Stream msg = await streamTask;
 
@@ -147,6 +169,26 @@ namespace WebRestAPI.Controllers
             return await RunWorkflowImpl(owner, repoName, workflowId, cmdParams, creds);
         }
 
+        public async Task<Stream> ListJobsCmd(string owner,
+                                               string repoName,
+                                               string creds,
+                                               DateTime runDate)
+        {
+            return await ListJobsImpl(owner, repoName, creds, runDate);
+        }
+
+        public async Task<Stream> GetJobRunCmd(string owner, string repoName,
+                                          string creds, long jobId)
+        {
+            return await GetJobRunImpl(owner, repoName, creds, jobId);
+        }
+
+        public async Task<Stream> GetJobCmd(string owner, string repoName,
+                                          string creds, long jobId)
+        {
+            return await GetJobImpl(owner, repoName, creds, jobId);
+        }
+
         //
         // API endpoint interfaces
         ///
@@ -198,8 +240,9 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                Stream jobsList = await ListJobs(owner, repoName,
-                                                 util.GetCreds(Request),
+                string creds = util.GetCreds(Request);
+                Stream jobsList = await ListJobsCmd(owner, repoName,
+                                                 creds,
                                                  runDate);
                 if (format)
                 {
@@ -215,6 +258,29 @@ namespace WebRestAPI.Controllers
             }
         }
 
+        // GET: api/actions/{owner}/{repo}/jobs/{jobId}/steps
+        [HttpGet("{owner}/{repoName}/jobs/{jobId:long}/steps")]
+        public async Task<dynamic> GetJobRun(string owner, string repoName,
+                                          long jobId, bool format = true)
+        {
+            try
+            {
+                Stream job = await GetJobRunCmd(owner, repoName,
+                                          util.GetCreds(Request), jobId);
+                if (format)
+                {
+                    return util.FormatJson(job);
+                }
+                var jobDetails = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(job);
+                return jobDetails;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;
+            }
+        }
+
         // GET: api/actions/{owner}/{repo}/jobs/{jobId}
         [HttpGet("{owner}/{repoName}/jobs/{jobId:long}")]
         public async Task<dynamic> GetJob(string owner, string repoName,
@@ -222,7 +288,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                Stream job = await GetJob(owner, repoName,
+                Stream job = await GetJobCmd(owner, repoName,
                                           util.GetCreds(Request), jobId);
                 if (format)
                 {
