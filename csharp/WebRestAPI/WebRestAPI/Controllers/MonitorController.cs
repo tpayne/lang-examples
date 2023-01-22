@@ -139,7 +139,8 @@ namespace WebRestAPI.Controllers
                 {
                     return "{\"message\":\"Matching job name not found\",\"documentation_url\":\"n/a\"}";
                 }
-                return runUid;
+                string runJson = "{\"runUid\":\""+runUid+"\",\"runName\":\""+jobId+"\"}";
+                return utils.FormatJson(runJson);
             }
             catch (Exception e)
             {

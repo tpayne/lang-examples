@@ -43,6 +43,12 @@ namespace WebRestAPI.Controllers
             return client;
         }
 
+        public string FormatJson(string json)
+        {
+            dynamic parsedJson = JsonConvert.DeserializeObject(json);
+            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+        }
+
         public string FormatJson(Stream json)
         {
             StreamReader reader = new StreamReader(json);
