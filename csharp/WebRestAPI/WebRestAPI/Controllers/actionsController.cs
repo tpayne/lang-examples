@@ -20,43 +20,21 @@ namespace WebRestAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class actionsController : ControllerBase
+    public class ActionsController : ControllerBase
     {
-        //
-        // Private utility classes
-        //
-        private string GetCreds(HttpRequest request)
-        {
-            var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
-            string creds = header.Parameter;
-            return creds;
-        }
-
-        private HttpClient GetHttpClient(string creds)
-        {
-            HttpClient client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/vnd.github.v3+json")
-            );
-            client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
-            client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
-            client.DefaultRequestHeaders.Add("Authorization", "Bearer " + creds);
-
-            return client;
-        }
+        private GithubUtilities util = new GithubUtilities();
 
         //
         // Private implementation classes
         //
-       private async Task<Stream> GetJob(string owner, string repoName, 
-                                         string creds, long jobId)
+        private async Task<Stream> GetJob(string owner, string repoName,
+                                          string creds, long jobId)
         {
             try
             {
-                HttpClient client = GetHttpClient(creds);
+                HttpClient client = util.GetHttpClient(creds);
 
-                string uri = "https://api.github.com/repos/" + owner + "/" + repoName + 
+                string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
                     "/actions/runs/" + jobId;
 
                 var streamTask = client.GetStreamAsync(uri);
@@ -71,14 +49,14 @@ namespace WebRestAPI.Controllers
             }
         }
 
-        private async Task<Stream> ListJobs(string owner, string repoName, 
+        private async Task<Stream> ListJobs(string owner, string repoName,
                                             string creds, DateTime dateTime)
         {
             try
             {
-                HttpClient client = GetHttpClient(creds);
+                HttpClient client = util.GetHttpClient(creds);
                 string iso;
-                
+
                 if (dateTime == DateTime.MinValue)
                 {
                     iso = DateTime.UtcNow.ToString("s");
@@ -88,7 +66,7 @@ namespace WebRestAPI.Controllers
                     iso = dateTime.ToString("s");
                 }
 
-                string uri = "https://api.github.com/repos/" + owner + "/" + repoName + 
+                string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
                     "/actions/runs?created=%3E" + iso;
 
                 var streamTask = client.GetStreamAsync(uri);
@@ -107,7 +85,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = GetHttpClient(creds);
+                HttpClient client = util.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName + "/actions/workflows";
                 var streamTask = client.GetStreamAsync(uri);
@@ -127,13 +105,13 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = GetHttpClient(GetCreds(Request));
+                HttpClient client = util.GetHttpClient(util.GetCreds(Request));
 
                 string uri = "https://api.github.com/repos/" + owner + "/" +
                                 repoName + "/actions/workflows/" + workflowId +
                                 "/dispatches";
 
-                var response = client.PostAsJsonAsync<RunWorkflowsCmd>(uri,cmdParams);
+                var response = client.PostAsJsonAsync<RunWorkflowsCmd>(uri, cmdParams);
                 HttpResponseMessage msg = await response;
                 var reason = msg.Content.ReadAsStringAsync().Result;
                 var resp = new HttpResponseMessage(msg.StatusCode)
@@ -155,14 +133,6 @@ namespace WebRestAPI.Controllers
             }
         }
 
-        private string FormatJson(Stream json)
-        {
-            StreamReader reader = new StreamReader(json);
-            string text = reader.ReadToEnd();
-            dynamic parsedJson = JsonConvert.DeserializeObject(text);
-            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
-        }
-
         //
         // Public interface functions
         //
@@ -178,14 +148,16 @@ namespace WebRestAPI.Controllers
         [HttpGet("{owner}/{repoName}/jobs/list")]
         public async Task<dynamic> GetJobs(string owner, string repoName,
                                                       [FromQuery] DateTime runDate,
-                                                      bool format=true)
+                                                      bool format = true)
         {
             try
             {
-                Stream jobsList = await ListJobs(owner, repoName, GetCreds(Request), runDate);
+                Stream jobsList = await ListJobs(owner, repoName,
+                                                 util.GetCreds(Request),
+                                                 runDate);
                 if (format)
                 {
-                    return FormatJson(jobsList);
+                    return util.FormatJson(jobsList);
                 }
                 var jobs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
                 return jobs;
@@ -193,21 +165,22 @@ namespace WebRestAPI.Controllers
             catch (Exception e)
             {
                 Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                return null;                
+                return null;
             }
         }
 
         // GET: api/actions/{owner}/{repo}/jobs/{jobId}
         [HttpGet("{owner}/{repoName}/jobs/{jobId:long}")]
         public async Task<dynamic> GetJob(string owner, string repoName,
-                                          long jobId, bool format=true)
+                                          long jobId, bool format = true)
         {
             try
             {
-                Stream job = await GetJob(owner, repoName, GetCreds(Request), jobId);
+                Stream job = await GetJob(owner, repoName,
+                                          util.GetCreds(Request), jobId);
                 if (format)
                 {
-                    return FormatJson(job);
+                    return util.FormatJson(job);
                 }
                 var jobDetails = await System.Text.Json.JsonSerializer.DeserializeAsync<WorkflowRun>(job);
                 return jobDetails;
@@ -215,21 +188,22 @@ namespace WebRestAPI.Controllers
             catch (Exception e)
             {
                 Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                return null;                
+                return null;
             }
         }
 
         // GET: api/actions/{owner}/{repo}/list
         [HttpGet("{owner}/{repoName}/list")]
         public async Task<dynamic> GetActions(string owner, string repoName,
-                                              bool format=true)
+                                              bool format = true)
         {
             try
             {
-                Stream actionsList = await ListActions(owner, repoName, GetCreds(Request));
+                Stream actionsList = await ListActions(owner, repoName,
+                                                       util.GetCreds(Request));
                 if (format)
                 {
-                    return FormatJson(actionsList);
+                    return util.FormatJson(actionsList);
                 }
                 var actions = await System.Text.Json.JsonSerializer.DeserializeAsync<GitHubActions>(actionsList);
                 return actions;
@@ -237,7 +211,7 @@ namespace WebRestAPI.Controllers
             catch (Exception e)
             {
                 Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                return null;                
+                return null;
             }
         }
 
@@ -249,8 +223,8 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpResponseMessage resp = await DispatchWorkflow(owner,repoName,
-                                                                  workflowId,cmdParams);
+                HttpResponseMessage resp = await DispatchWorkflow(owner, repoName,
+                                                                  workflowId, cmdParams);
                 if (resp.StatusCode == HttpStatusCode.OK ||
                     resp.StatusCode == HttpStatusCode.NoContent)
                 {
@@ -279,7 +253,7 @@ namespace WebRestAPI.Controllers
                 Content = new StringContent("Unsupported method"),
                 ReasonPhrase = "Unsupported method"
             };
-            return resp;            
+            return resp;
         }
     }
 }

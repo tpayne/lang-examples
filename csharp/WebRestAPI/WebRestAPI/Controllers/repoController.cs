@@ -16,7 +16,7 @@ namespace WebRestAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class repoController : ControllerBase
+    public class RepoController : ControllerBase
     {
         private static readonly HttpClient client = new HttpClient();
 

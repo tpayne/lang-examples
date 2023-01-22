@@ -55,7 +55,7 @@ namespace WebRestAPI.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
-    public class testController : ControllerBase
+    public class TestController : ControllerBase
     {
         // GET: api/test/version
         [HttpGet("version/")]
