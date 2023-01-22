@@ -22,8 +22,6 @@ namespace WebRestAPI.Controllers
     [ApiController]
     public class ActionsController : ControllerBase
     {
-        private GithubUtilities util = new GithubUtilities();
-
         //
         // Private implementation classes
         //
@@ -32,7 +30,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = util.GetHttpClient(creds);
+                HttpClient client = Utils.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
                     "/actions/runs/" + jobId;
@@ -54,7 +52,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = util.GetHttpClient(creds);
+                HttpClient client = Utils.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
                     "/actions/runs/" + jobId + "/jobs";
@@ -75,7 +73,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = util.GetHttpClient(creds);
+                HttpClient client = Utils.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" + repoName + "/actions/workflows";
                 var streamTask = client.GetStreamAsync(uri);
@@ -95,7 +93,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = util.GetHttpClient(creds);
+                HttpClient client = Utils.GetHttpClient(creds);
                 string iso;
 
                 if (dateTime == DateTime.MinValue)
@@ -129,7 +127,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                HttpClient client = util.GetHttpClient(creds);
+                HttpClient client = Utils.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" +
                                 repoName + "/actions/workflows/" + workflowId.ToString() +
@@ -201,7 +199,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                string creds = util.GetCreds(Request);
+                string creds = Utils.GetCreds(Request);
                 HttpResponseMessage resp = await RunWorkflowCmd(owner, repoName,
                                                              workflowId,
                                                              cmdParams,
@@ -240,13 +238,13 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                string creds = util.GetCreds(Request);
+                string creds = Utils.GetCreds(Request);
                 Stream jobsList = await ListJobsCmd(owner, repoName,
                                                  creds,
                                                  runDate);
                 if (format)
                 {
-                    return util.FormatJson(jobsList);
+                    return Utils.FormatJson(jobsList);
                 }
                 var jobs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
                 return jobs;
@@ -266,10 +264,10 @@ namespace WebRestAPI.Controllers
             try
             {
                 Stream job = await GetJobRunCmd(owner, repoName,
-                                          util.GetCreds(Request), jobId);
+                                          Utils.GetCreds(Request), jobId);
                 if (format)
                 {
-                    return util.FormatJson(job);
+                    return Utils.FormatJson(job);
                 }
                 var jobDetails = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(job);
                 return jobDetails;
@@ -289,10 +287,10 @@ namespace WebRestAPI.Controllers
             try
             {
                 Stream job = await GetJobCmd(owner, repoName,
-                                          util.GetCreds(Request), jobId);
+                                          Utils.GetCreds(Request), jobId);
                 if (format)
                 {
-                    return util.FormatJson(job);
+                    return Utils.FormatJson(job);
                 }
                 var jobDetails = await System.Text.Json.JsonSerializer.DeserializeAsync<WorkflowRun>(job);
                 return jobDetails;
@@ -312,10 +310,10 @@ namespace WebRestAPI.Controllers
             try
             {
                 Stream actionsList = await ListActions(owner, repoName,
-                                                       util.GetCreds(Request));
+                                                       Utils.GetCreds(Request));
                 if (format)
                 {
-                    return util.FormatJson(actionsList);
+                    return Utils.FormatJson(actionsList);
                 }
                 var actions = await System.Text.Json.JsonSerializer.DeserializeAsync<GitHubActions>(actionsList);
                 return actions;

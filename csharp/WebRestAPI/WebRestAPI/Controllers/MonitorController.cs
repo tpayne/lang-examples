@@ -24,7 +24,6 @@ namespace WebRestAPI.Controllers
     public class MonitorController : ControllerBase
     {
         private ActionsController ghActions = new ActionsController();
-        private GithubUtilities utils = new GithubUtilities();
 
         // GET: api/workflow/version
         [HttpGet("version/")]
@@ -55,7 +54,7 @@ namespace WebRestAPI.Controllers
             long runUid = 0L;
             long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
-            string creds = utils.GetCreds(Request);
+            string creds = Utils.GetCreds(Request);
             string jobId = JobValues.JOB_PREFIX + milliseconds.ToString();
 
             //
@@ -140,7 +139,7 @@ namespace WebRestAPI.Controllers
                     return "{\"message\":\"Matching job name not found\",\"documentation_url\":\"n/a\"}";
                 }
                 string runJson = "{\"runUid\":\""+runUid+"\",\"runName\":\""+jobId+"\"}";
-                return utils.FormatJson(runJson);
+                return Utils.FormatJson(runJson);
             }
             catch (Exception e)
             {

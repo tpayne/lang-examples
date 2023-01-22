@@ -17,19 +17,19 @@ using WebRestAPI.Models;
 
 namespace WebRestAPI.Controllers
 {
-    public class GithubUtilities
+    public class Utils
     {
         //
         // Public utility classes
         //
-        public string GetCreds(HttpRequest request)
+        public static string GetCreds(HttpRequest request)
         {
             var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
             string creds = header.Parameter;
             return creds;
         }
 
-        public HttpClient GetHttpClient(string creds)
+        public static HttpClient GetHttpClient(string creds)
         {
             HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
@@ -43,13 +43,13 @@ namespace WebRestAPI.Controllers
             return client;
         }
 
-        public string FormatJson(string json)
+        public static string FormatJson(string json)
         {
             dynamic parsedJson = JsonConvert.DeserializeObject(json);
             return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
         }
 
-        public string FormatJson(Stream json)
+        public static string FormatJson(Stream json)
         {
             StreamReader reader = new StreamReader(json);
             string text = reader.ReadToEnd();
