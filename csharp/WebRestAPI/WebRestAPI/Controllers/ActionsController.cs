@@ -100,18 +100,20 @@ namespace WebRestAPI.Controllers
             }
         }
 
-        private async Task<HttpResponseMessage> DispatchWorkflow(string owner, string repoName,
-                                                   int workflowId, RunWorkflowsCmd cmdParams)
+        private async Task<HttpResponseMessage> RunWorkflowImpl(string owner, string repoName,
+                                                   long workflowId,
+                                                   RunWorkflowsCmdParams cmdParams,
+                                                   string creds)
         {
             try
             {
-                HttpClient client = util.GetHttpClient(util.GetCreds(Request));
+                HttpClient client = util.GetHttpClient(creds);
 
                 string uri = "https://api.github.com/repos/" + owner + "/" +
-                                repoName + "/actions/workflows/" + workflowId +
+                                repoName + "/actions/workflows/" + workflowId.ToString() +
                                 "/dispatches";
 
-                var response = client.PostAsJsonAsync<RunWorkflowsCmd>(uri, cmdParams);
+                var response = client.PostAsJsonAsync<RunWorkflowsCmdParams>(uri, cmdParams);
                 HttpResponseMessage msg = await response;
                 var reason = msg.Content.ReadAsStringAsync().Result;
                 var resp = new HttpResponseMessage(msg.StatusCode)
@@ -136,6 +138,50 @@ namespace WebRestAPI.Controllers
         //
         // Public interface functions
         //
+
+        public async Task<HttpResponseMessage> RunWorkflowCmd(string owner, string repoName,
+                                                   long workflowId,
+                                                   RunWorkflowsCmdParams cmdParams,
+                                                   string creds)
+        {
+            return await RunWorkflowImpl(owner, repoName, workflowId, cmdParams, creds);
+        }
+
+        //
+        // API endpoint interfaces
+        ///
+
+        // POST: api/actions/submit/{owner}/{repoName}/{workflow_id}/execute
+        [HttpPost("{owner}/{repoName}/{workflowId:long}/execute")]
+        public async Task<dynamic> PostStartWorkflow(string owner, string repoName,
+                                                   long workflowId,
+                                                   [FromBody] RunWorkflowsCmdParams cmdParams)
+        {
+            try
+            {
+                string creds = util.GetCreds(Request);
+                HttpResponseMessage resp = await RunWorkflowCmd(owner, repoName,
+                                                             workflowId,
+                                                             cmdParams,
+                                                             creds);
+                if (resp.StatusCode == HttpStatusCode.OK ||
+                    resp.StatusCode == HttpStatusCode.NoContent)
+                {
+                    return resp.StatusCode;
+                }
+                return resp.ReasonPhrase;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("Server generated an exception"),
+                    ReasonPhrase = "Server generated an exception"
+                };
+                return resp;
+            }
+        }
 
         // GET: api/workflow/version
         [HttpGet("version/")]
@@ -212,35 +258,6 @@ namespace WebRestAPI.Controllers
             {
                 Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
                 return null;
-            }
-        }
-
-        // POST: api/actions/submit/{owner}/{repoName}/{workflow_id}/execute
-        [HttpPost("{owner}/{repoName}/{workflowId:int}/execute")]
-        public async Task<dynamic> PostStartWorkflow(string owner, string repoName,
-                                                   int workflowId,
-                                                   [FromBody] RunWorkflowsCmd cmdParams)
-        {
-            try
-            {
-                HttpResponseMessage resp = await DispatchWorkflow(owner, repoName,
-                                                                  workflowId, cmdParams);
-                if (resp.StatusCode == HttpStatusCode.OK ||
-                    resp.StatusCode == HttpStatusCode.NoContent)
-                {
-                    return resp.StatusCode;
-                }
-                return resp.ReasonPhrase;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
-                {
-                    Content = new StringContent("Server generated an exception"),
-                    ReasonPhrase = "Server generated an exception"
-                };
-                return resp;
             }
         }
 

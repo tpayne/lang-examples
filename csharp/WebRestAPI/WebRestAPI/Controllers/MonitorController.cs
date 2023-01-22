@@ -23,7 +23,7 @@ namespace WebRestAPI.Controllers
     public class MonitorController : ControllerBase
     {
         private ActionsController ghActions = new ActionsController();
-
+        private GithubUtilities utils = new GithubUtilities();
 
         // GET: api/workflow/version
         [HttpGet("version/")]
@@ -41,7 +41,50 @@ namespace WebRestAPI.Controllers
                 Content = new StringContent("Unsupported method"),
                 ReasonPhrase = "Unsupported method"
             };
-            return resp;            
+            return resp;
+        }
+
+
+        // POST: api/actions/submit/{owner}/{repoName}/{workflow_id}/execute
+        [HttpPost("{owner}/{repoName}/{workflowId:long}/execute")]
+        public async Task<dynamic> PostStartWorkflow(string owner, string repoName,
+                                                   long workflowId)
+        {
+            string iso = DateTime.UtcNow.ToString("s");
+
+            //
+            // Submit the build job
+            //
+            try
+            {
+                RunWorkflowsCmdParams cmdParm = new RunWorkflowsCmdParams();
+                long milliseconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+                string creds = utils.GetCreds(Request);
+
+                cmdParm.revisionId = "master";
+                cmdParm.AddParam("id", JobValues.JOB_PREFIX+milliseconds.ToString());
+
+                HttpResponseMessage resp = await ghActions.RunWorkflowCmd(owner, repoName, 
+                                                                workflowId,
+                                                                cmdParm,
+                                                                creds);
+                if (resp.StatusCode != HttpStatusCode.OK ||
+                    resp.StatusCode != HttpStatusCode.NoContent)
+                {
+                    return resp.ReasonPhrase;
+                }
+                return resp.StatusCode;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("Server generated an exception"),
+                    ReasonPhrase = "Server generated an exception"
+                };
+                return resp;
+            }
         }
     }
 }
