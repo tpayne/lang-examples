@@ -22,6 +22,9 @@ namespace WebRestAPI.Controllers
     [ApiController]
     public class actionsController : ControllerBase
     {
+        //
+        // Private utility classes
+        //
         private string GetCreds(HttpRequest request)
         {
             var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
@@ -41,6 +44,31 @@ namespace WebRestAPI.Controllers
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + creds);
 
             return client;
+        }
+
+        //
+        // Private implementation classes
+        //
+       private async Task<Stream> GetJob(string owner, string repoName, 
+                                         string creds, long jobId)
+        {
+            try
+            {
+                HttpClient client = GetHttpClient(creds);
+
+                string uri = "https://api.github.com/repos/" + owner + "/" + repoName + 
+                    "/actions/runs/" + jobId;
+
+                var streamTask = client.GetStreamAsync(uri);
+                Stream msg = await streamTask;
+
+                return msg;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;
+            }
         }
 
         private async Task<Stream> ListJobs(string owner, string repoName, 
@@ -127,6 +155,18 @@ namespace WebRestAPI.Controllers
             }
         }
 
+        private string FormatJson(Stream json)
+        {
+            StreamReader reader = new StreamReader(json);
+            string text = reader.ReadToEnd();
+            dynamic parsedJson = JsonConvert.DeserializeObject(text);
+            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+        }
+
+        //
+        // Public interface functions
+        //
+
         // GET: api/workflow/version
         [HttpGet("version/")]
         public string GetVersion()
@@ -136,12 +176,17 @@ namespace WebRestAPI.Controllers
 
         // GET: api/actions/{owner}/{repo}/jobs/list
         [HttpGet("{owner}/{repoName}/jobs/list")]
-        public async Task<GithubWorkflowRuns> GetJobs(string owner, string repoName,
-                                                      [FromQuery] DateTime runDate)
+        public async Task<dynamic> GetJobs(string owner, string repoName,
+                                                      [FromQuery] DateTime runDate,
+                                                      bool format=true)
         {
             try
             {
                 Stream jobsList = await ListJobs(owner, repoName, GetCreds(Request), runDate);
+                if (format)
+                {
+                    return FormatJson(jobsList);
+                }
                 var jobs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
                 return jobs;
             }
@@ -152,13 +197,40 @@ namespace WebRestAPI.Controllers
             }
         }
 
+        // GET: api/actions/{owner}/{repo}/jobs/{jobId}
+        [HttpGet("{owner}/{repoName}/jobs/{jobId:long}")]
+        public async Task<dynamic> GetJob(string owner, string repoName,
+                                          long jobId, bool format=true)
+        {
+            try
+            {
+                Stream job = await GetJob(owner, repoName, GetCreds(Request), jobId);
+                if (format)
+                {
+                    return FormatJson(job);
+                }
+                var jobDetails = await System.Text.Json.JsonSerializer.DeserializeAsync<WorkflowRun>(job);
+                return jobDetails;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;                
+            }
+        }
+
         // GET: api/actions/{owner}/{repo}/list
         [HttpGet("{owner}/{repoName}/list")]
-        public async Task<GitHubActions> GetActions(string owner, string repoName)
+        public async Task<dynamic> GetActions(string owner, string repoName,
+                                              bool format=true)
         {
             try
             {
                 Stream actionsList = await ListActions(owner, repoName, GetCreds(Request));
+                if (format)
+                {
+                    return FormatJson(actionsList);
+                }
                 var actions = await System.Text.Json.JsonSerializer.DeserializeAsync<GitHubActions>(actionsList);
                 return actions;
             }
@@ -196,6 +268,18 @@ namespace WebRestAPI.Controllers
                 };
                 return resp;
             }
+        }
+
+        // GET: api/actions/
+        [HttpGet("")]
+        public HttpResponseMessage UnsupportedMethod()
+        {
+            var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+            {
+                Content = new StringContent("Unsupported method"),
+                ReasonPhrase = "Unsupported method"
+            };
+            return resp;            
         }
     }
 }
