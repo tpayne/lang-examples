@@ -81,5 +81,9 @@ References
 - https://github.com/microsoft
 - https://github.com/azure/azure-sdk
 - https://github.com/Azure/azure-sdk-for-net
+- https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onworkflow_dispatchinputs
+- https://hub.docker.com/_/microsoft-dotnet-aspnet/
+- https://hub.docker.com/_/microsoft-dotnet-sdk
+- https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
 
 
