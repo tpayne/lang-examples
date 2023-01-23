@@ -94,15 +94,51 @@ namespace WebRestAPI.Controllers
 
             try
             {
-                Thread.Sleep(JobValues.JOB_SLEEP*5);
+                Thread.Sleep(JobValues.JOB_SLEEP);
+                int count = 0;
+                bool err = false;
+                GithubWorkflowRuns runs = null;
 
-                Stream jobsList = await ghActions.ListJobsCmd(owner, repoName,
-                                                 creds,
-                                                 runDate);
+                do
+                {
+                    try
+                    {
+                        runs = null;
+                        Stream jobsList = await ghActions.ListJobsCmd(owner, repoName,
+                                                        creds,
+                                                        runDate);
+                        if (jobsList == null)
+                        {
+                            Thread.Sleep(JobValues.JOB_SLEEP);
+                            count++;
+                            if (count > 5)
+                            {
+                                err = true;
+                            }
+                            continue;
+                        }
 
-                GithubWorkflowRuns runs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
+                        runs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
 
-                if (runs.noRuns == 0)
+                        if (runs == null)
+                        {
+                            Thread.Sleep(JobValues.JOB_SLEEP);
+                            count++;
+                            if (count > 5)
+                            {
+                                err = true;
+                            }
+                            continue;
+                        }
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                    }
+
+                } while (!err);
+
+                if (runs.noRuns == 0 || err)
                 {
                     return "{\"message\":\"No job runs detected\",\"documentation_url\":\"n/a\"}";
                 }
@@ -111,11 +147,50 @@ namespace WebRestAPI.Controllers
                 {
                     if (i.workflow_id == workflowId)
                     {
-                        Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
-                                                        creds,i.id);
-                        GithubJobs jobsSteps = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(jobList);
+                        GithubJobs jobsSteps = null;
+                        count = 0;
+                        err = false;
 
-                        if (jobsSteps.noJobs == 0)
+                        do
+                        {
+                            try
+                            {
+                                jobsSteps = null;
+
+                                Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
+                                                        creds, i.id);
+                                if (jobList == null)
+                                {
+                                    Thread.Sleep(JobValues.JOB_SLEEP);
+                                    count++;
+                                    if (count > 5)
+                                    {
+                                        err = true;
+                                    }
+                                    continue;
+                                }
+
+                                jobsSteps = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(jobList);
+
+                                if (jobsSteps == null)
+                                {
+                                    Thread.Sleep(JobValues.JOB_SLEEP);
+                                    count++;
+                                    if (count > 5)
+                                    {
+                                        err = true;
+                                    }
+                                    continue;
+                                }
+                                break;
+                            }
+                            catch (Exception e)
+                            {
+                            }
+
+                        } while (!err);
+
+                        if (jobsSteps.noJobs == 0 || err)
                         {
                             return "{\"message\":\"No job steps detected\",\"documentation_url\":\"n/a\"}";
                         }
@@ -138,7 +213,7 @@ namespace WebRestAPI.Controllers
                 {
                     return "{\"message\":\"Matching job name not found\",\"documentation_url\":\"n/a\"}";
                 }
-                string runJson = "{\"runUid\":\""+runUid+"\",\"runName\":\""+jobId+"\"}";
+                string runJson = "{\"runUid\":\"" + runUid + "\",\"runName\":\"" + jobId + "\"}";
                 return Utils.FormatJson(runJson);
             }
             catch (Exception e)
