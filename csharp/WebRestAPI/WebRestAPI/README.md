@@ -63,6 +63,10 @@ To clean up the installation, do the following...
         
 This will delete all the items created in your session.
 
+Issues
+------
+- The monitor functionality currently only returns when the job has finished - this needs debugging as it is probably related to the GitHub API not returning until a job has finished
+
 Notes
 -----
 - The JSON parser that c# uses is extremely paranoid about obeying the JSON format rules and will often error for no good reason. To fix just try playing with the format string a bit
