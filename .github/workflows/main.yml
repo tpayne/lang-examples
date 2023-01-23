@@ -11,7 +11,7 @@ on:
       id:
         description: 'run identifier'
         required: false
-        default: "Default"
+        default: 'Default'
 
   # Branch filtered to master only
   push:
