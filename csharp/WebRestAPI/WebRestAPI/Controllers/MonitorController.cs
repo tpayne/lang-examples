@@ -109,11 +109,14 @@ namespace WebRestAPI.Controllers
                                                         runDate);
                         if (jobsList == null)
                         {
-                            Thread.Sleep(JobValues.JOB_SLEEP);
                             count++;
                             if (count > 5)
                             {
                                 err = true;
+                            }
+                            else
+                            {
+                                Thread.Sleep(JobValues.JOB_SLEEP);
                             }
                             continue;
                         }
@@ -122,11 +125,14 @@ namespace WebRestAPI.Controllers
 
                         if (runs == null)
                         {
-                            Thread.Sleep(JobValues.JOB_SLEEP);
                             count++;
                             if (count > 5)
                             {
                                 err = true;
+                            }
+                            else
+                            {
+                                Thread.Sleep(JobValues.JOB_SLEEP);
                             }
                             continue;
                         }
@@ -161,11 +167,14 @@ namespace WebRestAPI.Controllers
                                                         creds, i.id);
                                 if (jobList == null)
                                 {
-                                    Thread.Sleep(JobValues.JOB_SLEEP);
                                     count++;
                                     if (count > 5)
                                     {
                                         err = true;
+                                    }
+                                    else
+                                    {
+                                        Thread.Sleep(JobValues.JOB_SLEEP);
                                     }
                                     continue;
                                 }
@@ -174,11 +183,14 @@ namespace WebRestAPI.Controllers
 
                                 if (jobsSteps == null)
                                 {
-                                    Thread.Sleep(JobValues.JOB_SLEEP);
                                     count++;
                                     if (count > 5)
                                     {
                                         err = true;
+                                    }
+                                    else
+                                    {
+                                        Thread.Sleep(JobValues.JOB_SLEEP);
                                     }
                                     continue;
                                 }
