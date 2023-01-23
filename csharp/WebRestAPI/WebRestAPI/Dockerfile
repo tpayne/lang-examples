@@ -1,4 +1,6 @@
-FROM --platform=linux/arm64v8 mcr.microsoft.com/dotnet/sdk:7.0.102-alpine3.17-arm64v8 AS build
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:7.0.102-alpine3.17-amd64 AS build
+
+ARG account=webapp
 
 WORKDIR /source
 
@@ -14,15 +16,31 @@ COPY Models ./WebRestAPI/
 
 WORKDIR /source/WebRestAPI/
 RUN dotnet clean
-RUN dotnet restore -r linux-arm64 /p:PublishReadyToRun=true
-RUN dotnet publish -c release -o /app -r linux-arm64 --self-contained true --no-restore /p:PublishTrimmed=true \
-	/p:PublishReadyToRunShowWarnings=true /p:PublishReadyToRun=true /p:PublishSingleFile=true
+RUN dotnet restore /p:PublishReadyToRun=true
+
+# Trimming is broken for certain JSON classes
+RUN dotnet publish -c release -o /app --self-contained true --no-restore \
+    /p:PublishTrimmed=false \
+	/p:PublishReadyToRunShowWarnings=true \
+    /p:PublishReadyToRun=true \
+    /p:PublishSingleFile=true
 
 # final stage/image
-FROM --platform=linux/arm64v8 mcr.microsoft.com/dotnet/aspnet:7.0.2-alpine3.17-arm64v8 AS runtime
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:7.0.2-alpine3.17-amd64 AS runtime
 
 WORKDIR /app
 COPY --from=build /app ./
+
+ARG account=webapp
+
+RUN addgroup -S ${account} \
+    && adduser -S ${account} -G ${account}
+
+RUN chown -R ${account} .
+RUN chmod -R a+rx .
+
+USER ${account}:${account}
+
 CMD ["./WebRestAPI"]
 EXPOSE 80
 EXPOSE 443

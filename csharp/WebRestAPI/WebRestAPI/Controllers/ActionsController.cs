@@ -69,7 +69,7 @@ namespace WebRestAPI.Controllers
             }
         }
 
-        private async Task<Stream> ListActions(string owner, string repoName, string creds)
+        private async Task<Stream> ListActionsImpl(string owner, string repoName, string creds)
         {
             try
             {
@@ -158,6 +158,11 @@ namespace WebRestAPI.Controllers
         //
         // Public interface functions
         //
+
+        private async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
+        {
+            return await ListActionsImpl(owner,repoName,creds);
+        }
 
         public async Task<HttpResponseMessage> RunWorkflowCmd(string owner, string repoName,
                                                    long workflowId,
@@ -309,7 +314,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                Stream actionsList = await ListActions(owner, repoName,
+                Stream actionsList = await ListActionsCmd(owner, repoName,
                                                        Utils.GetCreds(Request));
                 if (format)
                 {
