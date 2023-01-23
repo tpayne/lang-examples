@@ -12,8 +12,9 @@ on:
       id:
         description: 'run identifier'
         required: false
-        default: 'Default'
-        
+        default: 'Job001'
+        type: string
+
 env:
   GITHUB_TOKEN: ${{ secrets.GT_TOKEN }}
   
