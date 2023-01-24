@@ -231,7 +231,8 @@ namespace WebRestAPI.Controllers
                         {
                             try
                             {
-                                retCode = await MatchJobStep(owner, repoName, creds,
+                                retCode = await MatchJobStep(owner, 
+                                                       repoName, creds,
                                                        jobId, i.id);
                                 if (retCode > 0L)
                                 {
