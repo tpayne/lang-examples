@@ -25,8 +25,9 @@ namespace WebRestAPI.Controllers
         //
         // Private implementation classes
         //
+ 
         private async Task<Stream> GetJobImpl(string owner, string repoName,
-                                          string creds, long jobId)
+                                        string creds, long jobId)
         {
             try
             {
@@ -48,7 +49,7 @@ namespace WebRestAPI.Controllers
         }
 
         private async Task<Stream> GetJobRunImpl(string owner, string repoName,
-                                          string creds, long jobId)
+                                        string creds, long jobId)
         {
             try
             {
@@ -88,7 +89,7 @@ namespace WebRestAPI.Controllers
             }
         }
 
-        private async Task<Stream> ListJobsImpl(string owner, string repoName,
+        protected async Task<Stream> ListJobsImpl(string owner, string repoName,
                                             string creds, DateTime dateTime)
         {
             try
@@ -121,9 +122,9 @@ namespace WebRestAPI.Controllers
         }
 
         private async Task<HttpResponseMessage> RunWorkflowImpl(string owner, string repoName,
-                                                   long workflowId,
-                                                   RunWorkflowsCmdParams cmdParams,
-                                                   string creds)
+                                                long workflowId,
+                                                RunWorkflowsCmdParams cmdParams,
+                                                string creds)
         {
             try
             {
@@ -154,12 +155,12 @@ namespace WebRestAPI.Controllers
                 return resp;
             }
         }
-
+ 
         //
         // Public interface functions
         //
 
-        private async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
+        public async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
         {
             return await ListActionsImpl(owner,repoName,creds);
         }

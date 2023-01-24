@@ -26,6 +26,51 @@ namespace WebRestAPI.Controllers
     {
         private ActionsController ghActions = new ActionsController();
 
+        //
+        // Private classes
+        //
+        private async Task<dynamic> MatchJobStep(string owner, string repoName, string creds,
+                                           string jobId, long iUid)
+        {
+            try 
+            {
+                Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
+                                        creds, iUid);
+                if (jobList == null)
+                {
+                    return -1;
+                }
+
+                var options = new JsonSerializerOptions
+                {
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                };
+
+                GithubJobs jobsSteps = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(jobList,options);
+
+                if ((jobsSteps == null) || jobsSteps.noJobs == 0)
+                {
+                    return -1;
+                }
+
+                foreach (Job iJob in jobsSteps.jobs)
+                {
+                    foreach (Step iStep in iJob.steps)
+                    {
+                        if (iStep.name.Equals(jobId))
+                        {
+                            return(iJob.run_id);
+                        }
+                    }
+                }
+                return 0L;
+            }
+            catch(Exception e)
+            {
+                return -1;
+            }
+        }
+
         // GET: api/workflow/version
         [HttpGet("version/")]
         public string GetVersion()
@@ -124,7 +169,7 @@ namespace WebRestAPI.Controllers
 
                         runs = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubWorkflowRuns>(jobsList);
 
-                        if (runs == null)
+                        if (runs == null || runs.noRuns == 0)
                         {
                             count++;
                             if (count > 5)
@@ -154,7 +199,8 @@ namespace WebRestAPI.Controllers
                 {
                     if (i.workflow_id == workflowId)
                     {
-                        GithubJobs jobsSteps = null;
+                        long retCode = -1;
+
                         count = 0;
                         err = false;
 
@@ -162,11 +208,14 @@ namespace WebRestAPI.Controllers
                         {
                             try
                             {
-                                jobsSteps = null;
-
-                                Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
-                                                        creds, i.id);
-                                if (jobList == null)
+                                retCode = await MatchJobStep(owner,repoName,creds,
+                                                       jobId,i.id);
+                                if (retCode > 0L)
+                                {
+                                    runUid = retCode;
+                                    break;
+                                }
+                                else
                                 {
                                     count++;
                                     if (count > 5)
@@ -179,28 +228,6 @@ namespace WebRestAPI.Controllers
                                     }
                                     continue;
                                 }
-
-                                var options = new JsonSerializerOptions
-                                {
-                                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                                };
-
-                                jobsSteps = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(jobList,options);
-
-                                if (jobsSteps == null)
-                                {
-                                    count++;
-                                    if (count > 5)
-                                    {
-                                        err = true;
-                                    }
-                                    else
-                                    {
-                                        Thread.Sleep(JobValues.JOB_SLEEP);
-                                    }
-                                    continue;
-                                }
-                                break;
                             }
                             catch (Exception e)
                             {
@@ -208,21 +235,9 @@ namespace WebRestAPI.Controllers
 
                         } while (!err);
 
-                        if (jobsSteps.noJobs == 0 || err)
+                        if (err)
                         {
                             return "{\"message\":\"No job steps detected\",\"documentation_url\":\"n/a\"}";
-                        }
-
-                        foreach (Job iJob in jobsSteps.jobs)
-                        {
-                            foreach (Step iStep in iJob.steps)
-                            {
-                                if (iStep.name.Equals(jobId))
-                                {
-                                    runUid = iJob.run_id;
-                                    break;
-                                }
-                            }
                         }
                     }
                 }
