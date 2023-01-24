@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text;
 using System.IO;
 using Newtonsoft.Json;
@@ -179,7 +180,12 @@ namespace WebRestAPI.Controllers
                                     continue;
                                 }
 
-                                jobsSteps = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(jobList);
+                                var options = new JsonSerializerOptions
+                                {
+                                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                                };
+
+                                jobsSteps = await System.Text.Json.JsonSerializer.DeserializeAsync<GithubJobs>(jobList,options);
 
                                 if (jobsSteps == null)
                                 {
