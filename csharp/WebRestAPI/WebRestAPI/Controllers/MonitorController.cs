@@ -179,7 +179,7 @@ namespace WebRestAPI.Controllers
                         if (jobsList == null)
                         {
                             count++;
-                            if (count > 5)
+                            if (count > JobValues.JOB_RETRY)
                             {
                                 err = true;
                             }
@@ -195,7 +195,7 @@ namespace WebRestAPI.Controllers
                         if (runs == null || runs.noRuns == 0)
                         {
                             count++;
-                            if (count > 5)
+                            if (count > JobValues.JOB_RETRY)
                             {
                                 err = true;
                             }
@@ -241,7 +241,7 @@ namespace WebRestAPI.Controllers
                                 else
                                 {
                                     count++;
-                                    if (count > 5)
+                                    if (count > JobValues.JOB_RETRY)
                                     {
                                         err = true;
                                     }

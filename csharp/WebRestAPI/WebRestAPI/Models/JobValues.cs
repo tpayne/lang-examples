@@ -31,5 +31,6 @@ namespace WebRestAPI.Models
     {
         public static string JOB_PREFIX = "JobRun-";
         public static int JOB_SLEEP = 5000;
+        public static int JOB_RETRY = 5;
     }
 }
