@@ -7,7 +7,7 @@ Running the Example with Basic Ops
 ----------------------------------
 This example creates and runs a C# web server.
 
-If you are using the Apple M1 chipset, please review the comments in the Dockerfiles.
+If you are using the Apple M1 chipset, please review the comments in the Dockerfiles and use this Dockerfile instead `Dockerfile.vcnet7.arm64v8`.
 
 To run this solution please do the following steps. They will build and run the sample locally. You do not need a .NET environment installed.
 
