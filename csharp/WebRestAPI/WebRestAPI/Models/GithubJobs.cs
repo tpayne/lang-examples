@@ -48,6 +48,8 @@ namespace WebRestAPI.Models
         public string html_url { get; set; }
         public string status { get; set; }
         public string conclusion { get; set; }
+        public string started_at { get; set; }
+        public string completed_at { get; set; }        
         public string name { get; set; }
         public List<Step> steps { get; set; }
         public string check_run_url { get; set; }
@@ -63,6 +65,8 @@ namespace WebRestAPI.Models
         public string name { get; set; }
         public string status { get; set; }
         public string conclusion { get; set; }
+        public string started_at { get; set; }
+        public string completed_at { get; set; }            
         public int number { get; set; }
     }
 }

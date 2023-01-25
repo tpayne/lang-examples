@@ -113,9 +113,40 @@ namespace WebRestAPI.Controllers
             return resp;
         }
 
+        // GET: api/monitor/{owner}/{repoName}/job/{jobId}
+        [HttpGet("{owner}/{repoName}/job/{jobId:long}/steps")]
+        public async Task<dynamic> GetJobSteps(string owner, string repoName,
+                                                   long jobId)
+        {
+            //
+            // Submit the build job
+            //
+            try
+            {
+                string creds = Utils.GetCreds(Request);
+                Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
+                                        creds, jobId);
+                if (jobList == null)
+                {
+                    return null;
+                }
 
-        // POST: api/actions/submit/{owner}/{repoName}/{workflow_id}/execute
-        [HttpPost("{owner}/{repoName}/{workflowId:long}/execute")]
+                return Utils.FormatJson(jobList); 
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("Server generated an exception"),
+                    ReasonPhrase = "Server generated an exception"
+                };
+                return resp;
+            }
+        }
+
+        // POST: api/actions/submit/{owner}/{repoName}/workflow/{workflow_id}/execute
+        [HttpPost("{owner}/{repoName}/workflow/{workflowId:long}/execute")]
         public async Task<dynamic> PostStartWorkflow(string owner, string repoName,
                                                    long workflowId)
         {
@@ -215,7 +246,7 @@ namespace WebRestAPI.Controllers
 
                 if (runs.noRuns == 0 || err)
                 {
-                    return "{\"message\":\"No job runs detected\",\"documentation_url\":\"n/a\"}";
+                    return JobValues.JOB_NO_RUNS;
                 }
 
                 foreach (WorkflowRun i in runs.runs)
@@ -261,14 +292,14 @@ namespace WebRestAPI.Controllers
 
                         if (err)
                         {
-                            return "{\"message\":\"No job steps detected\",\"documentation_url\":\"n/a\"}";
+                            return JobValues.JOB_NOT_FOUND;
                         }
                     }
                 }
 
                 if (runUid == 0L)
                 {
-                    return "{\"message\":\"Matching job name not found\",\"documentation_url\":\"n/a\"}";
+                    return JobValues.JOB_MATCH_NOT_FOUND;
                 }
                 string runJson = "{\"runUid\":\"" + runUid + "\",\"runName\":\"" + jobId + "\"}";
                 return Utils.FormatJson(runJson);
