@@ -88,7 +88,7 @@ namespace WebRestAPI.Controllers
                 }
                 return 0L;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return -1;
             }
@@ -238,7 +238,7 @@ namespace WebRestAPI.Controllers
                         }
                         break;
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                     }
 
@@ -284,7 +284,7 @@ namespace WebRestAPI.Controllers
                                     continue;
                                 }
                             }
-                            catch (Exception e)
+                            catch (Exception)
                             {
                             }
 
