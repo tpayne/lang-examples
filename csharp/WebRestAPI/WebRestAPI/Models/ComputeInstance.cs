@@ -21,7 +21,6 @@ SOFTWARE.
 
 */
 
-using System;
 namespace WebRestAPI.Models
 {
     public class ComputeInstance

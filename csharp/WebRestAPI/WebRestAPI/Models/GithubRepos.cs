@@ -21,7 +21,6 @@ SOFTWARE.
 
 */
 
-using System;
 using System.Text.Json.Serialization;
 
 namespace WebRestAPI.Models

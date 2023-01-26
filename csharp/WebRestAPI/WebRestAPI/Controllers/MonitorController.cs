@@ -22,24 +22,17 @@ SOFTWARE.
 */
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text;
 using System.IO;
-using Newtonsoft.Json;
 using System.Net;
-using System.Web;
 using System.Threading;
 
 using WebRestAPI.Models;
+using WebRestAPI.Implementors;
 
 namespace WebRestAPI.Controllers
 {
