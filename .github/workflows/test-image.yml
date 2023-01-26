@@ -29,8 +29,8 @@ jobs:
     - name: Run Test
       uses: addnab/docker-run-action@v3
       with:
-        registry: ${{ github.event.repository.name }}
-        image: ${{ github.event.repository.name }}
+        registry: ghcr.io
+        image: tpayne/webrestapi:master
     - name: Run a command
       run: |
         ls
