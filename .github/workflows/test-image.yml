@@ -30,7 +30,7 @@ jobs:
       uses: addnab/docker-run-action@v3
       with:
         registry: ghcr.io
-        image: tpayne/webrestapi:master
+        image: ghcr.io/tpayne/webrestapi:master
     - name: Run a command
       run: |
         ls
