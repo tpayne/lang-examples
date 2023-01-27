@@ -154,7 +154,7 @@ namespace WebRestAPI.Controllers
                                                    long jobId, int runNo)
         {
             //
-            // Submit the build job
+            // Submit the log request
             //
             try
             {
@@ -186,7 +186,7 @@ namespace WebRestAPI.Controllers
                                                    long jobId)
         {
             //
-            // Submit the build job
+            // Submit the get job steps request
             //
             try
             {
