@@ -25,7 +25,9 @@ using Microsoft.AspNetCore.Http;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.IO;
+using System.Xml;
 using Newtonsoft.Json;
+using System.Xml.Linq;
 
 namespace WebRestAPI.Implementors
 {
@@ -34,6 +36,15 @@ namespace WebRestAPI.Implementors
         //
         // Public utility classes
         //
+        public static string ConvertXMLToJson(string xml)
+        {
+            XmlDocument doc = new XmlDocument();
+            string encodedXml = System.Security.SecurityElement.Escape(xml);
+            doc.LoadXml(encodedXml);
+            string json = JsonConvert.SerializeXmlNode(doc);
+            return FormatJson(json);
+        }
+
         public static string GetCreds(HttpRequest request)
         {
             var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
@@ -62,7 +73,7 @@ namespace WebRestAPI.Implementors
                 return null;
             }
             dynamic parsedJson = JsonConvert.DeserializeObject(json);
-            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+            return JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
         }
 
         public static string FormatJson(Stream json)
@@ -74,7 +85,7 @@ namespace WebRestAPI.Implementors
             StreamReader reader = new StreamReader(json);
             string text = reader.ReadToEnd();
             dynamic parsedJson = JsonConvert.DeserializeObject(text);
-            return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+            return JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
         }
     }
 }

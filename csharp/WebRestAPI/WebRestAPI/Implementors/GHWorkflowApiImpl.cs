@@ -51,19 +51,38 @@ namespace WebRestAPI.Implementors
                 var zip = new ZipArchive(responseBody);
                 string logs = null;
 
+                logs += "\n<GitHubLogs>";
+
                 foreach(ZipArchiveEntry entry in zip.Entries)
                 {
                     Stream stream = entry.Open();
-                    logs += "\n===> File: '" + entry.FullName + "' ";
-                    logs += "<===\n";
+                    logs += "\n<LogFile>";
+                    logs += "\n<FileName>"+entry.FullName + "</FileName>";
+                    logs += "\n<LogDetails>\n";
                     StreamReader reader = new StreamReader(stream);
                     string text = reader.ReadToEnd();
                     logs += text;
+                    logs += "</LogDetails>";
+                    logs += "\n</LogFile>";
                     text = null;
                     reader = null;
                     stream = null;
                 }
-                
+
+                logs += "\n</GitHubLogs>\n";
+
+                string json = null;
+
+                // If we can, convert to JSON, else leave as XML...
+                try
+                {
+                    json = Utils.ConvertXMLToJson(logs);
+                    logs = json;
+                }
+                catch(Exception)
+                {
+                }
+
                 return logs;      
             }
             catch (Exception e)
