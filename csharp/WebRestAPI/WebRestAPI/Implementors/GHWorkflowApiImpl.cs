@@ -22,15 +22,12 @@ SOFTWARE.
 */
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.IO.Compression;
 using System.Net.Http.Json;
 using System.IO;
 using System.Net;
-using System.Web;
 
 using WebRestAPI.Models;
 
@@ -57,9 +54,14 @@ namespace WebRestAPI.Implementors
                 foreach(ZipArchiveEntry entry in zip.Entries)
                 {
                     Stream stream = entry.Open();
+                    logs += "\n===> File: '" + entry.FullName + "' ";
+                    logs += "<===\n";
                     StreamReader reader = new StreamReader(stream);
                     string text = reader.ReadToEnd();
                     logs += text;
+                    text = null;
+                    reader = null;
+                    stream = null;
                 }
                 
                 return logs;      
