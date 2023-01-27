@@ -41,7 +41,7 @@ namespace WebRestAPI.Controllers
         //
         // Private implementation classes
         //
-        private GHApiImpl impl = new GHApiImpl();
+        private GHWorkflowApiImpl impl = new GHWorkflowApiImpl();
 
  
         //

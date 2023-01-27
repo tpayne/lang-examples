@@ -25,16 +25,52 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.IO.Compression;
 using System.Net.Http.Json;
 using System.IO;
 using System.Net;
+using System.Web;
 
 using WebRestAPI.Models;
 
 namespace WebRestAPI.Implementors
 {
-    public class GHApiImpl
+    public class GHWorkflowApiImpl
     {
+        public async Task<dynamic> GetJobRunLogsImpl(string owner, string repoName,
+                                        string creds, long jobId, int runNo)
+        {
+            try
+            {
+                HttpClient client = Utils.GetHttpClient(creds);
+
+                string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
+                    "/actions/runs/" + jobId +
+                    "/attempts/" + runNo + "/logs";
+
+                using HttpResponseMessage response = await client.GetAsync(uri);
+                Stream responseBody = await response.Content.ReadAsStreamAsync();
+                var zip = new ZipArchive(responseBody);
+                string logs = null;
+
+                foreach(ZipArchiveEntry entry in zip.Entries)
+                {
+                    Stream stream = entry.Open();
+                    StreamReader reader = new StreamReader(stream);
+                    string text = reader.ReadToEnd();
+                    logs += text;
+                }
+                
+                return logs;      
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                return null;
+            }
+        }
+
         public async Task<Stream> GetJobImpl(string owner, string repoName,
                                         string creds, long jobId)
         {

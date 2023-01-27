@@ -30,6 +30,7 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Collections.Generic;
 
 using WebRestAPI.Models;
 using WebRestAPI.Implementors;
@@ -40,10 +41,10 @@ namespace WebRestAPI.Controllers
     [ApiController]
     public class MonitorController : ControllerBase
     {
-        private GHApiImpl impl = new GHApiImpl();
+        private GHWorkflowApiImpl impl = new GHWorkflowApiImpl();
  
         //
-        // Private interface functions
+        // Private classes
         //
 
         private async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
@@ -79,9 +80,12 @@ namespace WebRestAPI.Controllers
             return await impl.GetJobImpl(owner, repoName, creds, jobId);
         }
 
-        //
-        // Private classes
-        //
+        private async Task<dynamic> GetJobRunLogs(string owner, string repoName,
+                                          string creds, long jobId, int runNo)
+        {
+            return await impl.GetJobRunLogsImpl(owner, repoName, creds, jobId, runNo);
+        }
+
         private async Task<dynamic> MatchJobStep(string owner, string repoName, string creds,
                                            string jobId, long iUid)
         {
@@ -143,7 +147,40 @@ namespace WebRestAPI.Controllers
             return resp;
         }
 
+
         // GET: api/monitor/{owner}/{repoName}/job/{jobId}
+        [HttpGet("{owner}/{repoName}/job/{jobId:long}/logs/{runNo:int}")]
+        public async Task<dynamic> GetJobRunLogs(string owner, string repoName,
+                                                   long jobId, int runNo)
+        {
+            //
+            // Submit the build job
+            //
+            try
+            {
+                string creds = Utils.GetCreds(Request);
+                string log = await GetJobRunLogs(owner, repoName,
+                                        creds, jobId, runNo);
+                if (log == null)
+                {
+                    return null;
+                }
+
+                return log; 
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
+                var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                {
+                    Content = new StringContent("Server generated an exception"),
+                    ReasonPhrase = "Server generated an exception"
+                };
+                return resp;
+            }
+        }
+
+        // GET: api/monitor/{owner}/{repoName}/job/{jobId}/steps
         [HttpGet("{owner}/{repoName}/job/{jobId:long}/steps")]
         public async Task<dynamic> GetJobSteps(string owner, string repoName,
                                                    long jobId)
@@ -178,7 +215,8 @@ namespace WebRestAPI.Controllers
         // POST: api/actions/submit/{owner}/{repoName}/workflow/{workflow_id}/execute
         [HttpPost("{owner}/{repoName}/workflow/{workflowId:long}/execute")]
         public async Task<dynamic> PostStartWorkflow(string owner, string repoName,
-                                                   long workflowId)
+                                                   long workflowId,
+                                                   [FromBody] RunWorkflowsCmdParams jobParams = null)
         {
             DateTime runDate = DateTime.UtcNow;
             long runUid = 0L;
@@ -197,6 +235,20 @@ namespace WebRestAPI.Controllers
                 cmdParm.revisionId = "master";
                 cmdParm.AddParam("id", jobId);
 
+                if (jobParams != null)
+                {
+                    if (jobParams.revisionId != null && jobParams.revisionId.Length==0)
+                        cmdParm.revisionId = "master";
+                    else
+                        cmdParm.revisionId = jobParams.revisionId;
+                    
+                    if (jobParams.parms != null) 
+                    {
+                        foreach(KeyValuePair<string, string> entry in jobParams.parms)
+                            cmdParm.AddParam(entry.Key, entry.Value);
+                    }
+                }
+                    
                 HttpResponseMessage resp = await RunWorkflowCmd(owner, repoName,
                                                                 workflowId,
                                                                 cmdParm,
