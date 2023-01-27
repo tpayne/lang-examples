@@ -48,7 +48,23 @@ namespace WebRestAPI.Implementors
 
                 using HttpResponseMessage response = await client.GetAsync(uri);
                 Stream responseBody = await response.Content.ReadAsStreamAsync();
-                var zip = new ZipArchive(responseBody);
+
+                if (responseBody.ToString().Length == 0)
+                {
+                    return null;
+                }
+
+                ZipArchive zip = null;
+                
+                try 
+                {
+                    zip = new ZipArchive(responseBody);
+                }
+                catch(Exception)
+                {
+                    return null;
+                }
+                
                 string logs = null;
 
                 logs += "\n<GitHubLogs>";
@@ -56,6 +72,10 @@ namespace WebRestAPI.Implementors
                 foreach(ZipArchiveEntry entry in zip.Entries)
                 {
                     Stream stream = entry.Open();
+                    if (stream == null) 
+                    {
+                        break;
+                    }
                     logs += "\n<LogFile>";
                     logs += "\n<FileName>"+entry.FullName + "</FileName>";
                     logs += "\n<LogDetails>\n";
