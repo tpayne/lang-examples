@@ -43,149 +43,17 @@ namespace WebRestAPI.Controllers
         //
         private GHApiImpl impl = new GHApiImpl();
 
-        class GHApiImpl
-        {
-            public async Task<Stream> GetJobImpl(string owner, string repoName,
-                                            string creds, long jobId)
-            {
-                try
-                {
-                    HttpClient client = Utils.GetHttpClient(creds);
-
-                    string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
-                        "/actions/runs/" + jobId;
-
-                    var streamTask = client.GetStreamAsync(uri);
-                    Stream msg = await streamTask;
-
-                    return msg;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                    return null;
-                }
-            }
-
-            public async Task<Stream> GetJobRunImpl(string owner, string repoName,
-                                            string creds, long jobId)
-            {
-                try
-                {
-                    HttpClient client = Utils.GetHttpClient(creds);
-
-                    string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
-                        "/actions/runs/" + jobId + "/jobs";
-
-                    var streamTask = client.GetStreamAsync(uri);
-                    Stream msg = await streamTask;
-
-                    return msg;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                    return null;
-                }
-            }
-
-            public async Task<Stream> ListActionsImpl(string owner, string repoName, string creds)
-            {
-                try
-                {
-                    HttpClient client = Utils.GetHttpClient(creds);
-
-                    string uri = "https://api.github.com/repos/" + owner + "/" + repoName + "/actions/workflows";
-                    var streamTask = client.GetStreamAsync(uri);
-                    Stream msg = await streamTask;
-
-                    return msg;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                    return null;
-                }
-            }
-
-            public async Task<Stream> ListJobsImpl(string owner, string repoName,
-                                                string creds, DateTime dateTime)
-            {
-                try
-                {
-                    HttpClient client = Utils.GetHttpClient(creds);
-                    string iso;
-
-                    if (dateTime == DateTime.MinValue)
-                    {
-                        iso = DateTime.UtcNow.ToString("s");
-                    }
-                    else
-                    {
-                        iso = dateTime.ToString("s");
-                    }
-
-                    string uri = "https://api.github.com/repos/" + owner + "/" + repoName +
-                        "/actions/runs?created=%3E" + iso;
-
-                    var streamTask = client.GetStreamAsync(uri);
-                    Stream msg = await streamTask;
-
-                    return msg;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                    return null;
-                }
-            }
-
-            public async Task<HttpResponseMessage> RunWorkflowImpl(string owner, string repoName,
-                                                    long workflowId,
-                                                    RunWorkflowsCmdParams cmdParams,
-                                                    string creds)
-            {
-                try
-                {
-                    HttpClient client = Utils.GetHttpClient(creds);
-
-                    string uri = "https://api.github.com/repos/" + owner + "/" +
-                                    repoName + "/actions/workflows/" + workflowId.ToString() +
-                                    "/dispatches";
-
-                    var response = client.PostAsJsonAsync<RunWorkflowsCmdParams>(uri, cmdParams);
-                    HttpResponseMessage msg = await response;
-                    var reason = msg.Content.ReadAsStringAsync().Result;
-                    var resp = new HttpResponseMessage(msg.StatusCode)
-                    {
-                        Content = msg.Content,
-                        ReasonPhrase = reason
-                    };
-                    return resp;
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception: {0}", e.Message + "\n" + e.StackTrace);
-                    var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
-                    {
-                        Content = new StringContent("Server generated an exception"),
-                        ReasonPhrase = "Server generated an exception"
-                    };
-                    return resp;
-                }
-            }
-        }
-
+ 
         //
-        // Public interface functions
+        // Private interface functions
         //
 
-        public async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
+        private async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
         {
             return await impl.ListActionsImpl(owner, repoName, creds);
         }
 
-        public async Task<HttpResponseMessage> RunWorkflowCmd(string owner, string repoName,
+        private async Task<HttpResponseMessage> RunWorkflowCmd(string owner, string repoName,
                                                    long workflowId,
                                                    RunWorkflowsCmdParams cmdParams,
                                                    string creds)
@@ -193,7 +61,7 @@ namespace WebRestAPI.Controllers
             return await impl.RunWorkflowImpl(owner, repoName, workflowId, cmdParams, creds);
         }
 
-        public async Task<Stream> ListJobsCmd(string owner,
+        private async Task<Stream> ListJobsCmd(string owner,
                                                string repoName,
                                                string creds,
                                                DateTime runDate)
@@ -201,13 +69,13 @@ namespace WebRestAPI.Controllers
             return await impl.ListJobsImpl(owner, repoName, creds, runDate);
         }
 
-        public async Task<Stream> GetJobRunCmd(string owner, string repoName,
+        private async Task<Stream> GetJobRunCmd(string owner, string repoName,
                                           string creds, long jobId)
         {
             return await impl.GetJobRunImpl(owner, repoName, creds, jobId);
         }
 
-        public async Task<Stream> GetJobCmd(string owner, string repoName,
+        private async Task<Stream> GetJobCmd(string owner, string repoName,
                                           string creds, long jobId)
         {
             return await impl.GetJobImpl(owner, repoName, creds, jobId);

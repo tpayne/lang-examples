@@ -40,7 +40,44 @@ namespace WebRestAPI.Controllers
     [ApiController]
     public class MonitorController : ControllerBase
     {
-        private ActionsController ghActions = new ActionsController();
+        private GHApiImpl impl = new GHApiImpl();
+ 
+        //
+        // Private interface functions
+        //
+
+        private async Task<Stream> ListActionsCmd(string owner, string repoName, string creds)
+        {
+            return await impl.ListActionsImpl(owner, repoName, creds);
+        }
+
+        private async Task<HttpResponseMessage> RunWorkflowCmd(string owner, string repoName,
+                                                   long workflowId,
+                                                   RunWorkflowsCmdParams cmdParams,
+                                                   string creds)
+        {
+            return await impl.RunWorkflowImpl(owner, repoName, workflowId, cmdParams, creds);
+        }
+
+        private async Task<Stream> ListJobsCmd(string owner,
+                                               string repoName,
+                                               string creds,
+                                               DateTime runDate)
+        {
+            return await impl.ListJobsImpl(owner, repoName, creds, runDate);
+        }
+
+        private async Task<Stream> GetJobRunCmd(string owner, string repoName,
+                                          string creds, long jobId)
+        {
+            return await impl.GetJobRunImpl(owner, repoName, creds, jobId);
+        }
+
+        private async Task<Stream> GetJobCmd(string owner, string repoName,
+                                          string creds, long jobId)
+        {
+            return await impl.GetJobImpl(owner, repoName, creds, jobId);
+        }
 
         //
         // Private classes
@@ -50,7 +87,7 @@ namespace WebRestAPI.Controllers
         {
             try
             {
-                Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
+                Stream jobList = await GetJobRunCmd(owner, repoName,
                                         creds, iUid);
                 if (jobList == null)
                 {
@@ -117,7 +154,7 @@ namespace WebRestAPI.Controllers
             try
             {
                 string creds = Utils.GetCreds(Request);
-                Stream jobList = await ghActions.GetJobRunCmd(owner, repoName,
+                Stream jobList = await GetJobRunCmd(owner, repoName,
                                         creds, jobId);
                 if (jobList == null)
                 {
@@ -160,7 +197,7 @@ namespace WebRestAPI.Controllers
                 cmdParm.revisionId = "master";
                 cmdParm.AddParam("id", jobId);
 
-                HttpResponseMessage resp = await ghActions.RunWorkflowCmd(owner, repoName,
+                HttpResponseMessage resp = await RunWorkflowCmd(owner, repoName,
                                                                 workflowId,
                                                                 cmdParm,
                                                                 creds);
@@ -197,7 +234,7 @@ namespace WebRestAPI.Controllers
                     try
                     {
                         runs = null;
-                        Stream jobsList = await ghActions.ListJobsCmd(owner, repoName,
+                        Stream jobsList = await ListJobsCmd(owner, repoName,
                                                         creds,
                                                         runDate);
                         if (jobsList == null)
