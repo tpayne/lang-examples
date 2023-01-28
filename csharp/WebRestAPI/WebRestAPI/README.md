@@ -126,7 +126,6 @@ The following will return all the data about a job and the steps it is/has execu
   curl  \
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>"    \
-      -H "Content-Type: application/json"    \
       http://localhost:5555/api/monitor/<owner>/<repo>/job/<jobUid>/steps
 ```
 
@@ -145,7 +144,6 @@ In this sample, you can usually just set `runNo` to `1`.
   curl  \
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>"    \
-      -H "Content-Type: application/json"    \
       http://localhost:5555/api/monitor/<owner>/<repo>/job/<jobUid>/logs/<runNo>
 ```
 
