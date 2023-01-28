@@ -33,5 +33,6 @@ namespace WebRestAPI.Models
         public readonly static string JOB_NOT_FOUND = "{\"message\":\"No job steps detected\",\"documentation_url\":\"n/a\"}";
         public readonly static string JOB_MATCH_NOT_FOUND = "{\"message\":\"Matching job name not found\",\"documentation_url\":\"n/a\"}";
         public readonly static string JOB_NO_RUNS = "{\"message\":\"No job runs detected\",\"documentation_url\":\"n/a\"}";
+        public readonly static string JOB_NO_LOGS = "{\"message\":\"No job logs detected\",\"documentation_url\":\"n/a\"}";
     }
 }

@@ -100,6 +100,7 @@ namespace WebRestAPI.Implementors
                     if (bJson)
                     {
                         json = JsonSerializer.Serialize(list);
+                        logs = null;
                         logs = json;
                     }
                 }

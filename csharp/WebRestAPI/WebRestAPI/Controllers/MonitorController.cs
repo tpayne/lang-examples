@@ -164,7 +164,7 @@ namespace WebRestAPI.Controllers
                                         creds, jobId, runNo);
                 if (log == null)
                 {
-                    return null;
+                    log = JobValues.JOB_NO_LOGS;
                 }
 
                 return Utils.FormatJson(log); 
@@ -196,7 +196,7 @@ namespace WebRestAPI.Controllers
                                         creds, jobId);
                 if (jobList == null)
                 {
-                    return null;
+                    return JobValues.JOB_NOT_FOUND;
                 }
 
                 return Utils.FormatJson(jobList); 
