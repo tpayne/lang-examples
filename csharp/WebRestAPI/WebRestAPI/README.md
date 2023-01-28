@@ -55,6 +55,124 @@ This command will create a JSON prettified string and dump it...
     
     curl localhost:5555/api/repo/repostring
 
+Running the GitHub REST API Examples 
+------------------------------------
+The following will demo how to interface with the GitHub API in various ways. These examples are
+not comprehensive, but cover many of the GitHub Action API endpoints.
+
+For these demos to work you will need a repo with GitHub Actions setup and a PAT token to write
+and read to them.
+
+In the following examples...
+* `GHPAT_TOKEN` - Is your GH PAT token to access your repo
+* `owner` - Is your repo owner
+* `repo` - Is your repo name
+* `workflowUid` - Is your workflow that you want to launch - i.e. a GitHub Action used by your repo
+* `jobUid` - Is a job that has been launched on a specific workflow
+
+### Launching Jobs
+The following will launch a job using a specific workflow in your repo. For this command to work properly
+you must set up your GH Actions to have `inputs` in a similar fashion to those used in Actions in this repo.
+The input id you need to copy is called `id`.
+
+Please see the following sample: -
+
+```yaml
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      id:
+        description: 'run identifier'
+        required: false
+        default: 'Job001'
+        type: string
+
+  # Tasks and jobs to run 
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+      - name: ${{github.event.inputs.id}}
+        run: echo Running job ${{github.event.inputs.id}}   
+```
+
+This example will execute a workflow and give you the `runUid` (aka `jobUid`) of that workflow execution back.
+
+```console
+  curl \
+      -X POST      \
+      -H "Authorization: Bearer <GHPAT_TOKEN>"     \
+      -H "Content-Type: application/json" \
+      http://localhost:5010/api/monitor/<owner>/<repo>/workflow/<workflowUid>/execute
+```
+
+This example will execute a workflow and pass parameters into it. It does not return a `runUid` back.
+
+```console
+  curl \
+      -X POST  \
+      -H "Authorization: Bearer <GHPAT_TOKEN>" \
+      -H "Content-Type: application/json" \
+      http://localhost:5010/api/actions/<owner>/<repo>/<workflowUid>/execute \
+      -d '{"ref":"master","inputs":{"id":"TestRun"}}'
+```
+
+### Listing Job Status and Steps
+These examples will get data from jobs which have either run and are running
+
+The following will return all the data about a job and the steps it is/has executed.
+
+```console
+  curl  \
+      -X GET \
+      -H "Authorization: Bearer <GHPAT_TOKEN>"    \
+      -H "Content-Type: application/json"    \
+      http://localhost:5010/api/monitor/<owner>/<repo>/job/<jobUid>/steps
+```
+
+```console
+  curl \
+      -X GET \
+      -H "Authorization: Bearer <GHPAT_TOKEN>" \
+      http://localhost:5010/api/actions/<owner>/<repo>/jobs/<jobUid>
+```
+
+The following will return all the output logs from a job and the steps it is/has executed.
+
+In this sample, you can usually just set `runNo` to `1`.
+
+```console
+  curl  \
+      -X GET \
+      -H "Authorization: Bearer <GHPAT_TOKEN>"    \
+      -H "Content-Type: application/json"    \
+      http://localhost:5010/api/monitor/<owner>/<repo>/job/<jobUid>/logs/<runNo>
+```
+
+The following will return details of all the executions of a workflow that have
+happened since a certain date. The date used must comply to ISO date time format, e.g.
+`2023-01-20T19:00`
+
+```console
+  curl \
+      -X GET \
+      -H "Authorization: Bearer <GHPAT_TOKEN>" \
+      http://localhost:5010/api/actions/<owner>/<repo>/jobs/list?runDate=<isoDate>
+```
+
+### Listing Workflow Information
+These examples will get data about workflows (Actions) registered in a repo.
+
+The following will return details of all the workflows registered in a repo. You can use
+this query to get the `<workflowUid>` for GitHub Actions.
+
+```console
+  curl \
+      -X GET \
+      -H "Authorization: Bearer <GHPAT_TOKEN>" \
+      localhost:5010/api/actions/<owner>/<repo>/list
+```
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
