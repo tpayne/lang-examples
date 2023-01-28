@@ -49,11 +49,6 @@ namespace WebRestAPI.Implementors
                 using HttpResponseMessage response = await client.GetAsync(uri);
                 Stream responseBody = await response.Content.ReadAsStreamAsync();
 
-                if (responseBody.ToString().Length == 0)
-                {
-                    return null;
-                }
-
                 ZipArchive zip = null;
                 
                 try 
