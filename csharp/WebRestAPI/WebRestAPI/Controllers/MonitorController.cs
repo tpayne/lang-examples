@@ -81,9 +81,10 @@ namespace WebRestAPI.Controllers
         }
 
         private async Task<dynamic> GetJobRunLogs(string owner, string repoName,
-                                          string creds, long jobId, int runNo)
+                                          string creds, long jobId, int runNo, 
+                                          bool bJson=true)
         {
-            return await impl.GetJobRunLogsImpl(owner, repoName, creds, jobId, runNo);
+            return await impl.GetJobRunLogsImpl(owner, repoName, creds, jobId, runNo, bJson);
         }
 
         private async Task<dynamic> MatchJobStep(string owner, string repoName, string creds,
@@ -166,7 +167,7 @@ namespace WebRestAPI.Controllers
                     return null;
                 }
 
-                return log; 
+                return Utils.FormatJson(log); 
             }
             catch (Exception e)
             {

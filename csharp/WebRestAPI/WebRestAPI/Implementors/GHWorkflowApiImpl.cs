@@ -28,6 +28,8 @@ using System.IO.Compression;
 using System.Net.Http.Json;
 using System.IO;
 using System.Net;
+using System.Collections.Generic;
+using System.Text.Json;
 
 using WebRestAPI.Models;
 
@@ -36,7 +38,8 @@ namespace WebRestAPI.Implementors
     public class GHWorkflowApiImpl
     {
         public async Task<dynamic> GetJobRunLogsImpl(string owner, string repoName,
-                                        string creds, long jobId, int runNo)
+                                        string creds, long jobId, int runNo,
+                                        bool bJson)
         {
             try
             {
@@ -61,7 +64,7 @@ namespace WebRestAPI.Implementors
                 }
                 
                 string logs = null;
-
+                Dictionary<string,string> list = new Dictionary<string,string>();
                 logs += "\n<GitHubLogs>";
 
                 foreach(ZipArchiveEntry entry in zip.Entries)
@@ -74,8 +77,11 @@ namespace WebRestAPI.Implementors
                     logs += "\n<LogFile>";
                     logs += "\n<FileName>"+entry.FullName + "</FileName>";
                     logs += "\n<LogDetails>\n";
+
                     StreamReader reader = new StreamReader(stream);
                     string text = reader.ReadToEnd();
+                    list.Add(entry.FullName,text);
+                    
                     logs += text;
                     logs += "</LogDetails>";
                     logs += "\n</LogFile>";
@@ -91,8 +97,11 @@ namespace WebRestAPI.Implementors
                 // If we can, convert to JSON, else leave as XML...
                 try
                 {
-                    json = Utils.ConvertXMLToJson(logs);
-                    logs = json;
+                    if (bJson)
+                    {
+                        json = JsonSerializer.Serialize(list);
+                        logs = json;
+                    }
                 }
                 catch(Exception)
                 {
