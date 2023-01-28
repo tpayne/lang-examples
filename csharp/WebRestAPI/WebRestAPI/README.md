@@ -103,7 +103,7 @@ This example will execute a workflow and give you the `runUid` (aka `jobUid`) of
       -X POST      \
       -H "Authorization: Bearer <GHPAT_TOKEN>"     \
       -H "Content-Type: application/json" \
-      http://localhost:5010/api/monitor/<owner>/<repo>/workflow/<workflowUid>/execute
+      http://localhost:5555/api/monitor/<owner>/<repo>/workflow/<workflowUid>/execute
 ```
 
 This example will execute a workflow and pass parameters into it. It does not return a `runUid` back.
@@ -113,7 +113,7 @@ This example will execute a workflow and pass parameters into it. It does not re
       -X POST  \
       -H "Authorization: Bearer <GHPAT_TOKEN>" \
       -H "Content-Type: application/json" \
-      http://localhost:5010/api/actions/<owner>/<repo>/<workflowUid>/execute \
+      http://localhost:5555/api/actions/<owner>/<repo>/<workflowUid>/execute \
       -d '{"ref":"master","inputs":{"id":"TestRun"}}'
 ```
 
@@ -127,14 +127,14 @@ The following will return all the data about a job and the steps it is/has execu
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>"    \
       -H "Content-Type: application/json"    \
-      http://localhost:5010/api/monitor/<owner>/<repo>/job/<jobUid>/steps
+      http://localhost:5555/api/monitor/<owner>/<repo>/job/<jobUid>/steps
 ```
 
 ```console
   curl \
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>" \
-      http://localhost:5010/api/actions/<owner>/<repo>/jobs/<jobUid>
+      http://localhost:5555/api/actions/<owner>/<repo>/jobs/<jobUid>
 ```
 
 The following will return all the output logs from a job and the steps it is/has executed.
@@ -146,7 +146,7 @@ In this sample, you can usually just set `runNo` to `1`.
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>"    \
       -H "Content-Type: application/json"    \
-      http://localhost:5010/api/monitor/<owner>/<repo>/job/<jobUid>/logs/<runNo>
+      http://localhost:5555/api/monitor/<owner>/<repo>/job/<jobUid>/logs/<runNo>
 ```
 
 The following will return details of all the executions of a workflow that have
@@ -157,7 +157,7 @@ happened since a certain date. The date used must comply to ISO date time format
   curl \
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>" \
-      http://localhost:5010/api/actions/<owner>/<repo>/jobs/list?runDate=<isoDate>
+      http://localhost:5555/api/actions/<owner>/<repo>/jobs/list?runDate=<isoDate>
 ```
 
 ### Listing Workflow Information
@@ -170,7 +170,7 @@ this query to get the `<workflowUid>` for GitHub Actions.
   curl \
       -X GET \
       -H "Authorization: Bearer <GHPAT_TOKEN>" \
-      localhost:5010/api/actions/<owner>/<repo>/list
+      localhost:5555/api/actions/<owner>/<repo>/list
 ```
 
 Cleaning Up
