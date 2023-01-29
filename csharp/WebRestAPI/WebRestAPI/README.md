@@ -12,12 +12,12 @@ If you are using the Apple M1 chipset, please use this Dockerfile instead `Docke
 To run this solution please do the following steps. They will build and run the sample locally, you do not need a .NET environment installed.
 
     docker build . --tag csharpwsapi:1.0 && \
-        docker run --rm -p 5555:80 csharpwsapi:1.0
+        docker run --rm -t -d -p 5555:80 csharpwsapi:1.0
     
 or
 
     docker build . -f Dockerfile.vcnet7.arm64v8 --tag csharpwsapi:1.0 && \
-        docker run --rm -p 5555:80 csharpwsapi:1.0
+        docker run --rm -t -d -p 5555:80 csharpwsapi:1.0
 
 If everything has worked as expected, then you can run services like the following...
 
