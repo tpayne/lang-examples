@@ -84,7 +84,7 @@ The input id you need to copy is called `id`.
 Please see the following sample: -
 
 ```yaml
-  # Allows you to run this workflow manually from the Actions tab
+  # Allows you to run this workflow manually from the Actions tab and GH action API
   workflow_dispatch:
     inputs:
       id:
