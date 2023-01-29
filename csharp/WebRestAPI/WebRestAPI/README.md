@@ -124,7 +124,7 @@ This example will execute a workflow and pass parameters into it. It does not re
 ```
 
 ### Listing Job Status and Steps
-These examples will get data from jobs which have either run and are running
+These examples will get data from jobs which have either run or are running
 
 The following will return all the data about a job and the steps it is/has executed.
 
@@ -168,7 +168,7 @@ happened since a certain date. The date used must comply to ISO date time format
 These examples will get data about workflows (Actions) registered in a repo.
 
 The following will return details of all the workflows registered in a repo. You can use
-this query to get the `<workflowUid>` for GitHub Actions.
+this query to get the `workflowUid` for GitHub Actions.
 
 ```console
   curl \
