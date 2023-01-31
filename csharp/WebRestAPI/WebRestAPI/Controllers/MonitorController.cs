@@ -152,7 +152,8 @@ namespace WebRestAPI.Controllers
         // GET: api/monitor/{owner}/{repoName}/job/{jobId}
         [HttpGet("{owner}/{repoName}/job/{jobId:long}/logs/{runNo:int}")]
         public async Task<dynamic> GetJobRunLogs(string owner, string repoName,
-                                                   long jobId, int runNo)
+                                                   long jobId, int runNo,
+                                                   [FromQuery] string format = "json")
         {
             //
             // Submit the log request
@@ -160,14 +161,19 @@ namespace WebRestAPI.Controllers
             try
             {
                 string creds = Utils.GetCreds(Request);
+                bool bJson = format.Equals("json", StringComparison.OrdinalIgnoreCase); 
+
                 string log = await GetJobRunLogs(owner, repoName,
-                                        creds, jobId, runNo);
+                                        creds, jobId, runNo,bJson);
                 if (log == null)
                 {
                     log = JobValues.JOB_NO_LOGS;
                 }
-
-                return Utils.FormatJson(log); 
+                if (bJson)
+                {
+                    return Utils.FormatJson(log);
+                }
+                return log; 
             }
             catch (Exception e)
             {
