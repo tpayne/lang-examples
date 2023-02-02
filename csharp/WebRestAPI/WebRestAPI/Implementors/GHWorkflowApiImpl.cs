@@ -29,6 +29,7 @@ using System.Net.Http.Json;
 using System.IO;
 using System.Net;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Text.Json;
 
 using WebRestAPI.Models;
@@ -64,9 +65,9 @@ namespace WebRestAPI.Implementors
                 }
                 
                 string logs = null;
-                Dictionary<string,string> list = new Dictionary<string,string>();
+                OrderedDictionary list = new OrderedDictionary();
                 logs += "\n<GitHubLogs>";
-
+                int i = 0;
                 foreach(ZipArchiveEntry entry in zip.Entries)
                 {
                     Stream stream = entry.Open();
@@ -80,8 +81,10 @@ namespace WebRestAPI.Implementors
 
                     StreamReader reader = new StreamReader(stream);
                     string text = reader.ReadToEnd();
-                    list.Add(entry.FullName,text);
                     
+                    list.Insert(i,entry.FullName,text);
+                    i++;
+
                     logs += text;
                     logs += "</LogDetails>";
                     logs += "\n</LogFile>";

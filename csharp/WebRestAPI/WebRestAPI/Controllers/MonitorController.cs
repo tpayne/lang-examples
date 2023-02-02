@@ -164,7 +164,7 @@ namespace WebRestAPI.Controllers
                 bool bJson = format.Equals("json", StringComparison.OrdinalIgnoreCase); 
 
                 string log = await GetJobRunLogs(owner, repoName,
-                                        creds, jobId, runNo,bJson);
+                                        creds, jobId, runNo, bJson);
                 if (log == null)
                 {
                     log = JobValues.JOB_NO_LOGS;
