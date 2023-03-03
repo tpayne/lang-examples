@@ -7,41 +7,41 @@ name: GitHub CR Build and Push
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: ["v*.*.*"]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: "0 0 1 * *"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
       id:
-        description: 'run identifier'
+        description: "run identifier"
         required: false
-        default: 'Job001'
+        default: "Job001"
         type: string
-        
+
 env:
   REGISTRY: ghcr.io
   # IMAGE_NAME: ${{ github.repository }}
   # github.repository as <account>/<repo>
-  
+
 jobs:
   buildPush:
     runs-on: ubuntu-latest
     permissions:
-        contents: read
-        packages: write
-        # This is used to complete the identity challenge
-        # with sigstore/fulcio when running outside of PRs.
-        id-token: write
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
 
     steps:
       - name: ${{github.event.inputs.id}}
-        run: echo Running job ${{github.event.inputs.id}}     
+        run: echo Running job ${{github.event.inputs.id}}
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -57,7 +57,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}        
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action

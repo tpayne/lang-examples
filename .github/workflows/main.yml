@@ -1,68 +1,87 @@
-name: Main Docker CI Build/Test Processes...  
+name: Main Docker CI Build/Test Processes...
 
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch 
+  # Triggers the workflow on push or pull request events but only for the main branch
   registry_package:
-    types: [published , updated] 
-    
+    types: [published, updated]
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
       id:
-        description: 'run identifier'
+        description: "run identifier"
         required: false
-        default: 'Job001'
+        default: "Job001"
         type: string
 
   # Branch filtered to master only
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: "0 0 1 * *"
 
-# Tasks and jobs to run 
+# Tasks and jobs to run
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: ${{github.event.inputs.id}}
-      run: echo Running job ${{github.event.inputs.id}}      
-    - uses: actions/checkout@v3
-    - name: Login to DockerHub for CR image repo...
-      run: |
-        echo ${{ secrets.DOCKERHUB_PASSWORD }} | \
-          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-      # Build tasks to run... 
+      - name: ${{github.event.inputs.id}}
+        run: echo Running job ${{github.event.inputs.id}}
+      - uses: actions/checkout@v3
+      - name: Login to DockerHub for CR image repo...
+        run: |
+          echo ${{ secrets.DOCKERHUB_PASSWORD }} | \
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-    - name: Build the .Net7 Docker image...
-      run: |
-        (cd csharp/WebRestAPI/WebRestAPI && \
-        docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:csv7 && \
-        docker run --rm -t -d -p 5556:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:csv7 && \
-        sleep 10 && curl localhost:5556/api/repo/repostring && \
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:csv7)
-    - name: Build the CPP Docker image and test...
-      run: |
-        (cd CPPExamples/Std11 && \
-        docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
-        docker run --rm -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest)
-    - name: Build the CPP MessageUtils Docker image...
-      run: |
-        (cd CPPExamples/MessageUtils && \
-        docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest && \
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest)
-    - name: Build the NodeJS Docker image...
-      run: |
-        (cd nodejs/webapp && \
-        docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0 && \
-        docker run --rm -t -d -p 5557:8080 ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0 && \
-        sleep 10 && curl localhost:5557/repostring && \
-        curl localhost:5557/ &&
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0)
-    - name: Stop containers...
-      run: (docker stop $(docker container ls -q))
+        # Build tasks to run...
+      - name: Build the .Net7 Docker image...
+        run: |
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "::set-output name=tag::$IMAGE_TAG"
+          (cd csharp/WebRestAPI/WebRestAPI && \
+          docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
+          docker run --rm -t -d -p 5556:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
+          sleep 10 && curl localhost:5556/api/repo/repostring && \
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG})
+      - name: Build the CPP Docker image and test...
+        run: |
+          (cd CPPExamples/Std11 && \
+          docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
+          docker run --rm -t ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest && \
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/cppdemo:latest)
+      - name: Build the CPP MessageUtils Docker image...
+        run: |
+          (cd CPPExamples/MessageUtils && \
+          docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest && \
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest)
+      - name: Build the NodeJS Docker image...
+        run: |
+          (cd nodejs/webapp && \
+          docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0 && \
+          docker run --rm -t -d -p 5557:8080 ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0 && \
+          sleep 10 && curl localhost:5557/repostring && \
+          curl localhost:5557/ &&
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejs:1.0)
+      - name: Stop containers...
+        run: (docker stop $(docker container ls -q))
 
+  update-dev-manifest:
+    name: Update Dev deployment manifest
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Update GitOps deployment manifest values
+        uses: tpayne/github-actions/productmanifest@main
+        with:
+          gitops-repo-url: https://github.com/tpayne/kubernetes-examples/
+          manifest-file: gitops/Argocd/examples/simple/helm/dev/values-releaseversions.yaml
+          github-username: ${{ github.actor }}
+          github-token: ${{ secrets.GT_TOKEN }}
+          github-email: ${{ github.actor }}@users.noreply.github.com
+          image-list: ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi
+          image-tag: ${{ needs.build.outputs.tag }}
 # End of job
