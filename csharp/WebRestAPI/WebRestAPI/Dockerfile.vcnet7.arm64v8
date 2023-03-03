@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64v8 mcr.microsoft.com/dotnet/sdk:7.0.102-alpine3.17-arm64v8 AS build
+FROM --platform=linux/arm64v8 mcr.microsoft.com/dotnet/sdk:7.0.201-alpine3.17-arm64v8 AS build
 
 ARG account=webapp
 
