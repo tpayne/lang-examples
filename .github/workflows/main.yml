@@ -26,7 +26,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    needs: build
     if: github.event_name == 'push'
     outputs:
       dotnet7-image: ${{ steps.dotnet7-image.outputs.image }}
