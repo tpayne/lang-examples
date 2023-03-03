@@ -50,7 +50,7 @@ jobs:
 
           (cd csharp/WebRestAPI/WebRestAPI && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
-          docker run --rm -t -d -p 5556:80 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
+          docker run --rm -t -d -p 5556:8080 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
           sleep 10 && curl localhost:5556/api/repo/repostring && \
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG})
 
