@@ -42,8 +42,9 @@ RUN chmod -R a+rx .
 
 USER ${account}:${account}
 
-CMD ["./WebRestAPI"]
-EXPOSE 90
-EXPOSE 80
 EXPOSE 443
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://*:8080
+
+CMD ["./WebRestAPI"]
 
