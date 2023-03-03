@@ -77,7 +77,7 @@ jobs:
       - name: Update GitOps deployment manifest values
         uses: tpayne/github-actions/productmanifest@main
         with:
-          gitops-repo-url: https://github.com/tpayne/kubernetes-examples/
+          gitops-repo-url: https://github.com/tpayne/kubernetes-examples
           manifest-file: gitops/Argocd/examples/simple/helm/dev/values-releaseversions.yaml
           github-username: ${{ github.actor }}
           github-token: ${{ secrets.GT_TOKEN }}
