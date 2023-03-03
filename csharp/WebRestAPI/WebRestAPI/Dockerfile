@@ -43,6 +43,7 @@ RUN chmod -R a+rx .
 USER ${account}:${account}
 
 CMD ["./WebRestAPI"]
+EXPOSE 90
 EXPOSE 80
 EXPOSE 443
 
