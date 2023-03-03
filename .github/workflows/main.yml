@@ -82,6 +82,6 @@ jobs:
           github-username: ${{ github.actor }}
           github-token: ${{ secrets.GT_TOKEN }}
           github-email: ${{ github.actor }}@users.noreply.github.com
-          image-list: github-service
+          image-list: github-service:{{ secrets.DOCKERHUB_USERNAME }}/webrestapi
           image-tag: ${{ needs.build.outputs.tag }}
 # End of job
