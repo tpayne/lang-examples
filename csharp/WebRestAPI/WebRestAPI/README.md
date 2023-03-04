@@ -11,6 +11,8 @@ If you are using the Apple M1 chipset, please use this Dockerfile instead `Docke
 
 To run this solution please do the following steps. They will build and run the sample locally, you do not need a .NET environment installed.
 
+Note - You must use port 8080 as the container port.
+
     docker build . --tag csharpwsapi:1.0 && \
         docker run --rm -t -d -p 5555:8080 csharpwsapi:1.0
     
