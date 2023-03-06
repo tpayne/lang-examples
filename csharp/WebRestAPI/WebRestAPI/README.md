@@ -1,7 +1,7 @@
 Web RESTAPI Sample
 ==================
 
-This repo contains an example C# RESTful API.
+This repo contains an example C# RESTful API for interacting with services like GitHub.
 
 Running the Example with Basic Ops
 ----------------------------------
