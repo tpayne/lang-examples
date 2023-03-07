@@ -81,7 +81,7 @@ namespace WebRestAPI.Controllers
         [HttpGet("version/")]
         public string GetVersion()
         {
-            return "This is test version 1.0";
+            return "This is test version 1.1";
         }
 
         // GET: api/test/list

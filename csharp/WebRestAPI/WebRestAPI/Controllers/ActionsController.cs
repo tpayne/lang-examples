@@ -43,7 +43,7 @@ namespace WebRestAPI.Controllers
         //
         private GHWorkflowApiImpl impl = new GHWorkflowApiImpl();
 
- 
+
         //
         // Private interface functions
         //
@@ -121,7 +121,7 @@ namespace WebRestAPI.Controllers
         [HttpGet("version/")]
         public string GetVersion()
         {
-            return "This is workflow version 1.0";
+            return "This is workflow version 1.1";
         }
 
         // GET: api/actions/{owner}/{repo}/jobs/list

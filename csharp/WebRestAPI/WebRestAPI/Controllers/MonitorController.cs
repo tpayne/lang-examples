@@ -42,7 +42,7 @@ namespace WebRestAPI.Controllers
     public class MonitorController : ControllerBase
     {
         private GHWorkflowApiImpl impl = new GHWorkflowApiImpl();
- 
+
         //
         // Private classes
         //
@@ -81,7 +81,7 @@ namespace WebRestAPI.Controllers
         }
 
         private async Task<dynamic> GetJobRunLogs(string owner, string repoName,
-                                          string creds, long jobId, int runNo, 
+                                          string creds, long jobId, int runNo,
                                           bool bJson=true)
         {
             return await impl.GetJobRunLogsImpl(owner, repoName, creds, jobId, runNo, bJson);
@@ -133,7 +133,7 @@ namespace WebRestAPI.Controllers
         [HttpGet("version/")]
         public string GetVersion()
         {
-            return "This is workflow version 1.0";
+            return "This is workflow version 1.1";
         }
 
         // GET: api/actions/
@@ -161,7 +161,7 @@ namespace WebRestAPI.Controllers
             try
             {
                 string creds = Utils.GetCreds(Request);
-                bool bJson = format.Equals("json", StringComparison.OrdinalIgnoreCase); 
+                bool bJson = format.Equals("json", StringComparison.OrdinalIgnoreCase);
 
                 string log = await GetJobRunLogs(owner, repoName,
                                         creds, jobId, runNo, bJson);
@@ -173,7 +173,7 @@ namespace WebRestAPI.Controllers
                 {
                     return Utils.FormatJson(log);
                 }
-                return log; 
+                return log;
             }
             catch (Exception e)
             {
@@ -205,7 +205,7 @@ namespace WebRestAPI.Controllers
                     return JobValues.JOB_NOT_FOUND;
                 }
 
-                return Utils.FormatJson(jobList); 
+                return Utils.FormatJson(jobList);
             }
             catch (Exception e)
             {
@@ -248,14 +248,14 @@ namespace WebRestAPI.Controllers
                         cmdParm.revisionId = "master";
                     else
                         cmdParm.revisionId = jobParams.revisionId;
-                    
-                    if (jobParams.parms != null) 
+
+                    if (jobParams.parms != null)
                     {
                         foreach(KeyValuePair<string, string> entry in jobParams.parms)
                             cmdParm.AddParam(entry.Key, entry.Value);
                     }
                 }
-                    
+
                 HttpResponseMessage resp = await RunWorkflowCmd(owner, repoName,
                                                                 workflowId,
                                                                 cmdParm,
@@ -351,7 +351,7 @@ namespace WebRestAPI.Controllers
                         {
                             try
                             {
-                                retCode = await MatchJobStep(owner, 
+                                retCode = await MatchJobStep(owner,
                                                        repoName, creds,
                                                        jobId, i.id);
                                 if (retCode > 0L)

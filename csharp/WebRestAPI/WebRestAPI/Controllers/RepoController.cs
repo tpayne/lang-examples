@@ -57,7 +57,7 @@ namespace WebRestAPI.Controllers
         [HttpGet("version/")]
         public string GetVersion()
         {
-            return "This is repo version 1.0";
+            return "This is repo version 1.1";
         }
 
         // GET: api/repo/dump
