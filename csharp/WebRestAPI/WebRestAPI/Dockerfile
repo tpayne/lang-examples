@@ -27,7 +27,7 @@ RUN dotnet publish -c release -o /app --self-contained true --no-restore \
     /p:PublishSingleFile=true
 
 # final stage/image
-FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:7.0.2-alpine3.17-amd64 AS runtime
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:7.0.5-alpine3.17-amd64 AS runtime
 
 WORKDIR /app
 COPY --from=build /app ./
