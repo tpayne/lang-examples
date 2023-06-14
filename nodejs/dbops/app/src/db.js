@@ -1,16 +1,23 @@
 const PropertiesReader = require('properties-reader')
 const Pool = require('pg').Pool
+var properties = PropertiesReader('config/app.properties')
+
+const pool = null
 
 // Database connections
-var properties = PropertiesReader('config/app.properties')
-const pgConStr = (process.env.PG_CONSTR) ? process.env.PG_CONSTR :
-                    properties.get("pg_constr")
+function connectDB() {
+    if (pool == null) {
+        const pgConStr = (process.env.PG_CONSTR) ? process.env.PG_CONSTR :
+        properties.get("pg_constr")
 
-const dbconfig = parser(pgConStr)
+        const dbconfig = parser(pgConStr)
 
-const pool = new Pool(
-    dbconfig
-)
+        pool = new Pool(
+            dbconfig
+        )
+    }
+    return
+}
 
 // Short parser function to workaround weirdo issues from Pool...
 function parser(conStr) {
@@ -32,31 +39,72 @@ function parser(conStr) {
     return { host: host, user: userId, password: pwd, database: db }
 }
 
+function testConnection() {
+    console.log('Checking database connection...')
+
+    try {
+        connectDB()
+        pool.query('SELECT NOW()', (error, results) => {
+            if (error) {
+                return false
+            }
+        })
+        return true    
+    }
+    catch(e) {
+        return false
+    }
+}
+
 const getOrdersInProgress = (request, response) => {
-    pool.query('SELECT customer_name,order_name,stock_item,order_date,number_ordered FROM orders_in_progress', (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(200).json(results.rows)
-    })
+    if (!testConnection()) {
+        throw new Error('Database is not connected')
+    }
+
+    try {
+        pool.query('SELECT customer_name,order_name,stock_item,order_date,number_ordered FROM orders_in_progress', (error, results) => {
+            if (error) {
+                throw error
+            }
+            response.status(200).json(results.rows)
+        })    
+    } catch(e) {
+        console.log(e)
+    }
 }
 
 const getCustomers = (request, response) => {
-    pool.query('SELECT * FROM customers ORDER BY customer_uid ASC', (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(200).json(results.rows)
-    })
+    if (!testConnection()) {
+        throw new Error('Database is not connected')
+    }
+
+    try {
+        pool.query('SELECT * FROM customers ORDER BY customer_uid ASC', (error, results) => {
+            if (error) {
+                throw error
+            }
+            response.status(200).json(results.rows)
+        })
+    } catch(e) {
+        console.log(e)
+    }
 }
 
 const getStock = (request, response) => {
-    pool.query('SELECT * FROM stock_items ORDER BY stock_uid ASC', (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(200).json(results.rows)
-    })
+    if (!testConnection()) {
+        throw new Error('Database is not connected')
+    }
+
+    try {
+        pool.query('SELECT * FROM stock_items ORDER BY stock_uid ASC', (error, results) => {
+            if (error) {
+                throw error
+            }
+            response.status(200).json(results.rows)
+        })
+    } catch(e) {
+        console.log(e)
+    }
 }
 
 module.exports = {
@@ -67,7 +115,9 @@ module.exports = {
 
 // Signal handlers...
 function signalHandler(signal) {
-    pool.end()
+    if (pool) {
+        pool.end()
+    }
     console.log("Killing process and shutting down")
     process.exit()
 }

@@ -36,4 +36,4 @@ COPY files/config ./config
 USER ${account}:${account}
 
 CMD ["./nodeexe"]
-EXPOSE 8080
+EXPOSE 8000 8080 3000 
