@@ -1,5 +1,7 @@
+ARG alpineVersion=3.18
+
 # Image builder...
-FROM node:18-alpine3.18 AS imagebuilder
+FROM node:18-alpine${alpineVersion} AS imagebuilder
 
 # Set up APK repositories and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
@@ -13,10 +15,10 @@ COPY src/*.json .
 # Install application dependencies
 RUN npm install -g pkg
 RUN npm install properties-reader pg express body-parser
-RUN pkg -t node16 restapi.js -o nodeexe
+RUN pkg -t node18 restapi.js -o nodeexe
 
 # Image runner...
-FROM node:lts-alpine3.18 AS runner
+FROM node:lts-alpine${alpineVersion} AS runner
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
 

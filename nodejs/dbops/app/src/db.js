@@ -3,7 +3,9 @@ const Pool = require('pg').Pool
 
 // Database connections
 var properties = PropertiesReader('config/app.properties')
-const pgConStr = properties.get("pg_constr")
+const pgConStr = (process.env.PG_CONSTR) ? process.env.PG_CONSTR :
+                    properties.get("pg_constr")
+
 const dbconfig = parser(pgConStr)
 
 const pool = new Pool(
@@ -12,6 +14,14 @@ const pool = new Pool(
 
 // Short parser function to workaround weirdo issues from Pool...
 function parser(conStr) {
+    if (conStr == null) {
+        return {
+            host: 'localhost', 
+            user: 'postgres', 
+            database: 'default' 
+        }
+    }
+
     var tmpStr = conStr.substring(conStr.indexOf('://')+3)
     var userId = tmpStr.substring(0,tmpStr.indexOf(':'))
     var tmpStr = tmpStr.substring(tmpStr.indexOf(':')+1)
