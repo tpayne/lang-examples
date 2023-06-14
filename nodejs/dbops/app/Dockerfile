@@ -1,5 +1,5 @@
 # Image builder...
-FROM node:18-alpine3.18 AS imagebuilder
+FROM node:20-alpine3.18 AS imagebuilder
 
 # Set up APK repositories and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
