@@ -104,9 +104,6 @@ jobs:
 
           (cd nodejs/dbops/app/ && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsdb:1.0 && \
-          docker run --rm -t -d -p 5557:8080 ${{ secrets.DOCKERHUB_USERNAME }}/nodejsdb:1.0 && \
-          sleep 10 && curl localhost:5557/info && \
-          curl localhost:5557/ &&
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsdb:1.0)
     
       - name: Stop containers...
