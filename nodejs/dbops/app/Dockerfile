@@ -9,8 +9,8 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/ma
 
 WORKDIR /source
 
-COPY src/*.js .
-COPY src/*.json .
+COPY src/*.js ./
+COPY src/*.json ./
 
 # Install application dependencies
 RUN npm install -g pkg
