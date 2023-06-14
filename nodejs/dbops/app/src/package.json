@@ -1,5 +1,5 @@
 {
-    "name": "Postgres-rest-api-app",
+    "name": "Postgres-RestAPI-app",
     "version": "1.0.0",
     "description": "Demo REST API for PG",
     "main": "restapi.js",
