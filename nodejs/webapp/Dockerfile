@@ -1,17 +1,26 @@
 # Image builder...
-FROM node:stretch AS imagebuilder
-RUN apt-get update 
+ARG alpineVersion=3.18
+
+# Image builder...
+FROM node:18-alpine${alpineVersion} AS imagebuilder
+
+# Set up APK repositories and upgrade
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    && apk -U upgrade
+
 WORKDIR /source
 
 COPY *.js .
 
 RUN npm install -g pkg
 RUN npm install properties-reader 
-RUN pkg -t node16 *.js -o nodeexe 
+RUN pkg -t node18 *.js -o nodeexe 
 
 # Image runner...
-FROM node:slim
-RUN apt-get update 
+FROM node:lts-alpine${alpineVersion} AS runner
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    && apk -U upgrade
+
 ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system
 RUN adduser ${account} ${account} 
