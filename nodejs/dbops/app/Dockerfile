@@ -13,7 +13,7 @@ COPY src/*.json .
 # Install application dependencies
 RUN npm install -g pkg
 RUN npm install properties-reader pg express body-parser
-RUN pkg -t node16 restapi.js -o nodeexe -d
+RUN pkg -t node16 restapi.js -o nodeexe
 
 # Image runner...
 FROM node:lts-alpine3.18 AS runner
