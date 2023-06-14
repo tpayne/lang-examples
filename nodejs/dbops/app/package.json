@@ -1,0 +1,9 @@
+{
+    "name": "Postgres-rest-api-app",
+    "version": "1.0.0",
+    "description": "Demo REST API for PG",
+    "main": "restapi.js",
+    "keywords": [],
+    "author": "",
+    "license": "MIT"
+}
