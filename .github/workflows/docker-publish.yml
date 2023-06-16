@@ -151,5 +151,5 @@ jobs:
         with:
           context: nodejs/dbops/app/
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta3.outputs.tags }}
-          labels: ${{ steps.meta3.outputs.labels }}
+          tags: ${{ steps.meta4.outputs.tags }}
+          labels: ${{ steps.meta4.outputs.labels }}
