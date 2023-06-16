@@ -109,20 +109,20 @@ jobs:
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
 
-  update-dev-manifest:
-    name: Update Dev deployment manifest
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push'
-
-    steps:
-      - name: Update GitOps deployment manifest values
-        uses: tpayne/github-actions/productmanifest@main
-        with:
-          gitops-repo-url: https://github.com/tpayne/kubernetes-examples
-          manifest-file: gitops/Argocd/examples/simple/helm/dev/values-releaseversions.yaml
-          github-username: ${{ github.actor }}
-          github-token: ${{ secrets.GT_TOKEN }}
-          github-email: ${{ github.actor }}@users.noreply.github.com
-          image-list: github-service:${{ needs.build.outputs.dotnet7-image }}
-          image-tag: ${{ needs.build.outputs.dotnet7-tag }}
+#  update-dev-manifest:
+#    name: Update Dev deployment manifest
+#    runs-on: ubuntu-latest
+#    needs: build
+#    if: github.event_name == 'push'
+#
+#    steps:
+#      - name: Update GitOps deployment manifest values
+#        uses: tpayne/github-actions/productmanifest@main
+#        with:
+#          gitops-repo-url: https://github.com/tpayne/kubernetes-examples
+#          manifest-file: gitops/Argocd/examples/simple/helm/dev/values-releaseversions.yaml
+#          github-username: ${{ github.actor }}
+#          github-token: ${{ secrets.GT_TOKEN }}
+#          github-email: ${{ github.actor }}@users.noreply.github.com
+#          image-list: github-service:${{ needs.build.outputs.dotnet7-image }}
+#          image-tag: ${{ needs.build.outputs.dotnet7-tag }}
