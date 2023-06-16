@@ -31,6 +31,7 @@ function processRequest(svrapp) {
     svrapp.get('/orders', db.getOrdersInProgress)
     svrapp.get('/customers', db.getCustomers)
     svrapp.get('/stock', db.getStock)    
+    svrapp.get('/healthz', db.healthCheck)    
 }
 
 function main() {

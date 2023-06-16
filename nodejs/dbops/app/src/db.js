@@ -107,10 +107,28 @@ const getStock = (request, response) => {
     }
 }
 
+const healthCheck = (request, response) => {
+    if (!testConnection()) {
+        response.send(404, { message: 'Error' });
+    }
+
+    try {
+        pool.query('SELECT 1 FROM orders_in_progress', (error, results) => {
+            if (error) {
+                response.send(404, { message: 'Error' });
+            }
+            response.send(200, { message: 'Ok' });
+        })
+    } catch(e) {
+        console.log(e)
+    }
+}
+
 module.exports = {
     getOrdersInProgress,
     getCustomers,
     getStock,
+    healthCheck,
 }
 
 // Signal handlers...
