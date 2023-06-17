@@ -1,0 +1,6 @@
+echo "Creating database at `date`...";
+psql -f /sql/create-database.sql;
+psql -f /sql/create-schema.sql;
+echo "Installing database data...";
+psql -d demoapp -f /sql/insert-data.sql;
+echo "Done";

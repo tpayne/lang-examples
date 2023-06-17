@@ -1,0 +1,156 @@
+# Default values for dbpgapp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  app:
+    repository: ghcr.io/tpayne/nodejsdb
+    tag: "master"
+  pgdb:
+    repository: ghcr.io/tpayne/kubernetes-examples/pgclient15
+    tag: "latest"
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+DbDeploy:
+  cmd: '["/bin/sh", "-c"]'
+  config:
+    host: localhost
+    port: 5432
+    dbName: postgres
+    user: postgres
+  secrets:
+    password: "a password"
+
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  app:
+    targetPort: 3000
+    port: 80
+
+Volumes:
+  app:
+    appMounts:
+      - name: app-config
+        mountPath: config/app.properties
+        subPath: app.properties
+        readOnly: true
+    appVolumes:
+      - name: app-config
+        configMap:
+          name: db-{{ include "dbpgapp.fullname" . }}
+          items:
+            - key: "app.properties"
+              path: "app.properties"
+  dbScripts:
+    dbScriptMounts:
+      - name: drop-db
+        mountPath: /sql/drop-database.sql
+        subPath: drop-database.sql
+        readOnly: true
+      - name: drop-schema
+        mountPath: /sql/drop-schema.sql
+        subPath: drop-schema.sql
+        readOnly: true
+      - name: create-db
+        mountPath: /sql/create-database.sql
+        subPath: create-database.sql
+        readOnly: true
+      - name: create-schema
+        mountPath: /sql/create-schema.sql
+        subPath: create-schema.sql
+        readOnly: true
+      - name: install-data
+        mountPath: /sql/install-data.sql
+        subPath: install-data.sql
+        readOnly: true
+    dbScriptVolumes:
+      - name: drop-db
+        configMap:
+          name: drop-db
+      - name: drop-schema
+        configMap:
+          name: drop-schema
+      - name: create-db
+        configMap:
+          name: create-db
+      - name: create-schema
+        configMap:
+          name: create-schema
+      - name: install-data
+        configMap:
+          name: install-data
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
