@@ -46,18 +46,6 @@ spec:
             secretKeyRef:
               name: db-{{ include "dbpgapp.fullname" . }}
               key: db-password
-      livenessProbe:
-        tcpSocket:
-          port: "{{ .Values.DbDeploy.config.port }}"
-        initialDelaySeconds: 10
-        periodSeconds: 10
-        failureThreshold: 5
-      readinessProbe:
-        tcpSocket:
-          port: "{{ .Values.DbDeploy.config.port }}"
-        initialDelaySeconds: 10
-        periodSeconds: 10
-        failureThreshold: 5
       resources:
         {{- toYaml .Values.resources | nindent 8 }}      
       volumeMounts:
