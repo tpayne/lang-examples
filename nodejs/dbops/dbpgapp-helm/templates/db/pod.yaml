@@ -14,7 +14,7 @@ spec:
       imagePullPolicy: {{ .Values.image.pullPolicy }}
       command: {{ .Values.DbDeploy.cmd }}
       args:
-      - {{ .Files.Get "files/db/dbdeploy.txt" | indent 8 }}
+      - {{ .Files.Get "files/db/shell/dbdeploy.cmd" | indent 8 }}
       env:
         - name: PGHOST
           valueFrom:
