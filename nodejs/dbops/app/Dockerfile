@@ -6,6 +6,7 @@ FROM node:18-alpine${alpineVersion} AS imagebuilder
 # Set up APK repositories and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
+RUN apk add --no-cache curl
 
 WORKDIR /source
 
