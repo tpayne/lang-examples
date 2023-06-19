@@ -2,22 +2,7 @@ const PropertiesReader = require('properties-reader')
 const Pool = require('pg').Pool
 var properties = PropertiesReader('config/app.properties')
 
-const pool = null
-
-// Database connections
-function connectDB() {
-    if (pool == null) {
-        const pgConStr = (process.env.PG_CONSTR) ? process.env.PG_CONSTR :
-        properties.get("pg_constr")
-
-        const dbconfig = parser(pgConStr)
-
-        pool = new Pool(
-            dbconfig
-        )
-    }
-    return
-}
+var pool = null
 
 // Short parser function to workaround weirdo issues from Pool...
 function parser(conStr) {
@@ -39,20 +24,68 @@ function parser(conStr) {
     return { host: host, user: userId, password: pwd, database: db }
 }
 
+// Database connections
+function connectDB() {
+    try {
+        if (pool == null) {
+            var pgConStr = process.env.PG_CONSTR
+            if (pgConStr == null) {
+                pgConStr = properties.get("pg_constr")
+            }
+            console.log('Connecting to %s',pgConStr)
+            const dbconfig = parser(pgConStr)
+            try {
+                pool = new Pool(
+                    dbconfig
+                )    
+            } catch(e) {
+                pool = null
+            }
+        }
+        return
+    } catch(e) {
+        console.log(e)
+        pool = null
+        return
+    }
+}
+
 function testConnection() {
     console.log('Checking database connection...')
 
     try {
         connectDB()
-        pool.query('SELECT NOW()', (error, results) => {
-            if (error) {
-                return false
-            }
-        })
-        return true    
+        if (pool) {
+            pool.query('SELECT NOW()', (error, results) => {
+                if (error) {
+                    console.log(error)
+                    pool = null
+                    return false
+                }
+            })
+            return true    
+        }
+        return false
     }
     catch(e) {
+        console.log(e)
+        pool = null
         return false
+    }
+}
+
+const healthCheck = (request, response) => {
+    try {
+        if (!testConnection()) {
+            response.status(404).json({ message: 'Database error' })
+        }
+        pool.query('SELECT 1 FROM orders_in_progress', (error, results) => {
+            if (error) {
+                response.status(404).json({ message: 'Database error' })
+            }
+        })
+    } catch(e) {
+        console.log(e)
     }
 }
 
@@ -101,23 +134,6 @@ const getStock = (request, response) => {
                 throw error
             }
             response.status(200).json(results.rows)
-        })
-    } catch(e) {
-        console.log(e)
-    }
-}
-
-const healthCheck = (request, response) => {
-    if (!testConnection()) {
-        response.send(404, { message: 'Error' });
-    }
-
-    try {
-        pool.query('SELECT 1 FROM orders_in_progress', (error, results) => {
-            if (error) {
-                response.send(404, { message: 'Error' });
-            }
-            response.send(200, { message: 'Ok' });
         })
     } catch(e) {
         console.log(e)
