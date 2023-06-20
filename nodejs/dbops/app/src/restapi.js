@@ -6,8 +6,6 @@ const db = require('./db')
 const bodyParser = require('body-parser')
 
 const PropertiesReader = require('properties-reader')
-var properties = PropertiesReader('config/app.properties')
-const port = properties.get("port")
 
 function processRequest(svrapp) {
     // Standard functions...
@@ -44,6 +42,14 @@ function main() {
     )
 
     try {
+        var port = 3000
+        
+        try {
+            var properties = PropertiesReader('config/app.properties')
+            port = properties.get("port")
+        } catch(e) {
+        }
+
         svrapp.listen(port, () => {
             console.log(`App running on port ${port}.`)
         })
