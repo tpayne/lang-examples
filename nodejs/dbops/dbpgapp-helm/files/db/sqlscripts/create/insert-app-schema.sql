@@ -1,6 +1,7 @@
 --
 -- This script will install a sample app schema
 --
+set schema 'demoapp';
 
 -- Create sequence(s)
 CREATE SEQUENCE IF NOT EXISTS app_sequence
@@ -52,6 +53,20 @@ CREATE TABLE IF NOT EXISTS order_contents (
     CONSTRAINT orders_contents_pk PRIMARY KEY (order_uid,stock_uid)
 );
 
+--
+-- Distribute the tables
+--
+SELECT citus_add_local_table_to_metadata('customers', cascade_via_foreign_keys => 'true');
+SELECT citus_add_local_table_to_metadata('stock_items', cascade_via_foreign_keys => 'true');
+SELECT citus_add_local_table_to_metadata('orders', cascade_via_foreign_keys => 'true');
+SELECT citus_add_local_table_to_metadata('customer_orders', cascade_via_foreign_keys => 'true');
+SELECT citus_add_local_table_to_metadata('order_contents', cascade_via_foreign_keys => 'true');
+
+SELECT create_reference_table('customers');
+SELECT create_reference_table('stock_items');
+SELECT create_reference_table('orders');
+SELECT create_reference_table('customer_orders');
+SELECT create_reference_table('order_contents');
 --
 -- Create quick views
 --

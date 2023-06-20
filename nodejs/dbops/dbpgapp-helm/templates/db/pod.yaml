@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db-{{ include "dbpgapp.fullname" . }}
+  labels:
+    {{- include "dbpgapp.labels" . | nindent 4 }}
+spec:
+  serviceAccountName: {{ include "dbpgapp.serviceAccountName" . }}
+  securityContext:
+    {{- toYaml .Values.podSecurityContext | nindent 8 }}
+  containers:
+    - name: {{ .Chart.Name }}
+      image: "{{ .Values.image.pgdb.repository }}:{{ .Values.image.pgdb.tag | default .Chart.AppVersion }}"
+      imagePullPolicy: {{ .Values.image.pullPolicy }}
+      command: {{ .Values.DbDeploy.cmd }}
+      args:
+      - {{ .Files.Get "files/db/shell/dbdeploy.cmd" | indent 8 }}
+      env:
+        - name: PGHOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-db-config
+              key: host
+        - name: PGPORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-db-config
+              key: port
+        - name: PGDATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: app-db-config
+              key: dbName
+        - name: PGUSER
+          valueFrom:
+            configMapKeyRef:
+              name: app-db-config
+              key: user
+        - name: PG_CONSTR
+          valueFrom:
+            configMapKeyRef:
+              name: app-db-config
+              key: connectStr
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-{{ include "dbpgapp.fullname" . }}
+              key: db-password
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}      
+      volumeMounts:
+        {{- toYaml .Values.Volumes.dbScripts.dbScriptMounts | nindent 8 }}
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+  volumes:
+    {{- toYaml .Values.Volumes.dbScripts.dbScriptVolumes | nindent 8 }}

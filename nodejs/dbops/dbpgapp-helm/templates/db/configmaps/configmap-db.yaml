@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-db-config
+  labels:
+    {{- include "dbpgapp.labels" . | nindent 4 }}
+data:
+  host: "{{ .Values.DbDeploy.config.host }}"
+  port: "{{ .Values.DbDeploy.config.port }}"
+  dbName: "{{ .Values.DbDeploy.config.dbName }}"
+  user: "{{ .Values.DbDeploy.config.user }}"
+  connectStr: "postgres://{{ .Values.DbDeploy.config.user }}:{{ .Values.DbDeploy.secrets.password }}@{{ .Values.DbDeploy.config.host }}:{{ .Values.DbDeploy.config.port }}/demoapp"
+
+  app.properties: |-
+    port="{{ .Values.service.app.targetPort }}"
+    pg_constr="postgres://{{ .Values.DbDeploy.config.user }}:{{ .Values.DbDeploy.secrets.password }}@{{ .Values.DbDeploy.config.host }}:{{ .Values.DbDeploy.config.port }}/demoapp"

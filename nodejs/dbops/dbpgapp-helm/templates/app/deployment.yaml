@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-{{ include "dbpgapp.fullname" . }}
+  labels:
+    {{- include "dbpgapp.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "dbpgapp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dbpgapp.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dbpgapp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.app.repository }}:{{ .Values.image.app.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGHOST
+              valueFrom:
+                configMapKeyRef:
+                  name: app-db-config
+                  key: host
+            - name: PGPORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-db-config
+                  key: port
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-db-config
+                  key: dbName
+            - name: PGUSER
+              valueFrom:
+                configMapKeyRef:
+                  name: app-db-config
+                  key: user
+            - name: PG_CONSTR
+              valueFrom:
+                configMapKeyRef:
+                  name: app-db-config
+                  key: connectStr
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-{{ include "dbpgapp.fullname" . }}
+                  key: db-password
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.app.targetPort }}
+              protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /version
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /version
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 5
+          volumeMounts:
+            {{- toYaml .Values.Volumes.app.appMounts | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      volumes:
+        {{- toYaml .Values.Volumes.app.appVolumes | nindent 8 }}

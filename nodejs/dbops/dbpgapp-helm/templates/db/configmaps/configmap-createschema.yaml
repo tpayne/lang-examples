@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: create-schema
+  labels:
+    {{- include "dbpgapp.labels" . | nindent 4 }}
+data:
+  create-schema.sql: |-
+    {{- $.Files.Get "files/db/sqlscripts/create/create-schema.sql"  | nindent 6 -}}
