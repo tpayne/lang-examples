@@ -22,6 +22,7 @@ async function testConnection() {
 }
 
 const healthCheck = (request, response) => {
+    console.log('%s: Processing %s',new Date().toISOString(),request.path)
     if (!testConnection()) {
         response.status(500).send({ message: 'Service Error' })   
     }
@@ -35,6 +36,7 @@ const healthCheck = (request, response) => {
 }
 
 const getOrdersInProgress = (request, response) => {
+    console.log('%s: Processing %s',new Date().toISOString(),request.path)
     if (!testConnection()) {
         response.status(500).send({ message: 'Service Error' })   
     }
@@ -48,6 +50,7 @@ const getOrdersInProgress = (request, response) => {
 }
 
 const getCustomers = (request, response) => {
+    console.log('%s: Processing %s',new Date().toISOString(),request.path)
     if (!testConnection()) {
         response.status(500).send({ message: 'Service Error' })   
     }
@@ -61,6 +64,7 @@ const getCustomers = (request, response) => {
 }
 
 const getStock = (request, response) => {
+    console.log('%s: Processing %s',new Date().toISOString(),request.path)
     if (!testConnection()) {
         response.status(500).send({ message: 'Service Error' })   
     }
