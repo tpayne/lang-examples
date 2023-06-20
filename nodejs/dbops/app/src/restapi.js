@@ -10,6 +10,7 @@ const PropertiesReader = require('properties-reader')
 function processRequest(svrapp) {
     // Standard functions...
     svrapp.get('/', (request, response) => {
+        console.log('%s: Processing %s',new Date().toISOString(),request.path)
         fs.readFile('html/index.html', function (herr, html) {
             response.writeHead(200, { 'Content-Type': 'text/html' })
             response.write(html)
@@ -18,10 +19,12 @@ function processRequest(svrapp) {
     })
 
     svrapp.get('/info', (request, response) => {
+        console.log('%s: Processing %s',new Date().toISOString(),request.path)
         response.json({ info: 'This is a Demoapp for Postgres' })
     })
 
     svrapp.get('/version', (request, response) => {
+        console.log('%s: Processing %s',new Date().toISOString(),request.path)
         response.json({ version: '1.0.0' })
     })
 
