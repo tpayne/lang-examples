@@ -1,126 +1,77 @@
-const PropertiesReader = require('properties-reader')
-const Pool = require('pg').Pool
-var properties = PropertiesReader('config/app.properties')
+//
+const DbPool = require('./dbpool.js').DbPool
 
-const pool = null
-
-// Database connections
-function connectDB() {
-    if (pool == null) {
-        const pgConStr = (process.env.PG_CONSTR) ? process.env.PG_CONSTR :
-        properties.get("pg_constr")
-
-        const dbconfig = parser(pgConStr)
-
-        pool = new Pool(
-            dbconfig
-        )
-    }
-    return
-}
-
-// Short parser function to workaround weirdo issues from Pool...
-function parser(conStr) {
-    if (conStr == null) {
-        return {
-            host: 'localhost', 
-            user: 'postgres', 
-            database: 'default' 
-        }
-    }
-
-    var tmpStr = conStr.substring(conStr.indexOf('://')+3)
-    var userId = tmpStr.substring(0,tmpStr.indexOf(':'))
-    var tmpStr = tmpStr.substring(tmpStr.indexOf(':')+1)
-    var pwd = tmpStr.substring(0,tmpStr.indexOf('@'))
-    var tmpStr = tmpStr.substring(tmpStr.indexOf('@')+1)
-    var host = tmpStr.substring(0,tmpStr.indexOf('/'))
-    var db = tmpStr.substring(tmpStr.indexOf('/')+1)
-    return { host: host, user: userId, password: pwd, database: db }
-}
-
-function testConnection() {
-    console.log('Checking database connection...')
-
-    try {
-        connectDB()
-        pool.query('SELECT NOW()', (error, results) => {
-            if (error) {
-                return false
-            }
+var runQuery = function(queryStr) {
+    return new Promise(function(resolve, reject){
+        DbPool.pool.query(queryStr, function(err, result) {
+            if(err)
+                return reject(err)
+            resolve(result)
         })
+    });
+}
+
+async function testConnection() {
+    runQuery('SELECT NOW()')
+    .then(function(result){
         return true    
-    }
-    catch(e) {
-        return false
-    }
-}
-
-const getOrdersInProgress = (request, response) => {
-    if (!testConnection()) {
-        throw new Error('Database is not connected')
-    }
-
-    try {
-        pool.query('SELECT customer_name,order_name,stock_item,order_date,number_ordered FROM orders_in_progress', (error, results) => {
-            if (error) {
-                throw error
-            }
-            response.status(200).json(results.rows)
-        })    
-    } catch(e) {
-        console.log(e)
-    }
-}
-
-const getCustomers = (request, response) => {
-    if (!testConnection()) {
-        throw new Error('Database is not connected')
-    }
-
-    try {
-        pool.query('SELECT * FROM customers ORDER BY customer_uid ASC', (error, results) => {
-            if (error) {
-                throw error
-            }
-            response.status(200).json(results.rows)
-        })
-    } catch(e) {
-        console.log(e)
-    }
-}
-
-const getStock = (request, response) => {
-    if (!testConnection()) {
-        throw new Error('Database is not connected')
-    }
-
-    try {
-        pool.query('SELECT * FROM stock_items ORDER BY stock_uid ASC', (error, results) => {
-            if (error) {
-                throw error
-            }
-            response.status(200).json(results.rows)
-        })
-    } catch(e) {
-        console.log(e)
-    }
+    }).catch(function(err){
+        return false   
+    })
 }
 
 const healthCheck = (request, response) => {
     if (!testConnection()) {
-        response.send(404, { message: 'Error' });
+        response.status(500).send({ message: 'Service Error' })   
     }
 
-    try {
-        pool.query('SELECT 1 FROM orders_in_progress', (error, results) => {
-            if (error) {
-                response.send(404, { message: 'Error' });
-            }
-            response.send(200, { message: 'Ok' });
-        })
-    } catch(e) {
-        console.log(e)
+    runQuery('SELECT 1 FROM "demoapp".orders_in_progress')
+    .then(function(result){
+        response.status(200).send({ message: 'Service Ok' })   
+    }).catch(function(err){
+        response.status(500).send({ message: 'Service Error' })   
+    })
+}
+
+const getOrdersInProgress = (request, response) => {
+    if (!testConnection()) {
+        response.status(500).send({ message: 'Service Error' })   
+    }
+
+    runQuery('SELECT customer_name,order_name,stock_item,order_date,number_ordered FROM "demoapp".orders_in_progress')
+    .then(function(result){
+        response.status(200).json(result.rows)  
+    }).catch(function(err){
+        response.status(500).send({ message: 'Service Error' })   
+    })
+}
+
+const getCustomers = (request, response) => {
+    if (!testConnection()) {
+        response.status(500).send({ message: 'Service Error' })   
+    }
+
+    runQuery('SELECT * FROM "demoapp".customers ORDER BY customer_uid ASC')
+    .then(function(result){
+        response.status(200).json(result.rows)  
+    }).catch(function(err){
+        response.status(500).send({ message: 'Service Error' })   
+    })
+}
+
+const getStock = (request, response) => {
+    if (!testConnection()) {
+        response.status(500).send({ message: 'Service Error' })   
+    }
+
+    runQuery('SELECT * FROM "demoapp".stock_items ORDER BY stock_uid ASC')
+    .then(function(result){
+        response.status(200).json(result.rows)  
+    }).catch(function(err){
+        response.status(500).send({ message: 'Service Error' })   
+    })
+    if (!testConnection()) {
+        throw new Error('Database is not connected')
     }
 }
 
@@ -133,9 +84,7 @@ module.exports = {
 
 // Signal handlers...
 function signalHandler(signal) {
-    if (pool) {
-        pool.end()
-    }
+    DbPool.pool.end()
     console.log("Killing process and shutting down")
     process.exit()
 }

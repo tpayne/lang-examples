@@ -7,8 +7,8 @@
 --
 
 -- Create the schema
-CREATE SCHEMA demoapp
-    AUTHORIZATION postgres;
+CREATE SCHEMA IF NOT EXISTS demoapp
+    AUTHORIZATION :userId;
 
 COMMENT ON SCHEMA demoapp
     IS 'This is a schema for the demo app';

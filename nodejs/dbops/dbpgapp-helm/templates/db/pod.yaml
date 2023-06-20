@@ -19,27 +19,27 @@ spec:
         - name: PGHOST
           valueFrom:
             configMapKeyRef:
-              name: db-{{ include "dbpgapp.fullname" . }}
+              name: app-db-config
               key: host
         - name: PGPORT
           valueFrom:
             configMapKeyRef:
-              name: db-{{ include "dbpgapp.fullname" . }}
+              name: app-db-config
               key: port
         - name: PGDATABASE
           valueFrom:
             configMapKeyRef:
-              name: db-{{ include "dbpgapp.fullname" . }}
+              name: app-db-config
               key: dbName
         - name: PGUSER
           valueFrom:
             configMapKeyRef:
-              name: db-{{ include "dbpgapp.fullname" . }}
+              name: app-db-config
               key: user
         - name: PG_CONSTR
           valueFrom:
             configMapKeyRef:
-              name: db-{{ include "dbpgapp.fullname" . }}
+              name: app-db-config
               key: connectStr
         - name: PGPASSWORD
           valueFrom:

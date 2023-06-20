@@ -1,6 +1,5 @@
 echo "Creating database at `date`...";
-psql -f /sql/create-database.sql;
-psql -f /sql/create-schema.sql;
+psql -f /sql/create-schema.sql sslmode=require -v userId="${PGUSER}";
 echo "Installing database data...";
-psql -d demoapp -f /sql/insert-data.sql;
+psql -f /sql/install-data.sql sslmode=require;
 echo "Done";
