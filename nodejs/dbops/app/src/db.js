@@ -24,13 +24,21 @@ const healthCheck = (request, response) => {
     if (!testConnection()) {
         response.status(500).send({ message: 'Service Error' })   
     }
+}
 
-    runQuery('SELECT 1 FROM "demoapp".orders_in_progress')
-    .then(function(result){
-        response.status(200).send({ message: 'Service Ok' })   
-    }).catch(function(err){
-        response.status(500).send({ message: 'Service Error' })   
-    })
+const healthCheck = (request, response) => {
+    try {
+        if (!testConnection()) {
+            response.status(404).json({ message: 'Database error' })
+        }
+        pool.query('SELECT 1 FROM orders_in_progress', (error, results) => {
+            if (error) {
+                response.status(404).json({ message: 'Database error' })
+            }
+        })
+    } catch(e) {
+        console.log(e)
+    }
 }
 
 const getOrdersInProgress = (request, response) => {
@@ -64,14 +72,32 @@ const getStock = (request, response) => {
         response.status(500).send({ message: 'Service Error' })   
     }
 
-    runQuery('SELECT * FROM "demoapp".stock_items ORDER BY stock_uid ASC')
-    .then(function(result){
-        response.status(200).json(result.rows)  
-    }).catch(function(err){
-        response.status(500).send({ message: 'Service Error' })   
-    })
+    try {
+        pool.query('SELECT * FROM stock_items ORDER BY stock_uid ASC', (error, results) => {
+            if (error) {
+                throw error
+            }
+            response.status(200).json(results.rows)
+        })
+    } catch(e) {
+        console.log(e)
+    }
+}
+
+const healthCheck = (request, response) => {
     if (!testConnection()) {
-        throw new Error('Database is not connected')
+        response.send(404, { message: 'Error' });
+    }
+
+    try {
+        pool.query('SELECT 1 FROM orders_in_progress', (error, results) => {
+            if (error) {
+                response.send(404, { message: 'Error' });
+            }
+            response.send(200, { message: 'Ok' });
+        })
+    } catch(e) {
+        console.log(e)
     }
 }
 
