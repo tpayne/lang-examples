@@ -9,8 +9,8 @@ data:
   port: "{{ .Values.DbDeploy.config.port }}"
   dbName: "{{ .Values.DbDeploy.config.dbName }}"
   user: "{{ .Values.DbDeploy.config.user }}"
-  connectStr: "postgres://{{ .Values.DbDeploy.config.user }}:{{ .Values.DbDeploy.secrets.password }}@{{ .Values.DbDeploy.config.host }}:{{ .Values.DbDeploy.config.port }}/demoapp"
+  connectStr: "postgres://{{ .Values.DbDeploy.config.user }}:{{ .Values.DbDeploy.secrets.password }}@{{ .Values.DbDeploy.config.host }}:{{ .Values.DbDeploy.config.port }}/{{ .Values.DbDeploy.config.dbName }}"
 
   app.properties: |-
     port="{{ .Values.service.app.targetPort }}"
-    pg_constr="postgres://{{ .Values.DbDeploy.config.user }}:{{ .Values.DbDeploy.secrets.password }}@{{ .Values.DbDeploy.config.host }}:{{ .Values.DbDeploy.config.port }}/demoapp"
+    pg_constr="postgres://{{ .Values.DbDeploy.config.user }}:{{ .Values.DbDeploy.secrets.password }}@{{ .Values.DbDeploy.config.host }}:{{ .Values.DbDeploy.config.port }}/{{ .Values.DbDeploy.config.dbName }}"
