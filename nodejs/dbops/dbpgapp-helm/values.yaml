@@ -115,15 +115,17 @@ Volumes:
 
 ingress:
   enabled: true
-  className: "addon-http-application-routing"
+  className: ""
   annotations:
-    # kubernetes.io/ingress.class: addon-http-application-routing
+    kubernetes.io/ingress.class: addon-http-application-routing
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: aksagictes-aksagictest-2ad961-8w13bvig.hcp.ukwest.azmk8s.io
+    - host: restapi.ukwest.cloudapp.azure.com
       paths:
-       - path: /
+       - path: /dbapi(/|$)(.*)
          pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
