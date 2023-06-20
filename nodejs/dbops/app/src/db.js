@@ -1,4 +1,5 @@
-//
+// Database ops
+
 const DbPool = require('./dbpool.js').DbPool
 
 var runQuery = function(queryStr) {
