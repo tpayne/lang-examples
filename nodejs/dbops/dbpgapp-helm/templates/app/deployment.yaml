@@ -51,14 +51,14 @@ spec:
               path: /version
               port: http
             initialDelaySeconds: 10
-            periodSeconds: 10
+            periodSeconds: 300
             failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /version
               port: http
             initialDelaySeconds: 10
-            periodSeconds: 10
+            periodSeconds: 300
             failureThreshold: 5
           volumeMounts:
             {{- toYaml .Values.Volumes.app.appMounts | nindent 12 }}
