@@ -33,7 +33,6 @@ WORKDIR /app
 COPY --from=imagebuilder /source/nodeexe ./
 
 COPY files/html ./html
-COPY files/config ./config
 
 USER ${account}:${account}
 
