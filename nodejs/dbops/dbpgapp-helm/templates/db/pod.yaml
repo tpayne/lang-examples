@@ -16,36 +16,7 @@ spec:
       args:
       - {{ .Files.Get "files/db/shell/dbdeploy.cmd" | indent 8 }}
       env:
-        - name: PGHOST
-          valueFrom:
-            configMapKeyRef:
-              name: app-db-config
-              key: host
-        - name: PGPORT
-          valueFrom:
-            configMapKeyRef:
-              name: app-db-config
-              key: port
-        - name: PGDATABASE
-          valueFrom:
-            configMapKeyRef:
-              name: app-db-config
-              key: dbName
-        - name: PGUSER
-          valueFrom:
-            configMapKeyRef:
-              name: app-db-config
-              key: user
-        - name: PG_CONSTR
-          valueFrom:
-            configMapKeyRef:
-              name: app-db-config
-              key: connectStr
-        - name: PGPASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: db-{{ include "dbpgapp.fullname" . }}
-              key: db-password
+        {{- toYaml .Values.DbDeploy.env | nindent 8 }}
       resources:
         {{- toYaml .Values.resources | nindent 8 }}      
       volumeMounts:

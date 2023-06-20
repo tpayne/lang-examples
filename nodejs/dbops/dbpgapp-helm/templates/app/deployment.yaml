@@ -34,36 +34,7 @@ spec:
           image: "{{ .Values.image.app.repository }}:{{ .Values.image.app.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: PGHOST
-              valueFrom:
-                configMapKeyRef:
-                  name: app-db-config
-                  key: host
-            - name: PGPORT
-              valueFrom:
-                configMapKeyRef:
-                  name: app-db-config
-                  key: port
-            - name: PGDATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: app-db-config
-                  key: dbName
-            - name: PGUSER
-              valueFrom:
-                configMapKeyRef:
-                  name: app-db-config
-                  key: user
-            - name: PG_CONSTR
-              valueFrom:
-                configMapKeyRef:
-                  name: app-db-config
-                  key: connectStr
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: db-{{ include "dbpgapp.fullname" . }}
-                  key: db-password
+            {{- toYaml .Values.DbDeploy.env | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.service.app.targetPort }}

@@ -7,13 +7,13 @@ replicaCount: 1
 image:
   app:
     repository: ghcr.io/tpayne/nodejsdb
+    # Overrides the image tag whose default is the chart appVersion.
     tag: "master"
   pgdb:
     repository: ghcr.io/tpayne/kubernetes-examples/pgclient15
+    # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
   pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
 
 DbDeploy:
   cmd: '["/bin/sh", "-c"]'
@@ -24,7 +24,37 @@ DbDeploy:
     user: citus
   secrets:
     password: "a password"
-
+  env:
+    - name: PGHOST
+      valueFrom:
+        configMapKeyRef:
+          name: app-db-config
+          key: host
+    - name: PGPORT
+      valueFrom:
+        configMapKeyRef:
+          name: app-db-config
+          key: port
+    - name: PGDATABASE
+      valueFrom:
+        configMapKeyRef:
+          name: app-db-config
+          key: dbName
+    - name: PGUSER
+      valueFrom:
+        configMapKeyRef:
+          name: app-db-config
+          key: user
+    - name: PG_CONSTR
+      valueFrom:
+        configMapKeyRef:
+          name: app-db-config
+          key: connectStr
+    - name: PGPASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: db-secrets
+          key: db-password
 
 imagePullSecrets: []
 nameOverride: ""
