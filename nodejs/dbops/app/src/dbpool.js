@@ -39,8 +39,14 @@ class Connect {
     }
     
     #createPool() {
-        const properties = PropertiesReader('config/app.properties')
-        const pgConStr = properties.get("pg_constr")
+        var pgConStr = null
+        try {
+            const properties = PropertiesReader('config/app.properties')
+            pgConStr = properties.get("pg_constr")
+        } catch(err) {
+            pgConStr = process.env.PG_CONSTR
+        }
+
         const dbconfig = this.#parser(pgConStr)
             
         const pool = new Pool(
