@@ -65,7 +65,8 @@ The app has various endpoints you can use to interact with the CosmosDB database
     
     curl restapi.ukwest.cloudapp.azure.com/dbapi/stock
     [{"stock_uid":4,"name":"GPU/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series GPU"},{"stock_uid":5,"name":"CPU/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series CPU"},{"stock_uid":6,"name":"TERM/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series Terminal"}]
-    
+```
+
 Cleaning Up
 -----------
 To clean up the installation, uninstall the Helm chart. Note, this will not remove the schema, but scripts are provided to help you do this if needed.
