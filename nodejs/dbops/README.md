@@ -1,4 +1,4 @@
-CosmosDb PG Sample
+CosmosDB PG Sample
 ==================
 
 This repo contains a simple example Node.JS REST API which works with CosmosDB Postgres.
@@ -14,8 +14,8 @@ This example consists of the following...
 
 To use this sample, you need to do the following...
 * Spin up a CosmosDB Postgres installation you can access with the Citus account - you also need the database password (if set)
-* Spin up an AKS with an Ingress controller deployed. By default, the AKS HTTPs one is used, but if using a different one like AGIC or NGINX, then you will need to change the Ingress definition appropriately
-* Ability to deploy Service accounts etc. to an AKS namespace
+* Spin up an AKS with an Ingress controller deployed. By default, the AKS HTTPS one is used, but if you are using a different one like AGIC or NGINX, then you will need to change the Ingress definition appropriately
+* The ability to deploy Service accounts etc. to an AKS namespace
 
 Running the Helm chart provided in the sample will...
 * Create the database and sample data in Postgres
@@ -23,7 +23,7 @@ Running the Helm chart provided in the sample will...
 * Deploy the application and check the database is accessible. If this fails, then the application will fail to start
 * Create an Ingress entry point from which the application can be accessed
 
-The sample itself provides some REST APIs that allows you interact with the tables and views created to get data back in JSON format. 
+The sample itself provides some REST APIs that allows you to interact with the tables and views created to get data back in JSON format. 
 
 Deploying the Application
 -------------------------
@@ -40,14 +40,16 @@ You can use various Helm approaches like `install` or `template`. The approach s
 ```
 
 This will...
-* Deploy various configmaps with the schema definitions. The SQL scripts are loaded dynamically from `lang-examples/nodejs/dbops/dbpgapp-helm/files/db/sqlscripts`
-* Deploy a Postgres client image singleton POD to run the scripts using a definition from `lang-examples/nodejs/dbops/dbpgapp-helm/files/db/shell/dbdeploy.cmd`
-* Deploy a NodeJS application image build using the Dockerfile `lang-examples/nodejs/dbops/app`. You will need to update the Helm chart to pickup different images as required
+* Deploy various configmaps with schema definitions. These SQL definitions are loaded dynamically from `lang-examples/nodejs/dbops/dbpgapp-helm/files/db/sqlscripts` and are used to drive the database creation
+* Deploy a Postgres client image singleton POD to run the scripts using a script from `lang-examples/nodejs/dbops/dbpgapp-helm/files/db/shell/dbdeploy.cmd`. You can modify this script if you want to ensure more logging, error handling etc.
+* Deploy a NodeJS application image built using the Dockerfile `lang-examples/nodejs/dbops/app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
 * Create an Ingress to act as a public endpoint for the app
 
 Running the App
 ---------------
 The app has various endpoints you can use to interact with the CosmosDB database. These are shown below.
+
+Some of the samples will query from tables or views and some of them are used for health checks or info queries.
 
 ```shell
     curl restapi.ukwest.cloudapp.azure.com/dbapi/healthz
@@ -73,13 +75,15 @@ To clean up the installation, uninstall the Helm chart. Note, this will not remo
 
 Notes
 -----
-This code does not have any unit testing or SA analysis run as part of the CI process
+- This code does not have any unit testing or SA analysis run as part of the CI process
+- If you need to implement different authentication mechanisms for accessing CosmosDB, then please see https://node-postgres.com/features/connecting
 
 References
 ----------
 - https://docs.npmjs.com
 - https://www.w3schools.io/file/properties-read-write-javascript/
 - https://nodejs.org/en/docs/
+- https://github.com/brianc/node-postgres/tree/master/docs
 
 
 
