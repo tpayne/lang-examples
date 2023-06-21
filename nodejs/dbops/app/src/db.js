@@ -75,9 +75,6 @@ const getStock = (request, response) => {
     }).catch(function(err){
         response.status(500).send({ message: 'Service Error' })   
     })
-    if (!testConnection()) {
-        throw new Error('Database is not connected')
-    }
 }
 
 module.exports = {
