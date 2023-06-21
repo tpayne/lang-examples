@@ -1,7 +1,7 @@
-CosmosDB PG Sample
-==================
+CosmosDB PG Application
+=======================
 
-This repo contains a simple example Node.JS REST API which works with CosmosDB Postgres.
+This repo contains a simple example Node.JS REST API that works with Azure CosmosDB Postgres.
 
 To run this sample, you will need to have access to a CosmosDB Postgres installation, AKS and the necessary passwords to do a database deployment.
 
@@ -23,7 +23,69 @@ Running the Helm chart provided in the sample will...
 * Deploy the application and check the database is accessible. If this fails, then the application will fail to start
 * Create an Ingress entry point from which the application can be accessed
 
-The sample itself provides some REST APIs that allows you to interact with the tables and views created to get data back in JSON format. 
+The sample itself provides some REST APIs that allows you to interact with the tables and views created to get data back in JSON format.
+
+Building the Application
+------------------------
+The repo has a Dockerfile which is responsible for building the application and creating a containerised image.
+
+The Dockerfile uses publically available official NodeJS Alpine images and then installs various components from Alpine distribution repos into those images. When run, these images use specific users and do NOT have elevated root privileges.
+
+To build and run the image locally, you can do the following...
+
+```shell
+    (cd app && docker build . -t nodejsdb:1.0 && docker run --rm -t -p 3000:3000 nodejsdb:1.0)
+    curl localhost:3000/info
+```
+
+Helm Charts
+-----------
+As detailed elsewhere in this README, the application is deployed using a customised Helm chart. This chart has the following structure.
+
+```console
+    dbpgapp-helm
+    ├── Chart.yaml
+    ├── files
+    │   └── db
+    │       ├── shell
+    │       │   └── dbdeploy.cmd
+    │       └── sqlscripts
+    │           ├── create
+    │           │   ├── create-database.sql
+    │           │   ├── create-schema.sql
+    │           │   └── insert-app-schema.sql
+    │           └── drop
+    │               ├── drop-database.sql
+    │               └── drop-schema.sql
+    ├── templates
+    │   ├── NOTES.txt
+    │   ├── _helpers.tpl
+    │   ├── app
+    │   │   ├── deployment.yaml
+    │   │   ├── hpa.yaml
+    │   │   ├── ingress.yaml
+    │   │   ├── service.yaml
+    │   │   └── serviceaccount.yaml
+    │   └── db
+    │       ├── configmaps
+    │       │   ├── configmap-createdata.yaml
+    │       │   ├── configmap-createdb.yaml
+    │       │   ├── configmap-createschema.yaml
+    │       │   ├── configmap-db.yaml
+    │       │   ├── configmap-dropdb.yaml
+    │       │   └── configmap-dropschema.yaml
+    │       ├── pod.yaml
+    │       └── secrets.yaml
+    └── values.yaml
+
+    11 directories, 23 files
+```
+
+The `files` directory has files which are dynamically loaded and used during the deployment, e.g. SQL scripts etc.
+
+The `db` directory has the files associated with the Postgres deployment.
+
+The `app` directory has the files associated with the application deployment
 
 Deploying the Application
 -------------------------
@@ -40,9 +102,9 @@ You can use various Helm approaches like `install` or `template`. The approach s
 ```
 
 This will...
-* Deploy various configmaps with schema definitions. These SQL definitions are loaded dynamically from `lang-examples/nodejs/dbops/dbpgapp-helm/files/db/sqlscripts` and are used to drive the database creation
-* Deploy a Postgres client image singleton POD to run the scripts using a script from `lang-examples/nodejs/dbops/dbpgapp-helm/files/db/shell/dbdeploy.cmd`. You can modify this script if you want to ensure more logging, error handling etc.
-* Deploy a NodeJS application image built using the Dockerfile `lang-examples/nodejs/dbops/app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
+* Deploy various configmaps with schema definitions. These SQL definitions are loaded dynamically from `dbpgapp-helm/files/db/sqlscripts` and are used to drive the database creation
+* Deploy a Postgres client image singleton POD to run the scripts using a script from `dbpgapp-helm/files/db/shell/dbdeploy.cmd`. You can modify this script if you want to ensure more logging, error handling etc.
+* Deploy a NodeJS application image built using the Dockerfile `app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
 * Create an Ingress to act as a public endpoint for the app
 
 Running the App
@@ -61,10 +123,10 @@ Some of the samples will query from tables or views and some of them are used fo
 
     curl restapi.ukwest.cloudapp.azure.com/dbapi/orders
     [{"customer_name":"ACME","order_name":"ORD001","stock_item":"GPU/001/MTU","order_date":"2023-06-19T10:27:41.851Z","number_ordered":10},{"customer_name":"ACME","order_name":"ORD001","stock_item":"TERM/001/MTU","order_date":"2023-06-19T10:27:41.851Z","number_ordered":10},{"customer_name":"ACME","order_name":"ORD002","stock_item":"GPU/001/MTU","order_date":"2023-06-19T10:27:41.851Z","number_ordered":10},{"customer_name":"ACME","order_name":"ORD002","stock_item":"TERM/001/MTU","order_date":"2023-06-19T10:27:41.851Z","number_ordered":10},{"customer_name":"ACME","order_name":"ORD003","stock_item":"GPU/001/MTU","order_date":"2023-06-19T10:27:41.851Z","number_ordered":10},{"customer_name":"ACME","order_name":"ORD003","stock_item":"TERM/001/MTU","order_date":"2023-06-19T10:27:41.851Z","number_ordered":10}]
-    
+
     curl restapi.ukwest.cloudapp.azure.com/dbapi/customers
     [{"customer_uid":1,"name":"TSB","create_date":"2023-06-19T10:27:41.833Z","update_date":"2023-06-19T10:27:41.833Z","description":"TSB Customer"},{"customer_uid":2,"name":"LBG","create_date":"2023-06-19T10:27:41.833Z","update_date":"2023-06-19T10:27:41.833Z","description":"LBG Customer"},{"customer_uid":3,"name":"ACME","create_date":"2023-06-19T10:27:41.833Z","update_date":"2023-06-19T10:27:41.833Z","description":"ACME Customer"}]
-    
+
     curl restapi.ukwest.cloudapp.azure.com/dbapi/stock
     [{"stock_uid":4,"name":"GPU/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series GPU"},{"stock_uid":5,"name":"CPU/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series CPU"},{"stock_uid":6,"name":"TERM/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series Terminal"}]
 ```
@@ -84,6 +146,3 @@ References
 - https://www.w3schools.io/file/properties-read-write-javascript/
 - https://nodejs.org/en/docs/
 - https://github.com/brianc/node-postgres/tree/master/docs
-
-
-
