@@ -101,12 +101,6 @@ You can use various Helm approaches like `install` or `template`. The approach s
             | kubectl apply -f -
 ```
 
-This will...
-* Deploy various configmaps with schema definitions. These SQL definitions are loaded dynamically from `dbpgapp-helm/files/db/sqlscripts` and are used to drive the database creation
-* Deploy a Postgres client image singleton POD to run the scripts using a script from `dbpgapp-helm/files/db/shell/dbdeploy.cmd`. You can modify this script if you want to ensure more logging, error handling etc.
-* Deploy a NodeJS application image built using the Dockerfile `app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
-* Create an Ingress to act as a public endpoint for the app
-
 Using Helm `install`, you can do the install using a command like...
 
 ```shell
@@ -115,6 +109,12 @@ Using Helm `install`, you can do the install using a command like...
 ```
 
 Although you might want to `--dry-run` the installation first.
+
+This install process will...
+* Deploy various configmaps with schema definitions. These SQL definitions are loaded dynamically from `dbpgapp-helm/files/db/sqlscripts` and are used to drive the database creation
+* Deploy a Postgres client image singleton POD to run the scripts using a script from `dbpgapp-helm/files/db/shell/dbdeploy.cmd`. You can modify this script if you want to ensure more logging, error handling etc.
+* Deploy a NodeJS application image built using the Dockerfile `app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
+* Create an Ingress to act as a public endpoint for the app
 
 Running the App
 ---------------
@@ -125,8 +125,10 @@ Some of the samples will query from tables or views and some of them are used fo
 ```shell
     curl restapi.ukwest.cloudapp.azure.com/dbapi/healthz
     {"message":"Service Ok"}
+    
     curl restapi.ukwest.cloudapp.azure.com/dbapi/info
     {"info":"This is a Demoapp for Postgres"}
+    
     curl restapi.ukwest.cloudapp.azure.com/dbapi/version
     {"version":"1.0.0"}
 
