@@ -107,6 +107,15 @@ This will...
 * Deploy a NodeJS application image built using the Dockerfile `app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
 * Create an Ingress to act as a public endpoint for the app
 
+Using Helm `install`, you can do the install using a command like...
+
+```shell
+    helm install dbpgapp-helm dbpgapp-helm/ \
+        --set-string DbDeploy.secrets.password="<CitusDBPassword>",DbDeploy.config.host="<CosmosDBServer>"
+```
+
+Although you might want to `--dry-run` the installation first.
+
 Running the App
 ---------------
 The app has various endpoints you can use to interact with the CosmosDB database. These are shown below.
