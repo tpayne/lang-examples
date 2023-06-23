@@ -26,28 +26,30 @@
       responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
     }
 
+    // These will only work when deployed with helm
+    // Or else change the Helm Ingress definition
     async function getInfo() {
-      const response = await fetch('/info');
+      const response = await fetch('/dbapi/info');
       displayResponse(response);
     }
 
     async function healthCheck() {
-      const response = await fetch('/healthz');
+      const response = await fetch('/dbapi/healthz');
       displayResponse(response);
     }
 
     async function getOrders() {
-      const response = await fetch('/orders');
+      const response = await fetch('/dbapi/orders');
       displayResponse(response);
     }
 
     async function getStock() {
-      const response = await fetch('/stock');
+      const response = await fetch('/dbapi/stock');
       displayResponse(response);
     }
 
     async function getCustomers() {
-      const response = await fetch('/customers');
+      const response = await fetch('/dbapi/customers');
       displayResponse(response);
     }
   </script>
