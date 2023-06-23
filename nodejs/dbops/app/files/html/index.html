@@ -1,29 +1,57 @@
 <!DOCTYPE html>
 <html>
+
+<head>
+  <meta charset="utf-8">
+  <title>API Methods</title>
+</head>
+
 <body>
+  <h1>Index Page</h1>
+  <p>This is my index page that is very simple.</p>
+  <hr>
+  <p></p>
+  <h1>API Methods</h1>
+  <button id="info" onclick="getInfo()">App Info</button>
+  <button id="health" onclick="healthCheck()">Health Check</button>
+  <button id="orders" onclick="getOrders()">Get Orders in Progress</button>
+  <button id="stock" onclick="getStock()">Get Stock</button>
+  <button id="customers" onclick="getCustomers()">Get Customers</button>
+  <div id="response"></div>
 
-<h1>Index Page</h1>
+  <script type="text/javascript">
+    async function displayResponse(response) {
+      const jsonResponse = await response.json();
+      const responseContainer = document.getElementById('response');
+      responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+    }
 
-<p>This is my index page that is very simple.</p>
+    async function getInfo() {
+      const response = await fetch('/info');
+      displayResponse(response);
+    }
 
-<hr>
-<ul>
-  <li><button>Item1</button></li>
-  <li><button>Item2</button></li>
-  <li><button>Item3</button></li>
-</ul>  
-<hr>
+    async function healthCheck() {
+      const response = await fetch('/healthz');
+      displayResponse(response);
+    }
 
-<div style="position:relative;">
-  <div style="opacity:0.3;position:absolute;left:120px;top:20px;width:100px;height:170px;background-color:#73AD21"></div>
-  <div style="margin-top:30px;width:360px;height:130px;padding:20px;border-radius:10px;border:10px solid #EE872A;font-size:120%;">
-    <h1>The home page</h1>
-    <div style="letter-spacing:12px;font-size:15px;position:relative;left:25px;top:25px;">Sample text</div>
-    <div style="color:#40B3DF;letter-spacing:12px;font-size:15px;position:relative;left:25px;top:30px;">Colors,
-    <span style="background-color:#B4009E;color:#ffffff;"> Boxes</span></div>
-  </div>
-</div>
+    async function getOrders() {
+      const response = await fetch('/orders');
+      displayResponse(response);
+    }
+
+    async function getStock() {
+      const response = await fetch('/stock');
+      displayResponse(response);
+    }
+
+    async function getCustomers() {
+      const response = await fetch('/customers');
+      displayResponse(response);
+    }
+  </script>
 
 </body>
-</html>
 
+</html>
