@@ -29,27 +29,32 @@
     // These will only work when deployed with helm
     // Or else change the Helm Ingress definition
     async function getInfo() {
-      const response = await fetch('/dbapi/info');
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'info');
       displayResponse(response);
     }
 
     async function healthCheck() {
-      const response = await fetch('/dbapi/healthz');
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'healthz');
       displayResponse(response);
     }
 
     async function getOrders() {
-      const response = await fetch('/dbapi/orders');
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'orders');
       displayResponse(response);
     }
 
     async function getStock() {
-      const response = await fetch('/dbapi/stock');
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'stock');
       displayResponse(response);
     }
 
     async function getCustomers() {
-      const response = await fetch('/dbapi/customers');
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'customers');
       displayResponse(response);
     }
   </script>
