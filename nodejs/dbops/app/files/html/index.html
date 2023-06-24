@@ -7,17 +7,17 @@
 </head>
 
 <body>
-  <h1>Index Page</h1>
-  <p>This is my index page that is very simple.</p>
   <hr>
-  <p></p>
   <h1>API Methods</h1>
+  <hr>
   <button id="info" onclick="getInfo()">App Info</button>
+  <button id="version" onclick="getVersion()">App Version</button>
   <button id="health" onclick="healthCheck()">Health Check</button>
-  <button id="orders" onclick="getOrders()">Get Orders in Progress</button>
+  <button id="orders" onclick="getOrders()">Get Orders</button>
   <button id="stock" onclick="getStock()">Get Stock</button>
   <button id="customers" onclick="getCustomers()">Get Customers</button>
-  <div id="response"></div>
+  <br><br>
+  <div id="response" style="border:solid; background-color:#ABBAEA"></div>
 
   <script type="text/javascript">
     async function displayResponse(response) {
@@ -31,6 +31,13 @@
     async function getInfo() {
       const url = window.location.pathname+window.location.search;
       const response = await fetch(url+'info');
+      displayResponse(response);
+    }
+
+
+    async function getVersion() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'version');
       displayResponse(response);
     }
 
