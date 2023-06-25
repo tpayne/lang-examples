@@ -10,14 +10,18 @@
   <hr>
   <h1>API Methods</h1>
   <hr>
-  <button id="info" onclick="getInfo()">App Info</button>
-  <button id="version" onclick="getVersion()">App Version</button>
-  <button id="health" onclick="healthCheck()">Health Check</button>
-  <button id="orders" onclick="getOrders()">Get Orders</button>
-  <button id="stock" onclick="getStock()">Get Stock</button>
-  <button id="customers" onclick="getCustomers()">Get Customers</button>
+  <div id="info">
+    <button id="info" onclick="getInfo()">App Info</button>
+    <button id="version" onclick="getVersion()">App Version</button>
+    <button id="health" onclick="healthCheck()">Health Check</button>
+    <button id="orders" onclick="getOrders()">Get Orders</button>
+    <button id="stock" onclick="getStock()">Get Stock</button>
+    <button id="customers" onclick="getCustomers()">Get Customers</button>
+  </div>
   <br><br>
-  <div id="response" style="border:solid; background-color:#ABBAEA"></div>
+  <div id="response" 
+   style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+  </div>
 
   <script type="text/javascript">
     async function displayResponse(response) {
