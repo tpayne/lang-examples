@@ -144,7 +144,8 @@ Some of the samples will query from tables or views and some of them are used fo
 
 There is also a web interface which invokes the main functions. This is invoked at the `/` or `/dbapi/` level.
 
-[![localhost:3000](https://assets.digitalocean.com/articles/alligator/boo.svg)](https://digitalocean.com)
+[![localhost:3000](app/doc/images/webapp.png)](app/doc/images/webapp.png)
+
 Cleaning Up
 -----------
 To clean up the installation, uninstall the Helm chart. Note, this will not remove the schema, but scripts are provided to help you do this if needed.
