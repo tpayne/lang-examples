@@ -142,6 +142,9 @@ Some of the samples will query from tables or views and some of them are used fo
     [{"stock_uid":4,"name":"GPU/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series GPU"},{"stock_uid":5,"name":"CPU/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series CPU"},{"stock_uid":6,"name":"TERM/001/MTU","create_date":"2023-06-19T10:27:41.842Z","update_date":"2023-06-19T10:27:41.842Z","no_stock":2000,"description":"MTU Series Terminal"}]
 ```
 
+There is also a web interface which invokes the main functions. This is invoked at the `/` or `/dbapi/` level.
+
+[![localhost:3000](https://assets.digitalocean.com/articles/alligator/boo.svg)](https://digitalocean.com)
 Cleaning Up
 -----------
 To clean up the installation, uninstall the Helm chart. Note, this will not remove the schema, but scripts are provided to help you do this if needed.
