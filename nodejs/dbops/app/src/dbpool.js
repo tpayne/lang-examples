@@ -24,18 +24,25 @@ class Connect {
             }
         }
     
-        var tmpStr = conStr.substring(conStr.indexOf('://')+3)
-        var userId = tmpStr.substring(0,tmpStr.indexOf(':'))
-        var tmpStr = tmpStr.substring(tmpStr.indexOf(':')+1)
-        var pwd = tmpStr.substring(0,tmpStr.indexOf('@'))
-        var tmpStr = tmpStr.substring(tmpStr.indexOf('@')+1)
-        var host = tmpStr.substring(0,tmpStr.indexOf(':'))
-        var tmpStr = tmpStr.substring(tmpStr.indexOf(':')+1)
-        var portNo = tmpStr.substring(0,tmpStr.indexOf('/'))
-        var db = tmpStr.substring(tmpStr.indexOf('/')+1)
-        return { max: 300, connectionTimeoutMillis: 5000,
-                 host: host, user: userId, password: pwd, 
-                 database: db, port: parseInt(portNo), ssl: true, }
+        let tmpStr = conStr.substring(conStr.indexOf('://') + 3)
+        const userId = tmpStr.substring(0, tmpStr.indexOf(':'))
+        tmpStr = tmpStr.substring(tmpStr.indexOf(':') + 1)
+        const pwd = tmpStr.substring(0, tmpStr.indexOf('@'))
+        tmpStr = tmpStr.substring(tmpStr.indexOf('@') + 1)
+        const host = tmpStr.substring(0, tmpStr.indexOf(':'))
+        tmpStr = tmpStr.substring(tmpStr.indexOf(':') + 1)
+        const portNo = tmpStr.substring(0, tmpStr.indexOf('/'))
+        const db = tmpStr.substring(tmpStr.indexOf('/') + 1)
+        return {
+          max: 300,
+          connectionTimeoutMillis: 5000,
+          host,
+          user: userId,
+          password: pwd,
+          database: db,
+          port: parseInt(portNo),
+          ssl: true
+        }
     }
     
     #createPool() {
