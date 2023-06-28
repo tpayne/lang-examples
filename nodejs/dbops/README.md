@@ -162,3 +162,4 @@ References
 - https://nodejs.org/en/docs/
 - https://github.com/brianc/node-postgres/tree/master/docs
 - https://learn.microsoft.com/en-us/azure/cosmos-db/postgresql/quickstart-app-stacks-nodejs
+- https://docs.citusdata.com/en/v11.3/develop/api_udf.html
