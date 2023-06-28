@@ -161,3 +161,4 @@ References
 - https://www.w3schools.io/file/properties-read-write-javascript/
 - https://nodejs.org/en/docs/
 - https://github.com/brianc/node-postgres/tree/master/docs
+- https://learn.microsoft.com/en-us/azure/cosmos-db/postgresql/quickstart-app-stacks-nodejs
