@@ -60,12 +60,10 @@
         displayError(response);
       }
     }
-    // These will only work when deployed with helm
-    // Or else change the Helm Ingress definition
+    
     async function getInfo() {
       runCmd('info')
     }
-
 
     async function getVersion() {
       runCmd('version')
@@ -83,7 +81,7 @@
       runCmd('stock')
     }
 
-    async function getStock() {
+    async function getCustomers() {
       runCmd('customers')
     }
   </script>
