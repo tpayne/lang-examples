@@ -19,54 +19,72 @@
     <button id="customers" onclick="getCustomers()">Get Customers</button>
   </div>
   <br><br>
+  <h3>Response</h3>
   <div id="response" 
    style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+  </div>
+  <br><br>
+  <h3>Error</h3>
+  <div id="error" 
+   style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">
   </div>
 
   <script type="text/javascript">
     async function displayResponse(response) {
       const jsonResponse = await response.json();
       const responseContainer = document.getElementById('response');
+      const errorContainer = document.getElementById('error');
+      errorContainer.innerText = "";
       responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
     }
 
+    async function displayError(response) {
+      const jsonResponse = await response.json();
+      const responseContainer = document.getElementById('response');
+      const errorContainer = document.getElementById('error');
+      responseContainer.innerText = "";
+      errorContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+    }
+
+    async function runCmd(cmd) {
+      let response = null;
+      try {
+        const url = window.location.pathname+window.location.search;
+        response = await fetch(url+cmd);
+        if (response.ok) {
+          displayResponse(response);
+        } else {
+          displayError(response);
+        }
+      } catch(error) {
+        displayError(response);
+      }
+    }
     // These will only work when deployed with helm
     // Or else change the Helm Ingress definition
     async function getInfo() {
-      const url = window.location.pathname+window.location.search;
-      const response = await fetch(url+'info');
-      displayResponse(response);
+      runCmd('info')
     }
 
 
     async function getVersion() {
-      const url = window.location.pathname+window.location.search;
-      const response = await fetch(url+'version');
-      displayResponse(response);
+      runCmd('version')
     }
 
     async function healthCheck() {
-      const url = window.location.pathname+window.location.search;
-      const response = await fetch(url+'healthz');
-      displayResponse(response);
+      runCmd('healthz')
     }
 
     async function getOrders() {
-      const url = window.location.pathname+window.location.search;
-      const response = await fetch(url+'orders');
-      displayResponse(response);
+      runCmd('orders')
     }
 
     async function getStock() {
-      const url = window.location.pathname+window.location.search;
-      const response = await fetch(url+'stock');
-      displayResponse(response);
+      runCmd('stock')
     }
 
-    async function getCustomers() {
-      const url = window.location.pathname+window.location.search;
-      const response = await fetch(url+'customers');
-      displayResponse(response);
+    async function getStock() {
+      runCmd('customers')
     }
   </script>
 
