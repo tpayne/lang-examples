@@ -20,13 +20,12 @@
   </div>
   <br><br>
   <h3>Response</h3>
-  <div id="response" 
-   style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+  <div id="response"
+    style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
   </div>
   <br><br>
   <h3>Error</h3>
-  <div id="error" 
-   style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">
+  <div id="error" style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">
   </div>
 
   <script type="text/javascript">
@@ -49,14 +48,14 @@
     async function runCmd(cmd) {
       let response = null;
       try {
-        const url = window.location.pathname+window.location.search;
-        response = await fetch(url+cmd);
+        const url = window.location.pathname + window.location.search;
+        response = await fetch(url + cmd);
         if (response.ok) {
           displayResponse(response);
         } else {
           displayError(response);
         }
-      } catch(error) {
+      } catch (error) {
         displayError(response);
       }
     }
