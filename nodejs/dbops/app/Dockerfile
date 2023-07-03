@@ -37,5 +37,8 @@ COPY files/config ./config
 
 USER ${account}:${account}
 
+HEALTHCHECK  --interval=5m --timeout=3s \
+  CMD wget --no-verbose --tries=3 --spider http://localhost:3000/ || exit 1
+
 CMD ["./nodeexe"]
 EXPOSE 8000 8080 3000 

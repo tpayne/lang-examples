@@ -29,20 +29,21 @@
   </div>
 
   <script type="text/javascript">
-    async function displayResponse(response) {
+    async function displayResponse(response,error=false) {
       const jsonResponse = await response.json();
       const responseContainer = document.getElementById('response');
       const errorContainer = document.getElementById('error');
-      errorContainer.innerText = "";
-      responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+      if (error) {
+        responseContainer.innerText = "";
+        errorContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+      } else {
+        errorContainer.innerText = "";
+        responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+      }     
     }
 
     async function displayError(response) {
-      const jsonResponse = await response.json();
-      const responseContainer = document.getElementById('response');
-      const errorContainer = document.getElementById('error');
-      responseContainer.innerText = "";
-      errorContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+      displayResponse(response,true)
     }
 
     async function runCmd(cmd) {
