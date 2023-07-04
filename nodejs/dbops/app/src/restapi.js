@@ -1,6 +1,7 @@
 // Import required core modules
 const express = require('express')
 const fs = require('fs')
+const path = require('path')
 const db = require('./db')
 const testdata = require('./testdata')
 
@@ -48,6 +49,12 @@ function main () {
       extended: true
     })
   )
+  svrapp.use(
+    express.static(
+      //path.join(__dirname, "scripts")
+      "."
+    )
+  );
 
   try {
     let port = 3000
