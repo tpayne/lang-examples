@@ -17,42 +17,59 @@
     <button id="orders" onclick="getOrders()">Get Orders</button>
     <button id="stock" onclick="getStock()">Get Stock</button>
     <button id="customers" onclick="getCustomers()">Get Customers</button>
+    <button id="testdata" onclick="getTestData()">Run Test</button>
+    <button id="tabledata" onclick="tableData()">Table Data</button>
   </div>
   <br><br>
   <h3>Response</h3>
   <div id="response"
     style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
   </div>
+  <table id="printData" border="1"></table>
   <br><br>
   <h3>Error</h3>
   <div id="error" style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">
   </div>
 
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script type="text/javascript">
-    async function displayResponse(response,error=false) {
+    async function blankAll() {
+      const responseContainer = document.getElementById('response');
+      const errorContainer = document.getElementById('error');
+      $("#printData").empty(); 
+      responseContainer.innerText = "";
+      errorContainer.innerText = "";
+    }
+
+    async function displayResponse(response, error = false) {
+      await blankAll();
       const jsonResponse = await response.json();
       const responseContainer = document.getElementById('response');
       const errorContainer = document.getElementById('error');
       if (error) {
-        responseContainer.innerText = "";
         errorContainer.innerText = JSON.stringify(jsonResponse, null, 2);
       } else {
-        errorContainer.innerText = "";
         responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
-      }     
+      }
     }
 
     async function displayError(response) {
-      displayResponse(response,true)
+      displayResponse(response, true)
     }
 
-    async function runCmd(cmd) {
+    async function runCmd(cmd,tableData=false) {
       let response = null;
       try {
+        await blankAll();
         const url = window.location.pathname + window.location.search;
         response = await fetch(url + cmd);
         if (response.ok) {
-          displayResponse(response);
+          if (tableData) {
+            const jsonResponse = await response.json();
+            await buildTable("#printData",jsonResponse);
+          } else {
+            displayResponse(response);
+          }
         } else {
           displayError(response);
         }
@@ -60,7 +77,7 @@
         displayError(response);
       }
     }
-    
+
     async function getInfo() {
       runCmd('info')
     }
@@ -74,15 +91,54 @@
     }
 
     async function getOrders() {
-      runCmd('orders')
+      runCmd('orders',true);
     }
 
     async function getStock() {
-      runCmd('stock')
+      runCmd('stock',true);
     }
 
     async function getCustomers() {
-      runCmd('customers')
+      runCmd('customers',true);
+    }
+
+    async function getTestData() {
+      runCmd('testData');
+    }
+
+    async function tableData() {
+      runCmd('testData',true);
+    }
+
+    async function buildTable(tableName,data) {
+      $(tableName).empty(); 
+      var columns = await addColumnHeaders(tableName,data);
+      for (var i = 0; i < data.length; i++) {
+        var row = $('<tr/>');
+        for (var colIndex = 0; colIndex < columns.length; colIndex++) {
+          var cellValue = data[i][columns[colIndex]];
+          if (cellValue == null) cellValue = "";
+          row.append($('<td/>').html(cellValue));
+        }
+        $(tableName).append(row);
+      }
+    }
+
+    async function addColumnHeaders(tableName,data) {
+      var columnSet = [];
+      var headerTr$ = $('<tr/>');
+
+      for (var i = 0; i < data.length; i++) {
+        var rowHash = data[i];
+        for (var key in rowHash) {
+          if ($.inArray(key, columnSet) == -1) {
+            columnSet.push(key);
+            headerTr$.append($('<th/>').html(key));
+          }
+        }
+      }
+      $(tableName).append(headerTr$);
+      return columnSet;
     }
   </script>
 

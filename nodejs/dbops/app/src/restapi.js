@@ -2,6 +2,7 @@
 const express = require('express')
 const fs = require('fs')
 const db = require('./db')
+const testdata = require('./testdata')
 
 const bodyParser = require('body-parser')
 
@@ -33,6 +34,10 @@ function processRequest (svrapp) {
   svrapp.get('/customers', db.getCustomers)
   svrapp.get('/stock', db.getStock)
   svrapp.get('/healthz', db.healthCheck)
+
+  // Test functions
+  svrapp.get('/testData', testdata.getTestData)
+  // End
 }
 
 function main () {

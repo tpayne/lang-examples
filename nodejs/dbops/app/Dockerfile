@@ -34,6 +34,7 @@ COPY --from=imagebuilder /source/nodeexe ./
 
 COPY files/html ./html
 COPY files/config ./config
+COPY files/test ./test
 
 USER ${account}:${account}
 
