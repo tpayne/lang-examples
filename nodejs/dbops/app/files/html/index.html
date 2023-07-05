@@ -6,6 +6,10 @@
   <title>API Methods</title>
 </head>
 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="scripts/formatting.js"></script>
+<script type="text/javascript" src="scripts/cmd.js"></script>
+
 <body>
   <hr>
   <h1>API Methods</h1>
@@ -30,43 +34,6 @@
   <h3>Error</h3>
   <div id="error" style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">
   </div>
-
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-  <script type="text/javascript" src="scripts/formatting.js"></script>
-  <script type="text/javascript">
-    async function getInfo() {
-      runCmd('info')
-    }
-
-    async function getVersion() {
-      runCmd('version')
-    }
-
-    async function healthCheck() {
-      runCmd('healthz')
-    }
-
-    async function getOrders() {
-      runCmd('orders',true);
-    }
-
-    async function getStock() {
-      runCmd('stock',true);
-    }
-
-    async function getCustomers() {
-      runCmd('customers',true);
-    }
-
-    async function getTestData() {
-      runCmd('testData');
-    }
-
-    async function tableData() {
-      runCmd('testData',true);
-    }
-  </script>
-
 </body>
 
 </html>
