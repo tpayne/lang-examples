@@ -17,12 +17,14 @@ COPY Implementors ./WebRestAPI/
 
 WORKDIR /source/WebRestAPI/
 RUN dotnet clean
-RUN dotnet restore /p:PublishReadyToRun=true
+RUN dotnet --info
+RUN dotnet restore --use-current-runtime -v normal \
+    /p:PublishReadyToRun=true
 
 # Trimming is broken for certain JSON classes
 RUN dotnet publish -c release -o /app --self-contained true --no-restore \
     /p:PublishTrimmed=false \
-	/p:PublishReadyToRunShowWarnings=true \
+	/p:PublishReadyToRunShowWarnings=false \
     /p:PublishReadyToRun=true \
     /p:PublishSingleFile=true
 
