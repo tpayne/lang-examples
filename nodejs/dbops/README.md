@@ -154,7 +154,8 @@ Notes
 -----
 - This code does not have any unit testing or SA analysis run as part of the CI process
 - If you need to implement different authentication mechanisms for accessing CosmosDB, then please see https://node-postgres.com/features/connecting
-
+- The webUI now supports testing data
+- 
 References
 ----------
 - https://docs.npmjs.com
