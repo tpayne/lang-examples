@@ -40,19 +40,19 @@ jobs:
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
         # Build tasks to run...
-#      - name: Build the .Net7 Docker image...
-#        id: dotnet7-image
-#        run: |
-#          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/webrestapi
-#          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
-#          echo "::set-output name=image::$IMAGE_ID"
-#          echo "::set-output name=tag::$IMAGE_TAG"
-#
-#          (cd csharp/WebRestAPI/WebRestAPI && \
-#          docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
-#          docker run --rm -t -d -p 5556:8080 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
-#          sleep 10 && curl localhost:5556/api/repo/repostring && \
-#          docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG})
+      - name: Build the .Net7 Docker image...
+        id: dotnet7-image
+        run: |
+          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/webrestapi
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "::set-output name=image::$IMAGE_ID"
+          echo "::set-output name=tag::$IMAGE_TAG"
+
+          (cd csharp/WebRestAPI/WebRestAPI && \
+          docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
+          docker run --rm -t -d -p 5556:8080 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
+          sleep 10 && curl localhost:5556/api/repo/repostring && \
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG})
 
       - name: Build the CPP Docker image and test...
         id: cpp-image
@@ -109,20 +109,20 @@ jobs:
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
 
-#  update-dev-manifest:
-#    name: Update Dev deployment manifest
-#    runs-on: ubuntu-latest
-#    needs: build
-#    if: github.event_name == 'push'
-#
-#    steps:
-#      - name: Update GitOps deployment manifest values
-#        uses: tpayne/github-actions/productmanifest@main
-#        with:
-#          gitops-repo-url: https://github.com/tpayne/kubernetes-examples
-#          manifest-file: gitops/Argocd/examples/simple/helm/dev/values-releaseversions.yaml
-#          github-username: ${{ github.actor }}
-#          github-token: ${{ secrets.GT_TOKEN }}
-#          github-email: ${{ github.actor }}@users.noreply.github.com
-#          image-list: github-service:${{ needs.build.outputs.dotnet7-image }}
-#          image-tag: ${{ needs.build.outputs.dotnet7-tag }}
+  update-dev-manifest:
+    name: Update Dev deployment manifest
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Update GitOps deployment manifest values
+        uses: tpayne/github-actions/productmanifest@main
+        with:
+          gitops-repo-url: https://github.com/contino/argo-suite-samples.git
+          manifest-file: examples/simple/helm/dev/values-releaseversions.yaml
+          github-username: ${{ github.actor }}
+          github-token: ${{ secrets.GT_TOKEN }}
+          github-email: ${{ github.actor }}@users.noreply.github.com
+          image-list: github-service:${{ needs.build.outputs.dotnet7-image }}
+          image-tag: ${{ needs.build.outputs.dotnet7-tag }}
