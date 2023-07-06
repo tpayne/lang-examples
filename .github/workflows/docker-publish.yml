@@ -82,7 +82,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract CPPDemo Docker metadata
         id: meta1
-        uses: docker/metadata-action@ef25336f420be2d1a49205baf41a9b88712a65a1
+        uses: docker/metadata-action@35e9aff4f5d665b5aa8a8f2adffaf8a1b5f49cc0
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/cppdemo
 
@@ -101,7 +101,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract CPP Docker metadata
         id: meta2
-        uses: docker/metadata-action@ef25336f420be2d1a49205baf41a9b88712a65a1
+        uses: docker/metadata-action@35e9aff4f5d665b5aa8a8f2adffaf8a1b5f49cc0
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/MessageUtils
 
@@ -120,7 +120,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Docker metadata
         id: meta3
-        uses: docker/metadata-action@ef25336f420be2d1a49205baf41a9b88712a65a1
+        uses: docker/metadata-action@35e9aff4f5d665b5aa8a8f2adffaf8a1b5f49cc0
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejs
 
@@ -139,7 +139,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS DB Docker metadata
         id: meta4
-        uses: docker/metadata-action@ef25336f420be2d1a49205baf41a9b88712a65a1
+        uses: docker/metadata-action@35e9aff4f5d665b5aa8a8f2adffaf8a1b5f49cc0
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsdb
 
