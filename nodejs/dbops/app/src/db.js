@@ -2,6 +2,7 @@
 
 const DbPool = require('./dbpool.js').DbPool
 
+// Function to run queries
 const runQuery = function (queryStr) {
   return new Promise(function (resolve, reject) {
     DbPool.pool.query(queryStr, function (err, result) {
@@ -11,6 +12,7 @@ const runQuery = function (queryStr) {
   })
 }
 
+// Function to test connection
 async function testConnection () {
   runQuery('SELECT NOW()')
     .then(function (result) {
