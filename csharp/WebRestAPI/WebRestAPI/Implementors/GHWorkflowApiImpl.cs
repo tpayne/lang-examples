@@ -38,8 +38,11 @@ namespace WebRestAPI.Implementors
 {
     public class GHWorkflowApiImpl
     {
-        public async Task<dynamic> GetJobRunLogsImpl(string owner, string repoName,
-                                        string creds, long jobId, int runNo,
+        public async Task<dynamic> GetJobRunLogsImpl(string owner, 
+                                        string repoName,
+                                        string creds, 
+                                        long jobId, 
+                                        int runNo,
                                         bool bJson)
         {
             try
