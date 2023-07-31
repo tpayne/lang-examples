@@ -1,5 +1,4 @@
 name: Build images and update manifest info for Demo
-
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   registry_package:
