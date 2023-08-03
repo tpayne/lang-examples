@@ -3,6 +3,8 @@ Web RESTAPI Sample
 
 This repo contains an example C# RESTful API for interacting with services like GitHub.
 
+It uses the GH REST API to perform various operations that are documented below.
+
 Running the Example with Basic Ops
 ----------------------------------
 This example creates and runs a C# web server.
