@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>API Methods</title>
+</head>
+
+<body>
+  <hr>
+  <h1>API Methods</h1>
+  <hr>
+  <button id="info" onclick="getInfo()">App Info</button>
+  <button id="version" onclick="getVersion()">App Version</button>
+  <button id="health" onclick="healthCheck()">Health Check</button>
+  <button id="orders" onclick="getOrders()">Get Orders</button>
+  <button id="stock" onclick="getStock()">Get Stock</button>
+  <button id="customers" onclick="getCustomers()">Get Customers</button>
+  <br><br>
+  <div id="response" style="border:solid; background-color:#ABBAEA"></div>
+
+  <script type="text/javascript">
+    async function displayResponse(response) {
+      const jsonResponse = await response.json();
+      const responseContainer = document.getElementById('response');
+      responseContainer.innerText = JSON.stringify(jsonResponse, null, 2);
+    }
+
+    // These will only work when deployed with helm
+    // Or else change the Helm Ingress definition
+    async function getInfo() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'info');
+      displayResponse(response);
+    }
+
+
+    async function getVersion() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'version');
+      displayResponse(response);
+    }
+
+    async function healthCheck() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'healthz');
+      displayResponse(response);
+    }
+
+    async function getOrders() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'orders');
+      displayResponse(response);
+    }
+
+    async function getStock() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'stock');
+      displayResponse(response);
+    }
+
+    async function getCustomers() {
+      const url = window.location.pathname+window.location.search;
+      const response = await fetch(url+'customers');
+      displayResponse(response);
+    }
+  </script>
+
+</body>
+
+</html>

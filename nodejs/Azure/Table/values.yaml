@@ -1,0 +1,10 @@
+containerImage:
+  repository: uksidvstsmsvk8caasacr.azurecr.io/storage-blob # Optional. Repo to which the image resides
+  tag: latest # Optional. Image Tag (Defaults to latest)
+  pullPolicy: IfNotPresent
+applicationName: "storage-blob"
+
+horizontalPodAutoscaler:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
