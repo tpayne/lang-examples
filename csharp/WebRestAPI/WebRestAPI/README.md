@@ -215,5 +215,3 @@ References
 - https://hub.docker.com/_/microsoft-dotnet-aspnet/
 - https://hub.docker.com/_/microsoft-dotnet-sdk
 - https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
-
-
