@@ -37,6 +37,7 @@ function processRequest (svrapp) {
   svrapp.post('/api/tables/create', azure.createTable)
   svrapp.post('/api/tables/drop', azure.dropTable)
   svrapp.get('/api/tables/list', azure.listTables)
+  svrapp.get('/api/tables/healthz', azure.healthCheck)
 }
 
 function main () {

@@ -179,7 +179,22 @@ async function listTables(request, response) {
     let result = await list()
     response.status(200).json(result)
   } catch (e) {
-    response.status(500).send({
+    response.status(500).json({
+      message: e.message
+    })
+  }
+}
+
+async function healthCheck(request, response) {
+  console.log('%s: Processing %s', new Date().toISOString(), request.path)
+
+  try {
+    let result = await list()
+    response.status(200).json({ 
+      message: "Ok"
+    })
+  } catch (e) {
+    response.status(500).json({
       message: e.message
     })
   }
@@ -188,5 +203,6 @@ async function listTables(request, response) {
 module.exports = {
   listTables,
   createTable,
-  dropTable
+  dropTable,
+  healthCheck
 }

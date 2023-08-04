@@ -1,14 +1,14 @@
 Storage Application
 =======================
 
-This repo contains a simple example Node.JS REST API that works with Azure Storage Storage Account(s) (Blob).
+This repo contains a simple example Node.JS REST API that works with Azure Storage Account(s) (Tables).
 
-To run this sample, you will need to have access to a Azure Storage Storage Account(s) (Blob) and an AKS instance to which you can deploy too.
+To run this sample, you will need to have access to a Azure Storage Storage Account(s) (Tables) and an AKS instance to which you can deploy too.
 
 What does this sample do?
 -------------------------
 This example consists of the following...
-* A NodeJS REST API application coded to authenticate to an Azure Storage Storage Account (Blob) instance, and create a container upon it.
+* A NodeJS REST API application coded to authenticate to an Azure Storage Account (Table) instance, and create a container upon it.
 
 To use this sample, you need to do the following...
 * Spin up an Azure Storage Account
@@ -16,8 +16,8 @@ To use this sample, you need to do the following...
 * A Helm Chart used to deploy the application, to AKS as a Container
 
 Running the Helm chart provided in the sample will...
-* Deploy the application and check the storage account is accessible. If this fails, then the application will fail to start
-* Create a sample container atop the Azure Storage Account, and list out Containers within the Storage Account
+* Deploy the application 
+* Provide a set of sample Web REST APIs that allow you to create, delete and list tables
 
 Building the Application
 ------------------------
@@ -28,16 +28,12 @@ The Dockerfile uses publically available official NodeJS Alpine images and then 
 To build and run the image locally, you can do the following...
 
 ```shell
-docker build -t nodejs-serverless-storage-sample .
+docker build -t nodejs-serverless-storage-tablesample .
 ```
 
 Helm Charts
 -----------
 As detailed elsewhere in this README, the application is deployed using a customised Helm chart.
-
-The Chart used here, is the Serverless Generic Helm Chart which can be found below:
-
-https://github.com/lbg-cloud-platform/lcp-cips-vdc-generic-helm-chart-serverless
 
 This chart has the following structure:
 
@@ -85,10 +81,27 @@ This install process will...
 
 Running the App
 ---------------
-The app is simply designed to automate the creation of the Container(s), and will output the success or failure to the console, which can be validated by access the container logs which can be achieved via the below command:
+The app is simply designed to provide a number of Web services that allow you to interact with the Azure Table SDK. You can use them to create, delete or list tables.
+
+To run the app, you need to configure the storage account that the app uses or ensure that it is exposed into the environment. 
+
+To configure this you can either edit the properties file - `config/app.properties` or `export STORAGE_ACCOUNT=<accountName>` into the environment used by the container.
+
+The following are some usage examples of the service running. To use them on your system, you will need to modify `localhost:3000` to the appropriate Ingress that you are using for Kubernetes.
 
 ```shell
-kubectl logs -c [CONTAINER_NAME] -p [POD_NAME]
+    curl "localhost:3000/api/tables/healthz"
+    {"message":"Ok"}
+    curl -X POST "localhost:3000/api/tables/create" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "table=testall"
+    {"message":"Table created"}
+    curl "localhost:3000/api/tables/list"
+    [{"name":"test"},{"name":"testall"},{"name":"test123"}]
+    curl -X POST "localhost:3000/api/tables/drop" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "table=testall"
+    {"message":"Table dropped"}
 ```
 
 Cleaning Up
