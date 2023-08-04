@@ -34,8 +34,8 @@ function processRequest (svrapp) {
   })
 
   // Database functions
-  svrapp.get('/api/tables/create', azure.createTable)
-  svrapp.get('/api/tables/delete', azure.dropTable)
+  svrapp.post('/api/tables/create', azure.createTable)
+  svrapp.post('/api/tables/drop', azure.dropTable)
   svrapp.get('/api/tables/list', azure.listTables)
 }
 

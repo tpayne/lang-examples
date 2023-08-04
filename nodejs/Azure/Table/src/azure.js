@@ -1,175 +1,189 @@
-const { TableServiceClient } = require('@azure/data-tables')
+const { odata, TableServiceClient, TableClient } = require("@azure/data-tables")
 const { DefaultAzureCredential } = require("@azure/identity");
 const { SecretClient } = require("@azure/keyvault-secrets");
+const { table } = require("console");
 const PropertiesReader = require('properties-reader')
+const util = require('util')
 
-class AzTableClient {
-  credential = null
-  tableClient = null
-  storageAccount = null
+// Utility functions
+async function getStorageAccount() {
+  let storageAccount = null
 
-  get client () {
-    if (!this.tableClient) {
-      this.#client()
-    }
-    return this.tableClient
-  }
-
-  #init() {
+  try {
     const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
-    if (!this.credential ||
-        !this.storageAccount ||
-        !this.tableClient) {
-      try {
-        const properties = PropertiesReader(configFile)
-        this.storageAccount = properties.get('storage-account')
-        if (!this.storageAccount) {
-          this.storageAccount = process.env.STORAGE_ACCOUNT
-        }
-      }
-      catch(px) {
-        console.error('%s: Error - Unable to get storage account from properties file (%s) %s',
-                      new Date().toISOString(),configFile, px.message)
-        return null
-      }
-      try {
-        const tableUrl = `https://${this.storageAccount}.table.core.windows.net`
-        console.log('%s: Logging into %s',new Date().toISOString(),tableUrl)
-        this.credential = new DefaultAzureCredential()
-        this.tableClient = new TableServiceClient(
-          tableUrl,
-          this.credential
-        )
-        console.log('%s: Logged on',new Date().toISOString(),tableUrl)
-      } catch (e) {
-        console.error('%s: Error - Unable to login to Azure %s',
-                      new Date().toISOString(), e.message)
-        return null
-      }
-    }
-    return this.tableClient
-  }
-
-  #client () {
-    if (!this.tableClient) {
-      this.tableClient = this.#init()
+    const properties = PropertiesReader(configFile)
+    storageAccount = properties.get('storage-account')
+    if (!storageAccount) {
+      storageAccount = process.env.STORAGE_ACCOUNT
     }
   }
+  catch (px) {
+    console.error('%s: Error - Unable to get storage account from properties file (%s) %s',
+      new Date().toISOString(), configFile, px.message)
+    return null
+  }
+
+  return storageAccount
 }
 
-const azTableClient = new AzTableClient()
+async function getUrl(storageAccount) {
+  return `https://${storageAccount}.table.core.windows.net`
+}
 
-const create = function (tableName) {
-  return new Promise(function (resolve, reject) {
-    azTableClient.client.createTable(tableName, function (error, result) {
-      if (error) { return reject(error) }
-      resolve(result)
+async function connect() {
+  let credential = null
+  let tableClientService = null
+
+  try {
+    const tableUrl = await getUrl(await getStorageAccount())
+    console.log('%s: Logging into %s', new Date().toISOString(), tableUrl)
+    credential = new DefaultAzureCredential()
+    tableClientService = new TableServiceClient(
+      tableUrl,
+      credential
+    )
+    console.log('%s: Logged on', new Date().toISOString(), tableUrl)
+  } catch (e) {
+    console.error('%s: Error - Unable to login to Azure %s',
+      new Date().toISOString(), e.message)
+    return null
+  }
+  return tableClientService
+}
+
+async function tableExists(tableName) {
+  const tableClientService = await connect()
+  const queryTable = tableClientService.listTables({
+      queryOptions: { filter: odata`TableName eq ${tableName}` }
     })
+
+  for await (const table of queryTable) {
+    return true
+  }
+  return false
+}
+
+// Helper functions
+async function list() {
+  const tableClientService = await connect()
+  const queryTable = tableClientService.listTables({
+      queryOptions: {}
+    })
+  let p = []
+  for await (const table of queryTable) {
+    p.push(table)
+  }
+  return p
+}
+
+async function create(tableName) {
+  const tableClientService = await connect()
+  await tableClientService.createTable(tableName, {
+    onResponse : (error, result) => {
+      if (error) { 
+        //console.log(util.inspect(error, false, null, true))
+        return(error)
+      }
+      //console.log(util.inspect(result, false, null, true))
+      return(result)
+    }
   })
 }
 
-const drop = function (tableName) {
-  return new Promise(function (resolve, reject) {
-    azTableClient.client.dropTable(tableName, function (error, result) {
-      if (error) { return reject(error) }
-      resolve(result)
-    })
+async function drop(tableName) {
+  const tableClientService = await connect()
+  await tableClientService.deleteTable(tableName, {
+    onResponse : (error, result) => {
+      if (error) { 
+        //console.log(util.inspect(error, false, null, true))
+        return(error)
+      }
+      //console.log(util.inspect(result, false, null, true))
+      return(result)
+    }
   })
 }
 
-const list = function () {
-  return new Promise(function (resolve, reject) {
-    azTableClient.client.listTablesSegmented(null, function (error, result) {
-      if (error) { return reject(error) }
-      resolve(result)
-    })
-  })
-}
-
-const createTable = (request, response) => {
-  let tableName = request.query.table
+async function createTable(request, response) {
+  let tableName = request.body.table
   console.log('%s: Processing %s %s', new Date().toISOString(), request.path, tableName)
-
-  create(tableName)
-    .then(function (result) {
-      if (result.statusCode == 200) {
-        response.status(200).send({
+  
+  try {
+    var exists = await tableExists(tableName);
+    if (exists) {
+      return response.status(409).json({
+        message: 'Table already exists'
+      })      
+    }
+  } catch(e) {
+    return response.status(500).json({
+      message: e.message
+    })
+  }
+  try {
+    var result = await create(tableName)
+    var exists = await tableExists(tableName);
+    if (exists) {
+      return response.status(201).json({
           message: 'Table created'
-        })
-      }
-    }).catch(function (error) { // eslint-disable-line
-      response.status(500).send({
-        message: 'Service error'
       })
+    }
+    return response.status(500).json({
+      message: 'Table creation service error'
     })
-  /*
-  let status = create(tableName)
-  console.log('%s: Code is %s', new Date().toISOString(), status)
-
-  if (status == 409) {
-    response.status(409).send({
-      message: 'Table already exists'
-    })
-  } else if (status == 200) {
-    response.status(200).send({
-      message: 'Table created'
-    })
-  } else if (status == 500) {
-    response.status(500).send({
-      message: 'Service error'
-    })
-  } else {
-    response.status(status).send({
-      message: 'Unknown error'
+  } catch(e) {
+    return response.status(500).json({
+      message: e.message
     })
   }
-  */
 }
 
-const dropTable = (request, response) => {
-  let tableName = request.query.table
+async function dropTable(request, response) {
+  let tableName = request.body.table
   console.log('%s: Processing %s %s', new Date().toISOString(), request.path, tableName)
-  drop(tableName)
-    .then(function (result) {
-      if (result.statusCode == 200) {
-        response.status(200).send({
-          message: 'Table dropped'
-        })
-      }
-    }).catch(function (error) { // eslint-disable-line
-      response.status(500).send({
-        message: 'Service error'
-      })
-    })
-}
 
-const listTables = (request, response) => {
-  console.log('%s: Processing %s', new Date().toISOString(), request.path)
-  list()
-    .then(function (result) {
-      if (result.statusCode == 200) {
-        response.status(200).json(result.entries)
-      }
-    }).catch(function (error) { // eslint-disable-line
-      response.status(500).send({
-        message: error.message
-      })
+  try {
+    var exists = await tableExists(tableName);
+    if (!exists) {
+      return response.status(404).json({
+        message: 'Table does not exist'
+      })      
+    }
+  } catch(e) {
+    return response.status(500).json({
+      message: e.message
     })
-}
-
-/*
-async function listTables () {
-  let iter = azTableClient.client.listTables()
-  let i = 1;
-  let str = new String("{ \"table\": [")
-  for (const table of iter) {
-    str += "\"${table}\","
-    i++
   }
-  str += "]}"
-  response.status(200).send(str)
+  try {
+    var result = await drop(tableName)
+    var exists = await tableExists(tableName);
+    if (!exists) {
+      return response.status(201).json({
+          message: 'Table dropped'
+      })
+    }
+    return response.status(500).json({
+      message: 'Table drop service error'
+    })
+  } catch(e) {
+    return response.status(500).json({
+      message: e.message
+    })
+  }
 }
-*/
+
+async function listTables(request, response) {
+  console.log('%s: Processing %s', new Date().toISOString(), request.path)
+
+  try {
+    let result = await list()
+    response.status(200).json(result)
+  } catch (e) {
+    response.status(500).send({
+      message: e.message
+    })
+  }
+}
 
 module.exports = {
   listTables,
