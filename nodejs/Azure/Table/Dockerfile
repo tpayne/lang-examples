@@ -15,7 +15,9 @@ COPY src/*.json ./
 
 # Install application dependencies
 RUN npm install -g pkg@5.8.1
-RUN npm install properties-reader@2.2.0 @azure/data-tables @azure/identity \
+RUN npm install properties-reader@2.2.0 @azure/data-tables \
+    @azure/core-auth \
+    @azure/identity \
     express@4.18.2 body-parser@1.20.2
 RUN pkg -t node18 restapi.js -o nodeexe
 
@@ -35,6 +37,7 @@ COPY --from=imagebuilder /source/nodeexe ./
 
 COPY files/html ./html
 COPY files/config ./config
+COPY files/scripts ./scripts
 
 USER ${account}:${account}
 

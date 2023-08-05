@@ -1,5 +1,6 @@
 const { odata, TableServiceClient, TableClient } = require("@azure/data-tables")
 const { DefaultAzureCredential } = require("@azure/identity");
+const { AzureNamedKeyCredential, AzureSASCredential } = require("@azure/core-auth");
 const { SecretClient } = require("@azure/keyvault-secrets");
 const { table } = require("console");
 const PropertiesReader = require('properties-reader')
@@ -27,12 +28,20 @@ async function getProperty(prop) {
 
 async function getStorageAccount() {
   let storageAccount = null
-
   storageAccount = await getProperty('storage-account')
   if (!storageAccount) {
     storageAccount = process.env.STORAGE_ACCOUNT
   }
   return storageAccount
+}
+
+async function getStorageAccountKey() {
+  let storageAccountKey = null
+  storageAccountKey = await getProperty('storage-account-key')
+  if (!storageAccountKey) {
+    storageAccount = process.env.STORAGE_ACCOUNT_KEY
+  }
+  return storageAccountKey
 }
 
 async function getUrl(storageAccount) {
@@ -43,6 +52,7 @@ async function connect() {
   let credential = null
   let tableClientService = null
   let storageAccount = await getStorageAccount()
+  let storageAccountKey = await getStorageAccountKey()
 
   if (conmap.has(storageAccount)) {
     return conmap.get(storageAccount)
@@ -50,13 +60,16 @@ async function connect() {
 
   try {
     const tableUrl = await getUrl(storageAccount)
-    console.log('%s: Logging into %s', new Date().toISOString(), tableUrl)
-    credential = new DefaultAzureCredential()
-    tableClientService = new TableServiceClient(
-      tableUrl,
-      credential
-    )
-    console.log('%s: Logged on', new Date().toISOString(), tableUrl)
+
+    if (storageAccountKey) {
+      console.log('%s: Key logging into %s', new Date().toISOString(), tableUrl)
+      credential = new AzureNamedKeyCredential(storageAccount,storageAccountKey)
+    } else {
+      console.log('%s: Default logging into %s', new Date().toISOString(), tableUrl)
+      credential = new DefaultAzureCredential()
+    }
+    tableClientService = new TableServiceClient(tableUrl,credential)
+    console.log('%s: Logged onto ', new Date().toISOString(), tableUrl)
   } catch (e) {
     console.error('%s: Error - Unable to login to Azure %s',
       new Date().toISOString(), e.message)
@@ -81,15 +94,20 @@ async function tableExists(tableName) {
 
 // Helper functions
 async function list() {
-  const tableClientService = await connect()
-  const queryTable = tableClientService.listTables({
-      queryOptions: {}
-    })
-  let p = []
-  for await (const table of queryTable) {
-    p.push(table)
+  try {
+    const tableClientService = await connect()
+    const queryTable = tableClientService.listTables({
+        queryOptions: {}
+      })
+    let p = []
+    for await (const table of queryTable) {
+      p.push(table)
+    }
+    return p  
+  } catch(e) {
+    console.log('%s: Error - %s', new Date().toISOString(), e.message)
+    return null
   }
-  return p
 }
 
 async function create(tableName) {
@@ -193,7 +211,13 @@ async function listTables(request, response) {
 
   try {
     let result = await list()
-    response.status(200).json(result)
+    if (result) {
+      response.status(200).json(result)
+    } else {
+      response.status(500).json({
+        message: 'Service error'
+      })
+    }
   } catch (e) {
     response.status(500).json({
       message: e.message

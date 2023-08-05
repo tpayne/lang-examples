@@ -42,12 +42,19 @@ function processRequest (svrapp) {
 
 function main () {
   const svrapp = express()
+
   svrapp.use(bodyParser.json())
   svrapp.use(
     bodyParser.urlencoded({
       extended: true
     })
   )
+  svrapp.use(
+    express.static(
+      //path.join(__dirname, "scripts")
+      "."
+    )
+  );
 
   try {
     let port = 3000
