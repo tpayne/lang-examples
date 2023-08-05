@@ -5,17 +5,16 @@ const { table } = require("console");
 const PropertiesReader = require('properties-reader')
 const util = require('util')
 
+let conmap = new Map()
+
 // Utility functions
-async function getStorageAccount() {
-  let storageAccount = null
+async function getProperty(prop) {
+  let property = null
 
   try {
     const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
     const properties = PropertiesReader(configFile)
-    storageAccount = properties.get('storage-account')
-    if (!storageAccount) {
-      storageAccount = process.env.STORAGE_ACCOUNT
-    }
+    property = properties.get(prop)
   }
   catch (px) {
     console.error('%s: Error - Unable to get storage account from properties file (%s) %s',
@@ -23,6 +22,16 @@ async function getStorageAccount() {
     return null
   }
 
+  return property
+}
+
+async function getStorageAccount() {
+  let storageAccount = null
+
+  storageAccount = await getProperty('storage-account')
+  if (!storageAccount) {
+    storageAccount = process.env.STORAGE_ACCOUNT
+  }
   return storageAccount
 }
 
@@ -33,9 +42,14 @@ async function getUrl(storageAccount) {
 async function connect() {
   let credential = null
   let tableClientService = null
+  let storageAccount = await getStorageAccount()
+
+  if (conmap.has(storageAccount)) {
+    return conmap.get(storageAccount)
+  }
 
   try {
-    const tableUrl = await getUrl(await getStorageAccount())
+    const tableUrl = await getUrl(storageAccount)
     console.log('%s: Logging into %s', new Date().toISOString(), tableUrl)
     credential = new DefaultAzureCredential()
     tableClientService = new TableServiceClient(
@@ -48,6 +62,8 @@ async function connect() {
       new Date().toISOString(), e.message)
     return null
   }
+
+  conmap.set(storageAccount,tableClientService)
   return tableClientService
 }
 
@@ -199,6 +215,17 @@ async function healthCheck(request, response) {
     })
   }
 }
+
+// Signal handlers...
+function signalHandler (signal) {
+  console.log('Killing process and shutting down')
+  conmap.clear()
+  process.exit()
+}
+
+process.on('SIGINT', signalHandler)
+process.on('SIGTERM', signalHandler)
+process.on('SIGQUIT', signalHandler)
 
 module.exports = {
   listTables,

@@ -72,14 +72,4 @@ function main () {
   }
 }
 
-// Signal handlers...
-function signalHandler (signal) {
-  console.log('Killing process and shutting down')
-  process.exit()
-}
-
-process.on('SIGINT', signalHandler)
-process.on('SIGTERM', signalHandler)
-process.on('SIGQUIT', signalHandler)
-
 main()
