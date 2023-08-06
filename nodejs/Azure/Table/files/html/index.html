@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>API Methods</title>
+  <link type="css" rel="stylesheet" href="./style.css" crossorigin="anonymous">
 </head>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
@@ -19,6 +20,27 @@
     <button id="version" onclick="getVersion()">App Version</button>
     <button id="health" onclick="healthCheck()">Health Check</button>
     <button id="tables" onclick="getTables()">Get Tables</button>
+  </div>
+  <br><br>
+  <div id="tableArea"
+    style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+    <form action="/api/tables/create" method="POST" target="receiver">
+      <fieldset>
+        <h3>Create a table</h3>
+        <label>Table Name</label>
+        <input type="text" id='table' name="table" required>
+        <button type="create">Create</button>
+      </fieldset>
+    </form>
+    <form action="/api/tables/drop" method="POST" target="receiver">
+      <fieldset>
+        <h3>Drop a table</h3>
+        <label>Table Name</label>
+        <input type="text" id='table' name="table" required>
+        <button type="drop">Drop</button>
+      </fieldset>
+    </form>
+    <iframe name="receiver" id="receiver"></iframe>
   </div>
   <br><br>
   <h3>Response</h3>

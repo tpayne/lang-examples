@@ -13,3 +13,7 @@ async function healthCheck() {
 async function getTables() {
   runCmd('api/tables/list', true);
 }
+
+async function createTable() {
+  runCmd('api/tables/create');
+}
