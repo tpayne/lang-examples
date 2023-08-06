@@ -31,53 +31,30 @@ To build and run the image locally, you can do the following...
 docker build -t nodejs-serverless-storage-tablesample .
 ```
 
-Helm Charts
------------
-As detailed elsewhere in this README, the application is deployed using a customised Helm chart.
-
-This chart has the following structure:
-
-```shell
-├── Chart.yaml
-├── linter_values.yaml
-├── templates
-│   ├── NOTES.txt
-│   ├── _capabilities_helpers.tpl
-│   ├── _deployment_spec.tpl
-│   ├── _helpers.tpl
-│   ├── canarydeployment.yaml
-│   ├── customresources.yaml
-│   ├── deployment.yaml
-│   ├── horizontalpodautoscaler.yaml
-│   ├── ingress.yaml
-│   ├── pdb.yaml
-│   ├── service.yaml
-│   └── serviceaccount.yaml
-└── values.yaml
-```
-
 Deploying the Application
 -------------------------
-To deploy the application, please do the following...
+To deploy the application, please review the following instructions.
 
-You can use various Helm approaches like `install` or `template`. The approach shown below is using `template` as it allows you to view the YAML created to see what it looks like and tweak as appropriate. For real deployments, you should use `install`
+Before running the `helm install` or `helm template` command, please review
+the `values.yaml` file to ensure the values are as you expect.
 
-A sample values.yaml file for the below helm commands, can be found in this directory.
-
-```shell
-helm template [APP_NAME_HERE] [PATH_TO_CHART_HERE] --values [PATH_TO_VALUES_FILE_HERE]
+```console
+    helm template storage-table \
+        -f values.yaml \
+        k8s-service \
+        --repo https://helmcharts.gruntwork.io/ |\
+    kubectl apply -f - -n <ns>
 ```
 
-Using Helm `install`, you can do the install using a command like...
-
-```shell
-helm install [APP_NAME_HERE] [PATH_TO_CHART_HERE] --namespace [TARGET_NAMESPACE_HERE] --values [PATH_TO_VALUES_FILE_HERE]
+```console
+    helm install storage-table \
+        -f values.yaml \
+        k8s-service \
+        -n <ns> \
+        --repo https://helmcharts.gruntwork.io/
 ```
 
-Although you might want to `--dry-run` the installation first.
-
-This install process will...
-* Deploy a NodeJS application image built using the Dockerfile `app`. You will need to update the Helm chart to pickup different images as required, e.g. if you are using a different CR repo
+You can use various Helm approaches like `install` or `template`. The approach(s) shown above is using `template` as it allows you to view the YAML created to see what it looks like and tweak as appropriate. For real deployments, you should use `install`
 
 Running the App
 ---------------
