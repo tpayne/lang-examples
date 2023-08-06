@@ -1,9 +1,11 @@
 Storage Application
-=======================
+===================
 
-This repo contains a simple example Node.JS REST API that works with Azure Storage Account(s) (Tables).
+This repo contains a simple example Node.JS REST API that works with Azure Storage 
+Account(s) (Tables).
 
-To run this sample, you will need to have access to a Azure Storage Storage Account(s) (Tables) and an AKS instance to which you can deploy too.
+To run this sample, you will need to have access to a Azure Storage Account(s) (Tables) 
+and an AKS instance to which you can deploy too.
 
 What does this sample do?
 -------------------------
@@ -28,7 +30,7 @@ The Dockerfile uses publically available official NodeJS Alpine images and then 
 To build and run the image locally, you can do the following...
 
 ```shell
-docker build -t nodejs-serverless-storage-tablesample .
+    docker build -t nodejs-serverless-storage-tablesample .
 ```
 
 Deploying the Application
