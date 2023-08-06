@@ -1,9 +1,23 @@
 applicationName: "storage-table"
 
+customResources:
+  enabled: true
+  resources:
+    configMapData: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: app-config
+        labels:
+      data:
+        app.properties: |-
+          port=3000
+          storage-account=testtablestorageapp
+
 containerImage:
   repository: ghcr.io/tpayne/nodejsazuretable # Optional. Repo to which the image resides
   tag: master # Optional. Image Tag (Defaults to latest)
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 hasVolume:
   - name: app-config
@@ -27,7 +41,7 @@ ingress:
   path: /
   servicePort: app
   hosts:
-    - restapi.ukwest.cloudapp.azure.com
+    - <ingressHostName>
 
 service:
   enabled: true
@@ -56,17 +70,3 @@ readinessProbe:
   httpGet:
     path: /api/tables/healthz
     port: http
-
-customResources:
-  enabled: true
-  resources:
-    configMapData: |
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: app-config
-        labels:
-      data:
-        app.properties: |-
-          port=3000
-          storage-account=baggins
