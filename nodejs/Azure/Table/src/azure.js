@@ -22,7 +22,7 @@ async function getStorageAccountKey() {
   let storageAccountKey = null
   storageAccountKey = await getProperty('storage-account-key')
   if (!storageAccountKey) {
-      storageAccount = process.env.STORAGE_ACCOUNT_KEY
+    storageAccountKey = process.env.STORAGE_ACCOUNT_KEY
   }
   return storageAccountKey
 }
