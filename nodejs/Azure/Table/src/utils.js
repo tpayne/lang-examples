@@ -1,0 +1,23 @@
+const PropertiesReader = require('properties-reader')
+
+// Utility functions
+async function getProperty(prop) {
+    let property = null
+
+    try {
+        const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
+        const properties = PropertiesReader(configFile)
+        property = properties.get(prop)
+    }
+    catch (px) {
+        console.error('%s: Error - Unable to get storage account from properties file (%s) %s',
+            new Date().toISOString(), configFile, px.message)
+        return null
+    }
+
+    return property
+}
+
+module.exports = {
+    getProperty
+}

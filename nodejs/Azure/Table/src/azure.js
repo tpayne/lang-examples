@@ -3,34 +3,17 @@ const { DefaultAzureCredential } = require("@azure/identity");
 const { AzureNamedKeyCredential, AzureSASCredential } = require("@azure/core-auth");
 const { SecretClient } = require("@azure/keyvault-secrets");
 const { table } = require("console");
-const PropertiesReader = require('properties-reader')
+const { getProperty } = require("./utils.js");
 const util = require('util')
 
 let conmap = new Map()
 
 // Utility functions
-async function getProperty(prop) {
-  let property = null
-
-  try {
-    const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
-    const properties = PropertiesReader(configFile)
-    property = properties.get(prop)
-  }
-  catch (px) {
-    console.error('%s: Error - Unable to get storage account from properties file (%s) %s',
-      new Date().toISOString(), configFile, px.message)
-    return null
-  }
-
-  return property
-}
-
 async function getStorageAccount() {
   let storageAccount = null
   storageAccount = await getProperty('storage-account')
   if (!storageAccount) {
-    storageAccount = process.env.STORAGE_ACCOUNT
+      storageAccount = process.env.STORAGE_ACCOUNT
   }
   return storageAccount
 }
@@ -39,7 +22,7 @@ async function getStorageAccountKey() {
   let storageAccountKey = null
   storageAccountKey = await getProperty('storage-account-key')
   if (!storageAccountKey) {
-    storageAccount = process.env.STORAGE_ACCOUNT_KEY
+      storageAccount = process.env.STORAGE_ACCOUNT_KEY
   }
   return storageAccountKey
 }
