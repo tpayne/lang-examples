@@ -34,14 +34,13 @@ ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.class: addon-http-application-routing
-    # nginx.ingress.kubernetes.io/use-regex: "true"
-    # nginx.ingress.kubernetes.io/rewrite-target: /$2
-  # path: /dbapi(/|$)(.*)
-  # pathType: Prefix
-  path: /
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  path: /aztables(/|$)(.*)
+  pathType: Prefix
   servicePort: app
   hosts:
-    - <ingressHostName>
+    - restapi.ukwest.cloudapp.azure.com
 
 service:
   enabled: true
@@ -63,10 +62,10 @@ horizontalPodAutoscaler:
 
 livenessProbe:
   httpGet:
-    path: /api/tables/healthz
+    path: /version
     port: http
 
 readinessProbe:
   httpGet:
-    path: /api/tables/healthz
+    path: /version
     port: http

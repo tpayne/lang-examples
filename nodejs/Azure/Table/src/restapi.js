@@ -42,6 +42,7 @@ function processRequest (svrapp) {
 
 function main () {
   const svrapp = express()
+  const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
 
   svrapp.use(bodyParser.json())
   svrapp.use(
@@ -60,10 +61,11 @@ function main () {
     let port = 3000
 
     try {
-      const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
       const properties = PropertiesReader(configFile)
       port = properties.get('port')
-    } catch (e) {}
+    } catch (e) {
+      console.log('%s: Cannot read file %s',new Date().toISOString(),configFile)
+    }
 
     svrapp.listen(port, () => {
       console.log(`App running on port ${port}.`)
