@@ -1,3 +1,4 @@
+# hadolint global ignore=DL3018,DL3059
 ARG alpineVersion=3.18
 
 # Image builder...
@@ -6,7 +7,6 @@ FROM node:18-alpine${alpineVersion} AS imagebuilder
 # Set up APK repositories and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
-RUN apk add --no-cache curl
 
 WORKDIR /source
 
@@ -15,9 +15,10 @@ COPY src/*.json ./
 
 # Install application dependencies
 RUN npm install -g pkg@5.8.1
-RUN npm install properties-reader@2.2.0 @azure/data-tables \
-    @azure/core-auth \
-    @azure/identity \
+RUN npm install properties-reader@2.2.0 \
+    @azure/data-tables@13.2.2 \
+    @azure/core-auth@1.5.0 \
+    @azure/identity@3.2.4 \
     express@4.18.2 body-parser@1.20.2
 RUN pkg -t node18 restapi.js -o nodeexe
 
@@ -25,7 +26,8 @@ RUN pkg -t node18 restapi.js -o nodeexe
 FROM node:lts-alpine${alpineVersion} AS runner
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
-RUN apk add --no-cache curl
+
+RUN apk add --no-cache curl=8.2.1-r0
 
 ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system

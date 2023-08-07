@@ -16,19 +16,19 @@
   <h1>API Methods</h1>
   <hr>
   <div id="info">
-    <button id="info" onclick="getInfo()">App Info</button>
+    <button id="appinfo" onclick="getInfo()">App Info</button>
     <button id="version" onclick="getVersion()">App Version</button>
     <button id="health" onclick="healthCheck()">Health Check</button>
     <button id="tables" onclick="getTables()">Get Tables</button>
   </div>
   <br><br>
-  <div id="tableArea"
+  <div id="tablearea"
     style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
     <form action="/api/tables/create" method="POST" target="receiver">
       <fieldset>
         <h3>Create a table</h3>
         <label>Table Name</label>
-        <input type="text" id='table' name="table" required>
+        <input type="text" id="tablec" name="table" required>
         <button type="create">Create</button>
       </fieldset>
     </form>
@@ -36,7 +36,7 @@
       <fieldset>
         <h3>Drop a table</h3>
         <label>Table Name</label>
-        <input type="text" id='table' name="table" required>
+        <input type="text" id="tabled" name="table" required>
         <button type="drop">Drop</button>
       </fieldset>
     </form>
@@ -47,7 +47,7 @@
   <div id="response"
     style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
   </div>
-  <table id="printData" border="1"></table>
+  <table id="printdata" border="1"></table>
   <br><br>
   <h3>Error</h3>
   <div id="error" style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">

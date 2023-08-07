@@ -1,7 +1,7 @@
 async function blankAll () {
   const responseContainer = document.getElementById('response')
   const errorContainer = document.getElementById('error')
-  $('#printData').empty()
+  $('#printdata').empty()
   responseContainer.innerText = ''
   errorContainer.innerText = ''
 }
@@ -31,7 +31,7 @@ async function runCmd (cmd, tableData = false) {
     if (response.ok) {
       if (tableData) {
         const jsonResponse = await response.json()
-        await buildTable('#printData', jsonResponse)
+        await buildTable('#printdata', jsonResponse)
       } else {
         displayResponse(response)
       }
