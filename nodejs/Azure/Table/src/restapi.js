@@ -42,7 +42,7 @@ function processRequest (svrapp) {
 
 function main () {
   const svrapp = express()
-  const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
+  const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : '/config/app.properties'
 
   svrapp.use(bodyParser.json())
   svrapp.use(

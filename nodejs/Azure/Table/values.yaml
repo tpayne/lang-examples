@@ -21,14 +21,12 @@ containerImage:
 
 hasVolume:
   - name: app-config
-    mountPath: /config/app.properties
-    subPath: app.properties
-    readOnly: true
+    mountPath: /config/
 
 configMaps:
   app-config:
     as: volume
-    mountPath: /config/app.properties
+    mountPath: /config/
 
 ingress:
   enabled: true
@@ -63,9 +61,9 @@ horizontalPodAutoscaler:
 livenessProbe:
   httpGet:
     path: /version
-    port: http
+    port: app
 
 readinessProbe:
   httpGet:
     path: /version
-    port: http
+    port: app

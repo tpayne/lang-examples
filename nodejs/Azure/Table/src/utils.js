@@ -3,7 +3,7 @@ const PropertiesReader = require('properties-reader')
 // Utility functions
 async function getProperty (prop) {
   let property = null
-  const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : 'config/app.properties'
+  const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : '/config/app.properties'
 
   try {
     const properties = PropertiesReader(configFile)
