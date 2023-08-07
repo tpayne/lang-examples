@@ -51,10 +51,10 @@ function main () {
   )
   svrapp.use(
     express.static(
-      //path.join(__dirname, "scripts")
-      "."
+      // path.join(__dirname, "scripts")
+      '.'
     )
-  );
+  )
 
   try {
     let port = 3000
