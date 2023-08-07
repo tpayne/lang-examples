@@ -83,7 +83,7 @@ async function list () {
     const queryTable = tableClientService.listTables({
       queryOptions: {}
     })
-    const p = []
+    let p = []
     for await (const table of queryTable) {
       p.push(table)
     }
