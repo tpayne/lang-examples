@@ -94,6 +94,9 @@ The following are some usage examples of the application running. To use them on
     {"message":"Table dropped"}
 ```
 
+If running this application outside of AKS, then you will need to ensure the `config/apps.property` file exists in the Docker image in `/config`. You can do this by modifying the
+`Dockerfile` as appropriate.
+
 Cleaning Up
 -----------
 To clean up the installation, uninstall the Helm chart.
@@ -101,6 +104,7 @@ To clean up the installation, uninstall the Helm chart.
 Notes
 -----
 - This code does not have any unit testing or SA analysis run as part of the CI process
+- The web interface is currently very crude and only provides the essentials for testing
 
 Known Issues List
 -----------------

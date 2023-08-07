@@ -33,7 +33,7 @@ ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system
 RUN adduser ${account} ${account}
 
-WORKDIR /app
+WORKDIR /
 
 COPY --from=imagebuilder /source/nodeexe ./
 
