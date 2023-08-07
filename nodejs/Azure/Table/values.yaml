@@ -12,7 +12,9 @@ customResources:
       data:
         app.properties: |-
           port=3000
-          storage-account=testtablestorageapp
+          storage-account=<storageAccount>
+          # Set this if using key access
+          storage-account-key=<accessKey>
 
 containerImage:
   repository: ghcr.io/tpayne/nodejsazuretable # Optional. Repo to which the image resides
@@ -32,9 +34,10 @@ ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.class: addon-http-application-routing
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-  path: /aztables(/|$)(.*)
+    #nginx.ingress.kubernetes.io/use-regex: "true"
+    #nginx.ingress.kubernetes.io/rewrite-target: /$2
+  #path: /aztables(/|$)(.*)
+  path: /
   pathType: Prefix
   servicePort: app
   hosts:
