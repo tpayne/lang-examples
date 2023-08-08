@@ -172,3 +172,23 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta5.outputs.tags }}
           labels: ${{ steps.meta5.outputs.labels }}
+
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract NodeJS Azure File Docker metadata
+        id: meta6
+        uses: docker/metadata-action@35e9aff4f5d665b5aa8a8f2adffaf8a1b5f49cc0
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazurefiles
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and Push NodeJS Azure Files Docker image
+        id: build-and-push6
+        uses: docker/build-push-action@4fad532b9fdbfb80f436784834374a1c11834153
+        with:
+          context: nodejs/Azure/File/
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta6.outputs.tags }}
+          labels: ${{ steps.meta6.outputs.labels }}

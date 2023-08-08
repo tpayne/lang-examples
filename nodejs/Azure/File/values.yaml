@@ -1,0 +1,72 @@
+applicationName: "storage-files"
+
+customResources:
+  enabled: true
+  resources:
+    configMapData: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: app-config
+        labels:
+      data:
+        app.properties: |-
+          port=3000
+          storage-account=<storageAccount>
+          # Set this if using key access
+          storage-account-key=<accessKey>
+
+containerImage:
+  repository: ghcr.io/tpayne/nodejsazurefiles # Optional. Repo to which the image resides
+  tag: master # Optional. Image Tag (Defaults to latest)
+  pullPolicy: Always
+
+hasVolume:
+  - name: app-config
+    mountPath: /config/
+
+configMaps:
+  app-config:
+    as: volume
+    mountPath: /config/
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+    #nginx.ingress.kubernetes.io/use-regex: "true"
+    #nginx.ingress.kubernetes.io/rewrite-target: /$2
+  #path: /aztables(/|$)(.*)
+  path: /
+  pathType: Prefix
+  servicePort: app
+  hosts:
+    - restapi.ukwest.cloudapp.azure.com
+
+service:
+  enabled: true
+  ports:
+    app:
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+
+containerPorts:
+  app:
+    port: 3000
+    protocol: TCP
+
+horizontalPodAutoscaler:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+
+livenessProbe:
+  httpGet:
+    path: /version
+    port: app
+
+readinessProbe:
+  httpGet:
+    path: /version
+    port: app

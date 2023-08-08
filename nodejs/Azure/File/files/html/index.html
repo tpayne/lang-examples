@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>API Methods</title>
+  <link type="css" rel="stylesheet" href="./style.css" crossorigin="anonymous">
+</head>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="scripts/formatting.js"></script>
+<script type="text/javascript" src="scripts/cmd.js"></script>
+
+<body>
+  <hr>
+  <h1>API Methods for Share</h1>
+  <hr>
+  <div id="sharearea"
+    style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+    <form action="/api/shares/create" method="POST" target="receiver">
+      <fieldset>
+        <h3>Create a Share</h3>
+        <label>Share Name</label>
+        <input type="text" id="sharec" name="share" required>
+        <button type="create">Create</button>
+      </fieldset>
+    </form>
+    <form action="/api/shares/drop" method="POST" target="receiver">
+      <fieldset>
+        <h3>Delete a Share</h3>
+        <label>Share Name</label>
+        <input type="text" id="sharec" name="share" required>
+        <button type="drop">Delete</button>
+      </fieldset>
+    </form>
+    <iframe name="receiver" id="receiver"></iframe>
+  </div>
+  <hr>
+  <h1>API Methods for Files</h1>
+  <hr>
+  <div id="filearea"
+    style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+    <form action="/api/files/create" method="POST" target="receivera">
+      <fieldset>
+        <h3>Create a File</h3>
+        <label>Share Name</label>
+        <input type="text" id="filec" name="share" required>
+        <label>File Name</label>
+        <input type="text" id="filed" name="file" required>
+        <button type="create">Create</button>
+      </fieldset>
+    </form>
+    <form action="/api/files/drop" method="POST" target="receivera">
+      <fieldset>
+        <h3>Delete a File</h3>
+        <label>Share Name</label>
+        <input type="text" id="filec" name="share" required>
+        <label>File Name</label>
+        <input type="text" id="filed" name="file" required>
+        <button type="delete">Delete</button>
+      </fieldset>
+    </form>
+    <iframe name="receivera" id="receivera"></iframe>
+  </div>
+  <hr>
+  <h1>API Methods for Info</h1>
+  <hr>
+  <div id="info">
+    <button id="appinfo" onclick="getInfo()">App Info</button>
+    <button id="version" onclick="getVersion()">App Version</button>
+    <button id="health" onclick="healthCheck()">Health Check</button>
+    <button id="shares" onclick="getShares()">Get Shares</button>
+  </div>
+  <br><br>
+  <br><br>
+  <h3>Response</h3>
+  <div id="response"
+    style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#ABBAEA">
+  </div>
+  <table id="printdata" border="1"></table>
+  <br><br>
+  <h3>Error</h3>
+  <div id="error" style="border:solid;font-family:Cursive,Lucida Handwriting;font-size:15px;background-color:#f0110a">
+  </div>
+</body>
+
+</html>
