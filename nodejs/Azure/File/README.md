@@ -79,6 +79,8 @@ It is also recommended that you use the `storage-account-key` property in the
 
 The following are some usage examples of the application running. To use them on your system, you will need to modify `localhost:3000` to the appropriate Ingress that you are using for AKS.
 
+This following examples shown how the REST API works for shares.
+
 ```shell
     curl "localhost:3000/api/shares/healthz"
     {"message":"Ok"}
@@ -92,6 +94,43 @@ The following are some usage examples of the application running. To use them on
         -H "Content-Type: application/x-www-form-urlencoded" \
         -d "share=testall"
     {"message":"Share dropped"}
+```
+
+This following examples shown how the REST API works for files.
+
+```shell
+    curl -X POST "localhost:3000/api/files/create" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=test.txt"
+    {"message":"File created"}
+    curl -X POST "localhost:3000/api/files/create" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=a/b/c/d/test.txt"
+    {"message":"File created"}
+    curl -X POST "localhost:3000/api/files/create" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=a/b/c/d/e/"
+    {"message":"File created"}
+    curl "localhost:3000/api/files/list?share=testall"
+    curl -X POST "localhost:3000/api/files/drop" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=test.txt"
+    {"message":"File dropped"}
+    curl -X POST "localhost:3000/api/files/drop" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=a/b/c/d/test.txt"
+    {"message":"File dropped"}
+    curl -X POST "localhost:3000/api/files/drop" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=a/b/c/d/e/"
+    {"message":"File dropped"}
+
 ```
 
 Cleaning Up

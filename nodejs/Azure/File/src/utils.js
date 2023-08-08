@@ -17,7 +17,7 @@ async function getProperty(prop) {
   return property
 }
 
-async function isPathDir(fileName) {
+function isPathDir(fileName) {
   return (fileName.slice(-1) == '/')
 }
 
@@ -25,8 +25,51 @@ function isNull(str) {
   return (!Boolean(str))
 }
 
+function getDirectoryName(str) {
+  let dirs = getDirectories(str)
+  let noDirs = dirs.length
+  let parent = ""
+  for (const dir of dirs) {
+    noDirs--
+    if (noDirs && !isNull(dir)) {
+      parent += `${dir}/`
+    }
+  }
+  return parent
+}
+
+function getParentDir(str) {
+  let dirs = getDirectories(str)
+  let noDirs = dirs.length
+  let parent = ""
+  noDirs--
+  for (const dir of dirs) {
+    noDirs--
+    if (noDirs && !isNull(dir)) {
+      parent += `${dir}/`
+    }
+  }
+  return parent
+}
+
+function getDirectories(str) {
+  const dirs = str.split("/")
+  return dirs
+}
+
+function getFileName(str) {
+  let dirs = getDirectories(str)
+  var len = dirs.length
+  len--
+  return dirs[len]
+}
+
 module.exports = {
   getProperty,
   isPathDir,
-  isNull
+  isNull,
+  getDirectories,
+  getDirectoryName,
+  getFileName,
+  getParentDir
 }

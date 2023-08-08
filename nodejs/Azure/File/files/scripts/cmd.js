@@ -7,10 +7,9 @@ async function getVersion() {
 }
 
 async function healthCheck() {
-  runCmd('api/files/healthz')
+  runCmd('api/shares/healthz')
 }
 
-async function getFiles() {
-  runCmd('api/files/list', true);
+async function getShares() {
+  runCmd('api/shares/list', true);
 }
-

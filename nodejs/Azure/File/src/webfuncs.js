@@ -160,7 +160,7 @@ async function createFile(request, response) {
   const fileName = request.body.file
   const shareName = request.body.share
 
-  console.log('%s: Processing %s %s', new Date().toISOString(), request.path, fileName)
+  console.log('%s: Processing %s %s %s', new Date().toISOString(), request.path, shareName, fileName)
 
   if (isNull(fileName) ||
     isNull(shareName)) {
@@ -217,7 +217,7 @@ async function dropFile(request, response) {
   const fileName = request.body.file
   const shareName = request.body.share
 
-  console.log('%s: Processing %s %s', new Date().toISOString(), request.path, fileName)
+  console.log('%s: Processing %s %s %s', new Date().toISOString(), request.path, shareName, fileName)
 
   if (isNull(fileName) ||
     isNull(shareName)) {
