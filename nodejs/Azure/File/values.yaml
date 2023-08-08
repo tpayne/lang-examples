@@ -36,7 +36,7 @@ ingress:
     kubernetes.io/ingress.class: addon-http-application-routing
     #nginx.ingress.kubernetes.io/use-regex: "true"
     #nginx.ingress.kubernetes.io/rewrite-target: /$2
-  #path: /aztables(/|$)(.*)
+  #path: /azfiles(/|$)(.*)
   path: /
   pathType: Prefix
   servicePort: app
