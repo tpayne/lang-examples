@@ -66,8 +66,7 @@ It is suggested you `--dry-run` the process first to ensure no syntax errors are
 
 Running the App
 ---------------
-The app is designed to provide a number of simple Web services that allow you to interact with the Azure File SDK. You can use them to create, delete or list tables in a Storage
-Account.
+The app is designed to provide a number of simple Web services that allow you to interact with the Azure File SDK. You can use them to create, delete or list files in a Storage Account.
 
 To run the app, you need to configure the storage account that the app uses or ensure that it is exposed into the environment.
 
@@ -79,7 +78,7 @@ It is also recommended that you use the `storage-account-key` property in the
 
 The following are some usage examples of the application running. To use them on your system, you will need to modify `localhost:3000` to the appropriate Ingress that you are using for AKS.
 
-This following examples shown how the REST API works for shares.
+The following examples show how the REST API works for shares.
 
 ```shell
     curl "localhost:3000/api/shares/healthz"
@@ -96,7 +95,7 @@ This following examples shown how the REST API works for shares.
     {"message":"Share dropped"}
 ```
 
-This following examples shown how the REST API works for files.
+The following examples show how the REST API works for files.
 
 ```shell
     curl -X POST "localhost:3000/api/files/create" \
@@ -150,9 +149,9 @@ Notes
 
 Known Issues List
 -----------------
-The following are known issues
+The following are known issues:-
 
-- The Web interface does not currently support redirection on the Ingress Path. If you wish to do this, then the Create and Delete table functions will not work. All other functionality is however supported. The REST APIs will work fine.
+- The Web interface does not currently support redirection on the Ingress Path. If you wish to do this, some of the POST functions will not work. All other functionality is however supported. The REST APIs will work fine.
 - The Web interface is very crude and only supports essential functionality for testing purposes
 
 References
