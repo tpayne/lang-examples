@@ -104,7 +104,6 @@ async function fileExists(shareName, fileName) {
 async function createDirName(shareClient, dirName) {
   let dirN = (dirName.slice(-1) === "/") ? dirName.substring(0, dirName.length - 1) : dirName
   const directoryClient = shareClient.getDirectoryClient(dirN)
-
   await directoryClient.createIfNotExists({
     onResponse: (result) => {
       //console.debug(util.inspect(result, false, null, true))
@@ -197,7 +196,7 @@ async function listSharesImpl() {
     }
     return p
   } catch (e) {
-    console.log('%s: List error - %s', new Date().toISOString(), e.message)
+    console.error('%s: List error - %s', new Date().toISOString(), e.message)
     return null
   }
 }
@@ -241,7 +240,6 @@ async function createFileImpl(shareName, fileName) {
   let dirs = getDirectories(fileName)
   let noDirs = dirs.length
   let parent = ""
-  let isDir = isPathDir(fileName)
 
   for (const child of dirs) {
     noDirs--
@@ -249,7 +247,7 @@ async function createFileImpl(shareName, fileName) {
       parent += `${child}/`
     }
     if (!isNull(child)) {
-      if (noDirs && isDir) {
+      if (noDirs) {
         await createDirName(shareClient,parent)
       } else {
         await createFileName(shareClient,fileName)

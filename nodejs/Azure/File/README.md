@@ -115,6 +115,7 @@ This following examples shown how the REST API works for files.
         -d "file=a/b/c/d/e/"
     {"message":"File created"}
     curl "localhost:3000/api/files/list?share=testall"
+    [{"name":"test.txt","kind":"file","fileId":"13835128424026341376","parent":"/","fullPath":"test.txt"},{"name":"a","kind":"directory","fileId":"11529285414812647424","parent":"/","fullPath":"a"},{"name":"b","kind":"directory","fileId":"16140971433240035328","parent":"a/","fullPath":"a/b"},{"name":"c","kind":"directory","fileId":"10376363910205800448","parent":"a/b/","fullPath":"a/b/c"},{"name":"d","kind":"directory","fileId":"14988049928633188352","parent":"a/b/c/","fullPath":"a/b/c/d"},{"name":"test.txt","kind":"file","fileId":"12682206919419494400","parent":"a/b/c/d/","fullPath":"a/b/c/d/test.txt"},{"name":"e","kind":"directory","fileId":"16717432185543458816","parent":"a/b/c/d/","fullPath":"a/b/c/d/e"}]
     curl -X POST "localhost:3000/api/files/drop" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -d "share=testall" \
@@ -130,7 +131,13 @@ This following examples shown how the REST API works for files.
         -d "share=testall" \
         -d "file=a/b/c/d/e/"
     {"message":"File dropped"}
-
+    curl -X POST "localhost:3000/api/files/drop" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "share=testall" \
+        -d "file=a/b/c/d/"
+    {"message":"File dropped"}
+    curl "localhost:3000/api/files/list?share=testall"
+    [{"name":"a","kind":"directory","fileId":"11529285414812647424","parent":"/","fullPath":"a"},{"name":"b","kind":"directory","fileId":"16140971433240035328","parent":"a/","fullPath":"a/b"},{"name":"c","kind":"directory","fileId":"10376363910205800448","parent":"a/b/","fullPath":"a/b/c"}]
 ```
 
 Cleaning Up
