@@ -6,7 +6,7 @@ const bodyParser = require('body-parser')
 const PropertiesReader = require('properties-reader')
 
 /* eslint-disable no-use-before-define */
-function processRequest(svrapp) {
+function processRequest (svrapp) {
   // Standard functions...
   svrapp.get('/', (request, response) => {
     // console.log('%s: Processing %s',new Date().toISOString(),request.path)
@@ -45,7 +45,7 @@ function processRequest(svrapp) {
   svrapp.get('/api/shares/healthz', webfuncs.healthCheck)
 }
 
-function main() {
+function main () {
   const svrapp = express()
   const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : '/config/app.properties'
 

@@ -1,7 +1,7 @@
 const PropertiesReader = require('properties-reader')
 
 // Utility functions
-async function getProperty(prop) {
+async function getProperty (prop) {
   let property = null
   const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : '/config/app.properties'
 
@@ -17,18 +17,18 @@ async function getProperty(prop) {
   return property
 }
 
-function isPathDir(fileName) {
-  return (fileName.slice(-1) == '/')
+function isPathDir (fileName) {
+  return (fileName.slice(-1) === '/')
 }
 
-function isNull(str) {
-  return (!Boolean(str))
+function isNull (str) {
+  return (!str)
 }
 
-function getDirectoryName(str) {
-  let dirs = getDirectories(str)
+function getDirectoryName (str) {
+  const dirs = getDirectories(str)
   let noDirs = dirs.length
-  let parent = ""
+  let parent = ''
   for (const dir of dirs) {
     noDirs--
     if (noDirs && !isNull(dir)) {
@@ -38,10 +38,10 @@ function getDirectoryName(str) {
   return parent
 }
 
-function getParentDir(str) {
-  let dirs = getDirectories(str)
+function getParentDir (str) {
+  const dirs = getDirectories(str)
   let noDirs = dirs.length
-  let parent = ""
+  let parent = ''
   noDirs--
   for (const dir of dirs) {
     noDirs--
@@ -52,14 +52,14 @@ function getParentDir(str) {
   return parent
 }
 
-function getDirectories(str) {
-  const dirs = str.split("/")
+function getDirectories (str) {
+  const dirs = str.split('/')
   return dirs
 }
 
-function getFileName(str) {
-  let dirs = getDirectories(str)
-  var len = dirs.length
+function getFileName (str) {
+  const dirs = getDirectories(str)
+  let len = dirs.length
   len--
   return dirs[len]
 }

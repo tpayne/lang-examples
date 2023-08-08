@@ -8,12 +8,12 @@ const {
   shareExists,
   fileExists
 } = require('./azure.js')
-const { table } = require('console')
-const util = require('util')
+// const { table } = require('console')
+// const util = require('util')
 const { isNull } = require('./utils.js')
 
 // Share functions
-async function createShare(request, response) {
+async function createShare (request, response) {
   const shareName = request.body.share
 
   console.log('%s: Processing %s %s', new Date().toISOString(), request.path, shareName)
@@ -54,7 +54,7 @@ async function createShare(request, response) {
   }
 }
 
-async function dropShare(request, response) {
+async function dropShare (request, response) {
   const shareName = request.body.share
 
   console.log('%s: Processing %s %s', new Date().toISOString(), request.path, shareName)
@@ -96,7 +96,7 @@ async function dropShare(request, response) {
   }
 }
 
-async function listShares(request, response) {
+async function listShares (request, response) {
   console.log('%s: Processing %s', new Date().toISOString(), request.path)
 
   try {
@@ -116,7 +116,7 @@ async function listShares(request, response) {
 }
 
 // File functions
-async function listFiles(request, response) {
+async function listFiles (request, response) {
   console.log('%s: Processing %s', new Date().toISOString(), request.path)
 
   const shareName = request.query.share
@@ -156,7 +156,7 @@ async function listFiles(request, response) {
   }
 }
 
-async function createFile(request, response) {
+async function createFile (request, response) {
   const fileName = request.body.file
   const shareName = request.body.share
 
@@ -213,7 +213,7 @@ async function createFile(request, response) {
   }
 }
 
-async function dropFile(request, response) {
+async function dropFile (request, response) {
   const fileName = request.body.file
   const shareName = request.body.share
 
@@ -270,7 +270,7 @@ async function dropFile(request, response) {
   }
 }
 
-async function healthCheck(request, response) {
+async function healthCheck (request, response) {
   console.log('%s: Processing %s', new Date().toISOString(), request.path)
 
   try {

@@ -1,21 +1,22 @@
 const { ShareServiceClient, StorageSharedKeyCredential } = require('@azure/storage-file-share')
 const { DefaultAzureCredential } = require('@azure/identity')
 
-const { getProperty, isPathDir,
-  getDirectories, 
+const {
+  getProperty, isPathDir,
+  getDirectories,
   getFileName,
-  getDirectoryName, 
-  isNull,
-  getParentDir } = require('./utils.js')
+  getDirectoryName,
+  isNull
+} = require('./utils.js')
 
-const { table } = require('console')
-const util = require('util')
-//const { AzureNamedKeyCredential } = require('@azure/core-auth')
+// const { table } = require('console')
+// const util = require('util')
+// const { AzureNamedKeyCredential } = require('@azure/core-auth')
 
 const conmap = new Map()
 
 // Utility functions
-async function getStorageAccount() {
+async function getStorageAccount () {
   let storageAccount = null
   storageAccount = await getProperty('storage-account')
   if (!storageAccount) {
@@ -24,7 +25,7 @@ async function getStorageAccount() {
   return storageAccount
 }
 
-async function getStorageAccountKey() {
+async function getStorageAccountKey () {
   let storageAccountKey = null
   storageAccountKey = await getProperty('storage-account-key')
   if (!storageAccountKey) {
@@ -33,11 +34,11 @@ async function getStorageAccountKey() {
   return storageAccountKey
 }
 
-async function getUrl(storageAccount) {
+async function getUrl (storageAccount) {
   return `https://${storageAccount}.file.core.windows.net`
 }
 
-async function connect() {
+async function connect () {
   let credential = null
   let shareClientService = null
   const storageAccount = await getStorageAccount()
@@ -70,19 +71,18 @@ async function connect() {
 }
 
 // Helper functions
-async function shareExists(shareName) {
+async function shareExists (shareName) {
   const shareClientService = await connect()
   const shareClient = shareClientService.getShareClient(shareName)
   return await shareClient.exists()
 }
 
-async function fileExists(shareName, fileName) {
+async function fileExists (shareName, fileName) {
   const shareClientService = await connect()
   const isDir = isPathDir(fileName)
 
-  var ret = false
-  var dirs = getDirectories(fileName)
-  var fileN = getFileName(fileName)
+  let ret = false
+  const fileN = getFileName(fileName)
 
   const shareClient = shareClientService.getShareClient(shareName)
 
@@ -90,7 +90,7 @@ async function fileExists(shareName, fileName) {
     const directoryClient = shareClient.getDirectoryClient(fileName)
     ret = await directoryClient.exists()
   } else {
-    let dirN = getDirectoryName(fileName)
+    const dirN = getDirectoryName(fileName)
 
     const directoryClient = shareClient.getDirectoryClient(dirN)
     if (await directoryClient.exists()) {
@@ -101,20 +101,20 @@ async function fileExists(shareName, fileName) {
   return ret
 }
 
-async function createDirName(shareClient, dirName) {
-  let dirN = (dirName.slice(-1) === "/") ? dirName.substring(0, dirName.length - 1) : dirName
+async function createDirName (shareClient, dirName) {
+  const dirN = (dirName.slice(-1) === '/') ? dirName.substring(0, dirName.length - 1) : dirName
   const directoryClient = shareClient.getDirectoryClient(dirN)
   await directoryClient.createIfNotExists({
     onResponse: (result) => {
-      //console.debug(util.inspect(result, false, null, true))
+      // console.debug(util.inspect(result, false, null, true))
       return (result)
     }
   })
 }
 
-async function createFileName(shareClient, fileName) {
-  let dirN = getDirectoryName(fileName)
-  let fileN = getFileName(fileName)
+async function createFileName (shareClient, fileName) {
+  const dirN = getDirectoryName(fileName)
+  const fileN = getFileName(fileName)
   let directoryClient = shareClient.getDirectoryClient(dirN)
 
   if (!isNull(dirN) && !(await directoryClient.exists())) {
@@ -126,35 +126,35 @@ async function createFileName(shareClient, fileName) {
 
   await directoryClient.createFile(fileN, 0, {
     onResponse: (fileClient, result) => {
-      //console.debug(util.inspect(result, false, null, true))
+      // console.debug(util.inspect(result, false, null, true))
       return (result)
     }
   })
 }
 
-async function deleteDirName(shareClient,dirName) {
+async function deleteDirName (shareClient, dirName) {
   const directoryClient = shareClient.getDirectoryClient(dirName)
   await directoryClient.deleteIfExists(dirName)
 }
 
-async function deleteFileName(shareClient,dirName,fileName) {
+async function deleteFileName (shareClient, dirName, fileName) {
   const directoryClient = shareClient.getDirectoryClient(dirName)
   await directoryClient.deleteFile(fileName)
 }
 
-async function listFilesRecursive(shareClient,parent,child,files) {
-  let directory = ""
+async function listFilesRecursive (shareClient, parent, child, files) {
+  let directory = ''
   if (isNull(parent) && !isNull(child)) {
     directory += `${child}/`
-  } else if (isNull(parent) && isNull(child)) {
+  } else if (isNull(parent) && isNull(child)) { // eslint-disable-line
   } else {
     directory += `${parent}${child}/`
   }
 
-  let directoryClient = shareClient.getDirectoryClient(directory)
-  let queryFiles = directoryClient.listFilesAndDirectories();
-  
-  //console.debug("Scanning (%s) (%s) (%s)", parent, child, directory)
+  const directoryClient = shareClient.getDirectoryClient(directory)
+  const queryFiles = directoryClient.listFilesAndDirectories()
+
+  // console.debug("Scanning (%s) (%s) (%s)", parent, child, directory)
 
   if (!queryFiles) {
     return files
@@ -165,10 +165,10 @@ async function listFilesRecursive(shareClient,parent,child,files) {
       name: file.name,
       kind: file.kind,
       fileId: file.fileId,
-      parent: (isNull(directory)) ? "/" : directory,
+      parent: (isNull(directory)) ? '/' : directory,
       fullPath: `${directory}${file.name}`
     })
-    if (file.kind === "directory") {
+    if (file.kind === 'directory') {
       files = await listFilesRecursive(shareClient, directory, file.name, files)
     }
   }
@@ -176,11 +176,11 @@ async function listFilesRecursive(shareClient,parent,child,files) {
 }
 
 // Share Implementors
-async function listSharesImpl() {
+async function listSharesImpl () {
   try {
     const shareClientService = await connect()
-    let queryShare = shareClientService.listShares()
-    let p = []
+    const queryShare = shareClientService.listShares()
+    const p = []
     if (!queryShare) {
       return p
     }
@@ -201,45 +201,45 @@ async function listSharesImpl() {
   }
 }
 
-async function createShareImpl(shareName) {
+async function createShareImpl (shareName) {
   const shareClientService = await connect()
 
   await shareClientService.createShare(shareName, {
     onResponse: (shareDetails, shareResponse) => {
-      //console.debug(util.inspect(shareResponse, false, null, true))
-      return(shareResponse)
+      // console.debug(util.inspect(shareResponse, false, null, true))
+      return (shareResponse)
     }
   })
 }
 
-async function dropShareImpl(shareName) {
+async function dropShareImpl (shareName) {
   const shareClientService = await connect()
 
   await shareClientService.deleteShare(shareName, {
     onResponse: (shareDetails, shareResponse) => {
-      //console.debug(util.inspect(shareResponse, false, null, true))
-      return(shareResponse)
+      // console.debug(util.inspect(shareResponse, false, null, true))
+      return (shareResponse)
     }
   })
 }
 
 // File implementors
-async function listFilesImpl(shareName) {
+async function listFilesImpl (shareName) {
   const serviceClient = await connect()
-  const shareClient = serviceClient.getShareClient(shareName) 
+  const shareClient = serviceClient.getShareClient(shareName)
 
   let p = []
-  p = await listFilesRecursive(shareClient,"","",p)
+  p = await listFilesRecursive(shareClient, '', '', p)
   return p
 }
 
-async function createFileImpl(shareName, fileName) {
+async function createFileImpl (shareName, fileName) {
   const shareClientService = await connect()
   const shareClient = shareClientService.getShareClient(shareName)
 
-  let dirs = getDirectories(fileName)
+  const dirs = getDirectories(fileName)
   let noDirs = dirs.length
-  let parent = ""
+  let parent = ''
 
   for (const child of dirs) {
     noDirs--
@@ -248,30 +248,30 @@ async function createFileImpl(shareName, fileName) {
     }
     if (!isNull(child)) {
       if (noDirs) {
-        await createDirName(shareClient,parent)
+        await createDirName(shareClient, parent)
       } else {
-        await createFileName(shareClient,fileName)
+        await createFileName(shareClient, fileName)
       }
     }
   }
 }
 
-async function dropFileImpl(shareName, fileName) {
+async function dropFileImpl (shareName, fileName) {
   const shareClientService = await connect()
   const isDir = await isPathDir(fileName)
   const shareClient = shareClientService.getShareClient(shareName)
-  
+
   if (isDir) {
-    await deleteDirName(shareClient,fileName)
+    await deleteDirName(shareClient, fileName)
   } else {
     const dirN = getDirectoryName(fileName)
     const fileN = getFileName(fileName)
-    await deleteFileName(shareClient,dirN,fileN)
+    await deleteFileName(shareClient, dirN, fileN)
   }
 }
 
 // Signal handlers...
-function signalHandler(signal) {
+function signalHandler (signal) {
   console.log('Killing process and shutting down')
   conmap.clear()
   process.exit()
