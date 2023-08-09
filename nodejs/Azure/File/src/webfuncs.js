@@ -24,6 +24,12 @@ async function createShare (request, response) {
     })
   }
 
+  if (shareName.includes("/")) {
+    return response.status(400).json({
+      message: 'Share name is invalid'
+    })    
+  }
+  
   try {
     const exists = await shareExists(shareName)
     if (exists) {
