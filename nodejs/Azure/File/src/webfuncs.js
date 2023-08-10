@@ -4,6 +4,7 @@ const {
   dropFileImpl,
   listSharesImpl,
   createShareImpl,
+  uploadFileImpl,
   dropShareImpl,
   shareExists,
   fileExists
@@ -11,6 +12,8 @@ const {
 // const { table } = require('console')
 // const util = require('util')
 const { isNull } = require('./utils.js')
+const fs = require('fs')
+const { path } = require('path')
 
 // Share functions
 async function createShare (request, response) {
@@ -219,6 +222,79 @@ async function createFile (request, response) {
   }
 }
 
+async function uploadFile (request, response) {
+  const srcFile = request.body.source
+  const trgFile = request.body.target
+  const shareName = request.body.share
+
+  console.log('%s: Processing %s %s %s %s', 
+              new Date().toISOString(), request.path, 
+              shareName, srcFile, trgFile)
+
+  if (isNull(srcFile) ||
+    isNull(trgFile) ||
+    isNull(shareName)) {
+    return response.status(400).json({
+      message: 'Missing parameters'
+    })
+  }
+
+  try {
+    const exists = await shareExists(shareName)
+    if (!exists) {
+      return response.status(404).json({
+        message: `Share ${shareName} does not exist`
+      })
+    }
+  } catch (e) {
+    return response.status(500).json({
+      message: e.message
+    })
+  }
+
+  try {
+    if (!fs.existsSync(srcFile)) {
+      return response.status(404).json({
+        message: 'File does not exist'
+      })
+    }
+  } catch(e) {
+    return response.status(404).json({
+      message: e.message
+    })
+  }
+  
+  try {
+    const exists = await fileExists(shareName, trgFile)
+    if (exists) {
+      return response.status(409).json({
+        message: 'File already exists'
+      })
+    }
+  } catch (e) {
+    return response.status(500).json({
+      message: e.message
+    })
+  }
+
+  try {
+    const result = await uploadFileImpl(shareName, srcFile, trgFile) // eslint-disable-line
+    const exists = await fileExists(shareName, trgFile)
+    if (exists) {
+      return response.status(201).json({
+        message: 'File uploaded'
+      })
+    }
+    return response.status(500).json({
+      message: 'File upload service error'
+    })
+  } catch (e) {
+    return response.status(500).json({
+      message: e.message
+    })
+  }
+}
+
 async function dropFile (request, response) {
   const fileName = request.body.file
   const shareName = request.body.share
@@ -294,6 +370,7 @@ async function healthCheck (request, response) {
 module.exports = {
   listFiles,
   createFile,
+  uploadFile,
   dropFile,
   listShares,
   createShare,

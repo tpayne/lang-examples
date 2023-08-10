@@ -9,6 +9,9 @@ const {
   isNull
 } = require('./utils.js')
 
+const fs = require('fs')
+const { path } = require('path')
+
 // const { table } = require('console')
 // const util = require('util')
 // const { AzureNamedKeyCredential } = require('@azure/core-auth')
@@ -112,7 +115,7 @@ async function createDirName (shareClient, dirName) {
   })
 }
 
-async function createFileName (shareClient, fileName) {
+async function createFileName (shareClient, fileName, srcFile = null) {
   const dirN = getDirectoryName(fileName)
   const fileN = getFileName(fileName)
   let directoryClient = shareClient.getDirectoryClient(dirN)
@@ -124,12 +127,21 @@ async function createFileName (shareClient, fileName) {
   directoryClient = null
   directoryClient = shareClient.getDirectoryClient(dirN)
 
-  await directoryClient.createFile(fileN, 0, {
-    onResponse: (fileClient, result) => {
-      // console.debug(util.inspect(result, false, null, true))
-      return (result)
-    }
-  })
+  if (isNull(srcFile)) {
+    await directoryClient.createFile(fileN, 0, {
+      onResponse: (fileClient, result) => {
+        // console.debug(util.inspect(result, false, null, true))
+        return (result)
+      }
+    })
+  } else {
+    let stat = fs.statSync(srcFile)
+    const fileClient = directoryClient.getFileClient(fileN)
+    await fileClient.create(stat.size)
+    const data = fs.readFileSync(srcFile,
+                      { encoding: 'utf8', flag: 'r' });
+    await fileClient.uploadRange(data, 0, data.length)
+  }
 }
 
 async function deleteDirName (shareClient, dirName) {
@@ -233,7 +245,8 @@ async function listFilesImpl (shareName) {
   return p
 }
 
-async function createFileImpl (shareName, fileName) {
+async function createFileImpl (shareName, fileName,
+                               srcFile = null) {
   const shareClientService = await connect()
   const shareClient = shareClientService.getShareClient(shareName)
 
@@ -250,10 +263,16 @@ async function createFileImpl (shareName, fileName) {
       if (noDirs) {
         await createDirName(shareClient, parent)
       } else {
-        await createFileName(shareClient, fileName)
+        await createFileName(shareClient, 
+                             fileName, 
+                             srcFile)
       }
     }
   }
+}
+
+async function uploadFileImpl (shareName, srcFile, trgFile) {
+  await createFileImpl(shareName, trgFile, srcFile)
 }
 
 async function dropFileImpl (shareName, fileName) {
@@ -284,6 +303,7 @@ process.on('SIGQUIT', signalHandler)
 module.exports = {
   listFilesImpl,
   createFileImpl,
+  uploadFileImpl,
   dropFileImpl,
   listSharesImpl,
   createShareImpl,

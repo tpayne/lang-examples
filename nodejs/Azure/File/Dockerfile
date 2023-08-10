@@ -16,6 +16,7 @@ COPY src/*.json ./
 # Install application dependencies
 RUN npm install -g pkg@5.8.1
 RUN npm install properties-reader@2.2.0 \
+    fs@0.0.1-security \
     @azure/storage-file-share@12.15.0 \
     @azure/core-auth@1.5.0 \
     @azure/identity@3.2.4 \

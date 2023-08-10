@@ -36,6 +36,7 @@ function processRequest (svrapp) {
   // File functions
   svrapp.post('/api/files/create', webfuncs.createFile)
   svrapp.post('/api/files/drop', webfuncs.dropFile)
+  svrapp.post('/api/files/upload', webfuncs.uploadFile)
   svrapp.get('/api/files/list', webfuncs.listFiles)
 
   // Share functions
