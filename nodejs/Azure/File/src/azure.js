@@ -107,12 +107,7 @@ async function fileExists (shareName, fileName) {
 async function createDirName (shareClient, dirName) {
   const dirN = (dirName.slice(-1) === '/') ? dirName.substring(0, dirName.length - 1) : dirName
   const directoryClient = shareClient.getDirectoryClient(dirN)
-  await directoryClient.createIfNotExists({
-    onResponse: (result) => {
-      // console.debug(util.inspect(result, false, null, true))
-      return (result)
-    }
-  })
+  await directoryClient.createIfNotExists()
 }
 
 async function createFileName (shareClient, fileName, srcFile = null) {
@@ -128,12 +123,7 @@ async function createFileName (shareClient, fileName, srcFile = null) {
   directoryClient = shareClient.getDirectoryClient(dirN)
 
   if (isNull(srcFile)) {
-    await directoryClient.createFile(fileN, 0, {
-      onResponse: (fileClient, result) => {
-        // console.debug(util.inspect(result, false, null, true))
-        return (result)
-      }
-    })
+    await directoryClient.createFile(fileN, 0)
   } else {
     let stat = fs.statSync(srcFile)
     const fileClient = directoryClient.getFileClient(fileN)
@@ -215,24 +205,12 @@ async function listSharesImpl () {
 
 async function createShareImpl (shareName) {
   const shareClientService = await connect()
-
-  await shareClientService.createShare(shareName, {
-    onResponse: (shareDetails, shareResponse) => {
-      // console.debug(util.inspect(shareResponse, false, null, true))
-      return (shareResponse)
-    }
-  })
+  await shareClientService.createShare(shareName)
 }
 
 async function dropShareImpl (shareName) {
   const shareClientService = await connect()
-
-  await shareClientService.deleteShare(shareName, {
-    onResponse: (shareDetails, shareResponse) => {
-      // console.debug(util.inspect(shareResponse, false, null, true))
-      return (shareResponse)
-    }
-  })
+  await shareClientService.deleteShare(shareName)
 }
 
 // File implementors
