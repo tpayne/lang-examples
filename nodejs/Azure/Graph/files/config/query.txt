@@ -1,0 +1,4 @@
+HEALTH_CHECK: ResourceContainers 
+  | where type =~ 'microsoft.resources/subscriptions'
+TYPE_COUNT: resources 
+  | summarize count() by ['type'] | sort by count_ desc
