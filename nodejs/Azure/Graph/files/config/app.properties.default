@@ -13,7 +13,3 @@ MANAGED_CLIENT_ID=ManagedId
 AZURE_AAD_ENDPOINT=Enter_the_Cloud_Instance_Id_Here/
 AZURE_GRAPH_ENDPOINT=Enter_the_Graph_Endpoint_Here/
 
-# Queries
-TYPE_COUNT="resources | summarize count() by ['type']"
-HEALTH_CHECK="ResourceContainers | where type =~ 'microsoft.resources/subscriptions'"
-
