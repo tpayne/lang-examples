@@ -34,7 +34,8 @@ function processRequest (svrapp) {
   })
 
   // Database functions
-  svrapp.get('/api/query/list', azure.countResources)
+  svrapp.get('/api/query/count', azure.countResources)
+  svrapp.get('/api/query/list', azure.listResources)
   svrapp.get('/api/query/healthz', azure.healthCheck)
 }
 
@@ -62,7 +63,7 @@ function main () {
       const properties = PropertiesReader(configFile)
       port = properties.get('port')
     } catch (e) {
-      console.log('%s: Cannot read file %s',new Date().toISOString(),configFile)
+      console.log('%s: Cannot read file %s', new Date().toISOString(), configFile)
     }
 
     svrapp.listen(port, () => {

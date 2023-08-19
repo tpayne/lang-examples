@@ -11,6 +11,10 @@ async function healthCheck() {
 }
 
 async function getCount() {
+  runCmd('api/query/count', true);
+}
+
+async function getList() {
   runCmd('api/query/list', true);
 }
 

@@ -1,12 +1,10 @@
-const { DefaultAzureCredential,
-  DefaultAzureCredentialOptions,
-  ManagedIdentityClientId,
-  ManagedIdentityCredential } = require('@azure/identity')
-const { AzureNamedKeyCredential } = require('@azure/core-auth')
-const { ResourceGraphClient } = require("@azure/arm-resourcegraph");
+const {
+  DefaultAzureCredential
+} = require('@azure/identity')
+const { ResourceGraphClient } = require('@azure/arm-resourcegraph')
 const { getProperty, getQueryTxt } = require('./utils.js')
-const { setLogLevel } = require("@azure/logger");
-const os = require("os");
+const { setLogLevel } = require('@azure/logger')
+const os = require('os')
 
 // const { table } = require('console')
 // const util = require('util')
@@ -14,11 +12,11 @@ const os = require("os");
 const conmap = new Map()
 
 // Utility functions
-function setLog(level) {
-  setLogLevel(level);
+function setLog (level) {
+  setLogLevel(level)
 }
 
-async function getManagedId() {
+async function getManagedId () {
   let Id = await getProperty('MANAGED_CLIENT_ID')
   if (!Id) {
     Id = process.env.MANAGED_CLIENT_ID
@@ -26,7 +24,7 @@ async function getManagedId() {
   return Id
 }
 
-async function getTenantId() {
+async function getTenantId () {
   let Id = await getProperty('AZURE_TENANT_ID')
   if (!Id) {
     Id = process.env.AZURE_TENANT_ID
@@ -34,7 +32,7 @@ async function getTenantId() {
   return Id
 }
 
-async function getClientId() {
+async function getClientId () {
   let Id = await getProperty('AZURE_CLIENT_ID')
   if (!Id) {
     Id = process.env.AZURE_CLIENT_ID
@@ -42,7 +40,7 @@ async function getClientId() {
   return Id
 }
 
-async function getClientSecret() {
+async function getClientSecret () {
   let Id = await getProperty('AZURE_CLIENT_SECRET')
   if (!Id) {
     Id = process.env.AZURE_CLIENT_SECRET
@@ -50,7 +48,7 @@ async function getClientSecret() {
   return Id
 }
 
-async function getAADEndpoint() {
+async function getAADEndpoint () {
   let Id = await getProperty('AZURE_AAD_ENDPOINT')
   if (!Id) {
     Id = process.env.AZURE_AAD_ENDPOINT
@@ -58,7 +56,7 @@ async function getAADEndpoint() {
   return Id
 }
 
-async function getGraphEndpoint() {
+async function getGraphEndpoint () {
   let Id = await getProperty('AZURE_GRAPH_ENDPOINT')
   if (!Id) {
     Id = process.env.AZURE_GRAPH_ENDPOINT
@@ -66,15 +64,15 @@ async function getGraphEndpoint() {
   return Id
 }
 
-async function getQuery(query) {
-  return(await getQueryTxt(query))
+async function getQuery (query) {
+  return (await getQueryTxt(query))
 }
 
-async function connect() {
+async function connect () {
   let credential = null
   let graphClientService = null
 
-  const userInfo = os.userInfo();
+  const userInfo = os.userInfo()
   const userName = userInfo.username
 
   if (conmap.has(userName)) {
@@ -97,27 +95,31 @@ async function connect() {
 }
 
 // Helper functions
-async function runQueryImpl(queryStr) {
+async function runQueryImpl (query) {
   const graphClientService = await connect()
-  //let   qry = queryStr.replace(/^"(.*)"$/, '$1')
-  let qry = queryStr
+  // let   qry = queryStr.replace(/^"(.*)"$/, '$1')
+  const qry = await getQuery(query)
+
+  if (qry == null) {
+    return null
+  }
 
   const result = await graphClientService.resources(
     {
       query: qry
     },
-    { resultFormat: "json" }
+    { resultFormat: 'json' }
   )
   return result
 }
 
-async function countResources(request, response) {
+async function countResources (request, response) {
   const resourceType = request.query.resourceType
   console.log('%s: Processing %s %s', new Date().toISOString(), request.path, resourceType)
 
   try {
-    const results = await runQueryImpl(await getQuery("TYPE_COUNT"))
-    return response.status(200).json(results.data)
+    const results = await runQueryImpl('TYPE_COUNT')
+    return response.status(200).send(JSON.stringify(results.data, null, 2))
   } catch (e) {
     return response.status(500).json({
       message: e.message
@@ -125,11 +127,25 @@ async function countResources(request, response) {
   }
 }
 
-async function healthCheck(request, response) {
+async function listResources (request, response) {
+  const resourceType = request.query.resourceType
+  console.log('%s: Processing %s %s', new Date().toISOString(), request.path, resourceType)
+
+  try {
+    const results = await runQueryImpl('LIST_QUERY')
+    return response.status(200).send(JSON.stringify(results.data, null, 2))
+  } catch (e) {
+    return response.status(500).json({
+      message: e.message
+    })
+  }
+}
+
+async function healthCheck (request, response) {
   console.log('%s: Processing %s', new Date().toISOString(), request.path)
 
   try {
-    const results = await runQueryImpl(await getQuery("HEALTH_CHECK"))
+    const results = await runQueryImpl('HEALTH_CHECK')
     response.status(200).json({
       message: 'Ok'
     })
@@ -141,7 +157,7 @@ async function healthCheck(request, response) {
 }
 
 // Signal handlers...
-function signalHandler(signal) {
+function signalHandler (signal) {
   console.log('Killing process and shutting down')
   conmap.clear()
   process.exit()
@@ -153,5 +169,6 @@ process.on('SIGQUIT', signalHandler)
 
 module.exports = {
   countResources,
-  healthCheck
+  healthCheck,
+  listResources
 }

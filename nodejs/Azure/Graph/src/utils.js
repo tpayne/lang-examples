@@ -3,9 +3,9 @@ const fs = require('fs')
 
 const queryMap = new Map()
 
-async function getQueryTxt(key) {
+async function getQueryTxt (key) {
   if (queryMap.size == 0) {
-    await loadQueries(await getProperty("QUERY_FILE"))
+    await loadQueries(await getProperty('QUERY_FILE'))
   }
 
   if (queryMap.has(key)) {
@@ -16,19 +16,18 @@ async function getQueryTxt(key) {
 }
 
 // Get queries
-async function loadQueries(queryFile) {
+async function loadQueries (queryFile) {
   try {
     if (!fs.existsSync(queryFile)) {
       console.error('%s: Error - Unable to access query file %s',
         new Date().toISOString(), queryFile)
       return null
     }
-    let stat = fs.statSync(queryFile)
     const text = fs.readFileSync(queryFile,
-      { encoding: 'utf8', flag: 'r' });
+      { encoding: 'utf8', flag: 'r' })
 
-    let currentOffset = 0;
-    const pattern = /^(\w+):(.+(?:\n  .*|\n[^:\n]+$)*)/gm
+    let currentOffset = 0
+    const pattern = /^(\w+):(.+(?:\n {2}.*|\n[^:\n]+$)*)/gm
 
     for (const [fullMatch, key, value] of text.matchAll(pattern)) {
       queryMap.set(
@@ -39,7 +38,7 @@ async function loadQueries(queryFile) {
       )
       currentOffset += fullMatch.length + 1
     }
-    return queryMap;
+    return queryMap
   } catch (e) {
     console.error('%s: Error - Unable to get query from file (%s) %s',
       new Date().toISOString(), queryFile, e.message)
@@ -48,7 +47,7 @@ async function loadQueries(queryFile) {
 }
 
 // Utility functions
-async function getProperty(prop) {
+async function getProperty (prop) {
   let property = null
   const configFile = process.env.CONFIG_FILE ? process.env.CONFIG_FILE : '/config/app.properties'
 
