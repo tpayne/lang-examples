@@ -12,3 +12,6 @@ MANAGED_CLIENT_ID=
 # Endpoints
 AZURE_AAD_ENDPOINT=
 AZURE_GRAPH_ENDPOINT=
+
+# Queries
+QUERY_FILE=config/query.txt
