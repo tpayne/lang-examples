@@ -132,7 +132,7 @@ jobs:
       - name: Build the NodeJS Graph Docker image...
         id: nodejsquery-image
         run: |
-          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsfile
+          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery
           IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
           echo "::set-output name=image::$IMAGE_ID"
           echo "::set-output name=tag::$IMAGE_TAG"

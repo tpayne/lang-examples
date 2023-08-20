@@ -1,8 +1,7 @@
 Graph Application
 =================
 
-This repo contains a simple example NodeJS REST API app that works with Azure Graph KQL
-using managed identifies.
+This repo contains a simple example NodeJS REST API app that works with Azure Graph KQL using managed identifies.
 
 To run this sample, you will need to have access to an Azure CSP and an
 AKS instance that you can deploy too.
@@ -13,13 +12,12 @@ This example consists of the following...
 * A NodeJS REST API application coded to authenticate against a managed identify and run KQL queries based on it
 
 To use this sample, you need to do the following...
-* Spin up an Azure Storage Account
 * Have the ability to deploy K8s objects into an AKS namespace
 * Be able to run a Helm Chart to deploy the application
 
 Running the Helm chart provided in this sample will...
 * Deploy the application
-* Provide a set of sample REST APIs that allow you to create, delete and list tables
+* Provide a set of sample REST APIs that allow you to run various queries againt KQL
 * Provide a simple Web interface to using the APIs
 
 Building the Application
@@ -33,17 +31,29 @@ When these images are run they use specific users and do NOT have elevated root 
 To build and run the image locally, you can do the following...
 
 ```shell
-    docker build -t nodejs-serverless-storage-tablesample .
+    docker build -t nodejskqlsample .
 ```
 
 Deploying the Application
 -------------------------
 To deploy the application, please review the following instructions.
 
+### Deploying the App as an ACI
+To deploy the app as an ACI, please do the following...
+
 Create a managed identity using 
 
 ```shell
-az identity create -g <rgName> -n <id>
+az identify delete -g testapp -n testapp
+az identity create -g testapp -n testapp
+az container delete -g testapp \
+    --name testapp
+az container create -g testapp \
+    --name testapp --image \
+    ghcr.io/tpayne/nodejsazurequery:master \
+    --ports 3000 --ip-address public
+az container show -g testapp \
+    --name testapp | grep '"ip"'
 ```
 
 Before running the `helm install` or `helm template` commands, please review
@@ -54,7 +64,7 @@ managed identity variables etc.
 Either of the following commands will install the Helm chart against your AKS system.
 
 ```console
-    helm template storage-table \
+    helm template graphql-sample \
         -f values.yaml \
         k8s-service \
         --repo https://helmcharts.gruntwork.io/ |\
@@ -62,7 +72,7 @@ Either of the following commands will install the Helm chart against your AKS sy
 ```
 
 ```console
-    helm install storage-table \
+    helm install graphql-sample \
         -f values.yaml \
         k8s-service \
         -n <ns> \
@@ -73,10 +83,10 @@ It is suggested you `--dry-run` the process first to ensure no syntax errors are
 
 Running the App
 ---------------
-The app is designed to provide a number of simple Web services that allow you to interact with the Azure Table SDK. You can use them to create, delete or list tables in a Storage
-Account.
+The app is designed to provide a number of simple Web services that allow you to interact with the Azure Graph SDK. You can use them to run various KQL queries.
 
-To run the app, you need to configure the storage account that the app uses or ensure that it is exposed into the environment.
+To run the app, you need to configure the managed ids used and associate them
+with the AKS instance.
 
 To configure this you can either edit the properties file - `config/app.properties` or `export STORAGE_ACCOUNT=<accountName>` into the environment used by the container. If deploying this app to AKS, then you will need to edit the `ConfigMap` definition in
 `values.yaml`.
