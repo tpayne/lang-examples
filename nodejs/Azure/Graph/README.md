@@ -44,7 +44,7 @@ To deploy the app as an ACI, please do the following...
 Create a managed identity using 
 
 ```shell
-az identify delete -g testapp -n testapp
+az identity delete -g testapp -n testapp
 az identity create -g testapp -n testapp
 az container delete -g testapp \
     --name testapp
