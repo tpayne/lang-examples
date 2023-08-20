@@ -47,7 +47,7 @@ Create a managed identity using
 az identity delete -g testapp -n testapp
 az identity create -g testapp -n testapp
 az container delete -g testapp \
-    --name testapp
+    --name testapp -y
 az container create -g testapp \
     --name testapp --image \
     ghcr.io/tpayne/nodejsazurequery:master \
