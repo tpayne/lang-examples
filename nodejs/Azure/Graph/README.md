@@ -31,7 +31,7 @@ When these images are run they use specific users and do NOT have elevated root 
 To build and run the image locally, you can do the following...
 
 ```shell
-    docker build -t nodejskqlsample .
+docker build -t nodejskqlsample .
 ```
 
 Deploying the Application
