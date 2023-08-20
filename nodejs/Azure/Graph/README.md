@@ -41,7 +41,8 @@ To deploy the application, please review the following instructions.
 ### Deploying the App as an ACI
 To deploy the app as an ACI, please do the following...
 
-Create a managed identity using 
+Create a managed identity using the below commands and deploy an
+ACI using a pre-build image.
 
 ```shell
 az identity delete -g testapp -n testapp
@@ -56,6 +57,7 @@ az container show -g testapp \
     --name testapp | grep '"ip"'
 ```
 
+### Using AKS & Helm
 Before running the `helm install` or `helm template` commands, please review
 the `values.yaml` file to ensure the values are as you expect. You will most
 likely have to edit them to conform to your environment. This will include the

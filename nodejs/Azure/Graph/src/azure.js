@@ -119,6 +119,11 @@ async function countResources (request, response) {
 
   try {
     const results = await runQueryImpl('TYPE_COUNT')
+    if (results === null) {
+      return response.status(500).json({
+        message: 'Query error'
+      })  
+    }
     return response.status(200).send(JSON.stringify(results.data, null, 2))
   } catch (e) {
     return response.status(500).json({
@@ -133,6 +138,11 @@ async function listResources (request, response) {
 
   try {
     const results = await runQueryImpl('LIST_QUERY')
+    if (results === null) {
+      return response.status(500).json({
+        message: 'Query error'
+      })  
+    }
     return response.status(200).send(JSON.stringify(results.data, null, 2))
   } catch (e) {
     return response.status(500).json({
@@ -146,6 +156,11 @@ async function healthCheck (request, response) {
 
   try {
     const results = await runQueryImpl('HEALTH_CHECK')
+    if (results === null) {
+      return response.status(500).json({
+        message: 'Query error'
+      })  
+    }
     response.status(200).json({
       message: 'Ok'
     })
