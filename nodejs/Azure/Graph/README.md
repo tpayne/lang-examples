@@ -46,9 +46,9 @@ ACI using a pre-build image.
 
 ```shell
 az identity delete -g testapp -n testapp
-az identity create -g testapp -n testapp
 az container delete -g testapp \
     --name testapp -y
+az identity create -g testapp -n testapp
 az container create -g testapp \
     --name testapp --image \
     ghcr.io/tpayne/nodejsazurequery:master \
@@ -56,6 +56,11 @@ az container create -g testapp \
 az container show -g testapp \
     --name testapp | grep '"ip"'
 ```
+
+You can then either...
+* assign the user managed identity created above to the ACI and
+give it `Reader` role
+* or use a system-assigned managed identity and also give it `Reader` role
 
 ### Using AKS & Helm
 Before running the `helm install` or `helm template` commands, please review
@@ -65,60 +70,72 @@ managed identity variables etc.
 
 Either of the following commands will install the Helm chart against your AKS system.
 
-```console
-    helm template graphql-sample \
-        -f values.yaml \
-        k8s-service \
-        --repo https://helmcharts.gruntwork.io/ |\
-    kubectl apply -f - -n <ns>
+```shell
+helm template graphql-sample \
+    -f values.yaml \
+    k8s-service \
+    --repo https://helmcharts.gruntwork.io/ |\
+kubectl apply -f - -n <ns>
 ```
 
-```console
-    helm install graphql-sample \
-        -f values.yaml \
-        k8s-service \
-        -n <ns> \
-        --repo https://helmcharts.gruntwork.io/
+```shell
+helm install graphql-sample \
+    -f values.yaml \
+    k8s-service \
+    -n <ns> \
+    --repo https://helmcharts.gruntwork.io/
 ```
 
 It is suggested you `--dry-run` the process first to ensure no syntax errors are present.
+
+To configure the app for running you will need to ...
 
 Running the App
 ---------------
 The app is designed to provide a number of simple Web services that allow you to interact with the Azure Graph SDK. You can use them to run various KQL queries.
 
-To run the app, you need to configure the managed ids used and associate them
-with the AKS instance.
-
-To configure this you can either edit the properties file - `config/app.properties` or `export STORAGE_ACCOUNT=<accountName>` into the environment used by the container. If deploying this app to AKS, then you will need to edit the `ConfigMap` definition in
-`values.yaml`.
-
-It is also recommended that you use the `storage-account-key` property in the
-`config/apps.property` file to allow anyone to run the APIs. This value can be set by editting the `ConfigMap` definition detailed above.
-
-The following are some usage examples of the application running. To use them on your system, you will need to modify `localhost:3000` to the appropriate Ingress that you are using for AKS.
+The following are some usage examples of the application running. To use them on your system, you will need to modify `localhost:3000` to the appropriate Ingress that you are using for AKS or your ACI.
 
 ```shell
-    curl "localhost:3000/api/tables/healthz"
-    {"message":"Ok"}
-    curl -X POST "localhost:3000/api/tables/create" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "table=testall"
-    {"message":"Table created"}
-    curl "localhost:3000/api/tables/list"
-    [{"name":"test"},{"name":"testall"},{"name":"test123"}]
-    curl -X POST "localhost:3000/api/tables/drop" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "table=testall"
-    {"message":"Table dropped"}
+curl localhost:3000/api/query/healthz
+{"message":"Ok"}
+curl localhost:3000/api/query/count
+[
+  {
+    "type": "microsoft.managedidentity/userassignedidentities",
+    "count_": 1
+  },
+  {
+    "type": "microsoft.containerinstance/containergroups",
+    "count_": 1
+  }
+]
+curl localhost:3000/api/query/list
+[
+  {
+    "name": "testapp",
+    "type": "microsoft.managedidentity/userassignedidentities",
+    "location": "westeurope"
+  },
+  {
+    "name": "testapp",
+    "type": "microsoft.containerinstance/containergroups",
+    "location": "westeurope"
+  }
+]
 ```
 
-If running this application outside of AKS, then you will need to ensure the `config/apps.property` file exists in the Docker image in `/config`. You can do this by modifying the
-`Dockerfile` as appropriate.
+If running this application outside of AKS, then you will need to ensure the `config/apps.property` file exists in the Docker image in `/config`. You can do this by modifying the `Dockerfile` as appropriate.
 
 Cleaning Up
 -----------
-To clean up the installation, uninstall the Helm chart.
+To clean up the installation, uninstall the Helm chart or delete the ACI and MI using:-
+
+```shell
+az identity delete -g testapp -n testapp
+az container delete -g testapp \
+    --name testapp -y
+```
 
 Notes
 -----
