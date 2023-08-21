@@ -26,7 +26,6 @@ async function loadQueries (queryFile) {
     const text = fs.readFileSync(queryFile,
       { encoding: 'utf8', flag: 'r' })
 
-    let currentOffset = 0;
     const pattern = /^(\w+):(.+(?:\n  .*|\n[^:\n]+$)*)/gm
 
     for (const [fullMatch, key, value] of text.matchAll(pattern)) {
