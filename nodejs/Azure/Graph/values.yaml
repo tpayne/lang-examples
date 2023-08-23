@@ -1,4 +1,4 @@
-applicationName: "storage-table"
+applicationName: "graphql-sample"
 
 customResources:
   enabled: true
@@ -12,12 +12,11 @@ customResources:
       data:
         app.properties: |-
           port=3000
-          storage-account=<storageAccount>
-          # Set this if using key access
-          storage-account-key=<accessKey>
+          # Queries
+          QUERY_FILE=/sql/query.txt
 
 containerImage:
-  repository: ghcr.io/tpayne/nodejsazuretable # Optional. Repo to which the image resides
+  repository: ghcr.io/tpayne/nodejsazurequery # Optional. Repo to which the image resides
   tag: master # Optional. Image Tag (Defaults to latest)
   pullPolicy: Always
 

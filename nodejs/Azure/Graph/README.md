@@ -82,7 +82,6 @@ kubectl apply -f - -n <ns>
 helm install graphql-sample \
     -f values.yaml \
     k8s-service \
-    -n <ns> \
     --repo https://helmcharts.gruntwork.io/
 ```
 

@@ -40,8 +40,9 @@ COPY --from=imagebuilder /source/nodeexe ./
 
 COPY files/html ./html
 COPY files/config ./config
-RUN  cp ./config/app.properties.default ./config/app.properties
+COPY files/config/app.properties.default ./config/app.properties
 COPY files/scripts ./scripts
+COPY files/sql ./sql
 
 USER ${account}:${account}
 
