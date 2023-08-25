@@ -68,21 +68,51 @@ the `values.yaml` file to ensure the values are as you expect. You will most
 likely have to edit them to conform to your environment. This will include the
 managed identity variables etc.
 
+First, create the managed identity.
+
+```shell
+export RG_NAME="<rgName>"
+export AKS_NAME="<aksName>"
+export RG_NAME="<rgName>"
+export AKS_OIDC_ISSUER="$(az aks show -n ${AKS_NAME} -g ${RG_NAME} \
+    --query "oidcIssuerProfile.issuerUrl" \
+    -otsv)"
+az identity delete -g ${RG_NAME} -n ${AKS_NAME}
+az identity create -g ${RG_NAME} -n ${AKS_NAME}
+
+export CLIENT_ID="$(az identity show -g ${RG_NAME} \
+    -n ${AKS_NAME} --query 'clientId' -otsv)"
+
+export TENANT_ID="$(az identity show -g ${RG_NAME} \
+    -n ${AKS_NAME} --query 'tenantId' -otsv)"
+
+az identity federated-credential \
+    create -n ${AKS_NAME} \
+    --identity-name ${AKS_NAME} \
+    -g ${RG_NAME} \
+    --issuer ${AKS_OIDC_ISSUER} \
+    --subject \
+    system:serviceaccount:default:aks-access
+```
+
 Either of the following commands will install the Helm chart against your AKS system.
 
 ```shell
 helm template graphql-sample \
     -f values.yaml \
     k8s-service \
-    --repo https://helmcharts.gruntwork.io/ |\
+    --repo \
+    https://raw.githubusercontent.com/tpayne/helm-kubernetes-services/master/charts/k8s-service |\
 kubectl apply -f - -n <ns>
 ```
 
 ```shell
+helm uninstall graphql-sample
 helm install graphql-sample \
     -f values.yaml \
     k8s-service \
-    --repo https://helmcharts.gruntwork.io/
+    --repo \
+    https://raw.githubusercontent.com/tpayne/helm-kubernetes-services/master/charts/k8s-service
 ```
 
 It is suggested you `--dry-run` the process first to ensure no syntax errors are present.

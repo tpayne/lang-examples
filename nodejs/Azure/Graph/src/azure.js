@@ -80,13 +80,16 @@ async function connect () {
   }
 
   try {
+    setLog("info")
     console.log('%s: Default login', new Date().toISOString())
     credential = new DefaultAzureCredential()
     graphClientService = new ResourceGraphClient(credential)
     console.log('%s: Logged in', new Date().toISOString())
+    setLog("warning")
   } catch (e) {
     console.error('%s: Error - Unable to login to Azure %s',
       new Date().toISOString(), e.message)
+    setLog("warning")
     return null
   }
 
@@ -104,12 +107,17 @@ async function runQueryImpl (query) {
     return null
   }
 
+  setLog("info")
+   
   const result = await graphClientService.resources(
     {
       query: qry
     },
     { resultFormat: 'json' }
   )
+
+  setLog("warning")
+ 
   return result
 }
 
