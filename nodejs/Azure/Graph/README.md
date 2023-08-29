@@ -73,7 +73,6 @@ First, create the managed identity.
 ```shell
 export RG_NAME="<rgName>"
 export AKS_NAME="<aksName>"
-export RG_NAME="<rgName>"
 export AKS_OIDC_ISSUER="$(az aks show -n ${AKS_NAME} -g ${RG_NAME} \
     --query "oidcIssuerProfile.issuerUrl" \
     -otsv)"
@@ -87,19 +86,31 @@ export TENANT_ID="$(az identity show -g ${RG_NAME} \
     -n ${AKS_NAME} --query 'tenantId' -otsv)"
 
 az identity federated-credential \
+    delete -n ${AKS_NAME} \
+    --identity-name ${AKS_NAME} \
+    -g ${RG_NAME} -y
+
+export TOKEN_FILE="$(az identity federated-credential \
     create -n ${AKS_NAME} \
     --identity-name ${AKS_NAME} \
     -g ${RG_NAME} \
     --issuer ${AKS_OIDC_ISSUER} \
     --subject \
-    system:serviceaccount:default:aks-access
+    system:serviceaccount:default:aks-access | \
+    tr -d '\n')"
+
+echo "=========================="
+echo "TOKEN_FILE = ${TOKEN_FILE}"
+echo "CLIENT_ID = ${CLIENT_ID}"
+echo "TENANT_ID = ${TENANT_ID}"
+envsubst < values.yaml.tpl > /tmp/values.yaml
 ```
 
 Either of the following commands will install the Helm chart against your AKS system.
 
 ```shell
 helm template graphql-sample \
-    -f values.yaml \
+    -f /tmp/values.yaml \
     k8s-service \
     --repo \
     https://raw.githubusercontent.com/tpayne/helm-kubernetes-services/master/charts/k8s-service |\
@@ -109,7 +120,7 @@ kubectl apply -f - -n <ns>
 ```shell
 helm uninstall graphql-sample
 helm install graphql-sample \
-    -f values.yaml \
+    -f /tmp/values.yaml \
     k8s-service \
     --repo \
     https://raw.githubusercontent.com/tpayne/helm-kubernetes-services/master/charts/k8s-service
