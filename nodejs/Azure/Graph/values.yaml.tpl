@@ -23,6 +23,7 @@ customResources:
         labels:
       data:
         token.file: |-
+          # Token details
           $TOKEN_FILE
 
 containerImage:
@@ -88,17 +89,22 @@ readinessProbe:
 podAnnotations:
   azure.workload.identity/use: "true"
 
+additionalDeploymentLabels:
+  azure.workload.identity/use: "true"
+
 envVars:
-  AZURE_TENANT_ID: ${TENANT_ID}
-  AZURE_CLIENT_ID: ${CLIENT_ID}
-  AZURE_FEDERATED_TOKEN_FILE: /config-data/token.file
+  AZURE_TENANT_ID: "${TENANT_ID}"
+  AZURE_CLIENT_ID: "${CLIENT_ID}"
+  # AZURE_FEDERATED_TOKEN_FILE: /config-data/token.file
 
 serviceAccount:
   create: true
   name: aks-access
+  labels:
+    azure.workload.identity/use: "true"
   annotations:
-    azure.workload.identity/tenant-id: ${TENANT_ID}
-    azure.workload.identity/client-id: ${CLIENT_ID}
+    azure.workload.identity/tenant-id: "${TENANT_ID}"
+    azure.workload.identity/client-id: "${CLIENT_ID}"
 
 # serviceMonitor:
 #   enabled: true
