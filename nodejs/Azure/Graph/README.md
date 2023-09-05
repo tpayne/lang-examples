@@ -106,7 +106,9 @@ echo "TENANT_ID = ${TENANT_ID}"
 envsubst < values.yaml.tpl > /tmp/values.yaml
 ```
 
-Either of the following commands will install the Helm chart against your AKS system.
+Then associate roles with it.
+
+You can use either of the following commands to install the Helm chart against your AKS system.
 
 ```shell
 helm template graphql-sample \
@@ -127,8 +129,6 @@ helm install graphql-sample \
 ```
 
 It is suggested you `--dry-run` the process first to ensure no syntax errors are present.
-
-To configure the app for running you will need to ...
 
 Running the App
 ---------------
