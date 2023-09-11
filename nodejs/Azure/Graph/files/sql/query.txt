@@ -3,4 +3,4 @@ HEALTH_CHECK: ResourceContainers
 TYPE_COUNT: resources 
   | summarize count() by ['type'] | sort by count_ desc
 LIST_QUERY: resources 
-  | project name, type, location | order  by location, type
+  | project name, type, location | order by location, type
