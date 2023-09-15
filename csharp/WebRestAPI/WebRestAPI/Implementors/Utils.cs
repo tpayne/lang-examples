@@ -37,15 +37,6 @@ namespace WebRestAPI.Implementors
         // Public utility classes
         //
         
-        public static string ConvertXMLToJson(string xml)
-        {
-            XmlDocument doc = new XmlDocument();
-            string encodedXml = System.Security.SecurityElement.Escape(xml);
-            doc.LoadXml(encodedXml);
-            string json = JsonConvert.SerializeXmlNode(doc);
-            return FormatJson(json);
-        }
-
         public static string GetCreds(HttpRequest request)
         {
             var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
@@ -65,6 +56,15 @@ namespace WebRestAPI.Implementors
             client.DefaultRequestHeaders.Add("Authorization", "Bearer " + creds);
 
             return client;
+        }
+
+        public static string ConvertXMLToJson(string xml)
+        {
+            XmlDocument doc = new XmlDocument();
+            string encodedXml = System.Security.SecurityElement.Escape(xml);
+            doc.LoadXml(encodedXml);
+            string json = JsonConvert.SerializeXmlNode(doc);
+            return FormatJson(json);
         }
 
         public static string FormatJson(string json)
