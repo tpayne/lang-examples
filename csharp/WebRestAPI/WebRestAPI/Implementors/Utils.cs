@@ -36,6 +36,7 @@ namespace WebRestAPI.Implementors
         //
         // Public utility classes
         //
+        
         public static string ConvertXMLToJson(string xml)
         {
             XmlDocument doc = new XmlDocument();
