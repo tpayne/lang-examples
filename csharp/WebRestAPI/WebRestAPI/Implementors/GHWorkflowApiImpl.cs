@@ -36,6 +36,7 @@ using WebRestAPI.Models;
 
 namespace WebRestAPI.Implementors
 {
+    // Implementor class for GH
     public class GHWorkflowApiImpl
     {
         public async Task<dynamic> GetJobRunLogsImpl(string owner, 
