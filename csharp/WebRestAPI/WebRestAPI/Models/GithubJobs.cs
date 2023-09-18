@@ -26,6 +26,7 @@ using System.Collections.Generic;
 
 namespace WebRestAPI.Models
 {
+    // Class definition for GH Jobs
     public class GithubJobs
     {
         [JsonPropertyName("total_count")]
@@ -33,6 +34,7 @@ namespace WebRestAPI.Models
         public List<Job> jobs { get; set; }
     }
 
+    // Class definition for jobs
     public class Job
     {
         public long id { get; set; }
