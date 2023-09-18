@@ -25,6 +25,7 @@ using System.Text.Json.Serialization;
 
 namespace WebRestAPI.Models
 {
+    // Mapping class for GH repo
     public class GithubRepos
     {
         [JsonPropertyName("name")]
