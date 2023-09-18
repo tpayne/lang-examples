@@ -70,6 +70,7 @@ namespace WebRestAPI.Implementors
             return FormatJson(json);
         }
 
+        // Formatters
         public static string FormatJson(string json)
         {
             if (json == null)
@@ -80,6 +81,7 @@ namespace WebRestAPI.Implementors
             return JsonConvert.SerializeObject(parsedJson, Newtonsoft.Json.Formatting.Indented);
         }
 
+        // Formatters
         public static string FormatJson(Stream json)
         {
             if (json == null)
