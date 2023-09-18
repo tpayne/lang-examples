@@ -61,6 +61,7 @@ namespace WebRestAPI.Models
         public string runner_group_name { get; set; }
     }
 
+    // Class definition for Steps in Jobs
     public class Step
     {
         public string name { get; set; }
