@@ -37,6 +37,7 @@ namespace WebRestAPI.Implementors
         // Public utility classes
         //
         
+        // Get credentials from headers
         public static string GetCreds(HttpRequest request)
         {
             var header = AuthenticationHeaderValue.Parse(request.Headers["Authorization"]);
@@ -44,6 +45,7 @@ namespace WebRestAPI.Implementors
             return creds;
         }
 
+        // Get HTTP client
         public static HttpClient GetHttpClient(string creds)
         {
             HttpClient client = new HttpClient();
@@ -58,6 +60,7 @@ namespace WebRestAPI.Implementors
             return client;
         }
 
+        // Formatters
         public static string ConvertXMLToJson(string xml)
         {
             XmlDocument doc = new XmlDocument();
