@@ -27,7 +27,7 @@ FROM node:lts-alpine${alpineVersion} AS runner
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
 
-RUN apk add --no-cache curl=8.2.1-r0
+RUN apk add --no-cache curl=8.3.0-r0
 
 ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system
