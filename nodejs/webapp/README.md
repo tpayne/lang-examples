@@ -1,7 +1,7 @@
 Web Server Sample
 ==================
 
-This repo contains a simple example Node.JS Webserver.
+This repo contains a simple example Node.JS Webserver that runs a relay service.
 
 Running the Example with Basic Ops
 ----------------------------------
