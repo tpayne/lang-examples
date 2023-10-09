@@ -25,7 +25,7 @@ jobs:
     - name: ${{github.event.inputs.id}}
       run: echo Running job ${{github.event.inputs.id}}      
     - name: Checkout 
-      uses: actions/checkout@v3 # Required to mount the Github Workspace to a volume 
+      uses: actions/checkout@v4 # Required to mount the Github Workspace to a volume 
     - name: Run Test
       uses: addnab/docker-run-action@v3
       with:
