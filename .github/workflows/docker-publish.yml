@@ -82,7 +82,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract CPPDemo Docker metadata
         id: meta1
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/cppdemo
 
@@ -101,7 +101,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract CPP Docker metadata
         id: meta2
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/MessageUtils
 
@@ -120,7 +120,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Docker metadata
         id: meta3
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejs
 
@@ -139,7 +139,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS DB Docker metadata
         id: meta4
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsdb
 
@@ -158,7 +158,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Azure Table Docker metadata
         id: meta5
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazuretable
 
@@ -178,7 +178,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Azure File Docker metadata
         id: meta6
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazurefiles
 
@@ -197,7 +197,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Azure Graph Docker metadata
         id: meta7
-        uses: docker/metadata-action@f19c3691d56f26e3f97547999df66a9ecbf0d9b0
+        uses: docker/metadata-action@26b4721af7e42433d091d1c17de06a07d96a56ce
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazurequery
 
