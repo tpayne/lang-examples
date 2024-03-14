@@ -152,7 +152,7 @@ jobs:
 
     steps:
       - name: Update GitOps SBOM values
-        uses: tpayne/github-actions/sbom-manifest@main
+        uses: tpayne/github-actions/sbom-manifest-script@main
         with:
           gitops-repo-url: https://github.com/tpayne/gitsbomtest.git
           src-sbom-file: dev/baggins-sbom-qa.yaml
