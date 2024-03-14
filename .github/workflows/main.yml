@@ -165,8 +165,8 @@ jobs:
         uses: tpayne/github-actions/sbom-manifest@main
         with:
           gitops-repo-url: https://github.com/tpayne/gitsbomtest.git
-          src-manifest-file: dev/baggins-sbom-qa.yaml
-          target-manifest-file: qa/baggins-sbom-qa.yaml
+          src-sbom-file: dev/baggins-sbom-qa.yaml
+          target-sbom-file: qa/baggins-sbom-qa.yaml
           github-username: ${{ github.actor }}
           github-token: ${{ secrets.GT_TOKEN }}
           github-email: ${{ github.actor }}@users.noreply.github.com
