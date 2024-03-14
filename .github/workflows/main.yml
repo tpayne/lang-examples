@@ -151,17 +151,17 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
-      - name: Update GitOps SBOM values
-        uses: tpayne/github-actions/sbom-manifest-script@main
-        with:
-          gitops-repo-url: https://github.com/tpayne/gitsbomtest.git
-          src-sbom-file: dev/baggins-sbom-qa.yaml
-          target-sbom-file: qa/baggins-sbom-qa.yaml
-          github-username: ${{ github.actor }}
-          github-token: ${{ secrets.GT_TOKEN }}
-          github-email: ${{ github.actor }}@users.noreply.github.com
-          component: task1
-          version: ${{ needs.build.outputs.dotnet7-tag }}
+#      - name: Update GitOps SBOM values
+#        uses: tpayne/github-actions/sbom-manifest-script@main
+#        with:
+#          gitops-repo-url: https://github.com/tpayne/gitsbomtest.git
+#          src-sbom-file: dev/baggins-sbom-qa.yaml
+#          target-sbom-file: qa/baggins-sbom-qa.yaml
+#          github-username: ${{ github.actor }}
+#          github-token: ${{ secrets.GT_TOKEN }}
+#          github-email: ${{ github.actor }}@users.noreply.github.com
+#          component: task1
+#          version: ${{ needs.build.outputs.dotnet7-tag }}
       - name: Update GitOps deployment manifest values
         uses: tpayne/github-actions/productmanifest@main
         with:
