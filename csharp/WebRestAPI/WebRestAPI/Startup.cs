@@ -1,4 +1,6 @@
-// These are the main system includes
+//
+// These are the main system includes for this module...
+//
 using System;
 using System.Collections.Generic;
 using System.Linq;
