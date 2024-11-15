@@ -20,7 +20,7 @@ Note - You must use port 8080 as the container port.
     
 or
 
-    docker build . -f Dockerfile.vcnet7.arm64v8 --tag csharpwsapi:1.0 && \
+    docker build . -f Dockerfile.vcnet8.arm64v8 --tag csharpwsapi:1.0 && \
         docker run --rm -t -d -p 5555:8080 csharpwsapi:1.0
 
 If everything has worked as expected, then you can run services like the following...
