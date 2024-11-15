@@ -164,7 +164,7 @@ jobs:
       - name: Update GitOps deployment manifest values
         uses: tpayne/github-actions/productmanifest@main
         with:
-          gitops-repo-url: https://github.com/contino/argo-suite-samples.git
+          gitops-repo-url: https://github.com/tpayne/argo-suite-samples.git
           manifest-file: examples/simple/helm/dev/values-releaseversions.yaml
           github-username: ${{ github.actor }}
           github-token: ${{ secrets.GT_TOKEN }}
