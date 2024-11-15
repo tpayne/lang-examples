@@ -1,9 +1,9 @@
 name: Build images and update manifest info for Demo
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
   # Triggers the workflow on push or pull request events but only for the main branch
   registry_package:
     types: [published, updated]
@@ -17,7 +17,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.ref }}JavaCi
+  group: ${{ github.ref }}Ci
   cancel-in-progress: true
 
 # Tasks and jobs to run

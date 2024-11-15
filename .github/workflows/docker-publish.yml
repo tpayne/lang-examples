@@ -7,11 +7,11 @@ name: GitHub CR Build and Push
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
@@ -33,7 +33,7 @@ concurrency:
 jobs:
   buildPush:
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/main')
+    if: (github.ref == 'refs/heads/master')
     permissions:
       contents: read
       packages: write
