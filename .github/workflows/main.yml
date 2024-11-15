@@ -26,8 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
     outputs:
-      dotnet7-image: ${{ steps.dotnet7-image.outputs.image }}
-      dotnet7-tag: ${{ steps.dotnet7-image.outputs.tag }}
+      dotnet8-image: ${{ steps.dotnet8-image.outputs.image }}
+      dotnet8-tag: ${{ steps.dotnet8-image.outputs.tag }}
     steps:
       - name: ${{github.event.inputs.id}}
         run: echo Running job ${{github.event.inputs.id}}
@@ -38,8 +38,8 @@ jobs:
             docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
         # Build tasks to run...
-      - name: Build the .Net7 Docker image...
-        id: dotnet7-image
+      - name: Build the .Net8 Docker image...
+        id: dotnet8-image
         run: |
           IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/webrestapi
           IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
@@ -160,7 +160,7 @@ jobs:
 #          github-token: ${{ secrets.GT_TOKEN }}
 #          github-email: ${{ github.actor }}@users.noreply.github.com
 #          component: task1
-#          version: ${{ needs.build.outputs.dotnet7-tag }}
+#          version: ${{ needs.build.outputs.dotnet8-tag }}
       - name: Update GitOps deployment manifest values
         uses: tpayne/github-actions/productmanifest@main
         with:
@@ -169,5 +169,5 @@ jobs:
           github-username: ${{ github.actor }}
           github-token: ${{ secrets.GT_TOKEN }}
           github-email: ${{ github.actor }}@users.noreply.github.com
-          image-list: github-service:${{ needs.build.outputs.dotnet7-image }}
-          image-tag: ${{ needs.build.outputs.dotnet7-tag }}
+          image-list: github-service:${{ needs.build.outputs.dotnet8-image }}
+          image-tag: ${{ needs.build.outputs.dotnet8-tag }}
