@@ -1,9 +1,12 @@
 name: Build images and update manifest info for Demo
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   # Triggers the workflow on push or pull request events but only for the main branch
   registry_package:
     types: [published, updated]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
@@ -13,19 +16,15 @@ on:
         default: "Job001"
         type: string
 
-  # Branch filtered to master only
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
-  schedule:
-    - cron: "0 0 1 * *"
+concurrency:
+  group: ${{ github.ref }}JavaCi
+  cancel-in-progress: true
 
 # Tasks and jobs to run
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
     outputs:
       dotnet7-image: ${{ steps.dotnet7-image.outputs.image }}
       dotnet7-tag: ${{ steps.dotnet7-image.outputs.tag }}
