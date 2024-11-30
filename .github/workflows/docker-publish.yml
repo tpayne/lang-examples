@@ -92,7 +92,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push CPPDemo Docker image
         id: build-and-push1
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: CPPExamples/Std11/
           push: ${{ github.event_name != 'pull_request' }}
@@ -111,7 +111,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push CPP Docker image
         id: build-and-push2
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: CPPExamples/MessageUtils
           push: ${{ github.event_name != 'pull_request' }}
@@ -130,7 +130,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Docker image
         id: build-and-push3
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: nodejs/webapp/
           push: ${{ github.event_name != 'pull_request' }}
@@ -149,7 +149,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS DB Docker image
         id: build-and-push4
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: nodejs/dbops/app/
           push: ${{ github.event_name != 'pull_request' }}
@@ -168,7 +168,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Azure Table Docker image
         id: build-and-push5
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: nodejs/Azure/Table/
           push: ${{ github.event_name != 'pull_request' }}
@@ -188,7 +188,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Azure Files Docker image
         id: build-and-push6
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: nodejs/Azure/File/
           push: ${{ github.event_name != 'pull_request' }}
@@ -207,7 +207,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Azure Graph Docker image
         id: build-and-push7
-        uses: docker/build-push-action@5e99dacf67635c4f273e532b9266ddb609b3025a
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355
         with:
           context: nodejs/Azure/Graph/
           push: ${{ github.event_name != 'pull_request' }}
