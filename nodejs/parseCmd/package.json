@@ -6,7 +6,6 @@
 	"license": "MIT",
 	"description": "A simple parser",
 	"dependencies": {
-	    "yargs": "^17.7.2",
-			"pkg": "^5.8.1"
+	    "yargs": "^17.7.2"
 	}
 }
