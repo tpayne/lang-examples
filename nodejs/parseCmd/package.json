@@ -2,7 +2,7 @@
 	"name": "parseCmd",
 	"version": "1.0.0",
 	"main": "parseCmd.js",
-	"author": "",
+	"author": "Tim Payne",
 	"license": "MIT",
 	"description": "A simple parser",
 	"dependencies": {
