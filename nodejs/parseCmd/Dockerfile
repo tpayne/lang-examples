@@ -32,5 +32,5 @@ COPY --from=imagebuilder /source/nodeexe ./
 
 USER ${account}:${account}
 
-CMD ["./nodeexe","--generate-file=test.txt","--overwrite"]
+CMD ["./nodeexe","--generate-file=/tmp/test.txt","--overwrite"]
 EXPOSE 8080
