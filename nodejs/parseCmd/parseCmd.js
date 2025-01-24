@@ -12,6 +12,7 @@ function logOutput(fileName) {
         fs.writeFileSync(fileName, lsProc.stdout)
     } catch (e) {
         console.log(e)
+    } finally {
     }
 }
 
@@ -36,6 +37,7 @@ function main(args) {
         });
     } catch (e) {
         console.log(e)
+    } finally {
     }
 }
 
