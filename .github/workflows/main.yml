@@ -77,6 +77,18 @@ jobs:
           docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest && \
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest)
 
+      - name: Build the NodeJS Parse Docker image...
+        id: nodejsparse-image
+        run: |
+          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsparse
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "::set-output name=image::$IMAGE_ID"
+          echo "::set-output name=tag::$IMAGE_TAG"
+
+          (cd nodejs/parseCmd/ && \
+          docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsparse:1.0 && \
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsparse:1.0)
+          
       - name: Build the NodeJS Docker image...
         id: nodejs-image
         run: |
@@ -140,18 +152,6 @@ jobs:
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery:1.0 && \
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery:1.0)
 
-      - name: Build the NodeJS Parse Docker image...
-        id: nodejsparse-image
-        run: |
-          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsparse
-          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
-          echo "::set-output name=image::$IMAGE_ID"
-          echo "::set-output name=tag::$IMAGE_TAG"
-
-          (cd nodejs/Azure/parseCmd/ && \
-          docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsparse:1.0 && \
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsparse:1.0)
-          
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
 
