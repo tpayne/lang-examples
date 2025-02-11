@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:9.0.102-alpine3.20-amd64 AS build
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:9.0.200-alpine3.20-amd64 AS build
 
 ARG account=webapp
 
@@ -28,7 +28,7 @@ RUN dotnet publish -c release -o /app --self-contained true --no-restore \
     /p:PublishSingleFile=true
 
 # final stage/image
-FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:9.0.1-alpine3.20-amd64 AS runtime
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:9.0.2-alpine3.20-amd64 AS runtime
 
 WORKDIR /app
 COPY --from=build /app ./
