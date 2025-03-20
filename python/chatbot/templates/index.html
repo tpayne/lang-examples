@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Emulator</title>
+    <style>
+        #chat-container {
+            width: 400px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+        }
+        #user-input {
+            width: 380px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container"></div>
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        function sendMessage() {
+            const userInput = document.getElementById("user-input").value;
+            const chatContainer = document.getElementById("chat-container");
+            chatContainer.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
+            document.getElementById("user-input").value = ""; // Clear input
+
+            fetch("/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ message: userInput }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                chatContainer.innerHTML += `<p><strong>Bot:</strong> ${data.response}</p>`;
+                chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to bottom
+            });
+        }
+
+        document.getElementById("user-input").addEventListener("keyup", function(event) {
+          if (event.keyCode === 13) {
+            event.preventDefault();
+            sendMessage();
+          }
+        });
+
+    </script>
+</body>
+</html>
