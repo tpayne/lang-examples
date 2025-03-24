@@ -8,6 +8,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 COPY templates ./templates
+COPY contexts ./contexts
 COPY app.py .
 
 RUN pip install -r requirements.txt
