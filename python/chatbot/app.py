@@ -26,19 +26,22 @@ def get_chat_response(
         return "Hello there! How can I help you?"
     elif "help" in user_input.lower():
         return "Help text"
-    elif "bot-context load" in user_input.lower():
-        cmdStr, fileName = user_input.split('=', 1)
-        ctxStr= get_context(fileName)
-        if ctxStr == "":
-            return "Context is empty - ignored"
-        return "Context loaded"
-    elif "bot-context show" in user_input.lower():
-        if ctxStr == "":
-            return "Context is empty - ignored"
-        return ctxStr # type: ignore
-    elif "bot-context reset" in user_input.lower():
-        ctxStr = ""
-        return "Context reset"
+    elif "bot-context" in user_input.lower():
+        botCmd = user_input.split(' ')
+        if botCmd[1] == "load":
+            ctxStr= get_context(botCmd[2])
+            if ctxStr == "":
+                return "Context is empty - ignored"
+            return "Context loaded"
+        elif botCmd[1] == "show":
+            if ctxStr == "":
+                return "Context is empty - ignored"
+            return ctxStr # type: ignore
+        elif botCmd[1] == "reset":
+            ctxStr = ""
+            return "Context reset"
+        else:
+            return "Invalid command"
     else:
         response = aiBotClient.chat.completions.create(
             model="gpt-3.5-turbo",

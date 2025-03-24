@@ -27,8 +27,9 @@
             const userInput = document.getElementById("user-input").value;
             const chatContainer = document.getElementById("chat-container");
             chatContainer.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
+            chatContainer.style.cursor="wait"
             document.getElementById("user-input").value = ""; // Clear input
-
+            
             fetch("/chat", {
                 method: "POST",
                 headers: {
@@ -38,6 +39,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                chatContainer.style.cursor=""
                 chatContainer.innerHTML += `<p><strong>Bot:</strong> ${data.response}</p>`;
                 chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to bottom
             });
