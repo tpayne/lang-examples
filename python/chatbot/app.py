@@ -43,20 +43,26 @@ def get_chat_response(
         else:
             return "Invalid command"
     else:
-        response = aiBotClient.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": ctxStr},
-                {"role": "user", "context": user_input},
-            ],
-            temperature=1,
-            max_tokens=1000,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-        )
-        return response
-
+        try:
+            response = aiBotClient.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": ctxStr},
+                    {"role": "user", "context": user_input},
+                ],
+                temperature=1,
+                max_tokens=1000,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+            )
+            return response
+        except Exception as err:
+            app.logger.error('Exception fired')
+            if hasattr(err, 'message'):
+                return(err.message)
+            else:
+                return(err)
 
 @app.route("/")
 def index():
