@@ -49,13 +49,13 @@ jobs:
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca
+        uses: docker/setup-buildx-action@afeb29a6e0d7d6258844ecabe6eba67d13443680
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@327cd5a69de6c009b9ce71bce8395f28e651bf99
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -84,7 +84,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract CPPDemo Docker metadata
         id: meta1
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/cppdemo
 
@@ -92,7 +92,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push CPPDemo Docker image
         id: build-and-push1
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: CPPExamples/Std11/
           push: ${{ github.event_name != 'pull_request' }}
@@ -103,7 +103,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract CPP Docker metadata
         id: meta2
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/MessageUtils
 
@@ -111,7 +111,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push CPP Docker image
         id: build-and-push2
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: CPPExamples/MessageUtils
           push: ${{ github.event_name != 'pull_request' }}
@@ -122,7 +122,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Docker metadata
         id: meta3
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejs
 
@@ -130,7 +130,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Docker image
         id: build-and-push3
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: nodejs/webapp/
           push: ${{ github.event_name != 'pull_request' }}
@@ -141,7 +141,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS DB Docker metadata
         id: meta4
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsdb
 
@@ -149,7 +149,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS DB Docker image
         id: build-and-push4
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: nodejs/dbops/app/
           push: ${{ github.event_name != 'pull_request' }}
@@ -160,7 +160,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Azure Table Docker metadata
         id: meta5
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazuretable
 
@@ -168,7 +168,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Azure Table Docker image
         id: build-and-push5
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: nodejs/Azure/Table/
           push: ${{ github.event_name != 'pull_request' }}
@@ -180,7 +180,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Azure File Docker metadata
         id: meta6
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazurefiles
 
@@ -188,7 +188,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Azure Files Docker image
         id: build-and-push6
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: nodejs/Azure/File/
           push: ${{ github.event_name != 'pull_request' }}
@@ -199,7 +199,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract NodeJS Azure Graph Docker metadata
         id: meta7
-        uses: docker/metadata-action@8e1d5461f02b7886d3c1a774bfbd873650445aa2
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsazurequery
 
@@ -207,7 +207,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and Push NodeJS Azure Graph Docker image
         id: build-and-push7
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
           context: nodejs/Azure/Graph/
           push: ${{ github.event_name != 'pull_request' }}
