@@ -11,7 +11,7 @@ aiBotClient = OpenAI()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
-ctxStr = "" # -> Any | Literal['Hello there! How can I help you?'] | Liter...:
+ctxStr = ""
 config = Properties()
 
 def load_properties(
@@ -39,7 +39,7 @@ def get_chat_response(
     user_input,
 ) -> Any: 
     global ctxStr 
-    """Simple placeholder for a chat model."""
+
     if "hello" in user_input.lower():
         return "Hello there! How can I help you?"
     elif "help" in user_input.lower():
