@@ -3,13 +3,31 @@ from typing import Any
 from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
 import os
+import sys
 import openai
+from jproperties import Properties
 
 aiBotClient = OpenAI()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 ctxStr = "" # -> Any | Literal['Hello there! How can I help you?'] | Liter...:
+config = Properties()
+
+def load_properties(
+    propFile
+) -> Any:
+    global config
+    try:
+        with open(propFile, 'rb') as config_file:
+            config.load(config_file)
+            return True
+    except Exception as err:
+        app.logger.error('Exception fired')
+    if hasattr(err, 'message'):
+        return(err.message)
+    else:
+        return(err)
 
 def get_context(
     contextStr,
@@ -45,13 +63,13 @@ def get_chat_response(
     else:
         try:
             response = aiBotClient.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=config.get("gptModel").data,
                 messages=[
                     {"role": "system", "content": ctxStr},
                     {"role": "user", "context": user_input},
                 ],
                 temperature=1,
-                max_tokens=1000,
+                max_tokens=int(config.get("maxTokens").data),
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0,
@@ -75,5 +93,11 @@ def chat():
     return jsonify({"response": response})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    if (load_properties("./app.properties")):
+        #port = int(os.environ.get("PORT", 5000))
+        port = int(config.get("port").data)
+        app.logger.debug("Listening on port %d",port)
+        app.run(debug=True, host="0.0.0.0", port=port)
+        sys.exit(0)
+    else:
+        sys.exit(1) 
