@@ -113,7 +113,7 @@ if __name__ == "__main__":
         # port = int(os.environ.get("PORT", 5000))
         port = int(config.get("port").data)
         app.logger.debug("Listening on port %d", port)
-        app.run(debug=True, host="0.0.0.0", port=port)
+        app.run(debug=False, host="0.0.0.0", port=port)
         sys.exit(0)
     else:
         sys.exit(1)

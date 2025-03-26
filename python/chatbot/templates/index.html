@@ -54,14 +54,16 @@
 </head>
 
 <body>
-    <h3>GPT Chatbot</h3>
-    <br>
-    <p>
-        This is a simple chatbot page to act as a demo.
-        <br><br>
-        (<b>Note</b> - Answers may <i>not</i> always be correct)
-    </p>
-    <div id="chat-container" class="form-group justify-content-left mx-2"></div>
+    <div style="margin-left:10px;">
+        <h3>GPT Chatbot</h3>
+        <br>
+        <p>
+            This is a simple chatbot page to act as a demo.
+            <br><br>
+            (<b>Note</b> - Answers may <i>not</i> always be correct)
+        </p>
+    </div>
+    <div id="chat-container" class="form-group justify-content-left mx-2" markdown=1></div>
     <div id="user-container" class="form-group d-flex justify-content-left">
         <textarea id="user-input" class="mx-2" cols="40" rows="5" placeholder="Type your message..."></textarea>
         <button onclick="sendMessage()" class="btn btn-info align-self-end mx-2">Send</button>
