@@ -2,18 +2,26 @@ from types import ClassMethodDescriptorType
 from typing import Any
 from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
-import os
+from typing import Optional
+import os, signal
 import sys
 import openai
+import json
+import traceback
+
 from jproperties import Properties
 
 aiBotClient = OpenAI()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
-ctxStr = ""
+ctxStr: str = ""
 config = Properties()
 
+def handler(signum, frame):
+    signame= signal.Signals(signum).name
+    app.logger.debug("Trapped signal %d", signum)
+    sys.exit(1)
 
 def load_properties(propFile) -> Any:
     global config
@@ -36,6 +44,7 @@ def get_context(
 
 def get_chat_response(
     user_input,
+    force_json=False,
 ) -> Any:
     global ctxStr
 
@@ -61,26 +70,26 @@ def get_chat_response(
             return "Invalid command"
     else:
         try:
+            contxtStr: str = ctxStr
+            if force_json:
+                contxtStr = contxtStr + f"\nYour response must be in json format."
             response = aiBotClient.chat.completions.create(
                 model=config.get("gptModel").data,
                 messages=[
-                    {"role": "system", "content": ctxStr},
-                    {"role": "user", "context": user_input},
+                    {"role": "system", "content": contxtStr  },
+                    {"role": "user", "content":   user_input },
                 ],
-                temperature=1,
+                response_format={"type": "json_object"} if force_json else None,
+                timeout=120,               
                 max_tokens=int(config.get("maxTokens").data),
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
             )
-            return response
+            return response.choices[0].message.content
         except Exception as err:
-            app.logger.error("Exception fired")
+            app.logger.error("Exception fired %s", traceback.format_exc())
             if hasattr(err, "message"):
                 return err.message
             else:
                 return err
-
 
 @app.route("/")
 def index():
@@ -95,6 +104,11 @@ def chat():
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGBUS, handler)
+    signal.signal(signal.SIGABRT, handler)
+    signal.signal(signal.SIGILL, handler)
+    signal.signal(signal.SIGTERM, handler)
+
     if load_properties("resources/app.properties"):
         # port = int(os.environ.get("PORT", 5000))
         port = int(config.get("port").data)
