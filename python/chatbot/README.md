@@ -3,6 +3,8 @@ Python GPT Chatbot Sample
 
 This repo contains a simple example chatbot that runs using the ChatGPT API.
 
+The web page is a very simple interface, so if you wish to create something more complex, feel free.
+
 Pre-Requisites
 --------------
 To run this sample you will need to: -
