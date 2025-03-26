@@ -61,4 +61,6 @@ This code does not have any unit testing or SA analysis run as part of the proce
 
 References
 ----------
-- None
+- [OpenAI Platform](https://platform.openai.com/docs/models/gpt-4o-mini)
+- [OpenAI Introduction](https://openai.com/api/)
+- [Developer APIs](https://platform.openai.com/docs/overview)
