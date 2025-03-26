@@ -50,6 +50,7 @@ Bot: The 1997 Marcos Mantis is a cool sports car known for its unique design and
 For example...
 
 ![Sample run](images/Sample.png)
+![Sample run](images/Sample2.png)
 
 Cleaning Up
 -----------
