@@ -7,7 +7,7 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/ma
 WORKDIR /app
 
 COPY requirements.txt .
-COPY app.properties .
+COPY resources ./resources
 COPY templates ./templates
 COPY contexts ./contexts
 COPY app.py .

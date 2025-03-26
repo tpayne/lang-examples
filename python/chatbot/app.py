@@ -23,11 +23,8 @@ def load_properties(
             config.load(config_file)
             return True
     except Exception as err:
-        app.logger.error('Exception fired')
-    if hasattr(err, 'message'):
-        return(err.message)
-    else:
-        return(err)
+        app.logger.error("Exception fired - Cannot load %s", propFile)
+        return False
 
 def get_context(
     contextStr,
@@ -93,7 +90,7 @@ def chat():
     return jsonify({"response": response})
 
 if __name__ == "__main__":
-    if (load_properties("./app.properties")):
+    if (load_properties("resources/app.properties")):
         #port = int(os.environ.get("PORT", 5000))
         port = int(config.get("port").data)
         app.logger.debug("Listening on port %d",port)
