@@ -3,6 +3,12 @@ Python GPT Chatbot Sample
 
 This repo contains a simple example chatbot that runs using the ChatGPT API.
 
+Pre-Requisites
+--------------
+To run this sample you will need to: -
+* Have Docker installed on your machine
+* Have an OpenAI account created with an OPENAI_API_KEY that you can use for interacting with the OpenAI API
+
 Running the Example with Basic Ops
 ----------------------------------
 This example creates and runs a chatbot web server.
