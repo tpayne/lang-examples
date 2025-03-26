@@ -60,6 +60,19 @@ For example...
 ![Sample run](images/Sample.png)
 ![Sample run](images/Sample2.png)
 
+Adding Custom Contexts
+----------------------
+If you want to add your own custom context for the bot to use, then you can do the following...
+
+```bash
+cd contexts
+cp tvr-cars.txt <custom-context>.txt
+```
+
+Then edit the `<custom-context>.txt` to specify the rules you want as appropriate. Please refer to [here](https://help.openai.com/en/articles/10032626-prompt-engineering-best-practices-for-chatgpt) for guidance on how to modify the context file.
+
+You can then load it into the chatbot using the `bot-context load` command once the image is built.
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
