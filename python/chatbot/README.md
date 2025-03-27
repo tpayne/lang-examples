@@ -65,6 +65,7 @@ For example...
 
 ![Sample run](images/Sample.png)
 ![Sample run](images/Sample2.png)
+![Sample run](images/Sample3.png)
 
 Adding Custom Contexts
 ----------------------
