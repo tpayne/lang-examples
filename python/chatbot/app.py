@@ -71,6 +71,8 @@ def get_chat_response(
     else:
         try:
             contxtStr: str = ctxStr
+            if contxtStr == "":
+                return "Error: Context is not set. Please load one"
             if force_json:
                 contxtStr = contxtStr + f"\nYour response must be in json format."
             response = aiBotClient.chat.completions.create(
