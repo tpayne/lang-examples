@@ -5,6 +5,7 @@ from openai import OpenAI
 from types import ClassMethodDescriptorType
 from typing import Any, NoReturn, Optional
 
+import re
 import json
 import logging
 import openai
@@ -24,18 +25,26 @@ config = Properties()
 #
 msgCache = OrderedDict()
 
+# Get key
+def getKey(
+        keyString
+) -> str:
+    key = re.sub('\W+','', keyString)
+    return key.upper()
+
 # Add response to cache and trim if needed
 def addResponse(
         query,
         response
 ) -> bool:
     global msgCache
-    if query in msgCache:
+    keyStr: str = getKey(query)
+    if keyStr in msgCache:
         return True
     if len(msgCache) > 1000:
         for k in range(len(msgCache) - 100): 
             msgCache.popitem(last = False)
-    msgCache[query] = response
+    msgCache[keyStr] = response
     return True
 
 # Get response from cache
@@ -43,10 +52,11 @@ def getResponse(
         query
 ) -> str:
     global msgCache
-    if query in msgCache:
+    keyStr: str = getKey(query)
+    if keyStr in msgCache:
         app.logger.debug("Returning cached response for '%s'",
-                          query)
-        return msgCache[query]
+                          keyStr)
+        return msgCache[keyStr]
     return ""
 
 #
