@@ -29,9 +29,15 @@ You have various contexts available that the bot supports. These can be accessed
 ```bash
 bot-context load tvr-cars.txt
 bot-context load marcos-cars.txt
+bot-context load devops.txt
+bot-context load cloudops.txt
 ```
 
 If you use the `tvr-cars.txt`, then you can ask questions about TVRs. Similar to the Marcos sample.
+
+If you use the `devops.txt`, then you can ask questions about DevOps and DevEx. 
+
+If you use the `cloudops.txt`, then you can ask questions about public cloud providers. 
 
 Sample Conversation
 -------------------
