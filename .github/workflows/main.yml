@@ -187,6 +187,7 @@ jobs:
 #          version: ${{ needs.build.outputs.dotnet8-tag }}
       - name: Update GitOps deployment manifest values
         uses: tpayne/github-actions/productmanifest@main
+        continue-on-error: true
         with:
           gitops-repo-url: https://github.com/tpayne/argo-suite-samples.git
           manifest-file: examples/simple/helm/dev/values-releaseversions.yaml
