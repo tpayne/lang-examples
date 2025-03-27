@@ -97,6 +97,13 @@ def get_chat_response(
 def index():
     return render_template("index.html")
 
+@app.route("/version")
+def version() -> Any:
+    return jsonify({"version":"1.0"})
+
+@app.route("/status")
+def status() -> Any:
+    return jsonify({"status":"live"})
 
 @app.route("/chat", methods=["POST"])
 def chat():
