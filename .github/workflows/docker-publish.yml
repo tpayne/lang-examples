@@ -213,3 +213,22 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta7.outputs.tags }}
           labels: ${{ steps.meta7.outputs.labels }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Python Chatbot Docker metadata
+        id: meta8
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.actor }}/chatbot
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and Push Python Chatbot Docker image
+        id: build-and-push8
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
+        with:
+          context: python/chatbot
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta8.outputs.tags }}
+          labels: ${{ steps.meta8.outputs.labels }}
