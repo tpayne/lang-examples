@@ -71,7 +71,24 @@
         <button onclick="sendMessage()" class="btn btn-info align-self-end mx-2">Send</button>
     </div>
     <script>
-        function sendMessage() {
+        function containsMarkdown(input) {
+          // Common Markdown patterns
+          const markdownPatterns = [
+            /^#{1,6}\s/, // Headers (#, ##, ###, etc.)
+            /\*\*.*\*\*/, // Bold (**bold**)
+            /\*.*\*/, // Italics (*italic*)
+            /\[.*\]\(.*\)/, // Links [text](url)
+            /^[-*]\s/, // Unordered list (- or *)
+            /^\d+\.\s/, // Ordered list (1., 2., etc.)
+            /^>\s/, // Blockquote (>)
+            /`.*`/ // Inline code (`code`)
+          ];
+
+          // Check if any pattern matches the input string
+          return markdownPatterns.some(pattern => pattern.test(input));
+        }
+
+        function sendMessage() {            
             const userInput = document.getElementById("user-input").value;
             const chatContainer = document.getElementById("chat-container");
             chatContainer.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
@@ -88,12 +105,17 @@
                 .then(response => response.json())
                 .then(data => {
                     const lStr = data.response;
-                    const mdStr = marked.parse(
-                        lStr.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,"")
-                    );
-                    const dStr = mdStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "")
+
                     chatContainer.style.cursor = ""
-                    chatContainer.innerHTML += `<p><strong>Bot:</strong> ${dStr}</p>`;
+                    if (containsMarkdown(lStr)) {
+                        const mdStr = marked.parse(
+                            lStr.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,"")
+                        );
+                        const dStr = mdStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "")          
+                        chatContainer.innerHTML += `<p><strong>Bot:</strong> ${dStr}</p>`;
+                    } else {
+                        chatContainer.innerHTML += `<p><strong>Bot:</strong> ${lStr}</p>`;
+                    }
                     chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to bottom
                 });
         }
