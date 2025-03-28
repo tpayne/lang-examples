@@ -149,6 +149,10 @@ def get_chat_response(
                     response_format={"type": "json_object"} if force_json else None,
                     timeout=120,               
                     max_tokens=int(config.get("maxTokens").data),
+                    temperature=1,
+                    top_p=1,
+                    frequency_penalty=0,
+                    presence_penalty=0
                 )
                 responseMsg = response.choices[0].message.content
                 app.logger.debug("Non-cached response - caching '%s'...",
