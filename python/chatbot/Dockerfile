@@ -1,8 +1,9 @@
-ARG alpineVersion=3.8
-FROM python:${alpineVersion}-alpine AS builder
+ARG pythonVersion=3.12.9
+FROM python:${pythonVersion}-alpine AS builder
 
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    && apk -U upgrade
+    && apk -U upgrade \
+    && apk add --no-cache curl cargo
 
 WORKDIR /app
 
@@ -13,6 +14,8 @@ COPY contexts ./contexts
 COPY app.py .
 
 RUN pip install -r requirements.txt
+#RUN pip-review --auto
+#RUN pip list
 
 ARG account=chatbot
 RUN addgroup --system ${account} && adduser ${account} --system

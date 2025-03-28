@@ -29,7 +29,7 @@ msgCache = OrderedDict()
 def getKey(
         keyString
 ) -> str:
-    key = re.sub('\W+','', keyString)
+    key = re.sub(r'\W+', '', keyString)
     return key.upper()
 
 # Add response to cache and trim if needed
