@@ -93,7 +93,9 @@ def read_context(
             s = f.read()
         return s
     except Exception as err:
-        app.logger.error("Exception fired - Cannot load %s", contextStr)
+        app.logger.error("Exception fired - Cannot load '%s' %s", 
+                         contextStr,
+                         traceback.format_exc())
         return ""
 
 # Main bot chat response routine
@@ -107,7 +109,7 @@ def get_chat_response(
     if "hello" in user_input.lower():
         return "Hello there! How can I help you?"
     elif "help" in user_input.lower():
-        return "Help text"
+        return "Sample *Help* text"
     elif "bot-context" in user_input.lower():
         # Context handling logic
         botCmd = user_input.split(" ")

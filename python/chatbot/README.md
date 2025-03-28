@@ -102,3 +102,6 @@ References
 - [OpenAI Platform](https://platform.openai.com/docs/models/gpt-4o-mini)
 - [OpenAI Introduction](https://openai.com/api/)
 - [Developer APIs](https://platform.openai.com/docs/overview)
+- [Useful notes](https://medium.com/@Doug-Creates/nightmares-and-client-chat-completions-create-29ad0acbe16a)
+- [Models](https://platform.openai.com/docs/models/gpt-4o-mini)
+- [Python API](https://github.com/openai/openai-python)
