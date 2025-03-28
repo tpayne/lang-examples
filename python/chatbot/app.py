@@ -114,7 +114,7 @@ def get_chat_response(
         # Context handling logic
         botCmd = user_input.split(" ")
         if botCmd[1] == "load":
-            ctxStr = read_context(botCmd[2])
+            ctxStr = read_context(botCmd[2].strip())
             if ctxStr == "":
                 return "Context file could not be read or is empty"
             return "Context loaded"
