@@ -93,6 +93,7 @@ def read_context(
             s = f.read()
         return s
     except Exception as err:
+        app.logger.error("Exception fired - Cannot load %s", contextStr)
         return ""
 
 # Main bot chat response routine
