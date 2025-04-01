@@ -1,0 +1,58 @@
+{
+  "name": "chatbot",
+  "version": "1.0.0",
+  "description": "OpenAI chatbot demo",
+  "main": "./chatbot.js",
+  "bin": "./chatbot.js",  
+  "scripts": {
+    "test": "run-s test:*",
+    "test:lint": "run-s test:lint:*",
+    "test:lint:js": "npx eslint . --fix",
+    "test:lint:yaml": "npx yamllint **/*.yml"
+  },
+  "pkg": {
+    "scripts": "src/*.js",
+    "assets": [ "resources/*.properties","templates/*.html" ]
+  },  
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpayne/lang-examples.git"
+  },
+  "dependencies": {
+    "body-parser": "2.2.0",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "morgan": "^1.10.0",
+    "openai": "^4.91.0",
+    "path": "^0.12.7",
+    "pkg": "^5.8.1",
+    "properties-reader": "2.3.0",
+    "signal-exit": "4.1.0",
+    "winston": "^3.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-plugin-eslint-plugin": "^6.4.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-vue": "^10.0.0",
+    "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "npm-run-all2": "7.0.2",
+    "typescript-eslint": "^8.29.0",
+    "yaml-lint": "1.7.0"
+  },
+  "keywords": [
+    "openai",
+    "chatbot"
+  ],
+  "author": "Tim Payne",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tpayne/lang-examples/issues"
+  },
+  "homepage": "https://github.com/tpayne/lang-examples#readme"
+}
