@@ -249,5 +249,5 @@ jobs:
         with:
           context: nodejs/chatbot
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta8.outputs.tags }}
-          labels: ${{ steps.meta8.outputs.labels }}
+          tags: ${{ steps.meta9.outputs.tags }}
+          labels: ${{ steps.meta9.outputs.labels }}
