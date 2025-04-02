@@ -3,18 +3,22 @@
   "version": "1.0.0",
   "description": "OpenAI chatbot demo",
   "main": "./chatbot.js",
-  "bin": "./chatbot.js",  
+  "bin": "./chatbot.js",
   "scripts": {
     "build": "./npm-build.sh",
     "test": "run-s test:*",
     "test:lint": "run-s test:lint:*",
+    "test:lint:html": "npx linthtml 'templates/*.html'",
     "test:lint:js": "npx eslint . --fix",
     "test:lint:yaml": "npx yamllint **/*.yml"
   },
   "pkg": {
     "scripts": "src/*.js",
-    "assets": [ "resources/*.properties","templates/*.html" ]
-  },  
+    "assets": [
+      "resources/*.properties",
+      "templates/*.html"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tpayne/lang-examples.git"
@@ -25,7 +29,7 @@
     "express": "^5.1.0",
     "fs": "^0.0.1-security",
     "morgan": "^1.10.0",
-    "openai": "^4.91.0",
+    "openai": "^4.91.1",
     "path": "^0.12.7",
     "pkg": "^5.8.1",
     "properties-reader": "2.3.0",
@@ -34,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
+    "@linthtml/linthtml": "^0.10.1",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-eslint-plugin": "^6.4.0",
