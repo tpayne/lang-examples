@@ -187,23 +187,6 @@
             class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
     </div>
     <script>
-        function containsMarkdown(input) {
-            // Common Markdown patterns
-            const markdownPatterns = [
-                /^#{1,6}\s/, // Headers (#, ##, ###, etc.)
-                /\*\*.*\*\*/, // Bold (**bold**)
-                /\*.*\*/, // Italics (*italic*)
-                /\[.*\]\(.*\)/, // Links [text](url)
-                /^[-*]\s/, // Unordered list (- or *)
-                /^\d+\.\s/, // Ordered list (1., 2., etc.)
-                /^>\s/, // Blockquote (>)
-                /`.*`/ // Inline code (`code`)
-            ];
-
-            // Check if any pattern matches the input string
-            return markdownPatterns.some(pattern => pattern.test(input));
-        }
-
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
@@ -241,7 +224,13 @@
 
             const messageContentDiv = document.createElement('div');
             messageContentDiv.classList.add('message-content');
-            messageContentDiv.textContent = message;
+
+            // Check if the message contains markdown and render it
+            if (sender === 'Bot') {
+                messageContentDiv.innerHTML = marked.parse(message);
+            } else {
+                messageContentDiv.textContent = message;
+            }
 
             messageElement.appendChild(senderSpan);
             messageElement.appendChild(messageContentDiv);
@@ -296,15 +285,7 @@
 
                     const data = await response.json();
                     if (data && data.response) {
-                        const lStr = data.response;
-                        if (containsMarkdown(lStr)) {
-                            const mdStr = marked.parse(
-                                lStr.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,"")
-                            );
-                            const dStr = mdStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "")   
-                            return dStr;
-                        }     
-                        return lStr;
+                        return data.response;
                     } else {
                         console.error("Invalid response format:", data);
                         return "The server returned an invalid response."
