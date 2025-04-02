@@ -52,13 +52,12 @@
 
         .user .message-content {
             background-color: #dcf8c6;
-            /* Light green for user messages */
             color: #15803d;
             margin-left: auto;
         }
 
         .agent .message-content {
-            background-color: #e0f2fe; /* Light blue for bot messages */
+            background-color: #e0f2fe; /* Light blue for bot messages - this is the important line */
             color: #4b5563;
             margin-right: auto;
         }
@@ -83,15 +82,12 @@
         #user-input:focus {
             outline: none;
             border-color: #3b82f6;
-            /* Blue focus border */
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            /* Light blue shadow */
         }
 
         #send-button {
             padding: 0.75rem 1.5rem;
             background-color: #3b82f6;
-            /* Blue button */
             color: white;
             border: none;
             border-radius: 0 0.5rem 0.5rem 0;
@@ -103,13 +99,11 @@
 
         #send-button:hover {
             background-color: #2563eb;
-            /* Darker blue on hover */
         }
 
         #send-button:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-            /* Light blue shadow */
         }
 
         .typing-indicator {
@@ -201,7 +195,6 @@
             sendButton.disabled = true;
             chatContainer.style.cursor = "wait";
 
-            // Simulate AI response (replace with your actual AI logic)
             appendTypingIndicator();
             getResponse(message).then(response => {
                 removeTypingIndicator();
@@ -224,7 +217,6 @@
             const messageContentDiv = document.createElement('div');
             messageContentDiv.classList.add('message-content');
 
-            // Check if the message contains markdown and render it
             if (sender === 'Bot') {
                 const lStr = message.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, "");
                 const mStr = marked.parse(lStr);
@@ -250,7 +242,7 @@
                 indicatorDiv.appendChild(dotSpan);
             }
 
-            typingIndicator.appendChild(indicatorDiv); // Removed senderSpan here
+            typingIndicator.appendChild(indicatorDiv);
             chatContainer.appendChild(typingIndicator);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
