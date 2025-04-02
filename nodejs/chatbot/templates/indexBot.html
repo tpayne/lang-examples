@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Virtual Agent Chatbot</title>
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
+
         #chat-container {
             height: 500px;
             max-width: 600px;
@@ -21,42 +24,53 @@
             background-color: #f7fafc;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
         }
+
         .message {
             margin-bottom: 1rem;
             display: flex;
             flex-direction: column;
         }
+
         .sender {
             font-weight: 600;
             margin-right: 0.5rem;
         }
+
         .user {
             align-items: flex-end;
         }
+
         .agent {
             align-items: flex-start;
         }
+
         .message-content {
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
             max-width: 80%;
         }
+
         .user .message-content {
-            background-color: #dcf8c6; /* Light green for user messages */
+            background-color: #dcf8c6;
+            /* Light green for user messages */
             color: #15803d;
             margin-left: auto;
         }
+
         .agent .message-content {
-            background-color: #f0f4f8; /* Light gray for agent messages */
+            background-color: #f0f4f8;
+            /* Light gray for agent messages */
             color: #4b5563;
             margin-right: auto;
         }
+
         #input-container {
             display: flex;
             justify-content: center;
             margin: 1rem auto;
             max-width: 600px;
         }
+
         #user-input {
             flex: 1;
             padding: 0.75rem;
@@ -64,16 +78,21 @@
             border-radius: 0.5rem 0 0 0.5rem;
             margin-right: 0;
             font-size: 1rem;
-            box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06);
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         }
+
         #user-input:focus {
             outline: none;
-            border-color: #3b82f6; /* Blue focus border */
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); /* Light blue shadow */
+            border-color: #3b82f6;
+            /* Blue focus border */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            /* Light blue shadow */
         }
+
         #send-button {
             padding: 0.75rem 1.5rem;
-            background-color: #3b82f6; /* Blue button */
+            background-color: #3b82f6;
+            /* Blue button */
             color: white;
             border: none;
             border-radius: 0 0.5rem 0.5rem 0;
@@ -82,17 +101,23 @@
             transition: background-color 0.3s ease;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
         }
+
         #send-button:hover {
-            background-color: #2563eb; /* Darker blue on hover */
+            background-color: #2563eb;
+            /* Darker blue on hover */
         }
+
         #send-button:focus {
             outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); /* Light blue shadow */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+            /* Light blue shadow */
         }
+
         .typing-indicator {
             display: inline-flex;
             margin-left: 0.5rem;
         }
+
         .typing-indicator span {
             width: 0.5rem;
             height: 0.5rem;
@@ -101,73 +126,105 @@
             margin: 0 0.25rem;
             animation: pulse 1.5s infinite;
         }
+
         .typing-indicator span:nth-child(2) {
             animation-delay: 0.5s;
         }
+
         .typing-indicator span:nth-child(3) {
             animation-delay: 1s;
         }
+
         @keyframes pulse {
             0% {
                 opacity: 0.2;
             }
+
             50% {
                 opacity: 1;
             }
+
             100% {
                 opacity: 0.2;
             }
         }
+
         @media (max-width: 640px) {
             #chat-container {
                 margin: 1rem;
                 width: 100%;
                 max-width: none;
             }
+
             #input-container {
                 margin: 1rem;
                 width: 100%;
                 max-width: none;
             }
+
             #user-input {
                 border-radius: 0.5rem 0 0 0.5rem;
             }
+
             #send-button {
                 border-radius: 0 0.5rem 0.5rem 0;
             }
         }
     </style>
 </head>
+
 <body class="bg-gray-100">
     <div id="chat-container" class="bg-white rounded-lg shadow-md overflow-hidden">
         <div class="message agent">
-            <span class="sender text-gray-600">Virtual Agent:</span>
+            <span class="sender text-gray-600">Bot:</span>
             <div class="message-content">Hello! How can I help you today?</div>
         </div>
     </div>
     <div id="input-container" class="flex justify-center mt-4">
-        <input type="text" id="user-input" placeholder="Type your message..." class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
-        <button id="send-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
+        <input type="text" id="user-input" placeholder="Type your message..."
+            class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
+        <button id="send-button"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
     </div>
     <script>
+        function containsMarkdown(input) {
+            // Common Markdown patterns
+            const markdownPatterns = [
+                /^#{1,6}\s/, // Headers (#, ##, ###, etc.)
+                /\*\*.*\*\*/, // Bold (**bold**)
+                /\*.*\*/, // Italics (*italic*)
+                /\[.*\]\(.*\)/, // Links [text](url)
+                /^[-*]\s/, // Unordered list (- or *)
+                /^\d+\.\s/, // Ordered list (1., 2., etc.)
+                /^>\s/, // Blockquote (>)
+                /`.*`/ // Inline code (`code`)
+            ];
+
+            // Check if any pattern matches the input string
+            return markdownPatterns.some(pattern => pattern.test(input));
+        }
+
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
 
         function sendMessage() {
             const message = userInput.value.trim();
-            if (message === '') return;
-
+            if (message === '') {
+                return;
+            }
             appendMessage('User', message);
             userInput.value = '';
             userInput.disabled = true;
             sendButton.disabled = true;
+            chatContainer.style.cursor = "wait";
 
             // Simulate AI response (replace with your actual AI logic)
             appendTypingIndicator();
-            getAIResponse(message).then(response => {
+            getResponse(message).then(response => {
                 removeTypingIndicator();
-                appendMessage('Virtual Agent', response);
+                appendMessage('Bot', response);
+                chatContainer.style.cursor = "";
                 userInput.disabled = false;
                 sendButton.disabled = false;
                 userInput.focus();
@@ -198,7 +255,7 @@
 
             const senderSpan = document.createElement('span');
             senderSpan.classList.add('sender', 'text-gray-600');
-            senderSpan.textContent = 'Virtual Agent:';
+            senderSpan.textContent = 'Bot:';
 
             const indicatorDiv = document.createElement('div');
             indicatorDiv.classList.add('typing-indicator');
@@ -220,34 +277,42 @@
             }
         }
 
-
-        async function getAIResponse(userMessage) {
-            // Replace this with your actual AI API call or logic.
-            // This example uses a simple hardcoded response based on keywords.
-
+        async function getResponse(userMessage) {
             const lowerMessage = userMessage.toLowerCase();
             if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
                 return "Hello there!";
             } else {
-                // Example of a fetch request to a backend that may have an AI model.
-                // If you have a backend api, uncomment and modify the below:
-
                 try {
-                    const response = await fetch('/chat', {
-                        method: 'POST',
+                    const response = await fetch("/chat", {
+                        method: "POST",
                         headers: {
-                            'Content-Type': 'application/json',
+                            "Content-Type": "application/json",
                         },
                         body: JSON.stringify({ message: userMessage }),
                     });
-                    const data = await response.json();
-                    return data.response; // Assuming the backend returns { response: "..." }
-                } catch (error) {
-                    console.error('Error fetching AI response:', error);
-                    return "Sorry, I encountered an error. Please try again later.";
-                }
+                    if (!response.ok) {
+                        throw new Error(`Error occurred: ${response.status}`);
+                    }
 
-                // return "I'm still learning. Please provide more details.";
+                    const data = await response.json();
+                    if (data && data.response) {
+                        const lStr = data.response;
+                        if (containsMarkdown(lStr)) {
+                            const mdStr = marked.parse(
+                                lStr.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,"")
+                            );
+                            const dStr = mdStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "")   
+                            return dStr;
+                        }     
+                        return lStr;
+                    } else {
+                        console.error("Invalid response format:", data);
+                        return "The server returned an invalid response."
+                    }
+                } catch (err) {
+                    console.error("Invalid server response:", err);
+                    return "The server returned an invalid response."
+                }
             }
         }
 
@@ -260,4 +325,5 @@
         sendButton.addEventListener('click', sendMessage);
     </script>
 </body>
+
 </html>

@@ -5,6 +5,7 @@
   "main": "./chatbot.js",
   "bin": "./chatbot.js",  
   "scripts": {
+    "build": "./npm-build.sh",
     "test": "run-s test:*",
     "test:lint": "run-s test:lint:*",
     "test:lint:js": "npx eslint . --fix",
