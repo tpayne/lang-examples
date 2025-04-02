@@ -227,7 +227,7 @@
 
             // Check if the message contains markdown and render it
             if (sender === 'Bot') {
-                const lStr = message.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/,"");
+                const lStr = message.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, "");
                 const mStr = marked.parse(lStr);
                 messageContentDiv.innerHTML = mStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "");
             } else {
@@ -244,10 +244,6 @@
             const typingIndicator = document.createElement('div');
             typingIndicator.classList.add('message', 'agent');
 
-            const senderSpan = document.createElement('span');
-            senderSpan.classList.add('sender', 'text-gray-600');
-            senderSpan.textContent = 'Bot:';
-
             const indicatorDiv = document.createElement('div');
             indicatorDiv.classList.add('typing-indicator');
             for (let i = 0; i < 3; i++) {
@@ -255,8 +251,7 @@
                 indicatorDiv.appendChild(dotSpan);
             }
 
-            typingIndicator.appendChild(senderSpan);
-            typingIndicator.appendChild(indicatorDiv);
+            typingIndicator.appendChild(indicatorDiv); // Removed senderSpan here
             chatContainer.appendChild(typingIndicator);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
