@@ -48,7 +48,6 @@ const readContext = (contextStr) => {
 };
 
 const getChatResponse = async (userInput, forceJson = false) => {
-  if (userInput.includes('hi')) return 'Hello there! How can I help you?';
   if (userInput.includes('help')) return 'Sample *Help* text';
   if (userInput.includes('bot-context')) {
     const botCmd = userInput.split(' ');
