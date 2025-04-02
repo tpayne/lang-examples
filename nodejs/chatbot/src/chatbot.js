@@ -36,7 +36,11 @@ const getResponse = (query) => msgCache.get(getKey(query)) || '';
 
 const readContext = (contextStr) => {
   try {
-    return fs.readFileSync(path.join('contexts', contextStr), 'utf-8');
+    const contextPath = path.resolve('contexts', contextStr);
+    if (!contextPath.startsWith(path.resolve('contexts'))) {
+      throw new Error('Invalid context path');
+    }
+    return fs.readFileSync(contextPath, 'utf-8');
   } catch (err) {
     logger.error(`Cannot load '${contextStr}'`, err);
     return '';
