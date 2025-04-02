@@ -57,7 +57,7 @@
         }
 
         .agent .message-content {
-            background-color: #e0f2fe; /* Light blue for bot messages - this is the important line */
+            background-color: #e0f2fe; /* Light blue for bot messages */
             color: #4b5563;
             margin-right: auto;
         }
@@ -168,10 +168,6 @@
 
 <body class="bg-gray-100">
     <div id="chat-container" class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="message agent">
-            <span class="sender text-gray-600">Bot:</span>
-            <div class="message-content">Hello! How can I help you today?</div>
-        </div>
     </div>
     <div id="input-container" class="flex justify-center mt-4">
         <input type="text" id="user-input" placeholder="Type your message..."
@@ -292,6 +288,10 @@
             }
         });
         sendButton.addEventListener('click', sendMessage);
+
+        // Add the initial bot message using the appendMessage function
+        appendMessage('Bot', 'Hello! How can I help you today?');
+
     </script>
 </body>
 
