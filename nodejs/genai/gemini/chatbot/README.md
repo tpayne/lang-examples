@@ -1,7 +1,7 @@
-NodeJS GPT Chatbot Sample
-==================
+NodeJS Gemini Chatbot Sample
+============================
 
-This repo contains a simple example chatbot that runs using the ChatGPT API.
+This repo contains a simple example chatbot that runs using the Gemini API.
 
 The web page is a very simple interface, so if you wish to create something more complex, feel free.
 
@@ -11,7 +11,7 @@ Pre-Requisites
 --------------
 To run this sample you will need to: -
 * Have Docker installed on your machine
-* Have an OpenAI account created with an OPENAI_API_KEY that you can use for interacting with the OpenAI API
+* Have an Gemini account created with an GOOGLE_API_KEY that you can use for interacting with the Gemini API
 
 Running the Example with Basic Ops
 ----------------------------------
@@ -80,7 +80,7 @@ cd contexts
 cp tvr-cars.txt <custom-context>.txt
 ```
 
-Then edit the `<custom-context>.txt` to specify the rules you want as appropriate. Please refer to [here](https://help.openai.com/en/articles/10032626-prompt-engineering-best-practices-for-chatgpt) for guidance on how to modify the context file.
+Then edit the `<custom-context>.txt` to specify the rules you want as appropriate.
 
 You can then load it into the chatbot using the `bot-context load` command once the image is built.
 
@@ -98,11 +98,7 @@ This code does not have any unit testing or SA analysis run as part of the proce
 
 References
 ----------
-- [OpenAI Platform](https://platform.openai.com/docs/models/gpt-4o-mini)
-- [OpenAI Introduction](https://openai.com/api/)
-- [Developer APIs](https://platform.openai.com/docs/overview)
-- [Useful notes](https://medium.com/@Doug-Creates/nightmares-and-client-chat-completions-create-29ad0acbe16a)
-- [Models](https://platform.openai.com/docs/models/gpt-4o-mini)
-- [NodeJS API](https://github.com/openai/openai-quickstart-node)
+- [Gemini AI Studio](https://aistudio.google.com/)
+- [API Docs](https://ai.google.dev/gemini-api/docs?authuser=1)
 
 
