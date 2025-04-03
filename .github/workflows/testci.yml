@@ -127,7 +127,7 @@ jobs:
           echo "::set-output name=image::$IMAGE_ID"
           echo "::set-output name=tag::$IMAGE_TAG"
 
-          (cd nodejs/chatbot && \
+          (cd nodejs/genai/openai/chatbot && \
             docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0 && \
             docker run --rm -t -d -p 8080:5000 \
               -e OPENAI_API_KEY=ABCD \

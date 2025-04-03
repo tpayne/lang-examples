@@ -247,7 +247,7 @@ jobs:
         id: build-and-push9
         uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
-          context: nodejs/chatbot
+          context: nodejs/genai/openai/chatbot
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta9.outputs.tags }}
           labels: ${{ steps.meta9.outputs.labels }}
