@@ -68,11 +68,15 @@ const getChatResponse = async (userInput, forceJson = false) => {
   const cachedResponse = getResponse(userInput);
   if (cachedResponse) return cachedResponse;
   try {
+    let contxtStr = userInput;
+    if (forceJson) {
+      contxtStr+= "\nYour response must be in json format.";
+    }
     const response = await openai.chat.completions.create({
       model: getConfig().aiModel,
       messages: [
         { role: 'system', content: ctxStr },
-        { role: 'user', content: userInput },
+        { role: 'user', content: contxtStr },
       ],
       response_format: forceJson ? { type: 'json_object' } : undefined,
       max_tokens: Number(getConfig().maxTokens),
@@ -82,7 +86,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
       presence_penalty: 0,
     });
     const responseMsg = response.choices[0].message.content;
-    addResponse(userInput, responseMsg);
+    addResponse(contxtStr, responseMsg);
     return responseMsg;
   } catch (err) {
     logger.error('OpenAI API error:', err);

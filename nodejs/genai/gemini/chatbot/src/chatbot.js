@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
@@ -68,8 +68,12 @@ const getChatResponse = async (userInput, forceJson = false) => {
   const cachedResponse = getResponse(userInput);
   if (cachedResponse) return cachedResponse;
   try {
+    let contxtStr = userInput;
+    if (forceJson) {
+      contxtStr += '\nYour response must be in json format.';
+    }
     const result = await model.generateContent({
-      contents: [{ parts: [{ text: ctxStr + "\n" + userInput }] }],
+      contents: [{ parts: [{ text: `${ctxStr}\n${contxtStr}` }] }],
       generationConfig: {
         maxOutputTokens: Number(getConfig().maxTokens),
         temperature: 1,
@@ -78,10 +82,10 @@ const getChatResponse = async (userInput, forceJson = false) => {
     });
 
     const response = await result.response;
-    const parts = response.parts;
+    const { parts } = response;
     const responseMsg = parts[0].text;
 
-    addResponse(userInput, responseMsg);
+    addResponse(contxtStr, responseMsg);
     return responseMsg;
   } catch (err) {
     logger.error('Gemini API error:', err);
