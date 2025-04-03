@@ -70,7 +70,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
   try {
     let contxtStr = userInput;
     if (forceJson) {
-      contxtStr+= "\nYour response must be in json format.";
+      contxtStr += '\nYour response must be in json format.';
     }
     const response = await openai.chat.completions.create({
       model: getConfig().aiModel,
