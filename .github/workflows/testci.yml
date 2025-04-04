@@ -135,6 +135,9 @@ jobs:
             sleep 10 && curl localhost:8080/status && \
             curl localhost:8080/)
 
+      - name: Stopping containers for further testing...
+        run: (docker stop $(docker container ls -q))
+    
       - name: Build the NodeJS Gemini chatbot Docker image...
         id: nodejsgcpchatbot-image
         run: |

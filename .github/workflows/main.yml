@@ -157,6 +157,9 @@ jobs:
             curl localhost:8080/ && \
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0)
 
+      - name: Stopping containers for further testing...
+        run: (docker stop $(docker container ls -q))
+    
       - name: Build the NodeJS Gemini chatbot Docker image...
         id: nodejsgcpchatbot-image
         run: |
