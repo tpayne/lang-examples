@@ -235,7 +235,7 @@ jobs:
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
-      - name: Extract NodeJS Chatbot Docker metadata
+      - name: Extract NodeJS Openai Chatbot Docker metadata
         id: meta9
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
         with:
@@ -243,7 +243,7 @@ jobs:
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
-      - name: Build and Push NodeJS Chatbot Docker image
+      - name: Build and Push NodeJS Openai Chatbot Docker image
         id: build-and-push9
         uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
         with:
@@ -251,3 +251,22 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta9.outputs.tags }}
           labels: ${{ steps.meta9.outputs.labels }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract NodeJS Gemini Chatbot Docker metadata
+        id: meta10
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.actor }}/nodejsgcpchatbot
+
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and Push NodeJS Gemini Chatbot Docker image
+        id: build-and-push10
+        uses: docker/build-push-action@84ad562665bb303b549fec655d1b64f9945f3f91
+        with:
+          context: nodejs/genai/gemini/chatbot
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta10.outputs.tags }}
+          labels: ${{ steps.meta10.outputs.labels }}
