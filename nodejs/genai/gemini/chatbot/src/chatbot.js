@@ -1,18 +1,23 @@
-const OpenAI = require('openai');
+const { GoogleGenAI } = require('@google/genai');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const logger = require('./logger');
-const morganMiddleware = require('./morganmw');
-const { getConfig } = require('./properties');
-const { loadProperties } = require('./properties');
+const RateLimit = require('express-rate-limit');
+const logger = require('./logger'); // Assuming you have a logger module
+const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
+const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
 
 dotenv.config();
 
 const app = express();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const limiter = RateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+});
+app.use(limiter);
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 let ctxStr = '';
 const msgCache = new Map();
@@ -72,24 +77,22 @@ const getChatResponse = async (userInput, forceJson = false) => {
     if (forceJson) {
       contxtStr += '\nYour response must be in json format.';
     }
-    const response = await openai.chat.completions.create({
+    const result = await ai.models.generateContent({
       model: getConfig().aiModel,
-      messages: [
-        { role: 'system', content: ctxStr },
-        { role: 'user', content: contxtStr },
-      ],
-      response_format: forceJson ? { type: 'json_object' } : undefined,
-      max_tokens: Number(getConfig().maxTokens),
-      temperature: 1,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
+      contents: `${ctxStr}\n${contxtStr}`,
+      generationConfig: {
+        maxOutputTokens: Number(getConfig().maxTokens),
+        temperature: 1,
+        topP: 1,
+      },
     });
-    const responseMsg = response.choices[0].message.content;
+
+    const responseMsg = result.text;
+
     addResponse(contxtStr, responseMsg);
     return responseMsg;
   } catch (err) {
-    logger.error('OpenAI API error:', err);
+    logger.error('Gemini API error:', err);
     return 'Error processing request';
   }
 };
