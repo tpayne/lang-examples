@@ -33,6 +33,7 @@ If everything has worked as expected, then you can open the chatbot on port loca
     curl -H "Content-Type: application/json" \
     -d '{"message":"what is a tvr?"}' \
     -X POST localhost:8080/chat
+{"response":"Context loaded"}{"response":"Okay, cool! So, a TVR is a British sports car. They were known for being really fast, loud, and, let's just say, a bit wild! They were built in Blackpool, England, and they're famous for their lightweight bodies and powerful engines. They don't make 'em anymore, which makes them even more special.\n"}
 ```
     
 You have various contexts available that the bot supports. These can be accessed using...
