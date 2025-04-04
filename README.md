@@ -15,6 +15,23 @@ This repo has examples of the following...
 [![CodeQL](https://github.com/tpayne/lang-examples/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/codeql-analysis.yml)
 [![GHCR_Push](https://github.com/tpayne/lang-examples/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/tpayne/lang-examples/actions/workflows/docker-publish.yml)
 
+## Samples
+This repo includes - but is not limited to - samples for: -
+* NodeJS
+* PHP
+* Webservices
+* C++ Networking
+* Chatbots
+* Python
+* OpenAI API
+* Gemini API
+* GenAI
+* Azure services using NodeJS
+* CSP API usage
+* JSON manipulation
+
+...and others!
+
 ## Notes
 N/A
 
