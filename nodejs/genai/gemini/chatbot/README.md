@@ -24,7 +24,7 @@ To run this solution please do the following steps. They will build and run the 
         -e GOOGLE_API_KEY=<YourKey> \
         chatbot:1.0 
 
-If everything has worked as expected, then you can open the chatbot on port localhost:8080.
+If everything has worked as expected, then you can open the chatbot on port localhost:8080, e.g.
 
 ```bash
  curl -H "Content-Type: application/json" \
