@@ -61,5 +61,11 @@
   "bugs": {
     "url": "https://github.com/tpayne/lang-examples/issues"
   },
-  "homepage": "https://github.com/tpayne/lang-examples#readme"
+  "homepage": "https://github.com/tpayne/lang-examples#readme",
+  "husky": {
+    "hooks": {
+      "post-merge": "npm outdated || :",
+      "pre-commit": "npm test"
+    }
+  }
 }
