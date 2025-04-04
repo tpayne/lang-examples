@@ -7,10 +7,16 @@ const path = require('path');
 const logger = require('./logger'); // Assuming you have a logger module
 const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
 const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
+const RateLimit = require('express-rate-limit');
 
 dotenv.config();
 
 const app = express();
+const limiter = RateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+});
+app.use(limiter);
 const ai = new GoogleGenAI({apiKey: process.env.GOOGLE_API_KEY})
 
 let ctxStr = '';

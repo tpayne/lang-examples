@@ -35,7 +35,8 @@
     "pkg": "^5.8.1",
     "properties-reader": "2.3.0",
     "signal-exit": "4.1.0",
-    "winston": "^3.0.0"
+    "winston": "^3.0.0",
+    "express-rate-limit": "^7.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
