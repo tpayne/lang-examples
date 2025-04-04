@@ -25,6 +25,15 @@ To run this solution please do the following steps. They will build and run the 
         chatbot:1.0 
 
 If everything has worked as expected, then you can open the chatbot on port localhost:8080.
+
+```bash
+ curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -X POST localhost:8080/chat &&\
+    curl -H "Content-Type: application/json" \
+    -d '{"message":"what is a tvr?"}' \
+    -X POST localhost:8080/chat
+```
     
 You have various contexts available that the bot supports. These can be accessed using...
 

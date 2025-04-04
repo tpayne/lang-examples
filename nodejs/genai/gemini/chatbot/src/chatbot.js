@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
@@ -11,8 +11,7 @@ const { getConfig, loadProperties } = require('./properties'); // Assuming you h
 dotenv.config();
 
 const app = express();
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: getConfig().aiModel });
+const ai = new GoogleGenAI({apiKey: process.env.GOOGLE_API_KEY})
 
 let ctxStr = '';
 const msgCache = new Map();
@@ -72,8 +71,9 @@ const getChatResponse = async (userInput, forceJson = false) => {
     if (forceJson) {
       contxtStr += '\nYour response must be in json format.';
     }
-    const result = await model.generateContent({
-      contents: [{ parts: [{ text: `${ctxStr}\n${contxtStr}` }] }],
+    const result = await ai.models.generateContent({
+      model: getConfig().aiModel,
+      contents: `${ctxStr}\n${contxtStr}`,
       generationConfig: {
         maxOutputTokens: Number(getConfig().maxTokens),
         temperature: 1,
@@ -81,9 +81,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
       },
     });
 
-    const response = await result.response;
-    const { parts } = response;
-    const responseMsg = parts[0].text;
+    const responseMsg = result.text;
 
     addResponse(contxtStr, responseMsg);
     return responseMsg;
