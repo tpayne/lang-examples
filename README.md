@@ -29,6 +29,7 @@ This repo includes - but is not limited to - samples for: -
 * Azure services using NodeJS
 * CSP API usage
 * JSON manipulation
+* TDD Testing Frameworks
 
 ...and others!
 
