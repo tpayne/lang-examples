@@ -96,7 +96,6 @@ async function listPublicRepos(username) {
 
 async function listBranches(username, repoName) {
   try {
-    logger.debug(`Getting branches for ${username}/${repoName}`)
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/branches`)
       .set('Authorization', githubToken) // Use the token directly
@@ -105,7 +104,7 @@ async function listBranches(username, repoName) {
 
     // Check if the response is OK
     if (response.status === 200) {
-      return response.data.map((branch) => branch.name);
+      return response.body.map((branch) => branch.name);
     } else {
       logger.error('Error listing repos (status):', response.status, response.statusText);
       throw new Error(`Error: ${response.status} - ${response.statusText}`);
@@ -126,7 +125,7 @@ async function listCommitHistory(username, repoName, filePath) {
 
     // Check if the response is OK
     if (response.status === 200) {
-      return response.data.map((commit) => ({
+      return response.body.map((commit) => ({
         sha: commit.sha,
         message: commit.commit.message,
         author: commit.commit.author.name,
@@ -152,7 +151,7 @@ async function listDirectoryContents(username, repoName, path = '') {
 
     // Check if the response is OK
     if (response.status === 200) {
-      return response.data.map((item) => ({
+      return response.body.map((item) => ({
         name: item.name,
         type: item.type, // "file" or "dir"
         path: item.path,

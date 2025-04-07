@@ -136,7 +136,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
             },
           ],
         });
-        return JSON.stringify(functionResponse);
+        return functionResponse;
       }
       /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
     } else {
