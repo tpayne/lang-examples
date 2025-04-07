@@ -9,6 +9,14 @@ const morganMiddleware = require('./morganmw');
 const { getConfig } = require('./properties');
 const { loadProperties } = require('./properties');
 
+const {
+  getFunctions,
+  listBranches,
+  listCommitHistory,
+  listDirectoryContents,
+  listPublicRepos,
+} = require('./gitFunctions');
+
 dotenv.config();
 
 const app = express();
@@ -48,6 +56,8 @@ const readContext = (contextStr) => {
 };
 
 const getChatResponse = async (userInput, forceJson = false) => {
+  const tools = getFunctions();
+
   if (userInput.includes('help')) return 'Sample *Help* text';
   if (userInput.includes('bot-context')) {
     const botCmd = userInput.split(' ');
@@ -65,19 +75,26 @@ const getChatResponse = async (userInput, forceJson = false) => {
     }
   }
   if (!ctxStr) return 'Error: Context is not set. Please load one';
+
   const cachedResponse = getResponse(userInput);
   if (cachedResponse) return cachedResponse;
+
   try {
     let contxtStr = userInput;
     if (forceJson) {
       contxtStr += '\nYour response must be in json format.';
     }
-    const response = await openai.chat.completions.create({
+
+    const messages = [
+      { role: 'system', content: ctxStr },
+      { role: 'user', content: contxtStr },
+    ];
+
+    let response = await openai.chat.completions.create({
       model: getConfig().aiModel,
-      messages: [
-        { role: 'system', content: ctxStr },
-        { role: 'user', content: contxtStr },
-      ],
+      messages,
+      tools,
+      tool_choice: 'auto',
       response_format: forceJson ? { type: 'json_object' } : undefined,
       max_tokens: Number(getConfig().maxTokens),
       temperature: 1,
@@ -85,9 +102,56 @@ const getChatResponse = async (userInput, forceJson = false) => {
       frequency_penalty: 0,
       presence_penalty: 0,
     });
-    const responseMsg = response.choices[0].message.content;
-    addResponse(contxtStr, responseMsg);
-    return responseMsg;
+
+    let responseMsg = response.choices[0].message;
+
+    // Handle tool call
+    while (responseMsg.tool_calls) {
+      const availableFunctions = {
+        list_public_repos: listPublicRepos,
+        list_branches: listBranches,
+        list_commit_history: listCommitHistory,
+        list_directory_contents: listDirectoryContents,
+      };
+
+      /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
+      for (const toolCall of responseMsg.tool_calls) {
+        const functionName = toolCall.function.name;
+        const functionToCall = availableFunctions[functionName];
+        const functionArguments = JSON.parse(toolCall.function.arguments);
+
+        const functionResponse = await functionToCall(
+          functionArguments.username,
+          functionArguments.repoName,
+          functionArguments.filePath,
+          functionArguments.path,
+        );
+
+        messages.push(responseMsg);
+        messages.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: functionName,
+          content: JSON.stringify(functionResponse),
+        });
+      }
+
+      // Ask OpenAI to continue the conversation after the tool response
+      response = await openai.chat.completions.create({
+        model: getConfig().aiModel,
+        messages,
+        tools,
+        tool_choice: 'auto',
+        max_tokens: Number(getConfig().maxTokens),
+      });
+      /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
+
+      responseMsg = response.choices[0].message;
+    }
+
+    // No tool calls, normal response
+    addResponse(contxtStr, responseMsg.content);
+    return responseMsg.content;
   } catch (err) {
     logger.error('OpenAI API error:', err);
     return 'Error processing request';
