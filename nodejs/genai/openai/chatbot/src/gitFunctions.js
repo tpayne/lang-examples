@@ -3,6 +3,13 @@ const logger = require('./logger');
 
 const githubToken = process.env.GITHUB_TOKEN;
 
+const availableFunctions = {
+  list_public_repos: listPublicRepos,
+  list_branches: listBranches,
+  list_commit_history: listCommitHistory,
+  list_directory_contents: listDirectoryContents,
+};
+
 // Define the array of functions
 const funcs = [
   {
@@ -71,6 +78,10 @@ const funcs = [
 // Define the getFunctions function
 function getFunctions() {
   return funcs;
+}
+
+function getAvailableFunctions() {
+  return availableFunctions;
 }
 
 async function listPublicRepos(username) {
@@ -163,6 +174,7 @@ async function listDirectoryContents(username, repoName, path = '') {
 }
 
 module.exports = {
+  getAvailableFunctions,
   getFunctions,
   listBranches,
   listCommitHistory,

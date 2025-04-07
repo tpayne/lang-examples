@@ -10,6 +10,7 @@ const { getConfig } = require('./properties');
 const { loadProperties } = require('./properties');
 
 const {
+  getAvailableFunctions,
   getFunctions,
   listBranches,
   listCommitHistory,
@@ -107,12 +108,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
 
     // Handle tool call
     while (responseMsg.tool_calls) {
-      const availableFunctions = {
-        list_public_repos: listPublicRepos,
-        list_branches: listBranches,
-        list_commit_history: listCommitHistory,
-        list_directory_contents: listDirectoryContents,
-      };
+      const availableFunctions = getAvailableFunctions();
 
       /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
       for (const toolCall of responseMsg.tool_calls) {
