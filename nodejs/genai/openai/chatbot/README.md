@@ -94,7 +94,8 @@ This will delete all the items created in your session.
 
 Notes
 -----
-This code does not have any unit testing or SA analysis run as part of the process
+* This code does not have any unit testing or SA analysis run as part of the process
+* Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context)
 
 References
 ----------
