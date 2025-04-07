@@ -83,7 +83,7 @@ async function listPublicRepos(username) {
 
     // Check if the response is OK
     if (response.status === 200) {
-      return response.body.map((repo) => repo.name); // Use response.body instead of response.data
+      return response.body.map((repo) => repo.name);
     }
     logger.error('Error listing repos (status):', response.status, response.statusText);
     throw new Error(`Error: ${response.status} - ${response.statusText}`);
