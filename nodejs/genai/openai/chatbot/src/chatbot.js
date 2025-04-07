@@ -75,19 +75,24 @@ const getChatResponse = async (userInput, forceJson = false) => {
     }
   }
   if (!ctxStr) return 'Error: Context is not set. Please load one';
+  
   const cachedResponse = getResponse(userInput);
   if (cachedResponse) return cachedResponse;
+
   try {
     let contxtStr = userInput;
     if (forceJson) {
       contxtStr += '\nYour response must be in json format.';
     }
-    const response = await openai.chat.completions.create({
+
+    let messages = [
+      { role: 'system', content: ctxStr },
+      { role: 'user', content: contxtStr },
+    ];
+
+    let response = await openai.chat.completions.create({
       model: getConfig().aiModel,
-      messages: [
-        { role: 'system', content: ctxStr },
-        { role: 'user', content: contxtStr },
-      ],
+      messages,
       tools,
       tool_choice: 'auto',
       response_format: forceJson ? { type: 'json_object' } : undefined,
@@ -98,9 +103,10 @@ const getChatResponse = async (userInput, forceJson = false) => {
       presence_penalty: 0,
     });
 
-    const responseMsg = response.choices[0].message;
+    let responseMsg = response.choices[0].message;
 
-    if (responseMsg.tool_calls) {
+    // Handle tool call
+    while (responseMsg.tool_calls) {
       const availableFunctions = {
         list_public_repos: listPublicRepos,
         list_branches: listBranches,
@@ -108,13 +114,11 @@ const getChatResponse = async (userInput, forceJson = false) => {
         list_directory_contents: listDirectoryContents,
       };
 
-      const toolCalls = responseMsg.tool_calls;
-
-      /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
-      for (const toolCall of toolCalls) {
+      for (const toolCall of responseMsg.tool_calls) {
         const functionName = toolCall.function.name;
         const functionToCall = availableFunctions[functionName];
         const functionArguments = JSON.parse(toolCall.function.arguments);
+
         const functionResponse = await functionToCall(
           functionArguments.username,
           functionArguments.repoName,
@@ -122,32 +126,35 @@ const getChatResponse = async (userInput, forceJson = false) => {
           functionArguments.path,
         );
 
-        await openai.chat.completions.create({
-          model: getConfig().aiModel,
-          messages: [
-            { role: 'system', content: ctxStr },
-            { role: 'user', content: contxtStr },
-            responseMsg,
-            {
-              tool_call_id: toolCall.id,
-              role: 'tool',
-              name: functionName,
-              content: JSON.stringify(functionResponse),
-            },
-          ],
+        messages.push(responseMsg);
+        messages.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: functionName,
+          content: JSON.stringify(functionResponse),
         });
-        return functionResponse;
       }
-      /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
-    } else {
-      addResponse(contxtStr, responseMsg.context);
-      return responseMsg.context;
+
+      // Ask OpenAI to continue the conversation after the tool response
+      response = await openai.chat.completions.create({
+        model: getConfig().aiModel,
+        messages,
+        tools,
+        tool_choice: 'auto',
+        max_tokens: Number(getConfig().maxTokens),
+      });
+
+      responseMsg = response.choices[0].message;
     }
+
+    // No tool calls, normal response
+    addResponse(contxtStr, responseMsg.content);
+    return responseMsg.content;
+
   } catch (err) {
     logger.error('OpenAI API error:', err);
     return 'Error processing request';
   }
-  return '';
 };
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
