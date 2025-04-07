@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "body-parser": "2.2.0",
+    "dompurify": "^3.2.4",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "fs": "^0.0.1-security",
@@ -34,8 +35,8 @@
     "pkg": "^5.8.1",
     "properties-reader": "2.3.0",
     "signal-exit": "4.1.0",
-    "winston": "^3.0.0",
-    "dompurify": "^3.2.4"
+    "superagent": "^10.2.0",
+    "winston": "^3.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",

@@ -9,6 +9,14 @@ const morganMiddleware = require('./morganmw');
 const { getConfig } = require('./properties');
 const { loadProperties } = require('./properties');
 
+const {
+  getFunctions,
+  listBranches,
+  listCommitHistory,
+  listDirectoryContents,
+  listPublicRepos,
+} = require('./gitFunctions');
+
 dotenv.config();
 
 const app = express();
@@ -48,6 +56,8 @@ const readContext = (contextStr) => {
 };
 
 const getChatResponse = async (userInput, forceJson = false) => {
+  const tools = getFunctions();
+
   if (userInput.includes('help')) return 'Sample *Help* text';
   if (userInput.includes('bot-context')) {
     const botCmd = userInput.split(' ');
@@ -78,6 +88,8 @@ const getChatResponse = async (userInput, forceJson = false) => {
         { role: 'system', content: ctxStr },
         { role: 'user', content: contxtStr },
       ],
+      tools,
+      tool_choice: 'auto',
       response_format: forceJson ? { type: 'json_object' } : undefined,
       max_tokens: Number(getConfig().maxTokens),
       temperature: 1,
@@ -85,13 +97,57 @@ const getChatResponse = async (userInput, forceJson = false) => {
       frequency_penalty: 0,
       presence_penalty: 0,
     });
-    const responseMsg = response.choices[0].message.content;
-    addResponse(contxtStr, responseMsg);
-    return responseMsg;
+
+    const responseMsg = response.choices[0].message;
+
+    if (responseMsg.tool_calls) {
+      const availableFunctions = {
+        list_public_repos: listPublicRepos,
+        list_branches: listBranches,
+        list_commit_history: listCommitHistory,
+        list_directory_contents: listDirectoryContents,
+      };
+
+      const toolCalls = responseMsg.tool_calls;
+
+      /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.function.name;
+        const functionToCall = availableFunctions[functionName];
+        const functionArguments = JSON.parse(toolCall.function.arguments);
+        const functionResponse = await functionToCall(
+          functionArguments.username,
+          functionArguments.repoName,
+          functionArguments.filePath,
+          functionArguments.path,
+        );
+
+        await openai.chat.completions.create({
+          model: getConfig().aiModel,
+          messages: [
+            { role: 'system', content: ctxStr },
+            { role: 'user', content: contxtStr },
+            responseMsg,
+            {
+              tool_call_id: toolCall.id,
+              role: 'tool',
+              name: functionName,
+              content: JSON.stringify(functionResponse),
+            },
+          ],
+        });
+        return JSON.stringify(functionResponse);
+      }
+      /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
+    } else {
+      addResponse(contxtStr, responseMsg.context);
+      return responseMsg.context;
+    }
   } catch (err) {
     logger.error('OpenAI API error:', err);
     return 'Error processing request';
   }
+  return '';
 };
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
