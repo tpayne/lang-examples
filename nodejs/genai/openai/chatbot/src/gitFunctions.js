@@ -84,13 +84,12 @@ async function listPublicRepos(username) {
     // Check if the response is OK
     if (response.status === 200) {
       return response.body.map((repo) => repo.name); // Use response.body instead of response.data
-    } else {
-      logger.error('Error listing repos (status):', response.status, response.statusText);
-      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
+    logger.error('Error listing repos (status):', response.status, response.statusText);
+    throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
     logger.error('Error listing repos (exception):', error);
-    throw error;  
+    throw error;
   }
 }
 
@@ -105,13 +104,12 @@ async function listBranches(username, repoName) {
     // Check if the response is OK
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
-    } else {
-      logger.error('Error listing repos (status):', response.status, response.statusText);
-      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
+    logger.error('Error listing repos (status):', response.status, response.statusText);
+    throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
     logger.error('Error listing repos (exception):', error);
-    throw error;  
+    throw error;
   }
 }
 
@@ -131,13 +129,12 @@ async function listCommitHistory(username, repoName, filePath) {
         author: commit.commit.author.name,
         date: commit.commit.author.date,
       }));
-    } else {
-      logger.error('Error listing repos (status):', response.status, response.statusText);
-      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
+    logger.error('Error listing repos (status):', response.status, response.statusText);
+    throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
     logger.error('Error listing repos (exception):', error);
-    throw error;  
+    throw error;
   }
 }
 
@@ -156,13 +153,12 @@ async function listDirectoryContents(username, repoName, path = '') {
         type: item.type, // "file" or "dir"
         path: item.path,
       }));
-    } else {
-      logger.error('Error listing repos (status):', response.status, response.statusText);
-      throw new Error(`Error: ${response.status} - ${response.statusText}`);
     }
+    logger.error('Error listing repos (status):', response.status, response.statusText);
+    throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
     logger.error('Error listing repos (exception):', error);
-    throw error;  
+    throw error;
   }
 }
 

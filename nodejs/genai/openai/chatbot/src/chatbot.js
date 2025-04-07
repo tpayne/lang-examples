@@ -75,7 +75,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
     }
   }
   if (!ctxStr) return 'Error: Context is not set. Please load one';
-  
+
   const cachedResponse = getResponse(userInput);
   if (cachedResponse) return cachedResponse;
 
@@ -85,7 +85,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
       contxtStr += '\nYour response must be in json format.';
     }
 
-    let messages = [
+    const messages = [
       { role: 'system', content: ctxStr },
       { role: 'user', content: contxtStr },
     ];
@@ -114,6 +114,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
         list_directory_contents: listDirectoryContents,
       };
 
+      /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
       for (const toolCall of responseMsg.tool_calls) {
         const functionName = toolCall.function.name;
         const functionToCall = availableFunctions[functionName];
@@ -143,6 +144,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
         tool_choice: 'auto',
         max_tokens: Number(getConfig().maxTokens),
       });
+      /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
 
       responseMsg = response.choices[0].message;
     }
@@ -150,7 +152,6 @@ const getChatResponse = async (userInput, forceJson = false) => {
     // No tool calls, normal response
     addResponse(contxtStr, responseMsg.content);
     return responseMsg.content;
-
   } catch (err) {
     logger.error('OpenAI API error:', err);
     return 'Error processing request';
