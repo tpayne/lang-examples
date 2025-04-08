@@ -4,8 +4,14 @@ const fs = require('fs')
 const azure = require('./azure.js')
 const bodyParser = require('body-parser')
 const PropertiesReader = require('properties-reader')
+const RateLimit = require('express-rate-limit');
 
 /* eslint-disable no-use-before-define */
+const limiter = RateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+});
+
 function processRequest (svrapp) {
   // Standard functions...
   svrapp.get('/', (request, response) => {
@@ -49,6 +55,7 @@ function main () {
       extended: true
     })
   )
+  svrapp.use(limiter);
   svrapp.use(
     express.static(
       // path.join(__dirname, "scripts")
