@@ -1,4 +1,5 @@
 const superagent = require('superagent');
+// const util = require('util');
 const logger = require('./logger');
 
 const githubToken = process.env.GITHUB_TOKEN;
@@ -156,7 +157,7 @@ const funcs = [
         properties: {
           username: { type: 'string', description: 'The GitHub username.' },
           repoName: { type: 'string', description: 'The repository name.' },
-          path: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+          path: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided.' },
         },
         required: ['username', 'repoName'],
       },
