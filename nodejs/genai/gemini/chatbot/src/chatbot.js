@@ -5,10 +5,10 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
+// const util = require('util');
 const logger = require('./logger'); // Assuming you have a logger module
 const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
-const path = require('path');
-const util = require('util');
 
 const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
 const {
@@ -59,6 +59,30 @@ const readContext = (contextStr) => {
   }
 };
 
+/* eslint-disable no-return-await */
+
+const callFunctionByName = async (name, args) => {
+  const availableFunctions = getAvailableFunctions();
+  if (availableFunctions[name]) {
+    const argValues = Object.values(args);
+    return await availableFunctions[name].apply(null, argValues);
+  }
+  return `Error: Function ${name} not recognized`;
+};
+
+// Function to handle function calls
+const handleFunctionCall = async (functionCall) => {
+  // Implement the logic to handle the function call
+  // This could involve calling another function or processing the call in some way
+  // For example:
+  const { name, args } = functionCall;
+  // Call the appropriate function based on the name and arguments
+  // Return the result of the function call
+  return await callFunctionByName(name, args);
+};
+
+/* eslint-enable no-return-await */
+
 const getChatResponse = async (userInput, forceJson = false) => {
   const tools = getFunctions();
 
@@ -93,7 +117,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
       contxtStr += '\nYour response must be in json format.';
     }
 
-    const functionDefs = tools.map(func => func.function);
+    const functionDefs = tools.map((func) => func.function);
 
     // Generate content using the AI model
     const result = await ai.models.generateContent({
@@ -106,7 +130,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
       },
       config: {
         tools: [{
-          functionDeclarations: functionDefs
+          functionDeclarations: functionDefs,
         }],
       },
     });
@@ -114,7 +138,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
     // Log the entire result object for debugging
     // Need this for working out what the fetch api is doing
     // Documentation and samples are not correct
-    //logger.debug(`Result from AI model: ${util.inspect(result, { depth: null })}`);
+    // logger.debug(`Result from AI model: ${util.inspect(result, { depth: null })}`);
 
     // Check if result is valid
     if (!result || typeof result !== 'object') {
@@ -124,7 +148,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
 
     // Check if response is defined
     const response = result;
-    //logger.debug(`Response from AI model: ${util.inspect(response, { depth: null })}`);
+    // logger.debug(`Response from AI model: ${util.inspect(response, { depth: null })}`);
     if (!response) {
       logger.error('Gemini API error: Response is undefined');
       return 'Error: No response from the API';
@@ -136,9 +160,9 @@ const getChatResponse = async (userInput, forceJson = false) => {
       if (response.candidates[0].content.parts[0].functionCall) {
         if (response.functionCalls && response.functionCalls.length > 0) {
           const functionCall = response.functionCalls[0];
-          const functionResponse = await handleFunctionCall(functionCall); // Handle the function call
+          const functionResponse = await handleFunctionCall(functionCall);
           responseTxt = functionResponse; // Return the function response directly
-        }   
+        }
       } else if (response.candidates[0].content.parts[0].text) {
         responseTxt = response.candidates[0].content.parts[0].text;
       }
@@ -151,28 +175,6 @@ const getChatResponse = async (userInput, forceJson = false) => {
   } catch (err) {
     logger.error('Gemini API error:', err);
     return `Error processing request - ${err}`;
-  }
-};
-
-// Function to handle function calls
-const handleFunctionCall = async (functionCall) => {
-  // Implement the logic to handle the function call
-  // This could involve calling another function or processing the call in some way
-  // For example:
-  const { name, args } = functionCall;
-  // Call the appropriate function based on the name and arguments
-  // Return the result of the function call
-  return await callFunctionByName(name, args);
-};
-
-// Example function to call based on function name
-const callFunctionByName = async (name, args) => {
-  const availableFunctions = getAvailableFunctions();
-  if (availableFunctions[name]) {
-    const argValues = Object.values(args);
-    return await availableFunctions[name].apply(null,argValues);
-  } else {
-    return `Error: Function ${name} not recognized`;
   }
 };
 

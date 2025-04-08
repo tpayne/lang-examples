@@ -1,6 +1,6 @@
 const superagent = require('superagent');
+// const util = require('util');
 const logger = require('./logger');
-const util = require('util');
 
 const githubToken = process.env.GITHUB_TOKEN;
 

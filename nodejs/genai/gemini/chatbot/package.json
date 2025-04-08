@@ -10,8 +10,7 @@
     "test:lint": "run-s test:lint:*",
     "test:lint:html": "npx linthtml 'templates/*.html'",
     "test:lint:js": "npx eslint . --fix",
-    "test:lint:yaml": "npx yamllint **/*.yml",
-    "prepare": "husky"
+    "test:lint:yaml": "npx yamllint **/*.yml"
   },
   "pkg": {
     "scripts": "src/*.js",
@@ -70,5 +69,8 @@
       "post-merge": "npm outdated || :",
       "pre-commit": "npm test"
     }
-  }
+  },
+  "eslintIgnore": [
+    "node_modules"
+  ]  
 }
