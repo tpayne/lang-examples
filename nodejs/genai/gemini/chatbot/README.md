@@ -104,7 +104,8 @@ This will delete all the items created in your session.
 
 Notes
 -----
-This code does not have any unit testing or SA analysis run as part of the process
+* This code does not have any unit testing or SA analysis run as part of the process
+* There is some limited support for Gemini actions. However, the functionality provided by Gemini for this is "experimental" in their words, so can be a bit... tempermental, so if you get an occasion error, just retry the operation that usually works
 
 References
 ----------

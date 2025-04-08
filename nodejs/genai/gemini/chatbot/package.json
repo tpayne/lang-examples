@@ -10,7 +10,8 @@
     "test:lint": "run-s test:lint:*",
     "test:lint:html": "npx linthtml 'templates/*.html'",
     "test:lint:js": "npx eslint . --fix",
-    "test:lint:yaml": "npx yamllint **/*.yml"
+    "test:lint:yaml": "npx yamllint **/*.yml",
+    "prepare": "husky"
   },
   "pkg": {
     "scripts": "src/*.js",
@@ -29,14 +30,15 @@
     "dompurify": "^3.2.4",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
     "fs": "^0.0.1-security",
     "morgan": "^1.10.0",
     "path": "^0.12.7",
     "pkg": "^5.8.1",
     "properties-reader": "2.3.0",
     "signal-exit": "4.1.0",
-    "winston": "^3.0.0",
-    "express-rate-limit": "^7.5.0"
+    "superagent": "^10.2.0",
+    "winston": "^3.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
