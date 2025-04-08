@@ -3,87 +3,6 @@ const logger = require('./logger');
 
 const githubToken = process.env.GITHUB_TOKEN;
 
-const availableFunctions = {
-  list_public_repos: listPublicRepos,
-  list_branches: listBranches,
-  list_commit_history: listCommitHistory,
-  list_directory_contents: listDirectoryContents,
-};
-
-// Define the array of functions
-const funcs = [
-  {
-    type: 'function',
-    function: {
-      name: 'list_public_repos',
-      description: 'Lists public repositories for a given GitHub username.',
-      parameters: {
-        type: 'object',
-        properties: {
-          username: { type: 'string', description: 'The GitHub username.' },
-        },
-        required: ['username'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_branches',
-      description: 'Lists branches for a given GitHub repository.',
-      parameters: {
-        type: 'object',
-        properties: {
-          username: { type: 'string', description: 'The GitHub username.' },
-          repoName: { type: 'string', description: 'The repository name.' },
-        },
-        required: ['username', 'repoName'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_commit_history',
-      description: 'Lists commit history for a file in a GitHub repository.',
-      parameters: {
-        type: 'object',
-        properties: {
-          username: { type: 'string', description: 'The GitHub username.' },
-          repoName: { type: 'string', description: 'The repository name.' },
-          filePath: { type: 'string', description: 'The file path.' },
-        },
-        required: ['username', 'repoName', 'filePath'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_directory_contents',
-      description: 'Lists the contents of a directory in a GitHub repository.',
-      parameters: {
-        type: 'object',
-        properties: {
-          username: { type: 'string', description: 'The GitHub username.' },
-          repoName: { type: 'string', description: 'The repository name.' },
-          path: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
-        },
-        required: ['username', 'repoName'],
-      },
-    },
-  },
-];
-
-// Define the getFunctions function
-function getFunctions() {
-  return funcs;
-}
-
-function getAvailableFunctions() {
-  return availableFunctions;
-}
-
 async function listPublicRepos(username) {
   try {
     const response = await superagent
@@ -171,6 +90,87 @@ async function listDirectoryContents(username, repoName, path = '') {
     logger.error('Error listing repos (exception):', error);
     throw error;
   }
+}
+
+const availableFunctions = {
+  list_public_repos: listPublicRepos,
+  list_branches: listBranches,
+  list_commit_history: listCommitHistory,
+  list_directory_contents: listDirectoryContents,
+};
+
+// Define the array of functions
+const funcs = [
+  {
+    type: 'function',
+    function: {
+      name: 'list_public_repos',
+      description: 'Lists public repositories for a given GitHub username.',
+      parameters: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'The GitHub username.' },
+        },
+        required: ['username'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_branches',
+      description: 'Lists branches for a given GitHub repository.',
+      parameters: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'The GitHub username.' },
+          repoName: { type: 'string', description: 'The repository name.' },
+        },
+        required: ['username', 'repoName'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_commit_history',
+      description: 'Lists commit history for a file in a GitHub repository.',
+      parameters: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'The GitHub username.' },
+          repoName: { type: 'string', description: 'The repository name.' },
+          filePath: { type: 'string', description: 'The file path.' },
+        },
+        required: ['username', 'repoName', 'filePath'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_directory_contents',
+      description: 'Lists the contents of a directory in a GitHub repository.',
+      parameters: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'The GitHub username.' },
+          repoName: { type: 'string', description: 'The repository name.' },
+          path: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+        },
+        required: ['username', 'repoName'],
+      },
+    },
+  },
+];
+
+// Define the getFunctions function
+function getFunctions() {
+  return funcs;
+}
+
+function getAvailableFunctions() {
+  return availableFunctions;
 }
 
 module.exports = {

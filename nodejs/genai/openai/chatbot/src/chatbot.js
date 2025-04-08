@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const RateLimit = require('express-rate-limit');
 const logger = require('./logger');
 const morganMiddleware = require('./morganmw');
 const { getConfig } = require('./properties');
@@ -12,15 +13,17 @@ const { loadProperties } = require('./properties');
 const {
   getAvailableFunctions,
   getFunctions,
-  listBranches,
-  listCommitHistory,
-  listDirectoryContents,
-  listPublicRepos,
 } = require('./gitFunctions');
 
 dotenv.config();
 
 const app = express();
+const limiter = RateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+});
+app.use(limiter);
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 let ctxStr = '';
