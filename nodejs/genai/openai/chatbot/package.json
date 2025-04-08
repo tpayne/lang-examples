@@ -69,5 +69,8 @@
       "post-merge": "npm outdated || :",
       "pre-commit": "npm test"
     }
-  }
+  },
+  "eslintIgnore": [
+    "node_modules"
+  ]
 }
