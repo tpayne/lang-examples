@@ -84,6 +84,29 @@ Then edit the `<custom-context>.txt` to specify the rules you want as appropriat
 
 You can then load it into the chatbot using the `bot-context load` command once the image is built.
 
+
+Interacting with GitHub
+-----------------------
+A few sample chatbot actions have been created that show how the AI can be integrated with REST APIs.
+
+A few samples are
+
+```bash
+ curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load cloudops.txt"}' \
+    -X POST localhost:8080/chat && \
+    curl -H "Content-Type: application/json" \
+    -d '{"message":"list all the branches in the github repo CloudFunctions that is owned by the user tpayne"}' \
+    -X POST localhost:8080/chat
+
+ curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load cloudops.txt"}' \
+    -X POST localhost:8080/chat && \
+    curl -H "Content-Type: application/json" \
+    -d '{"message":"list all the files in the github repo CloudRun that is owned by the user tpayne"}' \
+    -X POST localhost:8080/chat
+```
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
