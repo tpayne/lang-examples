@@ -20,6 +20,9 @@ async function listPublicRepos(username) {
     throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
     logger.error('Error listing repos (exception):', error);
+    if (error.message === 'Not Found') {
+      throw Error(`${error}: Please reword the request as it was not understood`);
+    }
     throw error;
   }
 }
@@ -36,10 +39,13 @@ async function listBranches(username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    logger.error('Error listing repos (status):', response.status, response.statusText);
+    logger.error('Error listing branches (status):', response.status, response.statusText);
     throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
-    logger.error('Error listing repos (exception):', error);
+    logger.error('Error listing branches (exception):', error);
+    if (error.message === 'Not Found') {
+      throw Error(`${error}: Please reword the request as it was not understood`);
+    }
     throw error;
   }
 }
@@ -61,10 +67,13 @@ async function listCommitHistory(username, repoName, filePath) {
         date: commit.commit.author.date,
       }));
     }
-    logger.error('Error listing repos (status):', response.status, response.statusText);
+    logger.error('Error listing commit history (status):', response.status, response.statusText);
     throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
-    logger.error('Error listing repos (exception):', error);
+    logger.error('Error listing commit history (exception):', error);
+    if (error.message === 'Not Found') {
+      throw Error(`${error}: Please reword the request as it was not understood`);
+    }
     throw error;
   }
 }
@@ -85,10 +94,13 @@ async function listDirectoryContents(username, repoName, path = '') {
         path: item.path,
       }));
     }
-    logger.error('Error listing repos (status):', response.status, response.statusText);
+    logger.error('Error listing directories (status):', response.status, response.statusText);
     throw new Error(`Error: ${response.status} - ${response.statusText}`);
   } catch (error) {
-    logger.error('Error listing repos (exception):', error);
+    logger.error('Error listing directories (exception):', error);
+    if (error.message === 'Not Found') {
+      throw Error(`${error}: Please reword the request as it was not understood`);
+    }
     throw error;
   }
 }

@@ -88,6 +88,9 @@ const getChatResponse = async (userInput, forceJson = false) => {
 
   // Handle special commands
   if (userInput.includes('help')) return 'Sample *Help* text';
+  if (userInput.includes('bot-echo-string')) {
+    return userInput || 'No string to echo';
+  }
   if (userInput.includes('bot-context')) {
     const botCmd = userInput.split(' ');
     switch (botCmd[1]) {
@@ -185,6 +188,7 @@ app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 app.post('/chat', async (req, res) => {
   const resp = await getChatResponse(req.body.message);
+  logger.debug(`Chatbot response was: - ${(resp) || 'Error: no response was detected'}`);
   res.json({ response: (resp) || 'Error: no response was detected' });
 });
 

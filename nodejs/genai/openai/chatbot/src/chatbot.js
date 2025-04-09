@@ -62,12 +62,16 @@ const readContext = (contextStr) => {
 const getChatResponse = async (userInput, forceJson = false) => {
   const tools = getFunctions();
 
+  // Handle special commands
   if (userInput.includes('help')) return 'Sample *Help* text';
+  if (userInput.includes('bot-echo-string')) {
+    return userInput || 'No string to echo';
+  }
   if (userInput.includes('bot-context')) {
     const botCmd = userInput.split(' ');
     switch (botCmd[1]) {
       case 'load':
-        ctsStr = '';
+        ctxStr = '';
         ctxStr = readContext(botCmd[2].trim());
         return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
       case 'show':
