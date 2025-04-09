@@ -92,6 +92,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
     const botCmd = userInput.split(' ');
     switch (botCmd[1]) {
       case 'load':
+        ctxStr = '';
         ctxStr = readContext(botCmd[2].trim());
         return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
       case 'show':
@@ -167,7 +168,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
         responseTxt = response.candidates[0].content.parts[0].text;
       }
     }
-    if (!responseTxt) {
+    if (!responseTxt || responseTxt === null || responseTxt === undefined) {
       throw Error('Not able to get a response from Gemini');
     }
     addResponse(contxtStr, responseTxt);
@@ -184,13 +185,23 @@ app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 app.post('/chat', async (req, res) => {
   const resp = await getChatResponse(req.body.message);
-  res.json({ response: resp });
+  res.json({ response: (resp) || 'Error: no response was detected' });
 });
 
 process.on('SIGINT', () => {
-  logger.info('\nGracefully shutting down from SIGINT (Ctrl-C)');
-  // some other closing procedures go here
   process.exit(0);
+});
+
+process.on('SIGILL', () => {
+  process.exit(1);
+});
+
+process.on('SIGSEG', () => {
+  process.exit(1);
+});
+
+process.on('SIGBUS', () => {
+  process.exit(1);
 });
 
 const startServer = () => {
