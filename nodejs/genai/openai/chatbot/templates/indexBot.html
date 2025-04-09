@@ -56,16 +56,18 @@
             margin-left: auto;
         }
 
-        .agent .message-content { 
-            background-color: #e0f2fe; /* Light blue for bot messages */ 
-            color: #4b5563; 
-            margin-right: auto; 
+        .agent .message-content {
+            background-color: #e0f2fe;
+            /* Light blue for bot messages */
+            color: #4b5563;
+            margin-right: auto;
         }
 
         .message.bot .message-content {
-            background-color: #e0f2fe; /* Light blue for bot messages */
-            color: #4b5563; 
-            margin-right: auto; 
+            background-color: #e0f2fe;
+            /* Light blue for bot messages */
+            color: #4b5563;
+            margin-right: auto;
         }
 
         #input-container {
@@ -180,6 +182,7 @@
         (<b>Note</b> - Answers may <i>not</i> always be correct)
     </p>
 </div>
+
 <body class="bg-gray-100">
     <div id="chat-container" class="bg-white rounded-lg shadow-md overflow-hidden">
     </div>
@@ -227,8 +230,17 @@
             const messageContentDiv = document.createElement('div');
             messageContentDiv.classList.add('message-content');
 
+            let dataApp = message;
+
             if (sender === 'Bot') {
-                const lStr = message.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]/, "");
+                if (typeof message === 'object' && message !== null) {
+                    dataApp = JSON.stringify(message);
+                }
+                else {
+                    dataApp = String(message);
+                }
+                let lStr = dataApp;
+                lStr = lStr.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]+/, "");
                 const mStr = marked.parse(lStr);
                 messageContentDiv.innerHTML = mStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "");
             } else {
