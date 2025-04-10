@@ -22,6 +22,7 @@ To run this solution please do the following steps. They will build and run the 
     docker build . --tag chatbot:1.0 && \
      docker run --rm -p 8080:5000 \
         -e GOOGLE_API_KEY=<YourKey> \
+        -e GITHUB_TOKEN=<YourKey> \
         chatbot:1.0 
 
 If everything has worked as expected, then you can open the chatbot on port localhost:8080, e.g.
