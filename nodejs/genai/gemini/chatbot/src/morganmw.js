@@ -9,7 +9,7 @@ const stream = {
 
 const skip = () => {
   const env = process.env.NODE_ENV || 'development';
-  if (!getConfig().debug) {
+  if (getConfig().debug !== 'true') {
     return true;
   }
   return env !== 'development';

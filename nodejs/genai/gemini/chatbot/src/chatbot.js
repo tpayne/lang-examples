@@ -135,8 +135,9 @@ const getChatResponse = async (userInput, forceJson = false) => {
 
     /* eslint-disable no-return-await,max-len,no-plusplus,no-await-in-loop */
     while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
-      logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
-
+      if (getConfig().debug === 'true') {
+        logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
+      }
       const result = await ai.models.generateContent({
         model: getConfig().aiModel,
         contents: parts,
@@ -150,8 +151,9 @@ const getChatResponse = async (userInput, forceJson = false) => {
       }
 
       const response = result;
-      logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
-
+      if (getConfig().debug === 'true') {
+        logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
+      }
       if (response.candidates && response.candidates.length > 0) {
         const candidate = response.candidates[0];
         if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
