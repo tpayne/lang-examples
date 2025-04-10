@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-// const util = require('util');
+const util = require('util');
 const logger = require('./logger'); // Assuming you have a logger module
 const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
 
@@ -60,27 +60,25 @@ const readContext = (contextStr) => {
 };
 
 /* eslint-disable no-return-await */
-
 const callFunctionByName = async (name, args) => {
   const availableFunctions = getAvailableFunctions();
   if (availableFunctions[name]) {
     const argValues = Object.values(args);
-    return await availableFunctions[name].apply(null, argValues);
+    try {
+      return await availableFunctions[name].apply(null, argValues);
+    } catch (error) {
+      logger.error(`Error executing function ${name}:`, error);
+      return `Error executing function ${name}: ${error.message}`;
+    }
   }
   return `Error: Function ${name} not recognized`;
 };
 
 // Function to handle function calls
 const handleFunctionCall = async (functionCall) => {
-  // Implement the logic to handle the function call
-  // This could involve calling another function or processing the call in some way
-  // For example:
   const { name, args } = functionCall;
-  // Call the appropriate function based on the name and arguments
-  // Return the result of the function call
   return await callFunctionByName(name, args);
 };
-
 /* eslint-enable no-return-await */
 
 const getChatResponse = async (userInput, forceJson = false) => {
@@ -122,60 +120,95 @@ const getChatResponse = async (userInput, forceJson = false) => {
     }
 
     const functionDefs = tools.map((func) => func.function);
+    const generationConfig = {
+      maxOutputTokens: Number(getConfig().maxTokens),
+      temperature: 1,
+      topP: 1,
+    };
+    const parts = [{ role: 'user', text: `${ctxStr}\n${contxtStr}` }];
+    const toolsConfig = { tools: [{ functionDeclarations: functionDefs }] };
 
-    // Generate content using the AI model
-    const result = await ai.models.generateContent({
-      model: getConfig().aiModel,
-      contents: `${ctxStr}\n${contxtStr}`,
-      generationConfig: {
-        maxOutputTokens: Number(getConfig().maxTokens),
-        temperature: 1,
-        topP: 1,
-      },
-      config: {
-        tools: [{
-          functionDeclarations: functionDefs,
-        }],
-      },
-    });
+    let finalResponse = null;
+    let functionCallResult = null;
+    let numFunctionCalls = 0;
+    const maxFunctionCalls = 5; // Limit to prevent infinite loops
 
-    // Log the entire result object for debugging
-    // Need this for working out what the fetch api is doing
-    // Documentation and samples are not correct
-    // logger.debug(`Result from AI model: ${util.inspect(result, { depth: null })}`);
+    /* eslint-disable no-return-await,max-len,no-plusplus,no-await-in-loop */
+    while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
+      logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
 
-    // Check if result is valid
-    if (!result || typeof result !== 'object') {
-      logger.error('Gemini API error: Result is not an object or is undefined');
-      return 'Error: No response from the API';
-    }
+      const result = await ai.models.generateContent({
+        model: getConfig().aiModel,
+        contents: parts,
+        generationConfig,
+        config: toolsConfig.tools.length > 0 ? toolsConfig : [],
+      });
 
-    // Check if response is defined
-    const response = result;
-    // logger.debug(`Response from AI model: ${util.inspect(response, { depth: null })}`);
-    if (!response) {
-      logger.error('Gemini API error: Response is undefined');
-      return 'Error: No response from the API';
-    }
+      if (!result || typeof result !== 'object') {
+        logger.error('Gemini API error: No response object');
+        return 'Error: No response from the API';
+      }
 
-    let responseTxt = null;
+      const response = result;
+      logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
 
-    if (response.candidates) {
-      if (response.candidates[0].content.parts[0].functionCall) {
-        if (response.functionCalls && response.functionCalls.length > 0) {
-          const functionCall = response.functionCalls[0];
-          const functionResponse = await handleFunctionCall(functionCall);
-          responseTxt = functionResponse; // Return the function response directly
+      if (response.candidates && response.candidates.length > 0) {
+        const candidate = response.candidates[0];
+        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+          const part = candidate.content.parts[0];
+          if (part.functionCall) {
+            numFunctionCalls++;
+            const functionName = part.functionCall.name;
+            const functionArgs = part.functionCall.args;
+            logger.info(`Function call detected (iteration ${numFunctionCalls}): ${functionName} with args: ${JSON.stringify(functionArgs)}`);
+            functionCallResult = await handleFunctionCall(part.functionCall);
+            logger.info(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
+
+            const functionResponsePart = {
+              name: functionName,
+              response: { functionCallResult },
+            };
+
+            // Send the function call result back to the model for a follow-up
+            parts.push({
+              role: 'model',
+              parts: [{
+                functionCall: part.functionCall,
+              }],
+            });
+            parts.push({
+              role: 'user',
+              parts: [{
+                functionResponse: functionResponsePart,
+              }],
+            });
+          } else if (part.text) {
+            finalResponse = part.text;
+          }
         }
-      } else if (response.candidates[0].content.parts[0].text) {
-        responseTxt = response.candidates[0].content.parts[0].text;
+      } else {
+        logger.warn('Gemini API: No candidates in the response.');
+        break;
+      }
+
+      if (numFunctionCalls >= maxFunctionCalls && !finalResponse) {
+        finalResponse = 'Error: Maximum function call limit reached without a final response.';
       }
     }
-    if (!responseTxt || responseTxt === null || responseTxt === undefined) {
-      throw Error('Not able to get a response from Gemini');
+
+    /* eslint-enable no-return-await,max-len,no-plusplus,no-await-in-loop */
+
+    if (!finalResponse && functionCallResult !== null) {
+      // If the last action was a function call and no final text response was generated
+      finalResponse = functionCallResult;
     }
-    addResponse(contxtStr, responseTxt);
-    return responseTxt;
+
+    if (!finalResponse) {
+      throw Error('Not able to get a final response from Gemini.');
+    }
+
+    addResponse(contxtStr, finalResponse);
+    return finalResponse;
   } catch (err) {
     logger.error('Gemini API error:', err);
     return `Error processing request - ${err}`;
@@ -187,7 +220,9 @@ app.get('/version', (req, res) => res.json({ version: '1.0' }));
 app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 app.post('/chat', async (req, res) => {
-  const resp = await getChatResponse(req.body.message);
+  const userMessage = req.body.message;
+  logger.debug(`User message received: ${userMessage}`);
+  const resp = await getChatResponse(userMessage);
   logger.debug(`Chatbot response was: - ${(resp) || 'Error: no response was detected'}`);
   res.json({ response: (resp) || 'Error: no response was detected' });
 });
