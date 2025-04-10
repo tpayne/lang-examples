@@ -1,5 +1,6 @@
 const morgan = require('morgan');
 const logger = require('./logger');
+const { getConfig } = require('./properties');
 
 const stream = {
   // Use the http severity
@@ -8,6 +9,9 @@ const stream = {
 
 const skip = () => {
   const env = process.env.NODE_ENV || 'development';
+  if (!getConfig().debug) {
+    return true;
+  }
   return env !== 'development';
 };
 

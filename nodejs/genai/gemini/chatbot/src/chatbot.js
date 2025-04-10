@@ -164,17 +164,23 @@ const getChatResponse = async (userInput, forceJson = false) => {
             functionCallResult = await handleFunctionCall(part.functionCall);
             logger.info(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
 
+            const functionResponsePart = {
+              name: functionName,
+              response: { functionCallResult },
+            };
+
             // Send the function call result back to the model for a follow-up
             parts.push({
               role: 'model',
-              functionCall: part.functionCall,
+              parts: [{
+                functionCall: part.functionCall,
+              }],
             });
             parts.push({
               role: 'user',
-              functionResponse: {
-                name: functionName,
-                response: functionCallResult,
-              },
+              parts: [{
+                functionResponse: functionResponsePart,
+              }],
             });
           } else if (part.text) {
             finalResponse = part.text;
