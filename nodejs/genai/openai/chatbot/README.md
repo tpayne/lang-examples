@@ -93,14 +93,14 @@ A few samples are
 
 ```bash
  curl -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load cloudops.txt"}' \
+    -d '{"message":"bot-context load devops.txt"}' \
     -X POST localhost:8080/chat && \
     curl -H "Content-Type: application/json" \
     -d '{"message":"list all the branches in the github repo CloudFunctions that is owned by the user tpayne"}' \
     -X POST localhost:8080/chat
 
  curl -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load cloudops.txt"}' \
+    -d '{"message":"bot-context load devops.txt"}' \
     -X POST localhost:8080/chat && \
     curl -H "Content-Type: application/json" \
     -d '{"message":"list all the files in the github repo CloudRun that is owned by the user tpayne"}' \
