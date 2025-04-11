@@ -5,6 +5,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const RateLimit = require('express-rate-limit');
+const util = require('util');
 const logger = require('./logger');
 const morganMiddleware = require('./morganmw');
 const { getConfig } = require('./properties');
@@ -57,6 +58,28 @@ const readContext = (contextStr) => {
     logger.error(`Cannot load '${contextStr}'`, err);
     return '';
   }
+};
+
+/* eslint-disable no-return-await */
+const callFunctionByName = async (name, args) => {
+  const availableFunctions = getAvailableFunctions();
+  if (availableFunctions[name]) {
+    const argValues = Object.values(args);
+    try {
+      return await availableFunctions[name].apply(null, argValues);
+    } catch (error) {
+      const errStr = error.message;
+      logger.error(`Error executing function ${name} ${errStr}`);
+      return errStr;
+    }
+  }
+  return `Error: Function ${name} not recognized`;
+};
+
+// Function to handle function calls
+const handleFunctionCall = async (functionCall) => {
+  const { name, args } = functionCall;
+  return await callFunctionByName(name, args);
 };
 
 const getChatResponse = async (userInput, forceJson = false) => {
@@ -116,20 +139,15 @@ const getChatResponse = async (userInput, forceJson = false) => {
 
     // Handle tool call
     while (responseMsg.tool_calls) {
-      const availableFunctions = getAvailableFunctions();
-
       /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
       for (const toolCall of responseMsg.tool_calls) {
         const functionName = toolCall.function.name;
-        const functionToCall = availableFunctions[functionName];
         const functionArguments = JSON.parse(toolCall.function.arguments);
 
-        const functionResponse = await functionToCall(
-          functionArguments.username,
-          functionArguments.repoName,
-          functionArguments.filePath,
-          functionArguments.path,
-        );
+        const functionResponse = await handleFunctionCall({
+          name: functionName,
+          args: functionArguments,
+        });
 
         messages.push(responseMsg);
         messages.push({
