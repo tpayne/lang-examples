@@ -8,7 +8,7 @@ async function listPublicRepos(username) {
   try {
     const response = await superagent
       .get(`https://api.github.com/users/${username}/repos`)
-      .set('Authorization', githubToken) // Use the token directly
+      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -31,7 +31,7 @@ async function listBranches(username, repoName) {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/branches`)
-      .set('Authorization', githubToken) // Use the token directly
+      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -54,7 +54,7 @@ async function listCommitHistory(username, repoName, filePath) {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`)
-      .set('Authorization', githubToken) // Use the token directly
+      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -82,7 +82,7 @@ async function listDirectoryContents(username, repoName, path = '') {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/contents/${path}`)
-      .set('Authorization', githubToken) // Use the token directly
+      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -156,8 +156,9 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     // Fetch in-progress workflow runs
     const runsResponse = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`)
-      .set('Authorization', githubToken) // Use the token directly
-      .set('Accept', 'application/json') // Optional: Set the Accept header
+      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
+      .set('X-GitHub-Api-Version', '2022-11-28')
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
     const runsData = runsResponse.body;
@@ -174,10 +175,11 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     for (const run of runsData.workflow_runs) {
       const jobsResponse = await superagent
         .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`)
-        .set('Authorization', githubToken) // Use the token directly
-        .set('Accept', 'application/json') // Optional: Set the Accept header
+        .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+        .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
+        .set('X-GitHub-Api-Version', '2022-11-28')
         .set('User-Agent', 'YourAppName'); // Set a User-Agent header
-
+  
       const jobsData = jobsResponse.body;
 
       if (jobsData.jobs) {
