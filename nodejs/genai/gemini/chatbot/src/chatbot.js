@@ -67,8 +67,9 @@ const callFunctionByName = async (name, args) => {
     try {
       return await availableFunctions[name].apply(null, argValues);
     } catch (error) {
-      logger.error(`Error executing function ${name}:`, error);
-      return `Error executing function ${name}: ${error.message}`;
+      const errStr = error.message;
+      logger.error(`Error executing function ${name} ${errStr}`);
+      return errStr;
     }
   }
   return `Error: Function ${name} not recognized`;
