@@ -217,13 +217,41 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
   }
 }
 
+const availableFunctionsRegistry = {
+  createGithubPullRequest: {
+    name: create_pull_request,
+    func: listGitHubActions,
+    params: ['username','repoName','title','sourceBranch','targetBranch','body'] // Explicit parameter order
+  },  
+  listGitHubActions: {
+    name: list_actions,
+    func: listGitHubActions,
+    params: ['username', 'repoName', 'status'] // Explicit parameter order
+  },
+  listPublicRepos: {
+    name: list_public_repos,
+    func: listPublicRepos,
+    params: ['username'] // Explicit parameter order
+  },
+  listBranches: {
+    name: list_branches,
+    func: listBranches,
+    params: ['username', 'repoName'] // Explicit parameter order
+  },
+  listCommitHistory: {
+    name: list_commit_history,
+    func: listCommitHistory,
+    params: ['username', 'repoName', 'filePath'] // Explicit parameter order
+  },  
+  listDirectoryContents: {
+    name: list_directory_contents,
+    func: listDirectoryContents,
+    params: ['username', 'repoName', 'path'] // Explicit parameter order
+  },
+};
+
 const availableFunctions = {
-  create_pull_request: createGithubPullRequest,
-  list_actions: listGitHubActions,
-  list_public_repos: listPublicRepos,
-  list_branches: listBranches,
-  list_commit_history: listCommitHistory,
-  list_directory_contents: listDirectoryContents,
+  return availableFunctionsRegistry;
 };
 
 // Define the array of functions
