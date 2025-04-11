@@ -1,5 +1,5 @@
 const superagent = require('superagent');
-const util = require('util');
+// const util = require('util');
 const logger = require('./logger');
 
 const githubToken = process.env.GITHUB_TOKEN;
@@ -141,7 +141,7 @@ async function createGithubPullRequest(
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and branch names.');
       }
-      if (error.response.text) {        
+      if (error.response.text) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to create pull request');
@@ -179,7 +179,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
         .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
         .set('X-GitHub-Api-Version', '2022-11-28')
         .set('User-Agent', 'YourAppName'); // Set a User-Agent header
-  
+
       const jobsData = jobsResponse.body;
 
       if (jobsData.jobs) {
