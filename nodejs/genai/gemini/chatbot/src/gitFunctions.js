@@ -8,7 +8,7 @@ async function listPublicRepos(username) {
   try {
     const response = await superagent
       .get(`https://api.github.com/users/${username}/repos`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -31,7 +31,7 @@ async function listBranches(username, repoName) {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/branches`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -54,7 +54,7 @@ async function listCommitHistory(username, repoName, filePath) {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -82,7 +82,7 @@ async function listDirectoryContents(username, repoName, path = '') {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/contents/${path}`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -152,21 +152,39 @@ async function createGithubPullRequest(
 }
 
 async function listGitHubActions(username, repoName, status = 'in_progress') {
+  let runsData = [];
+  logger.debug(`listGitHubActions ${username} ${repoName} ${status}`);
+  
   try {
     // Fetch in-progress workflow runs
     const runsResponse = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`)
-      .set('Authorization', `Bearer ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
       .set('X-GitHub-Api-Version', '2022-11-28')
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
-    const runsData = runsResponse.body;
+    runsData = runsResponse.body;
 
     if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) {
       return []; // No workflow runs found
     }
+  } catch (error) {
+    if (error.response) {
+      logger.error(`Error listing actions (exception1): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Please check the repository and user names.');
+      }
+      if (error.response.text) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to list actions');
+    } else {
+      throw error; // Rethrow the error if it doesn't have a response
+    }
+  }
 
+  try {
     const runningJobs = [];
 
     /* eslint-disable no-restricted-syntax, no-await-in-loop */
@@ -175,7 +193,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     for (const run of runsData.workflow_runs) {
       const jobsResponse = await superagent
         .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`)
-        .set('Authorization', `Bearer ${githubToken}`) // Ensure token is prefixed with 'token '
+        .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
         .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
         .set('X-GitHub-Api-Version', '2022-11-28')
         .set('User-Agent', 'YourAppName'); // Set a User-Agent header
@@ -203,7 +221,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     return runningJobs; // Return the array of running jobs
   } catch (error) {
     if (error.response) {
-      logger.error(`Error listing actions (exception): ${error.response.text}`);
+      logger.error(`Error listing actions (exception2): ${error.response.text}`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and user names.');
       }

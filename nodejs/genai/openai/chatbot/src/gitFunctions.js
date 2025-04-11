@@ -8,7 +8,7 @@ async function listPublicRepos(username) {
   try {
     const response = await superagent
       .get(`https://api.github.com/users/${username}/repos`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -31,7 +31,7 @@ async function listBranches(username, repoName) {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/branches`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -54,7 +54,7 @@ async function listCommitHistory(username, repoName, filePath) {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -82,7 +82,7 @@ async function listDirectoryContents(username, repoName, path = '') {
   try {
     const response = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/contents/${path}`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/json') // Optional: Set the Accept header
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
@@ -156,7 +156,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     // Fetch in-progress workflow runs
     const runsResponse = await superagent
       .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
       .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
       .set('X-GitHub-Api-Version', '2022-11-28')
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
@@ -175,7 +175,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     for (const run of runsData.workflow_runs) {
       const jobsResponse = await superagent
         .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`)
-        .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+        .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
         .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
         .set('X-GitHub-Api-Version', '2022-11-28')
         .set('User-Agent', 'YourAppName'); // Set a User-Agent header
@@ -202,12 +202,15 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
 
     return runningJobs; // Return the array of running jobs
   } catch (error) {
-    logger.error('Error listing jobs (exception):', error);
-    if (error.message === 'Not Found') {
-      throw new Error(`${error}: Please reword the request as it was not understood`);
-    }
     if (error.response) {
-      throw new Error(error.response.body.message || 'Failed to fetch build jobs');
+      logger.error(`Error listing actions (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Please check the repository and user names.');
+      }
+      if (error.response.text) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to list actions');
     } else {
       throw error; // Rethrow the error if it doesn't have a response
     }
