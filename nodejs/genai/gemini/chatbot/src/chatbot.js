@@ -59,12 +59,12 @@ const readContext = (contextStr) => {
   }
 };
 
-/* eslint-disable no-return-await */
+/* eslint-disable no-return-await, prefer-spread */
 const callFunctionByName = async (name, args) => {
   const functionInfo = getAvailableFunctions()[name];
   if (functionInfo && functionInfo.func) {
     const { func, params } = functionInfo;
-    const argValues = params.map(paramName => args[paramName]);
+    const argValues = params.map((paramName) => args[paramName]);
 
     try {
       return await func.apply(null, argValues);
@@ -82,7 +82,7 @@ const handleFunctionCall = async (functionCall) => {
   const { name, args } = functionCall;
   return await callFunctionByName(name, args);
 };
-/* eslint-enable no-return-await */
+/* eslint-enable no-return-await,prefer-spread */
 
 const getChatResponse = async (userInput, forceJson = false) => {
   const tools = getFunctions();
@@ -165,9 +165,13 @@ const getChatResponse = async (userInput, forceJson = false) => {
             numFunctionCalls++;
             const functionName = part.functionCall.name;
             const functionArgs = part.functionCall.args;
-            logger.info(`Function call detected (iteration ${numFunctionCalls}): ${functionName} with args: ${JSON.stringify(functionArgs)}`);
+
+            if (getConfig().debug === 'true') {
+              logger.debug(`Function call detected (iteration ${numFunctionCalls}): ${functionName} with args: ${JSON.stringify(functionArgs)}`);
+              logger.debug(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
+            }
+
             functionCallResult = await handleFunctionCall(part.functionCall);
-            logger.info(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
 
             const functionResponsePart = {
               name: functionName,
@@ -226,9 +230,7 @@ app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
-  logger.debug(`User message received: ${userMessage}`);
   const resp = await getChatResponse(userMessage);
-  logger.debug(`Chatbot response was: - ${(resp) || 'Error: no response was detected'}`);
   res.json({ response: (resp) || 'Error: no response was detected' });
 });
 

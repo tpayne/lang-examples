@@ -152,6 +152,9 @@ async function createGithubPullRequest(
 }
 
 async function listGitHubActions(username, repoName, status = 'in_progress') {
+  let runsData = [];
+  logger.debug(`listGitHubActions ${username} ${repoName} ${status}`);
+
   try {
     // Fetch in-progress workflow runs
     const runsResponse = await superagent
@@ -161,12 +164,27 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
       .set('X-GitHub-Api-Version', '2022-11-28')
       .set('User-Agent', 'YourAppName'); // Set a User-Agent header
 
-    const runsData = runsResponse.body;
+    runsData = runsResponse.body;
 
     if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) {
       return []; // No workflow runs found
     }
+  } catch (error) {
+    if (error.response) {
+      logger.error(`Error listing actions (exception1): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Please check the repository and user names.');
+      }
+      if (error.response.text) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to list actions');
+    } else {
+      throw error; // Rethrow the error if it doesn't have a response
+    }
+  }
 
+  try {
     const runningJobs = [];
 
     /* eslint-disable no-restricted-syntax, no-await-in-loop */
@@ -203,7 +221,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     return runningJobs; // Return the array of running jobs
   } catch (error) {
     if (error.response) {
-      logger.error(`Error listing actions (exception): ${error.response.text}`);
+      logger.error(`Error listing actions (exception2): ${error.response.text}`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and user names.');
       }
@@ -217,13 +235,31 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
   }
 }
 
-const availableFunctions = {
-  create_pull_request: createGithubPullRequest,
-  list_actions: listGitHubActions,
-  list_public_repos: listPublicRepos,
-  list_branches: listBranches,
-  list_commit_history: listCommitHistory,
-  list_directory_contents: listDirectoryContents,
+const availableFunctionsRegistry = {
+  create_pull_request: {
+    func: listGitHubActions,
+    params: ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'], // Explicit parameter order
+  },
+  list_actions: {
+    func: listGitHubActions,
+    params: ['username', 'repoName', 'status'], // Explicit parameter order
+  },
+  list_public_repos: {
+    func: listPublicRepos,
+    params: ['username'], // Explicit parameter order
+  },
+  list_branches: {
+    func: listBranches,
+    params: ['username', 'repoName'], // Explicit parameter order
+  },
+  list_commit_history: {
+    func: listCommitHistory,
+    params: ['username', 'repoName', 'filePath'], // Explicit parameter order
+  },
+  list_directory_contents: {
+    func: listDirectoryContents,
+    params: ['username', 'repoName', 'path'], // Explicit parameter order
+  },
 };
 
 // Define the array of functions
@@ -332,7 +368,7 @@ function getFunctions() {
 }
 
 function getAvailableFunctions() {
-  return availableFunctions;
+  return availableFunctionsRegistry;
 }
 
 module.exports = {
