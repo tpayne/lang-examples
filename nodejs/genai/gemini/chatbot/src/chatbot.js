@@ -61,27 +61,13 @@ const readContext = (contextStr) => {
 
 /* eslint-disable no-return-await */
 const callFunctionByName = async (name, args) => {
-  const availableFunctions = getAvailableFunctions();
-  if (availableFunctions[name]) {
-    const targetFunction = availableFunctions[name];
-
-    // 1. Get the function's source code
-    const functionString = targetFunction.toString();
-
-    // 2. Extract parameter names using a regular expression
-    const parameterMatch = functionString.match(/async?\s*\(([^)]*)\)|async?\s*([^\s(]+)\s*=>/);
-    let parameterNames = [];
-
-    if (parameterMatch) {
-      const paramsString = parameterMatch[1] || parameterMatch[2] || '';
-      parameterNames = paramsString.split(',').map(param => param.trim()).filter(Boolean);
-    }
-
-    // 3. Extract argValues based on the order of parameter names
-    const argValues = parameterNames.map(paramName => args[paramName]);
+  const functionInfo = getAvailableFunctions()[name];
+  if (functionInfo && functionInfo.func) {
+    const { func, params } = functionInfo;
+    const argValues = params.map(paramName => args[paramName]);
 
     try {
-      return await targetFunction.apply(null, argValues);
+      return await func.apply(null, argValues);
     } catch (error) {
       const errStr = error.message;
       logger.error(`Error executing function ${name} ${errStr}`);
