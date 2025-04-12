@@ -222,7 +222,7 @@ jobs:
         with:
           path: .
       - name: Update Changelog
-        uses: ./.github/workflows/changelog-workflow.yml
+        uses: ./.github/actions/changelog-workflow.yml
         with:
           SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
@@ -237,7 +237,7 @@ jobs:
         with:
           path: .
       - name: Update Changelog
-        uses: ./.github/workflows/changelog-workflow.yml
+        uses: ./.github/actions/changelog-workflow.yml
         with:
           SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
