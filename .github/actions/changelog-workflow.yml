@@ -30,7 +30,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required to get the full history
+          fetch-depth: 0
   
       - name: Configure Git
         shell: bash
@@ -42,7 +42,6 @@ jobs:
         id: changed-files
         shell: bash
         run: |
-          # Get the list of changed files within the subdirectory.
           CHANGED_FILES=$(git diff --name-only --relative "${{ inputs.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" | tr '\n' ' ')
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
   
@@ -58,21 +57,16 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          # Exit early if no relevant files were changed
+          set -e
           if [ -z "${CHANGED_FILES}" ]; then
             echo "No relevant changes detected in ${{ inputs.SUBDIRECTORY_PATH }}. Exiting."
             exit 0
           fi
   
-          # Function to determine change type and generate changelog entry
           generate_changelog_entry() {
             local file="$1"
             local commit_message="$2"
-           
-            # Extract commit title (first line)
             local commit_title=$(echo "$commit_message" | head -n 1)
-           
-            # Determine change type based on commit title
             if echo "$commit_title" | grep -q "^feat"; then
               echo "- Feature: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^fix"; then
@@ -88,27 +82,23 @@ jobs:
             elif echo "$commit_title" | grep -q "^style"; then
               echo "- Style: ${commit_title#*:} (in $file)"
             else
-              echo "- Other: ${commit_title} (in $file)" # Fallback
+              echo "- Other: ${commit_title} (in $file)"
             fi
           }
   
-          # Get all commits for the changed files within the subdirectory
+          > temp_changelog.md
           git log --reverse --format="%H|%s" "${{ github.event.before }}".."${{ github.sha }}" -- "${{ inputs.SUBDIRECTORY_PATH }}" | \
           while IFS='|' read -r commit_hash commit_message; do
-            # Get the list of files changed in this commit, filtered by the subdirectory
             changed_files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit_hash" | grep "^${{ inputs.SUBDIRECTORY_PATH }}/")
-           
-            # Iterate through the files changed in this commit
             for file in $changed_files_in_commit; do
-              # Generate changelog entry
               entry=$(generate_changelog_entry "$file" "$commit_message")
               echo "$entry" >> temp_changelog.md
             done
           done
   
-          # Check if there are any updates to add
+          sort -u temp_changelog.md -o temp_changelog.md
+  
           if [ -s "temp_changelog.md" ]; then
-            # Prepend the new entries to the existing CHANGELOG.md
             if [ -f "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" ]; then
               cat "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" >> temp_changelog_old.md
               cat temp_changelog.md temp_changelog_old.md > "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
@@ -116,17 +106,14 @@ jobs:
             else
               mv temp_changelog.md "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
             fi
-  
-            # Add a header if the file didn't exist
             if ! grep -q "^# Changelog" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"; then
               sed -i "1s/^/# Changelog\n\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
             fi
-  
-            # Prepend the date to the CHANGELOG.md
             DATE=$(date '+%Y-%m-%d')
             sed -i "1s/^/## $DATE\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
           else
             echo "No changes to record in CHANGELOG.md"
+            rm temp_changelog.md
           fi
   
       - name: Commit and Push Changelog
