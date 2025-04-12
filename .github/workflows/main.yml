@@ -211,79 +211,79 @@ jobs:
   
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
+        
+  update-changelog-openai:
+    name: Update OpenAI Chatbot Changelog
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code (Calling Workflow)
+        uses: actions/checkout@v4
+        with:
+          path: .
+      - name: Validate Directory and Changelog File
+        run: |
+          if [ ! -d 'nodejs/genai/openai/chatbot' ]; then
+            echo "Error: Target directory 'nodejs/genai/openai/chatbot' does not exist."
+            exit 1
+          fi
+          if [ ! -f 'nodejs/genai/openai/chatbot/CHANGELOG.md' ]; then
+            echo "Warning: No existing CHANGELOG.md file found. A new one will be created."
+      - name: Update Changelog
+        uses: ./.github/actions/changelog-workflow.yml
+        with:
+          SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
+          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
 
-update-changelog-openai:
-  name: Update OpenAI Chatbot Changelog
-  runs-on: ubuntu-latest
-  needs: build
-  steps:
-    - name: Checkout code (Calling Workflow)
-      uses: actions/checkout@v4
-      with:
-        path: .
-    - name: Validate Directory and Changelog File
-      run: |
-        if [ ! -d 'nodejs/genai/openai/chatbot' ]; then
-          echo "Error: Target directory 'nodejs/genai/openai/chatbot' does not exist."
-          exit 1
-        fi
-        if [ ! -f 'nodejs/genai/openai/chatbot/CHANGELOG.md' ]; then
-          echo "Warning: No existing CHANGELOG.md file found. A new one will be created."
-    - name: Update Changelog
-      uses: ./.github/actions/changelog-workflow.yml
-      with:
-        SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
-        DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
+  update-changelog-gemini:
+    name: Update Gemini Chatbot Changelog
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code (Calling Workflow)
+        uses: actions/checkout@v4
+        with:
+          path: .
+      - name: Validate Directory and Changelog File
+        run: |
+          if [ ! -d 'nodejs/genai/gemini/chatbot' ]; then
+            echo "Error: Target directory 'nodejs/genai/gemini/chatbot' does not exist."
+            exit 1
+          fi
+          if [ ! -f 'nodejs/genai/gemini/chatbot/CHANGELOG.md' ]; then
+            echo "Warning: No existing CHANGELOG.md file found. A new one will be created."
+      - name: Update Changelog
+        uses: ./.github/actions/changelog-workflow.yml
+        with:
+          SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
+          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
 
-update-changelog-gemini:
-  name: Update Gemini Chatbot Changelog
-  runs-on: ubuntu-latest
-  needs: build
-  steps:
-    - name: Checkout code (Calling Workflow)
-      uses: actions/checkout@v4
-      with:
-        path: .
-    - name: Validate Directory and Changelog File
-      run: |
-        if [ ! -d 'nodejs/genai/gemini/chatbot' ]; then
-          echo "Error: Target directory 'nodejs/genai/gemini/chatbot' does not exist."
-          exit 1
-        fi
-        if [ ! -f 'nodejs/genai/gemini/chatbot/CHANGELOG.md' ]; then
-          echo "Warning: No existing CHANGELOG.md file found. A new one will be created."
-    - name: Update Changelog
-      uses: ./.github/actions/changelog-workflow.yml
-      with:
-        SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
-        DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
+  update-dev-manifest:
+    name: Update Dev deployment manifest
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
 
-update-dev-manifest:
-  name: Update Dev deployment manifest
-  runs-on: ubuntu-latest
-  needs: build
-  if: github.event_name == 'push'
-
-  steps:
-#      - name: Update GitOps SBOM values
-#        uses: tpayne/github-actions/sbom-manifest-script@main
-#        with:
-#          gitops-repo-url: https://github.com/tpayne/gitsbomtest.git
-#          src-sbom-file: dev/baggins-sbom-qa.yaml
-#          target-sbom-file: qa/baggins-sbom-qa.yaml
-#          github-username: ${{ github.actor }}
-#          github-token: ${{ secrets.GT_TOKEN }}
-#          github-email: ${{ github.actor }}@users.noreply.github.com
-#          component: task1
-#          version: ${{ needs.build.outputs.dotnet8-tag }}
-    - name: Update GitOps deployment manifest values
-      uses: tpayne/github-actions/productmanifest@main
-      continue-on-error: true
-      with:
-        gitops-repo-url: https://github.com/tpayne/argo-suite-samples.git
-        manifest-file: examples/simple/helm/dev/values-releaseversions.yaml
-        github-username: ${{ github.actor }}
-        github-token: ${{ secrets.GT_TOKEN }}
-        github-email: ${{ github.actor }}@users.noreply.github.com
-        image-list: github-service:${{ needs.build.outputs.dotnet8-image }}
-        image-tag: ${{ needs.build.outputs.dotnet8-tag }}
+    steps:
+  #      - name: Update GitOps SBOM values
+  #        uses: tpayne/github-actions/sbom-manifest-script@main
+  #        with:
+  #          gitops-repo-url: https://github.com/tpayne/gitsbomtest.git
+  #          src-sbom-file: dev/baggins-sbom-qa.yaml
+  #          target-sbom-file: qa/baggins-sbom-qa.yaml
+  #          github-username: ${{ github.actor }}
+  #          github-token: ${{ secrets.GT_TOKEN }}
+  #          github-email: ${{ github.actor }}@users.noreply.github.com
+  #          component: task1
+  #          version: ${{ needs.build.outputs.dotnet8-tag }}
+      - name: Update GitOps deployment manifest values
+        uses: tpayne/github-actions/productmanifest@main
+        continue-on-error: true
+        with:
+          gitops-repo-url: https://github.com/tpayne/argo-suite-samples.git
+          manifest-file: examples/simple/helm/dev/values-releaseversions.yaml
+          github-username: ${{ github.actor }}
+          github-token: ${{ secrets.GT_TOKEN }}
+          github-email: ${{ github.actor }}@users.noreply.github.com
+          image-list: github-service:${{ needs.build.outputs.dotnet8-image }}
+          image-tag: ${{ needs.build.outputs.dotnet8-tag }}
