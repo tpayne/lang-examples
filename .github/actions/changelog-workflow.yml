@@ -1,30 +1,27 @@
-name: Changelog Updater (Reusable)
+name: Changelog Updater
+
 on:
   workflow_call:
     inputs:
       SUBDIRECTORY_PATH:
-        description: "Path to the subdirectory to monitor for changes (e.g., 'my-app/src')."
         required: true
         type: string
       DEFAULT_COMMIT_MESSAGE_TITLE:
-        description: "Default commit message title prefix (e.g., 'chore: update')."
         required: false
         default: "chore: update"
         type: string
       SLACK_WEBHOOK_URL:
-        description: "Optional Slack webhook URL for notifications."
         required: false
         type: string
       COMMIT_USERNAME:
-        description: "The username to use when committing changes."
         required: false
         default: "github-actions[bot]"
         type: string
       COMMIT_EMAIL:
-        description: "The email to use when committing changes."
         required: false
         type: string
         default: "github-actions[bot]@users.noreply.github.com"
+
 jobs:
   updatechangelog:
     runs-on: ubuntu-latest
