@@ -218,7 +218,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
 
 const availableFunctionsRegistry = {
   create_pull_request: {
-    func: listGitHubActions,
+    func: createGithubPullRequest,
     params: ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'], // Explicit parameter order
   },
   list_actions: {
