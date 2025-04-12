@@ -157,6 +157,12 @@ jobs:
             curl localhost:8080/ && \
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0)
 
+      - name: Update Changelog
+        uses: ./.github/actions/genchangelog.yml
+        with:
+          SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
+          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
+
       - name: Stopping containers for further testing...
         run: (docker stop $(docker container ls -q))
     
@@ -176,6 +182,12 @@ jobs:
             sleep 10 && curl localhost:8080/status && \
             curl localhost:8080/ && \
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0)
+
+      - name: Update Changelog
+        uses: ./.github/actions/genchangelog.yml
+        with:
+          SUBDIRECTORY_PATH: 'nnodejs/genai/gemini/chatbot'
+          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
     
       - name: Build the NodeJS Graph Docker image...
         id: nodejsquery-image
