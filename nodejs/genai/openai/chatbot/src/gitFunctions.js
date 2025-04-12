@@ -5,15 +5,32 @@ const githubToken = process.env.GITHUB_TOKEN;
 const USER_AGENT = 'AIBot';
 const GITHUB_API_VERSION = '2022-11-28';
 
+/**
+ * Handles "Not Found" errors from the GitHub API.
+ * If the error message indicates "Not Found", it throws a more
+ * user-friendly error suggesting the user reword their request.
+ * Otherwise, it re-throws the original error.
+ * @param {Error} error The error object caught from the API call.
+ * @param {string} [context=''] Optional context for the error message.
+ * @throws {Error} Modified error for "Not Found" or the original.
+ */
 function handleNotFoundError(error, context = '') {
   if (error.message === 'Not Found') {
-    throw new Error(`${error}${context}: Please reword the request as it was not understood`);
+    throw new Error(`<span class="math-inline">\{error\}</span>{context}: Please reword the request as it was not understood`);
   }
   throw error;
 }
 
+/**
+ * Logs and throws a custom error for GitHub API responses that
+ * indicate an error status. Includes status, text, and body message.
+ * @param {object} response The SuperAgent response object.
+ * @param {string} [context=''] Optional context for the error message.
+ * @throws {Error} Custom error detailing the GitHub API error.
+ */
 async function handleGitHubApiError(response, context = '') {
-  logger.error(`GitHub API Error ${context} (status):`, response.status, response.statusText, response.body);
+  logger.error(`GitHub API Error ${context} (status):`, response.status,
+    response.statusText, response.body);
   let errorMessage = `GitHub API Error ${context}: ${response.status} - ${response.statusText}`;
   if (response.body && response.body.message) {
     errorMessage += ` - ${response.body.message}`;
@@ -22,6 +39,15 @@ async function handleGitHubApiError(response, context = '') {
 }
 
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
+/**
+ * Lists the names of public repositories for a given GitHub username.
+ * Fetches repo data and extracts the 'name' property.
+ * Handles API errors and "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @returns {Promise<string[]>} Array of public repository names.
+ * @throws {Error} If API request fails or user is not found.
+ */
 async function listPublicRepos(username) {
   const url = `https://api.github.com/users/${username}/repos`;
   try {
@@ -41,8 +67,18 @@ async function listPublicRepos(username) {
   }
 }
 
+/**
+ * Lists the names of branches for a given GitHub repository.
+ * Fetches branch data and extracts the 'name' property.
+ * Handles API errors and "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise<string[]>} Array of branch names.
+ * @throws {Error} If API request fails or repository is not found.
+ */
 async function listBranches(username, repoName) {
-  const url = `https://api.github.com/repos/${username}/${repoName}/branches`;
+  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/branches`;
   try {
     const response = await superagent
       .get(url)
@@ -53,15 +89,27 @@ async function listBranches(username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    await handleGitHubApiError(response, `listing branches for "${username}/${repoName}"`);
+    await handleGitHubApiError(response, `listing branches for "<span class="math-inline">\{username\}/</span>{repoName}"`);
   } catch (error) {
     logger.error('Error listing branches (exception):', username, repoName, error);
-    handleNotFoundError(error, ` for repository "${username}/${repoName}"`);
+    handleNotFoundError(error, ` for repository "<span class="math-inline">\{username\}/</span>{repoName}"`);
   }
 }
 
+/**
+ * Lists commit history for a specific file in a given GitHub repository.
+ * Fetches commit data and extracts SHA, message, author, and date.
+ * Handles API errors and "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} filePath The path to the file within the repository.
+ * @returns {Promise<Array<{ sha: string, message: string, author: string, date: string }>>}
+ * Array of commit history objects.
+ * @throws {Error} If API request fails or file/repository not found.
+ */
 async function listCommitHistory(username, repoName, filePath) {
-  const url = `https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`;
+  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/commits?path=${filePath}`;
   try {
     const response = await superagent
       .get(url)
@@ -77,15 +125,27 @@ async function listCommitHistory(username, repoName, filePath) {
         date: commit.commit.author.date,
       }));
     }
-    await handleGitHubApiError(response, `listing commit history for "${filePath}" in "${username}/${repoName}"`);
+    await handleGitHubApiError(response, `listing commit history for "<span class="math-inline">\{filePath\}" in "</span>{username}/${repoName}"`);
   } catch (error) {
     logger.error('Error listing commit history (exception):', username, repoName, filePath, error);
-    handleNotFoundError(error, ` for file "${filePath}" in "${username}/${repoName}"`);
+    handleNotFoundError(error, ` for file "<span class="math-inline">\{filePath\}" in "</span>{username}/${repoName}"`);
   }
 }
 
+/**
+ * Lists the contents of a directory (or root if no path) in a GitHub repo.
+ * Fetches content data and extracts name, type ('file'/'dir'), and path.
+ * Handles API errors and "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [path=''] Optional path to the directory.
+ * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
+ * Array of directory content objects.
+ * @throws {Error} If API request fails or repository/path not found.
+ */
 async function listDirectoryContents(username, repoName, path = '') {
-  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${path}`;
+  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/contents/${path}`;
   try {
     const response = await superagent
       .get(url)
@@ -100,13 +160,27 @@ async function listDirectoryContents(username, repoName, path = '') {
         path: item.path,
       }));
     }
-    await handleGitHubApiError(response, `listing directory contents for "${path}" in "${username}/${repoName}"`);
+    await handleGitHubApiError(response, `listing directory contents for "<span class="math-inline">\{path\}" in "</span>{username}/${repoName}"`);
   } catch (error) {
     logger.error('Error listing directories (exception):', username, repoName, path, error);
-    handleNotFoundError(error, ` for path "${path}" in "${username}/${repoName}"`);
+    handleNotFoundError(error, ` for path "<span class="math-inline">\{path\}" in "</span>{username}/${repoName}"`);
   }
 }
 
+/**
+ * Creates a pull request on a given GitHub repository.
+ * Sends a POST request to the GitHub API.
+ * Handles API errors, including specific GitHub errors.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} title The title of the pull request.
+ * @param {string} sourceBranch The branch to merge from.
+ * @param {string} targetBranch The branch to merge into.
+ * @param {string} [body=''] Optional body of the pull request.
+ * @returns {Promise<object>} GitHub API response for the created PR.
+ * @throws {Error} If API request fails, repo/branches not found, or validation errors.
+ */
 async function createGithubPullRequest(
   username,
   repoName,
@@ -115,7 +189,7 @@ async function createGithubPullRequest(
   targetBranch,
   body = '',
 ) {
-  const url = `https://api.github.com/repos/${username}/${repoName}/pulls`;
+  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/pulls`;
   const postData = {
     title, head: sourceBranch, base: targetBranch, body,
   };
@@ -132,26 +206,38 @@ async function createGithubPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleGitHubApiError(response, `creating pull request for "${username}/${repoName}"`);
+    await handleGitHubApiError(response, `creating pull request for "<span class="math-inline">\{username\}/</span>{repoName}"`);
   } catch (error) {
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
-        throw new Error('Not Found: Please check the repository and branch names.');
+        throw new Error('Not Found: Check repo and branch names.');
       }
       if (error.response.body && error.response.body.errors
           && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
-      throw new Error(error.response.body.message || 'Failed to create pull request');
+      throw new Error(error.response.body.message || 'Failed to create PR');
     } else {
       throw error;
     }
   }
 }
 
+/**
+ * Lists running or queued GitHub Actions workflows and their jobs.
+ * Fetches workflow runs by status, then fetches jobs for each run.
+ * Filters jobs by 'queued' or the provided status.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [status='in_progress'] Status to filter workflows (optional).
+ * @returns {Promise<Array<{ workflow_run_id: number, workflow_name: string, job_id: number, job_name: string, html_url: string, status: string, started_at: string }>>}
+ * Array of running/queued GitHub Action job details.
+ * @throws {Error} If API request fails or repository/user not found.
+ */
 async function listGitHubActions(username, repoName, status = 'in_progress') {
-  const urlRuns = `https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`;
+  const urlRuns = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/actions/runs?status=${status}`;
   try {
     const runsResponse = await superagent
       .get(urlRuns)
@@ -168,7 +254,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
 
     const runningJobs = [];
     for (const run of runsData.workflow_runs) {
-      const urlJobs = `https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`;
+      const urlJobs = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/actions/runs/${run.id}/jobs`;
       const jobsResponse = await superagent
         .get(urlJobs)
         .set('Authorization', `Bearer ${githubToken}`)
@@ -200,7 +286,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     if (error.response) {
       logger.error(`Error listing actions (exception): ${error.response.text}`);
       if (error.response.status === 404) {
-        throw new Error('Not Found: Please check the repository and user names.');
+        throw new Error('Not Found: Check user and repo names.');
       }
       if (error.response.body && error.response.body.errors
           && error.response.body.errors.length > 0) {
@@ -215,34 +301,35 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
 
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
+/** Registry of available GitHub functions for AI. */
 const availableFunctionsRegistry = {
   create_pull_request: {
     func: createGithubPullRequest,
-    params: ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'], // Explicit parameter order
+    params: ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
   },
   list_actions: {
     func: listGitHubActions,
-    params: ['username', 'repoName', 'status'], // Explicit parameter order
+    params: ['username', 'repoName', 'status'],
   },
   list_public_repos: {
     func: listPublicRepos,
-    params: ['username'], // Explicit parameter order
+    params: ['username'],
   },
   list_branches: {
     func: listBranches,
-    params: ['username', 'repoName'], // Explicit parameter order
+    params: ['username', 'repoName'],
   },
   list_commit_history: {
     func: listCommitHistory,
-    params: ['username', 'repoName', 'filePath'], // Explicit parameter order
+    params: ['username', 'repoName', 'filePath'],
   },
   list_directory_contents: {
     func: listDirectoryContents,
-    params: ['username', 'repoName', 'path'], // Explicit parameter order
+    params: ['username', 'repoName', 'path'],
   },
 };
 
-// Define the array of functions metadata for tools
+/** Metadata for GitHub functions as AI tools. */
 const funcs = [
   {
     type: 'function',
