@@ -212,7 +212,7 @@ jobs:
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
 
- update-changelog-openai:
+  update-changelog-openai:
     name: Update OpenAI Chatbot Changelog
     runs-on: ubuntu-latest
     needs: build
@@ -237,7 +237,7 @@ jobs:
         with:
           SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
-          
+
   update-dev-manifest:
     name: Update Dev deployment manifest
     runs-on: ubuntu-latest
