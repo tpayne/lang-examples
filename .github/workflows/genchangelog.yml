@@ -1,137 +1,156 @@
-name: Changelog Updater (Subdirectory)
-run-name: Automatically updates CHANGELOG.md for changes within a specific subdirectory.
+name: Changelog Updater (Reusable)
+description: Automatically updates CHANGELOG.md for changes within a specified subdirectory.
+inputs:
+  SUBDIRECTORY_PATH:
+    description: "Path to the subdirectory to monitor for changes (e.g., 'my-app/src')."
+    required: true
+  DEFAULT_COMMIT_MESSAGE_TITLE:
+    description: "Default commit message title prefix (e.g., 'chore: update')."
+    required: false
+    default: "chore: update"
+  SLACK_WEBHOOK_URL:
+    description: "Optional Slack webhook URL for notifications."
+    required: false
+  COMMIT_USERNAME:
+    description: "The username to use when committing changes."
+    required: false
+    default: "github-actions[bot]"
+  COMMIT_EMAIL:
+    description: "The email to use when committing changes."
+    required: false
+    default: "github-actions[bot]@users.noreply.github.com"
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required to get the full history
 
-on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'nodejs/genai/openai/chatbot/**'
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'nodejs/genai/openai/chatbot/**'
-  workflow_dispatch:
-  schedule:
-    - cron: '0 12 * * *' # Run daily at 12:00 UTC
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config --global user.name "${{ inputs.COMMIT_USERNAME }}"
+        git config --global user.email "${{ inputs.COMMIT_EMAIL }}"
 
-env:
-  SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
-  DEFAULT_COMMIT_MESSAGE_TITLE: "chore: update"
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    - name: Get Changed Files
+      id: changed-files
+      shell: bash
+      run: |
+        # Get the list of changed files within the subdirectory.
+        CHANGED_FILES=$(git diff --name-only --relative "${{ inputs.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" | tr '\n' ' ')
+        echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
 
-jobs:
-  changelog-updater:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Required to get the full history for the subdirectory
+    - name: Debug Changed Files
+      if: ${{ always() }}
+      shell: bash
+      run: |
+        echo "Changed files: $CHANGED_FILES"
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+    - name: Determine Changes and Update Changelog
+      id: update-changelog
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      shell: bash
+      run: |
+        # Exit early if no relevant files were changed
+        if [ -z "${CHANGED_FILES}" ]; then
+          echo "No relevant changes detected in ${{ inputs.SUBDIRECTORY_PATH }}. Exiting."
+          exit 0
+        fi
 
-      - name: Get Changed Files
-        id: changed-files
-        run: |
-          # Get the list of changed files within the subdirectory.
-          CHANGED_FILES=$(git diff --name-only --relative "${{ env.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" | tr '\n' ' ')
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-
-      - name: Debug Changed Files
-        if: ${{ always() }}
-        run: |
-          echo "Changed files: $CHANGED_FILES"
-
-      - name: Determine Changes and Update Changelog
-        id: update-changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Exit early if no relevant files were changed
-          if [ -z "${CHANGED_FILES}" ]; then
-            echo "No relevant changes detected in ${{ env.SUBDIRECTORY_PATH }}. Exiting."
-            exit 0
-          fi
-
-          # Function to determine change type and generate changelog entry
-          generate_changelog_entry() {
-            local file="$1"
-            local commit_message="$2"
-            
-            # Extract commit title (first line)
-            local commit_title=$(echo "$commit_message" | head -n 1)
-            
-            # Determine change type based on commit title
-            if echo "$commit_title" | grep -q "^feat"; then
-              echo "- Feature: ${commit_title#*:} (in $file)"
-            elif echo "$commit_title" | grep -q "^fix"; then
-              echo "- Fix: ${commit_title#*:} (in $file)"
-            elif echo "$commit_title" | grep -q "^docs"; then
-              echo "- Documentation: ${commit_title#*:} (in $file)"
-            elif echo "$commit_title" | grep -q "^chore"; then
-              echo "- Chore: ${commit_title#*:} (in $file)"
-            elif echo "$commit_title" | grep -q "^refactor"; then
-              echo "- Refactor: ${commit_title#*:} (in $file)"
-            elif echo "$commit_title" | grep -q "^test"; then
-              echo "- Test: ${commit_title#*:} (in $file)"
-            elif echo "$commit_title" | grep -q "^style"; then
-              echo "- Style: ${commit_title#*:} (in $file)"
-            else
-              echo "- Other: ${commit_title} (in $file)" # Fallback
-            fi
-          }
-
-          # Get all commits for the changed files within the subdirectory
-          git log --reverse --format="%H|%s" "${{ github.event.before }}".."${{ github.sha }}" -- "${{ env.SUBDIRECTORY_PATH }}" | \
-          while IFS='|' read -r commit_hash commit_message; do
-            # Get the list of files changed in this commit, filtered by the subdirectory
-            changed_files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit_hash" | grep "^${{ env.SUBDIRECTORY_PATH }}/")
-            
-            # Iterate through the files changed in this commit
-            for file in $changed_files_in_commit; do
-              # Generate changelog entry
-              entry=$(generate_changelog_entry "$file" "$commit_message")
-              echo "$entry" >> temp_changelog.md
-            done
-          done
-
-          # Check if there are any updates to add
-          if [ -s "temp_changelog.md" ]; then
-            # Prepend the new entries to the existing CHANGELOG.md
-            if [ -f "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md" ]; then
-              cat "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md" >> temp_changelog_old.md
-              cat temp_changelog.md temp_changelog_old.md > "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md"
-              rm temp_changelog_old.md
-            else
-              mv temp_changelog.md "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md"
-            fi
-
-            # Add a header if the file didn't exist
-            if ! grep -q "^# Changelog" "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md"; then
-              sed -i "1s/^/# Changelog\n\n/" "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md"
-            fi
-
-            # Prepend the date to the CHANGELOG.md
-            DATE=$(date '+%Y-%m-%d')
-            sed -i "1s/^/## $DATE\n/" "${{ env.SUBDIRECTORY_PATH }}/CHANGELOG.md"
+        # Function to determine change type and generate changelog entry
+        generate_changelog_entry() {
+          local file="$1"
+          local commit_message="$2"
+         
+          # Extract commit title (first line)
+          local commit_title=$(echo "$commit_message" | head -n 1)
+         
+          # Determine change type based on commit title
+          if echo "$commit_title" | grep -q "^feat"; then
+            echo "- Feature: ${commit_title#*:} (in $file)"
+          elif echo "$commit_title" | grep -q "^fix"; then
+            echo "- Fix: ${commit_title#*:} (in $file)"
+          elif echo "$commit_title" | grep -q "^docs"; then
+            echo "- Documentation: ${commit_title#*:} (in $file)"
+          elif echo "$commit_title" | grep -q "^chore"; then
+            echo "- Chore: ${commit_title#*:} (in $file)"
+          elif echo "$commit_title" | grep -q "^refactor"; then
+            echo "- Refactor: ${commit_title#*:} (in $file)"
+          elif echo "$commit_title" | grep -q "^test"; then
+            echo "- Test: ${commit_title#*:} (in $file)"
+          elif echo "$commit_title" | grep -q "^style"; then
+            echo "- Style: ${commit_title#*:} (in $file)"
           else
-            echo "No changes to record in CHANGELOG.md"
+            echo "- Other: ${commit_title} (in $file)" # Fallback
+          fi
+        }
+
+        # Get all commits for the changed files within the subdirectory
+        git log --reverse --format="%H|%s" "${{ github.event.before }}".."${{ github.sha }}" -- "${{ inputs.SUBDIRECTORY_PATH }}" | \
+        while IFS='|' read -r commit_hash commit_message; do
+          # Get the list of files changed in this commit, filtered by the subdirectory
+          changed_files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit_hash" | grep "^${{ inputs.SUBDIRECTORY_PATH }}/")
+         
+          # Iterate through the files changed in this commit
+          for file in $changed_files_in_commit; do
+            # Generate changelog entry
+            entry=$(generate_changelog_entry "$file" "$commit_message")
+            echo "$entry" >> temp_changelog.md
+          done
+        done
+
+        # Check if there are any updates to add
+        if [ -s "temp_changelog.md" ]; then
+          # Prepend the new entries to the existing CHANGELOG.md
+          if [ -f "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" ]; then
+            cat "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" >> temp_changelog_old.md
+            cat temp_changelog.md temp_changelog_old.md > "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
+            rm temp_changelog_old.md
+          else
+            mv temp_changelog.md "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
           fi
 
-      - name: Commit and Push Changelog
-        if: steps.update-changelog.outcome == 'success'
-        run: |
-          cd "${{ env.SUBDIRECTORY_PATH }}"
-          git add CHANGELOG.md
-          git commit -m "docs: Update CHANGELOG.md"
-          git push origin HEAD:${{ github.ref_name }}
+          # Add a header if the file didn't exist
+          if ! grep -q "^# Changelog" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"; then
+            sed -i "1s/^/# Changelog\n\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
+          fi
 
-#      - name: Send Notification
-#        if: always()
-#        run: |
-#          curl -X POST -H 'Content-type: application/json' --data '{"text":"Changelog update workflow completed."}' $SLACK_WEBHOOK_URL
+          # Prepend the date to the CHANGELOG.md
+          DATE=$(date '+%Y-%m-%d')
+          sed -i "1s/^/## $DATE\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
+        else
+          echo "No changes to record in CHANGELOG.md"
+        fi
+
+    - name: Commit and Push Changelog
+      if: steps.update-changelog.outcome == 'success'
+      shell: bash
+      run: |
+        cd "${{ inputs.SUBDIRECTORY_PATH }}"
+        git add CHANGELOG.md
+        git commit -m "docs: Update CHANGELOG.md"
+        git push origin HEAD:${{ github.ref_name }}
+
+    - name: Send Notification
+      if: always() && inputs.SLACK_WEBHOOK_URL != ''
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const payload = {
+            text: `Changelog update workflow completed for \`${{ inputs.SUBDIRECTORY_PATH }}\`.`,
+          };
+          const response = await fetch('${{ inputs.SLACK_WEBHOOK_URL }}', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          if (!response.ok) {
+            const text = await response.text();
+            console.error(`Failed to send Slack notification: ${response.status} - ${text}`);
+          } else {
+             console.log("Slack notification sent successfully");
+          }
