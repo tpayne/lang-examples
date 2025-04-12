@@ -158,7 +158,7 @@ jobs:
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0)
 
       - name: Update Changelog
-        uses: ./.github/actions/genchangelog.yml
+        uses: ./.github/workflows/genchangelog.yml
         with:
           SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
@@ -184,7 +184,7 @@ jobs:
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0)
 
       - name: Update Changelog
-        uses: ./.github/actions/genchangelog.yml
+        uses: ./.github/workflows/genchangelog.yml
         with:
           SUBDIRECTORY_PATH: 'nnodejs/genai/gemini/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
