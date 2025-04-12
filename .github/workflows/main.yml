@@ -216,7 +216,7 @@ jobs:
     name: Update Gemini Chatbot Changelog
     needs: build
     secrets: inherit
-    uses: ./.github/actions/changelog-workflow.yml@latest
+    uses: ./.github/workflows/changelog-workflow.yml@latest
     with:
       SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
       DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
@@ -239,7 +239,7 @@ jobs:
           if [ ! -f 'nodejs/genai/openai/chatbot/CHANGELOG.md' ]; then
             echo "Warning: No existing CHANGELOG.md file found. A new one will be created."
       - name: Update Changelog
-        uses: ./.github/actions/changelog-workflow.yml
+        uses: ./.github/workflows/changelog-workflow.yml
         with:
           SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
