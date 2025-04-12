@@ -359,5 +359,6 @@ module.exports = {
   listBranches,
   listCommitHistory,
   listDirectoryContents,
+  listGitHubActions,
   listPublicRepos,
 };
