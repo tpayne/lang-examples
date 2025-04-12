@@ -139,8 +139,8 @@ async function createGithubPullRequest(
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and branch names.');
       }
-      if (error.response.body && error.response.body.errors && 
-          error.response.body.errors.length > 0) {
+      if (error.response.body && error.response.body.errors
+          && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to create pull request');
@@ -202,8 +202,8 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and user names.');
       }
-      if (error.response.body && error.response.body.errors && 
-          error.response.body.errors.length > 0) {
+      if (error.response.body && error.response.body.errors
+          && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to list actions');

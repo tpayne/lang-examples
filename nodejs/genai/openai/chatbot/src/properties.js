@@ -19,13 +19,14 @@ const loadProperties = (propFile) => {
       }
     });
 
-    // Override with environment variables
+    /* eslint-disable no-restricted-syntax */
     for (const key in config) {
       if (process.env[key]) {
         config[key] = process.env[key].trim();
         logger.info(`Configuration '${key}' overridden by environment variable.`);
       }
     }
+    /* eslint-enable no-restricted-syntax */
 
     return true;
   } catch (err) {
@@ -52,13 +53,14 @@ const loadPropertiesAsync = async (propFile) => {
     // Update the global config object
     Object.assign(config, newConfig);
 
-    // Override with environment variables
+    /* eslint-disable no-restricted-syntax */
     for (const key in config) {
       if (process.env[key]) {
         config[key] = process.env[key].trim();
         logger.info(`Configuration '${key}' overridden by environment variable.`);
       }
     }
+    /* eslint-enable no-restricted-syntax */
 
     return true;
   } catch (err) {
