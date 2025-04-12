@@ -211,7 +211,16 @@ jobs:
   
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
-        
+
+  update-changelog-gemini:
+    name: Update Gemini Chatbot Changelog
+    needs: build
+    secrets: inherit
+    uses: ./.github/actions/changelog-workflow.yml
+    with:
+      SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
+      DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
+
   update-changelog-openai:
     name: Update OpenAI Chatbot Changelog
     runs-on: ubuntu-latest
@@ -233,29 +242,6 @@ jobs:
         uses: ./.github/actions/changelog-workflow.yml
         with:
           SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
-          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
-
-  update-changelog-gemini:
-    name: Update Gemini Chatbot Changelog
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code (Calling Workflow)
-        uses: actions/checkout@v4
-        with:
-          path: .
-      - name: Validate Directory and Changelog File
-        run: |
-          if [ ! -d 'nodejs/genai/gemini/chatbot' ]; then
-            echo "Error: Target directory 'nodejs/genai/gemini/chatbot' does not exist."
-            exit 1
-          fi
-          if [ ! -f 'nodejs/genai/gemini/chatbot/CHANGELOG.md' ]; then
-            echo "Warning: No existing CHANGELOG.md file found. A new one will be created."
-      - name: Update Changelog
-        uses: ./.github/actions/changelog-workflow.yml
-        with:
-          SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
           DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
 
   update-dev-manifest:
