@@ -19,7 +19,7 @@ COPY templates ./src/templates
 
 RUN npm install --omit=dev
 RUN npm install -g pkg
-RUN pkg -t node18 ./src/ -o nodeexe
+RUN pkg -t node18 ./src/ -o nodeexe --no-sign
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner

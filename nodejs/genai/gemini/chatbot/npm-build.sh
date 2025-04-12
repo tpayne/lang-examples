@@ -13,7 +13,7 @@ cd /tmp/$$/
 echo "- Install packages..."
 npm install --omit=dev
 echo "- Build exe..."
-pkg -t node18 ./src/ -o nodeexe
+pkg -t node18 ./src/ -o nodeexe --no-sign
 
 if [ ! -d ${cwd}/bin ]; then
   mkdir ${cwd}/bin
