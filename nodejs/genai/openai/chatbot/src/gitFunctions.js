@@ -1,64 +1,73 @@
 const superagent = require('superagent');
-// const util = require('util');
 const logger = require('./logger');
 
 const githubToken = process.env.GITHUB_TOKEN;
+const USER_AGENT = 'AIBot';
+const GITHUB_API_VERSION = '2022-11-28';
+
+function handleNotFoundError(error, context = '') {
+  if (error.message === 'Not Found') {
+    throw new Error(`${error}${context}: Please reword the request as it was not understood`);
+  }
+  throw error;
+}
+
+async function handleGitHubApiError(response, context = '') {
+  logger.error(`GitHub API Error ${context} (status):`, response.status, response.statusText, response.body);
+  let errorMessage = `GitHub API Error ${context}: ${response.status} - ${response.statusText}`;
+  if (response.body && response.body.message) {
+    errorMessage += ` - ${response.body.message}`;
+  }
+  throw new Error(errorMessage);
+}
 
 async function listPublicRepos(username) {
+  const url = `https://api.github.com/users/${username}/repos`;
   try {
     const response = await superagent
-      .get(`https://api.github.com/users/${username}/repos`)
-      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
-      .set('Accept', 'application/json') // Optional: Set the Accept header
-      .set('User-Agent', 'YourAppName'); // Set a User-Agent header
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
 
-    // Check if the response is OK
     if (response.status === 200) {
       return response.body.map((repo) => repo.name);
     }
-    logger.error('Error listing repos (status):', response.status, response.statusText);
-    throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    await handleGitHubApiError(response, `listing repos for user "${username}"`);
   } catch (error) {
-    logger.error('Error listing repos (exception):', error);
-    if (error.message === 'Not Found') {
-      throw new Error(`${error}: Please reword the request as it was not understood`);
-    }
-    throw error;
+    logger.error('Error listing repos (exception):', username, error);
+    handleNotFoundError(error, ` for user "${username}"`);
   }
 }
 
 async function listBranches(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/branches`;
   try {
     const response = await superagent
-      .get(`https://api.github.com/repos/${username}/${repoName}/branches`)
-      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
-      .set('Accept', 'application/json') // Optional: Set the Accept header
-      .set('User-Agent', 'YourAppName'); // Set a User-Agent header
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
 
-    // Check if the response is OK
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    logger.error('Error listing branches (status):', response.status, response.statusText);
-    throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    await handleGitHubApiError(response, `listing branches for "${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error listing branches (exception):', error);
-    if (error.message === 'Not Found') {
-      throw new Error(`${error}: Please reword the request as it was not understood`);
-    }
-    throw error;
+    logger.error('Error listing branches (exception):', username, repoName, error);
+    handleNotFoundError(error, ` for repository "${username}/${repoName}"`);
   }
 }
 
 async function listCommitHistory(username, repoName, filePath) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`;
   try {
     const response = await superagent
-      .get(`https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`)
-      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
-      .set('Accept', 'application/json') // Optional: Set the Accept header
-      .set('User-Agent', 'YourAppName'); // Set a User-Agent header
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
 
-    // Check if the response is OK
     if (response.status === 200) {
       return response.body.map((commit) => ({
         sha: commit.sha,
@@ -67,26 +76,22 @@ async function listCommitHistory(username, repoName, filePath) {
         date: commit.commit.author.date,
       }));
     }
-    logger.error('Error listing commit history (status):', response.status, response.statusText);
-    throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    await handleGitHubApiError(response, `listing commit history for "${filePath}" in "${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error listing commit history (exception):', error);
-    if (error.message === 'Not Found') {
-      throw new Error(`${error}: Please reword the request as it was not understood`);
-    }
-    throw error;
+    logger.error('Error listing commit history (exception):', username, repoName, filePath, error);
+    handleNotFoundError(error, ` for file "${filePath}" in "${username}/${repoName}"`);
   }
 }
 
 async function listDirectoryContents(username, repoName, path = '') {
+  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${path}`;
   try {
     const response = await superagent
-      .get(`https://api.github.com/repos/${username}/${repoName}/contents/${path}`)
-      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
-      .set('Accept', 'application/json') // Optional: Set the Accept header
-      .set('User-Agent', 'YourAppName'); // Set a User-Agent header
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
 
-    // Check if the response is OK
     if (response.status === 200) {
       return response.body.map((item) => ({
         name: item.name,
@@ -94,14 +99,10 @@ async function listDirectoryContents(username, repoName, path = '') {
         path: item.path,
       }));
     }
-    logger.error('Error listing directories (status):', response.status, response.statusText);
-    throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    await handleGitHubApiError(response, `listing directory contents for "${path}" in "${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error listing directories (exception):', error);
-    if (error.message === 'Not Found') {
-      throw new Error(`${error}: Please reword the request as it was not understood`);
-    }
-    throw error;
+    logger.error('Error listing directories (exception):', username, repoName, path, error);
+    handleNotFoundError(error, ` for path "${path}" in "${username}/${repoName}"`);
   }
 }
 
@@ -114,69 +115,62 @@ async function createGithubPullRequest(
   body = '',
 ) {
   const url = `https://api.github.com/repos/${username}/${repoName}/pulls`;
-  const postData = {
-    title,
-    head: sourceBranch,
-    base: targetBranch,
-    body,
-  };
+  const postData = { title, head: sourceBranch, base: targetBranch, body };
 
   try {
     const response = await superagent
       .post(url)
-      .set('Authorization', `token ${githubToken}`) // Ensure token is prefixed with 'token '
+      .set('Authorization', `token ${githubToken}`)
       .set('Accept', 'application/vnd.github+json')
-      .set('User-Agent', 'YourAppName') // Set a User-Agent header
-      .set('X-GitHub-Api-Version', '2022-11-28')
-      .send(postData); // Send the data as JSON
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .send(postData);
 
     if ([200, 201].includes(response.status)) {
-      return response.body; // Return the pull request object
+      return response.body;
     }
-    logger.error('Error creating pull request (status):', response.status, response.statusText);
-    throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    await handleGitHubApiError(response, `creating pull request for "${username}/${repoName}"`);
   } catch (error) {
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and branch names.');
       }
-      if (error.response.text) {
+      if (error.response.body && error.response.body.errors && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to create pull request');
     } else {
-      throw error; // Rethrow the error if it doesn't have a response
+      throw error;
     }
   }
 }
 
 async function listGitHubActions(username, repoName, status = 'in_progress') {
+  const urlRuns = `https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`;
   try {
-    // Fetch in-progress workflow runs
     const runsResponse = await superagent
-      .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`)
-      .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
-      .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
-      .set('X-GitHub-Api-Version', '2022-11-28')
-      .set('User-Agent', 'YourAppName'); // Set a User-Agent header
+      .get(urlRuns)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT);
 
     const runsData = runsResponse.body;
 
     if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) {
-      return []; // No workflow runs found
+      return [];
     }
 
     const runningJobs = [];
-
-    /* eslint-disable no-restricted-syntax, no-await-in-loop */
     for (const run of runsData.workflow_runs) {
+      const urlJobs = `https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`;
       const jobsResponse = await superagent
-        .get(`https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`)
-        .set('Authorization', githubToken) // Ensure token is prefixed with 'token '
-        .set('Accept', 'application/vnd.github+json') // Optional: Set the Accept header
-        .set('X-GitHub-Api-Version', '2022-11-28')
-        .set('User-Agent', 'YourAppName'); // Set a User-Agent header
+        .get(urlJobs)
+        .set('Authorization', `Bearer ${githubToken}`)
+        .set('Accept', 'application/vnd.github+json')
+        .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+        .set('User-Agent', USER_AGENT);
 
       const jobsData = jobsResponse.body;
 
@@ -196,22 +190,20 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
         });
       }
     }
-    /* eslint-enable no-restricted-syntax, no-await-in-loop */
-
-    return runningJobs; // Return the array of running jobs
+    return runningJobs;
   } catch (error) {
-    logger.error('Error listing actions (exception)');
+    logger.error('Error listing actions (exception):', username, repoName, status, error);
     if (error.response) {
       logger.error(`Error listing actions (exception): ${error.response.text}`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Please check the repository and user names.');
       }
-      if (error.response.text) {
+      if (error.response.body && error.response.body.errors && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to list actions');
     } else {
-      throw error; // Rethrow the error if it doesn't have a response
+      throw error;
     }
   }
 }
@@ -243,7 +235,7 @@ const availableFunctionsRegistry = {
   },
 };
 
-// Define the array of functions
+// Define the array of functions metadata for tools
 const funcs = [
   {
     type: 'function',
@@ -343,8 +335,8 @@ const funcs = [
   },
 ];
 
-// Define the getFunctions function
-function getFunctions() {
+// Define the getFunctionDefinitionsForTool function
+function getFunctionDefinitionsForTool() {
   return funcs;
 }
 
@@ -355,7 +347,7 @@ function getAvailableFunctions() {
 module.exports = {
   createGithubPullRequest,
   getAvailableFunctions,
-  getFunctions,
+  getFunctionDefinitionsForTool, // Renamed function
   listBranches,
   listCommitHistory,
   listDirectoryContents,
