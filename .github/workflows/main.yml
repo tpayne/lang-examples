@@ -217,8 +217,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout code
+      - name: Checkout code (Calling Workflow)
         uses: actions/checkout@v4
+        with:
+          path: .
       - name: Update Changelog
         uses: ./.github/workflows/genchangelog.yml
         with:
@@ -230,8 +232,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout code
+      - name: Checkout code (Calling Workflow)
         uses: actions/checkout@v4
+        with:
+          path: .
       - name: Update Changelog
         uses: ./.github/workflows/genchangelog.yml
         with:
