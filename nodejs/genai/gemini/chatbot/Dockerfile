@@ -3,22 +3,22 @@ ARG nodeVersion=18
 ARG alpineVersion=3.18
 FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 
-# Set up APK repositories and upgrade
+# Set up APK repositories and upgrade (consider stable)
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
 
 WORKDIR /source
 
-COPY src/ ./src
-COPY package.json ./src
-COPY package.json .
+COPY package.json package-lock.json* ./
+
+COPY src/ ./src/
 COPY contexts ./src/contexts
 COPY resources ./src/resources
 COPY templates ./src/templates
 
 RUN npm install --omit=dev
 RUN npm install -g pkg
-RUN pkg -t node18 ./src/ -o nodeexe 
+RUN pkg -t node18 ./src/ -o nodeexe
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
@@ -27,7 +27,7 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/ma
 
 ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system
-RUN adduser ${account} ${account} 
+RUN adduser ${account} ${account}
 
 WORKDIR /app
 
