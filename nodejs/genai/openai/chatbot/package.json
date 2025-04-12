@@ -5,11 +5,13 @@
   "main": "./chatbot.js",
   "bin": "./chatbot.js",
   "scripts": {
+    "dev": "nodemon ./chatbot.js",
+    "start": "node ./chatbot.js",
     "build": "./npm-build.sh",
     "test": "run-s test:*",
     "test:lint": "run-s test:lint:*",
     "test:lint:html": "npx linthtml 'templates/*.html'",
-    "test:lint:js": "npx eslint . --fix",
+    "test:lint:js": "npx eslint src/**/*.js chatbot.js --fix",
     "test:lint:yaml": "npx yamllint **/*.yml"
   },
   "pkg": {
@@ -29,7 +31,6 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
-    "fs": "^0.0.1-security",
     "morgan": "^1.10.0",
     "openai": "^4.93.0",
     "path": "^0.12.7",
@@ -50,6 +51,7 @@
     "eslint-plugin-vue": "^10.0.0",
     "globals": "^16.0.0",
     "husky": "^9.1.7",
+    "nodemon": "^3.1.0",
     "npm-run-all2": "7.0.2",
     "typescript-eslint": "^8.29.1",
     "yaml-lint": "1.7.0"
