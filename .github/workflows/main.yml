@@ -216,7 +216,7 @@ jobs:
     name: Update Gemini Chatbot Changelog
     needs: build
     secrets: inherit
-    uses: ./.github/workflows/changelog-workflow.yml@latest
+    uses: ./.github/workflows/changelog-workflow.yml
     with:
       SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
       DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
