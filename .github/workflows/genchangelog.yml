@@ -1,5 +1,5 @@
-# name: Changelog Updater (Subdirectory)
-# description: Automatically updates CHANGELOG.md for changes within a specific subdirectory.
+name: Changelog Updater (Subdirectory)
+run-name: Automatically updates CHANGELOG.md for changes within a specific subdirectory.
 
 on:
   push:
@@ -13,10 +13,13 @@ on:
     paths:
       - 'nodejs/genai/openai/chatbot/**'
   workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * *' # Run daily at 12:00 UTC
 
 env:
   SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
   DEFAULT_COMMIT_MESSAGE_TITLE: "chore: update"
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 jobs:
   changelog-updater:
@@ -38,6 +41,11 @@ jobs:
           # Get the list of changed files within the subdirectory.
           CHANGED_FILES=$(git diff --name-only --relative "${{ env.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" | tr '\n' ' ')
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+
+      - name: Debug Changed Files
+        if: ${{ always() }}
+        run: |
+          echo "Changed files: $CHANGED_FILES"
 
       - name: Determine Changes and Update Changelog
         id: update-changelog
@@ -122,3 +130,8 @@ jobs:
           git add CHANGELOG.md
           git commit -m "docs: Update CHANGELOG.md"
           git push origin HEAD:${{ github.ref_name }}
+
+#      - name: Send Notification
+#        if: always()
+#        run: |
+#          curl -X POST -H 'Content-type: application/json' --data '{"text":"Changelog update workflow completed."}' $SLACK_WEBHOOK_URL
