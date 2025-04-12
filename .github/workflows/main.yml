@@ -157,12 +157,6 @@ jobs:
             curl localhost:8080/ && \
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0)
 
-      - name: Update Changelog
-        uses: ./.github/workflows/genchangelog.yml
-        with:
-          SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
-          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
-
       - name: Stopping containers for further testing...
         run: (docker stop $(docker container ls -q))
     
@@ -183,12 +177,6 @@ jobs:
             curl localhost:8080/ && \
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0)
 
-      - name: Update Changelog
-        uses: ./.github/workflows/genchangelog.yml
-        with:
-          SUBDIRECTORY_PATH: 'nnodejs/genai/gemini/chatbot'
-          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
-    
       - name: Build the NodeJS Graph Docker image...
         id: nodejsquery-image
         run: |
@@ -224,6 +212,32 @@ jobs:
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
 
+ update-changelog-openai:
+    name: Update OpenAI Chatbot Changelog
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Update Changelog
+        uses: ./.github/workflows/genchangelog.yml
+        with:
+          SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
+          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
+
+  update-changelog-gemini:
+    name: Update Gemini Chatbot Changelog
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Update Changelog
+        uses: ./.github/workflows/genchangelog.yml
+        with:
+          SUBDIRECTORY_PATH: 'nodejs/genai/gemini/chatbot'
+          DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
+          
   update-dev-manifest:
     name: Update Dev deployment manifest
     runs-on: ubuntu-latest
