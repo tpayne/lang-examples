@@ -12,17 +12,17 @@ const { getConfig } = require('./properties');
 const { loadProperties } = require('./properties');
 
 const {
-    getAvailableFunctions,
-    getFunctionDefinitionsForTool,
+  getAvailableFunctions,
+  getFunctionDefinitionsForTool,
 } = require('./gitFunctions');
 
 dotenv.config();
 
 const app = express();
 const limiter = RateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // max 100 requests per windowMs
-    keyGenerator: (req) => req.ip, // Rate limit per IP address (Suggestion 4)
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+  keyGenerator: (req) => req.ip, // Rate limit per IP address (Suggestion 4)
 });
 app.use(limiter);
 
@@ -50,13 +50,13 @@ const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
  * @returns {boolean} True if the response was added to the cache.
  */
 const addResponse = (query, response) => {
-    const keyStr = getKey(query);
-    if (msgCache.has(keyStr)) return true;
-    if (msgCache.size > 1000) {
-        Array.from(msgCache.keys()).slice(0, 100).forEach((key) => msgCache.delete(key));
-    }
-    msgCache.set(keyStr, response);
-    return true;
+  const keyStr = getKey(query);
+  if (msgCache.has(keyStr)) return true;
+  if (msgCache.size > 1000) {
+    Array.from(msgCache.keys()).slice(0, 100).forEach((key) => msgCache.delete(key));
+  }
+  msgCache.set(keyStr, response);
+  return true;
 };
 
 /**
@@ -74,18 +74,18 @@ const getResponse = (query) => msgCache.get(getKey(query)) || '';
  * @returns {string} The content of the context file, or an empty string if an error occurs.
  */
 const readContext = async (contextStr) => {
-    try {
-        const contextPath = path.resolve('contexts', contextStr);
-        const normalizedContextPath = path.normalize(contextPath);
-        const normalizedContextsPath = path.normalize(path.resolve('contexts'));
-        if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
-            throw new Error('Invalid context path');
-        }
-        return await fs.promises.readFile(contextPath, 'utf-8'); // Suggestion 2
-    } catch (err) {
-        logger.error(`Cannot load '${contextStr}'`, err);
-        return '';
+  try {
+    const contextPath = path.resolve('contexts', contextStr);
+    const normalizedContextPath = path.normalize(contextPath);
+    const normalizedContextsPath = path.normalize(path.resolve('contexts'));
+    if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
+      throw new Error('Invalid context path');
     }
+    return await fs.promises.readFile(contextPath, 'utf-8'); // Suggestion 2
+  } catch (err) {
+    logger.error(`Cannot load '${contextStr}'`, err);
+    return '';
+  }
 };
 
 /* eslint-disable no-return-await,prefer-spread */
@@ -98,22 +98,22 @@ const readContext = async (contextStr) => {
  * @returns {Promise<any>} The result of the function call, or an error message.
  */
 const callFunctionByName = async (name, args) => {
-    const functionInfo = getAvailableFunctions()[name];
-    if (functionInfo && functionInfo.func) {
-        const { func, params } = functionInfo;
-        const argValues = params.map((paramName) => args[paramName]);
+  const functionInfo = getAvailableFunctions()[name];
+  if (functionInfo && functionInfo.func) {
+    const { func, params } = functionInfo;
+    const argValues = params.map((paramName) => args[paramName]);
 
-        try {
-            const result = await func.apply(null, argValues);
-            logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
-            return result;
-        } catch (error) {
-            const errStr = error.message;
-            logger.error(`Error executing function '${name}'`, { arguments: args, error: errStr }); // Suggestion 3 & 6
-            return { error: `Function ${name} failed`, details: errStr }; // Suggestion 3: More structured error
-        }
+    try {
+      const result = await func.apply(null, argValues);
+      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
+      return result;
+    } catch (error) {
+      const errStr = error.message;
+      logger.error(`Error executing function '${name}'`, { arguments: args, error: errStr }); // Suggestion 3 & 6
+      return { error: `Function ${name} failed`, details: errStr }; // Suggestion 3: More structured error
     }
-    return { error: `Function '${name}' not recognized` };
+  }
+  return { error: `Function '${name}' not recognized` };
 };
 
 /**
@@ -123,8 +123,8 @@ const callFunctionByName = async (name, args) => {
  * @returns {Promise<any>} The result of the function call.
  */
 const handleFunctionCall = async (functionCall) => {
-    const { name, args } = functionCall;
-    return await callFunctionByName(name, args);
+  const { name, args } = functionCall;
+  return await callFunctionByName(name, args);
 };
 /* eslint-enable no-return-await,prefer-spread */
 
@@ -136,103 +136,103 @@ const handleFunctionCall = async (functionCall) => {
  * @returns {Promise<string|object>} The chatbot's response or an error message/object.
  */
 const getChatResponse = async (userInput, forceJson = false) => {
-    const tools = getFunctionDefinitionsForTool();
+  const tools = getFunctionDefinitionsForTool();
 
-    // Handle special commands (Suggestion 8 - could be moved to config for more flexibility)
-    if (userInput.includes('help')) return 'Sample *Help* text';
-    if (userInput.includes('bot-echo-string')) {
-        return userInput || 'No string to echo';
+  // Handle special commands (Suggestion 8 - could be moved to config for more flexibility)
+  if (userInput.includes('help')) return 'Sample *Help* text';
+  if (userInput.includes('bot-echo-string')) {
+    return userInput || 'No string to echo';
+  }
+  if (userInput.includes('bot-context')) {
+    const botCmd = userInput.split(' ');
+    switch (botCmd[1]) {
+      case 'load':
+        ctxStr = '';
+        ctxStr = await readContext(botCmd[2].trim()); // Await the async function
+        return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
+      case 'show':
+        return ctxStr || 'Context is empty - ignored';
+      case 'reset':
+        ctxStr = '';
+        return 'Context reset';
+      default:
+        return 'Invalid command';
     }
-    if (userInput.includes('bot-context')) {
-        const botCmd = userInput.split(' ');
-        switch (botCmd[1]) {
-            case 'load':
-                ctxStr = '';
-                ctxStr = await readContext(botCmd[2].trim()); // Await the async function
-                return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
-            case 'show':
-                return ctxStr || 'Context is empty - ignored';
-            case 'reset':
-                ctxStr = '';
-                return 'Context reset';
-            default:
-                return 'Invalid command';
-        }
+  }
+  if (!ctxStr) return 'Error: Context is not set. Please load one';
+
+  const cachedResponse = getResponse(userInput);
+  if (cachedResponse) return cachedResponse;
+
+  try {
+    let contxtStr = userInput;
+    if (forceJson) {
+      contxtStr += '\nYour response must be in json format.';
     }
-    if (!ctxStr) return 'Error: Context is not set. Please load one';
 
-    const cachedResponse = getResponse(userInput);
-    if (cachedResponse) return cachedResponse;
+    const messages = [
+      { role: 'system', content: ctxStr },
+      { role: 'user', content: contxtStr },
+    ];
 
-    try {
-        let contxtStr = userInput;
-        if (forceJson) {
-            contxtStr += '\nYour response must be in json format.';
-        }
+    let response = await openai.chat.completions.create({
+      model: getConfig().aiModel,
+      messages,
+      tools,
+      tool_choice: 'auto',
+      response_format: forceJson ? { type: 'json_object' } : undefined,
+      max_tokens: Number(getConfig().maxTokens),
+      temperature: 1,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    });
 
-        const messages = [
-            { role: 'system', content: ctxStr },
-            { role: 'user', content: contxtStr },
-        ];
+    let responseMsg = response.choices[0].message;
 
-        let response = await openai.chat.completions.create({
-            model: getConfig().aiModel,
-            messages,
-            tools,
-            tool_choice: 'auto',
-            response_format: forceJson ? { type: 'json_object' } : undefined,
-            max_tokens: Number(getConfig().maxTokens),
-            temperature: 1,
-            top_p: 1,
-            frequency_penalty: 0,
-            presence_penalty: 0,
+    // Handle tool call
+    while (responseMsg.tool_calls) {
+      /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
+      for (const toolCall of responseMsg.tool_calls) {
+        const functionName = toolCall.function.name;
+        const functionArguments = JSON.parse(toolCall.function.arguments);
+
+        logger.info('Initiating tool call', { functionName, functionArguments, toolCallId: toolCall.id }); // Suggestion 6
+
+        const functionResponse = await handleFunctionCall({
+          name: functionName,
+          args: functionArguments,
         });
 
-        let responseMsg = response.choices[0].message;
+        messages.push(responseMsg);
+        messages.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: functionName,
+          content: JSON.stringify(functionResponse),
+        });
+      }
 
-        // Handle tool call
-        while (responseMsg.tool_calls) {
-            /* eslint-disable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
-            for (const toolCall of responseMsg.tool_calls) {
-                const functionName = toolCall.function.name;
-                const functionArguments = JSON.parse(toolCall.function.arguments);
+      // Ask OpenAI to continue the conversation after the tool response
+      response = await openai.chat.completions.create({
+        model: getConfig().aiModel,
+        messages,
+        tools,
+        tool_choice: 'auto',
+        max_tokens: Number(getConfig().maxTokens),
+      });
+      /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
 
-                logger.info('Initiating tool call', { functionName, functionArguments, toolCallId: toolCall.id }); // Suggestion 6
-
-                const functionResponse = await handleFunctionCall({
-                    name: functionName,
-                    args: functionArguments,
-                });
-
-                messages.push(responseMsg);
-                messages.push({
-                    tool_call_id: toolCall.id,
-                    role: 'tool',
-                    name: functionName,
-                    content: JSON.stringify(functionResponse),
-                });
-            }
-
-            // Ask OpenAI to continue the conversation after the tool response
-            response = await openai.chat.completions.create({
-                model: getConfig().aiModel,
-                messages,
-                tools,
-                tool_choice: 'auto',
-                max_tokens: Number(getConfig().maxTokens),
-            });
-            /* eslint-enable no-restricted-syntax, no-unreachable-loop, no-await-in-loop */
-
-            responseMsg = response.choices[0].message;
-        }
-
-        // No tool calls, normal response
-        addResponse(contxtStr, responseMsg.content);
-        return responseMsg.content;
-    } catch (err) {
-        logger.error('OpenAI API error:', err);
-        return 'Error processing request';
+      responseMsg = response.choices[0].message;
     }
+
+    // No tool calls, normal response
+    addResponse(contxtStr, responseMsg.content);
+    return responseMsg.content;
+  } catch (err) {
+    logger.error('OpenAI API error:', err);
+    return 'Error processing request';
+  }
 };
 
 /**
@@ -257,32 +257,32 @@ app.get('/version', (req, res) => res.json({ version: '1.0' }));
 app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 /**
- * Handles POST requests to the '/chat' path, processing user messages and returning the chatbot's response.
+ * Handles POST requests to the '/chat' path, processing user messages
  * Logs the user input and handles potential errors in the response generation.
  * @param {object} req The Express.js request object, containing the user's message in the body.
  * @param {object} res The Express.js response object, sending the chatbot's response as JSON.
  */
 app.post('/chat', async (req, res) => {
-    const userInput = req.body.message;
-    logger.info('Chat request received', { userInput }); // Suggestion 5
-    const resp = await getChatResponse(userInput);
-    res.json({ response: (resp) || 'Error: no response was detected' });
+  const userInput = req.body.message;
+  logger.info('Chat request received', { userInput }); // Suggestion 5
+  const resp = await getChatResponse(userInput);
+  res.json({ response: (resp) || 'Error: no response was detected' });
 });
 
 process.on('SIGINT', () => {
-    process.exit(0);
+  process.exit(0);
 });
 
 process.on('SIGILL', () => {
-    process.exit(1);
+  process.exit(1);
 });
 
 process.on('SIGSEG', () => {
-    process.exit(1);
+  process.exit(1);
 });
 
 process.on('SIGBUS', () => {
-    process.exit(1);
+  process.exit(1);
 });
 
 /**
@@ -290,12 +290,12 @@ process.on('SIGBUS', () => {
  * Exits the process if the properties file cannot be loaded.
  */
 const startServer = () => {
-    if (loadProperties('resources/app.properties')) {
-        const port = Number(getConfig().port) || 5000;
-        app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
-    } else {
-        process.exit(1);
-    }
+  if (loadProperties('resources/app.properties')) {
+    const port = Number(getConfig().port) || 5000;
+    app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
+  } else {
+    process.exit(1);
+  }
 };
 
 startServer();

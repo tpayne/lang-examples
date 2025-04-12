@@ -12,17 +12,17 @@ const morganMiddleware = require('./morganmw'); // Assuming you have a morgan mi
 
 const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
 const {
-    getAvailableFunctions,
-    getFunctionDefinitionsForTool,
+  getAvailableFunctions,
+  getFunctionDefinitionsForTool,
 } = require('./gitFunctions');
 
 dotenv.config();
 
 const app = express();
 const limiter = RateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // max 100 requests per windowMs
-    keyGenerator: (req) => req.ip, // Rate limit per IP address (Suggestion 4)
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // max 100 requests per windowMs
+  keyGenerator: (req) => req.ip, // Rate limit per IP address (Suggestion 4)
 });
 app.use(limiter);
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
@@ -49,13 +49,13 @@ const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
  * @returns {boolean} True if the response was added to the cache.
  */
 const addResponse = (query, response) => {
-    const keyStr = getKey(query);
-    if (msgCache.has(keyStr)) return true;
-    if (msgCache.size > 1000) {
-        Array.from(msgCache.keys()).slice(0, 100).forEach((key) => msgCache.delete(key));
-    }
-    msgCache.set(keyStr, response);
-    return true;
+  const keyStr = getKey(query);
+  if (msgCache.has(keyStr)) return true;
+  if (msgCache.size > 1000) {
+    Array.from(msgCache.keys()).slice(0, 100).forEach((key) => msgCache.delete(key));
+  }
+  msgCache.set(keyStr, response);
+  return true;
 };
 
 /**
@@ -70,21 +70,21 @@ const getResponse = (query) => msgCache.get(getKey(query)) || '';
  * Validates the path to prevent accessing files outside the context directory.
  * Uses asynchronous file reading for better performance.
  * @param {string} contextStr The name of the context file.
- * @returns {Promise<string>} The content of the context file, or an empty string if an error occurs.
+ * @returns {Promise<string>} The content of the context file
  */
 const readContext = async (contextStr) => {
-    try {
-        const contextPath = path.resolve('contexts', contextStr);
-        const normalizedContextPath = path.normalize(contextPath);
-        const normalizedContextsPath = path.normalize(path.resolve('contexts'));
-        if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
-            throw new Error('Invalid context path');
-        }
-        return await fs.promises.readFile(contextPath, 'utf-8'); // Suggestion 1
-    } catch (err) {
-        logger.error(`Cannot load '${contextStr}'`, err);
-        return '';
+  try {
+    const contextPath = path.resolve('contexts', contextStr);
+    const normalizedContextPath = path.normalize(contextPath);
+    const normalizedContextsPath = path.normalize(path.resolve('contexts'));
+    if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
+      throw new Error('Invalid context path');
     }
+    return await fs.promises.readFile(contextPath, 'utf-8'); // Suggestion 1
+  } catch (err) {
+    logger.error(`Cannot load '${contextStr}'`, err);
+    return '';
+  }
 };
 
 /* eslint-disable no-return-await, prefer-spread */
@@ -98,22 +98,22 @@ const readContext = async (contextStr) => {
  * @returns {Promise<any>} The result of the function call, or an error object.
  */
 const callFunctionByName = async (name, args) => {
-    const functionInfo = getAvailableFunctions()[name];
-    if (functionInfo && functionInfo.func) {
-        const { func, params } = functionInfo;
-        const argValues = params.map((paramName) => args[paramName]);
+  const functionInfo = getAvailableFunctions()[name];
+  if (functionInfo && functionInfo.func) {
+    const { func, params } = functionInfo;
+    const argValues = params.map((paramName) => args[paramName]);
 
-        try {
-            const result = await func.apply(null, argValues);
-            logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
-            return result;
-        } catch (error) {
-            const errStr = error.message;
-            logger.error(`Error executing function '${name}'`, { arguments: args, error: errStr }); // Suggestion 6
-            return { error: 'Function execution failed', details: errStr }; // Suggestion 3
-        }
+    try {
+      const result = await func.apply(null, argValues);
+      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
+      return result;
+    } catch (error) {
+      const errStr = error.message;
+      logger.error(`Error executing function '${name}'`, { arguments: args, error: errStr }); // Suggestion 6
+      return { error: 'Function execution failed', details: errStr }; // Suggestion 3
     }
-    return { error: `Function '${name}' not recognized` };
+  }
+  return { error: `Function '${name}' not recognized` };
 };
 
 /**
@@ -123,8 +123,8 @@ const callFunctionByName = async (name, args) => {
  * @returns {Promise<any>} The result of the function call.
  */
 const handleFunctionCall = async (functionCall) => {
-    const { name, args } = functionCall;
-    return await callFunctionByName(name, args);
+  const { name, args } = functionCall;
+  return await callFunctionByName(name, args);
 };
 /* eslint-enable no-return-await,prefer-spread */
 
@@ -132,141 +132,150 @@ const handleFunctionCall = async (functionCall) => {
  * Gets a chat response from the Gemini API based on user input and the current context.
  * Handles special commands, retrieves cached responses, and manages multi-turn function calls.
  * @param {string} userInput The user's message.
- * @param {boolean} [forceJson=false] Whether to force the Gemini response to be in JSON format (not directly supported by Gemini in the same way as OpenAI).
+ * @param {boolean} [forceJson=false] Whether to force the Gemini response to be in JSON format
  * @returns {Promise<string|object>} The chatbot's response or an error message/object.
  */
 const getChatResponse = async (userInput, forceJson = false) => {
-    const tools = getFunctionDefinitionsForTool();
+  const tools = getFunctionDefinitionsForTool();
 
-    // Handle special commands (Suggestion 8 - could be moved to config for more flexibility)
-    if (userInput.includes('help')) return 'Sample *Help* text';
-    if (userInput.includes('bot-echo-string')) {
-        return userInput || 'No string to echo';
+  // Handle special commands (Suggestion 8 - could be moved to config for more flexibility)
+  if (userInput.includes('help')) return 'Sample *Help* text';
+  if (userInput.includes('bot-echo-string')) {
+    return userInput || 'No string to echo';
+  }
+  if (userInput.includes('bot-context')) {
+    const botCmd = userInput.split(' ');
+    switch (botCmd[1]) {
+      case 'load':
+        ctxStr = '';
+        ctxStr = await readContext(botCmd[2].trim()); // Await the async function
+        return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
+      case 'show':
+        return ctxStr || 'Context is empty - ignored';
+      case 'reset':
+        ctxStr = '';
+        return 'Context reset';
+      default:
+        return 'Invalid command';
     }
-    if (userInput.includes('bot-context')) {
-        const botCmd = userInput.split(' ');
-        switch (botCmd[1]) {
-            case 'load':
-                ctxStr = '';
-                ctxStr = await readContext(botCmd[2].trim()); // Await the async function
-                return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
-            case 'show':
-                return ctxStr || 'Context is empty - ignored';
-            case 'reset':
-                ctxStr = '';
-                return 'Context reset';
-            default:
-                return 'Invalid command';
-        }
+  }
+
+  // Check if context is set
+  if (!ctxStr) return 'Error: Context is not set. Please load one';
+
+  // Check for cached response
+  const cachedResponse = getResponse(userInput);
+  if (cachedResponse) return cachedResponse;
+
+  try {
+    let contxtStr = userInput;
+    if (forceJson) {
+      contxtStr += '\nYour response must be in json format.'; // Note: Gemini's direct JSON enforcement might differ
     }
 
-    // Check if context is set
-    if (!ctxStr) return 'Error: Context is not set. Please load one';
+    const functionDefs = tools.map((func) => func.function);
+    const generationConfig = {
+      maxOutputTokens: Number(getConfig().maxTokens),
+      temperature: 1,
+      topP: 1,
+    };
+    const parts = [{ role: 'user', text: `${ctxStr}\n${contxtStr}` }];
+    const toolsConfig = { tools: [{ functionDeclarations: functionDefs }] };
 
-    // Check for cached response
-    const cachedResponse = getResponse(userInput);
-    if (cachedResponse) return cachedResponse;
+    let finalResponse = null;
+    let functionCallResult = null;
+    let numFunctionCalls = 0;
+    const maxFunctionCalls = 5; // Limit to prevent infinite loops
 
-    try {
-        let contxtStr = userInput;
-        if (forceJson) {
-            contxtStr += '\nYour response must be in json format.'; // Note: Gemini's direct JSON enforcement might differ
-        }
+    /* eslint-disable no-return-await,max-len,no-plusplus,no-await-in-loop */
+    while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
+      if (getConfig().debug === 'true') {
+        logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
+      }
+      const result = await ai.models.generateContent({
+        model: getConfig().aiModel,
+        contents: parts,
+        generationConfig,
+        config: toolsConfig.tools.length > 0 ? toolsConfig : [],
+      });
 
-        const functionDefs = tools.map((func) => func.function);
-        const generationConfig = {
-            maxOutputTokens: Number(getConfig().maxTokens),
-            temperature: 1,
-            topP: 1,
-        };
-        const parts = [{ role: 'user', text: `${ctxStr}\n${contxtStr}` }];
-        const toolsConfig = { tools: [{ functionDeclarations: functionDefs }] };
+      if (!result || typeof result !== 'object') {
+        logger.error('Gemini API error: No response object');
+        return 'Error: No response from the API';
+      }
 
-        let finalResponse = null;
-        let functionCallResult = null;
-        let numFunctionCalls = 0;
-        const maxFunctionCalls = 5; // Limit to prevent infinite loops
+      const response = result;
+      if (getConfig().debug === 'true') {
+        logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
+      }
+      if (response.candidates && response.candidates.length > 0) {
+        const candidate = response.candidates[0];
+        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+          const part = candidate.content.parts[0];
+          if (part.functionCall) {
+            numFunctionCalls++;
+            const functionName = part.functionCall.name;
+            const functionArgs = part.functionCall.args;
 
-        /* eslint-disable no-return-await,max-len,no-plusplus,no-await-in-loop */
-        while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
+            logger.info('Initiating tool call', { functionName, functionArguments: functionArgs, iteration: numFunctionCalls }); // Suggestion 6
+
+            functionCallResult = await handleFunctionCall(part.functionCall);
+
             if (getConfig().debug === 'true') {
-                logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
+              logger.debug(`Function call detected (iteration ${numFunctionCalls}): ${functionName} with args: ${JSON.stringify(functionArgs)}`);
+              logger.debug(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
             }
-            const result = await ai.models.generateContent({
-                model: getConfig().aiModel,
-                contents: parts,
-                generationConfig,
-                toolsConfig: toolsConfig.tools.length > 0 ? toolsConfig : undefined, // Use undefined if no tools
+
+            const functionResponsePart = {
+              name: functionName,
+              response: { functionCallResult },
+            };
+
+            // Send the function call result back to the model for a follow-up
+            parts.push({
+              role: 'model',
+              parts: [{
+                functionCall: part.functionCall,
+              }],
             });
-
-            if (!result || typeof result !== 'object') {
-                logger.error('Gemini API error: No response object');
-                return 'Error: No response from the API';
-            }
-
-            const response = result;
-            if (getConfig().debug === 'true') {
-                logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
-            }
-            if (response.candidates && response.candidates.length > 0) {
-                const candidate = response.candidates[0];
-                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                    const part = candidate.content.parts[0];
-                    if (part.functionCall) {
-                        numFunctionCalls++;
-                        const functionName = part.functionCall.name;
-                        const functionArgs = part.functionCall.args;
-
-                        logger.info('Initiating tool call', { functionName, functionArguments: functionArgs, iteration: numFunctionCalls }); // Suggestion 6
-
-                        functionCallResult = await handleFunctionCall(part.functionCall);
-
-                        const functionResponsePart = {
-                            name: functionName,
-                            response: { functionCallResult },
-                        };
-
-                        // Send the function call result back to the model for a follow-up
-                        parts.push({
-                            role: 'model',
-                            parts: [part], // Send the functionCall part as is
-                        });
-                        parts.push({
-                            role: 'user',
-                            parts: [{ functionResponse: functionResponsePart }],
-                        });
-                    } else if (part.text) {
-                        finalResponse = part.text;
-                    }
-                }
-            } else {
-                logger.warn('Gemini API: No candidates in the response.');
-                break;
-            }
-
-            if (numFunctionCalls >= maxFunctionCalls && !finalResponse) {
-                finalResponse = 'Error: Maximum function call limit reached without a final response.';
-            }
+            parts.push({
+              role: 'user',
+              parts: [{
+                functionResponse: functionResponsePart,
+              }],
+            });
+          } else if (part.text) {
+            finalResponse = part.text;
+          }
         }
-        /* eslint-enable no-return-await,max-len,no-plusplus,no-await-in-loop */
+      } else {
+        logger.warn('Gemini API: No candidates in the response.');
+        break;
+      }
 
-        if (!finalResponse && functionCallResult !== null && typeof functionCallResult !== 'object' && !functionCallResult.error) {
-            // If the last action was a successful function call and no final text response
-            finalResponse = functionCallResult;
-        } else if (!finalResponse && functionCallResult?.error) {
-            finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
-        }
-
-        if (!finalResponse) {
-            throw Error('Not able to get a final response from Gemini.');
-        }
-
-        addResponse(contxtStr, finalResponse);
-        return finalResponse;
-    } catch (err) {
-        logger.error('Gemini API error:', err);
-        return `Error processing request - ${err}`;
+      if (numFunctionCalls >= maxFunctionCalls && !finalResponse) {
+        finalResponse = 'Error: Maximum function call limit reached without a final response.';
+      }
     }
+    /* eslint-enable no-return-await,max-len,no-plusplus,no-await-in-loop */
+
+    if (!finalResponse && functionCallResult !== null && typeof functionCallResult !== 'object' && !functionCallResult.error) {
+      // If the last action was a successful function call and no final text response
+      finalResponse = functionCallResult;
+    } else if (!finalResponse && functionCallResult && functionCallResult.error) {
+      finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
+    }
+
+    if (!finalResponse) {
+      throw Error('Not able to get a final response from Gemini.');
+    }
+
+    addResponse(contxtStr, finalResponse);
+    return finalResponse;
+  } catch (err) {
+    logger.error('Gemini API error:', err);
+    return `Error processing request - ${err}`;
+  }
 };
 
 /**
@@ -291,32 +300,32 @@ app.get('/version', (req, res) => res.json({ version: '1.0' }));
 app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 /**
- * Handles POST requests to the '/chat' path, processing user messages and returning the chatbot's response from Gemini.
+ * Handles POST requests to the '/chat' path
  * Logs the user input.
  * @param {object} req The Express.js request object, containing the user's message in the body.
  * @param {object} res The Express.js response object, sending the chatbot's response as JSON.
  */
 app.post('/chat', async (req, res) => {
-    const userMessage = req.body.message;
-    logger.info('Chat request received', { message: userMessage }); // Suggestion 5
-    const resp = await getChatResponse(userMessage);
-    res.json({ response: (resp) || 'Error: no response was detected' });
+  const userMessage = req.body.message;
+  logger.info('Chat request received', { message: userMessage }); // Suggestion 5
+  const resp = await getChatResponse(userMessage);
+  res.json({ response: (resp) || 'Error: no response was detected' });
 });
 
 process.on('SIGINT', () => {
-    process.exit(0);
+  process.exit(0);
 });
 
 process.on('SIGILL', () => {
-    process.exit(1);
+  process.exit(1);
 });
 
 process.on('SIGSEG', () => {
-    process.exit(1);
+  process.exit(1);
 });
 
 process.on('SIGBUS', () => {
-    process.exit(1);
+  process.exit(1);
 });
 
 /**
@@ -324,12 +333,12 @@ process.on('SIGBUS', () => {
  * Exits the process if the properties file cannot be loaded.
  */
 const startServer = () => {
-    if (loadProperties('resources/app.properties')) {
-        const port = Number(getConfig().port) || 5000;
-        app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
-    } else {
-        process.exit(1);
-    }
+  if (loadProperties('resources/app.properties')) {
+    const port = Number(getConfig().port) || 5000;
+    app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
+  } else {
+    process.exit(1);
+  }
 };
 
 startServer();
