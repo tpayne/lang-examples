@@ -115,7 +115,9 @@ async function createGithubPullRequest(
   body = '',
 ) {
   const url = `https://api.github.com/repos/${username}/${repoName}/pulls`;
-  const postData = { title, head: sourceBranch, base: targetBranch, body };
+  const postData = {
+    title, head: sourceBranch, base: targetBranch, body,
+  };
 
   try {
     const response = await superagent

@@ -12,9 +12,8 @@ const skip = () => {
 };
 
 // Custom token for user information (Suggestion 2 & 7)
-morgan.token('user', (req) => {
-  return req.user ? req.user.id : 'anonymous'; // Example: Assuming user info is in req.user
-});
+morgan.token('user', (req) => (req.user ? req.user.id : 'anonymous'), // Example: Assuming user info is in req.user
+);
 
 // Custom format including user information (Suggestion 2)
 const httpLogFormat = ':remote-addr :method :url :status :res[content-length] - :response-time ms - user[:user]';

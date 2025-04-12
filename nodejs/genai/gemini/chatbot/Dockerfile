@@ -12,6 +12,7 @@ WORKDIR /source
 COPY package.json package-lock.json* ./
 
 COPY src/ ./src/
+COPY package.json package-lock.json* ./src/
 COPY contexts ./src/contexts
 COPY resources ./src/resources
 COPY templates ./src/templates
