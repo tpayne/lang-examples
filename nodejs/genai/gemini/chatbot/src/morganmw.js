@@ -3,26 +3,25 @@ const logger = require('./logger');
 const { getConfig } = require('./properties');
 
 const stream = {
-  // Use the http severity
-  write: (message) => logger.http(message),
+  write: (message) => logger.http(`HTTP Request: ${message.trim()}`),
 };
 
 const skip = () => {
-  const env = process.env.NODE_ENV || 'development';
   if (getConfig().debug !== 'true') {
     return true;
   }
+  const env = process.env.NODE_ENV || 'development';
   return env !== 'development';
 };
 
+// Custom token for user information (Suggestion 2 & 7)
+morgan.token('user', (req) => (req.user ? req.user.id : 'anonymous'));
+
+// Custom format including user information (Suggestion 2)
+const httpLogFormat = ':remote-addr :method :url :status :res[content-length] - :response-time ms - user[:user]';
+
 const morganMiddleware = morgan(
-  // Define message format string (this is the default one).
-  // The message format is made from tokens, and each token is
-  // defined inside the Morgan library.
-  // You can create your custom token to show what do you want from a request.
-  ':remote-addr :method :url :status :res[content-length] - :response-time ms',
-  // Options: in this case, I overwrote the stream and the skip logic.
-  // See the methods above.
+  httpLogFormat,
   { stream, skip },
 );
 

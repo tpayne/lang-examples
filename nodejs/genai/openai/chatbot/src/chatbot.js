@@ -13,7 +13,7 @@ const { loadProperties } = require('./properties');
 
 const {
   getAvailableFunctions,
-  getFunctions,
+  getFunctionDefinitionsForTool,
 } = require('./gitFunctions');
 
 dotenv.config();
@@ -86,7 +86,7 @@ const handleFunctionCall = async (functionCall) => {
 /* eslint-enable no-return-await,prefer-spread */
 
 const getChatResponse = async (userInput, forceJson = false) => {
-  const tools = getFunctions();
+  const tools = getFunctionDefinitionsForTool();
 
   // Handle special commands
   if (userInput.includes('help')) return 'Sample *Help* text';
