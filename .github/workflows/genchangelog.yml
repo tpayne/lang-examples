@@ -1,5 +1,4 @@
 name: Changelog Updater (Reusable)
-description: Automatically updates CHANGELOG.md for changes within a specified subdirectory.
 on:
   workflow_call:
     inputs:
@@ -29,7 +28,7 @@ on:
 jobs:
   updatechangelog:
     runs-on: ubuntu-latest
-    name: Calc outputs
+    name: Calc changelog
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
