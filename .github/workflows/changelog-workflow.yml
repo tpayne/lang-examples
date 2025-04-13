@@ -44,7 +44,8 @@ jobs:
         continue-on-error: true
         run: |
           CHANGED_FILES=$(git diff --name-only --relative \
-            "${{ inputs.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" \
+            "${{ github.event.before }}".."${{ github.sha }}" \
+            | grep "${{ inputs.SUBDIRECTORY_PATH }}" \
             | tr '\n' ' ')
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
   
