@@ -107,13 +107,16 @@ async function fetchRepoContentsRecursive(
     const request = superagent.get(apiUrl);
     request.set('Accept', 'application/vnd.github.v3+json');
     request.set('User-Agent', USER_AGENT);
-    request.set('Authorization', `token ${githubToken}`);
+    if (githubToken) {
+      request.set('Authorization', `token ${githubToken}`);
+    }
 
     const response = await request;
 
     if (response.status === 403 && response.headers['x-ratelimit-remaining'] === '0' && retryCount < maxRetries) {
       const resetTime = parseInt(response.headers['x-ratelimit-reset'], 10) * 1000;
       const waitTime = resetTime - Date.now() + 1000; // Add a small buffer
+      logger.warn(`Rate limit hit. Retrying in ${waitTime / 1000} seconds (Attempt ${retryCount + 1}/${maxRetries}).`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
       return fetchRepoContentsRecursive(username, repoName, repoPath, localDestPath, githubToken, includeDotGithub, retryCount + 1, maxRetries);
     }
@@ -121,7 +124,7 @@ async function fetchRepoContentsRecursive(
     if (response.status !== 200) {
       logger.error(`GitHub API error for path "${repoPath}": HTTP ${response.status} - ${response.text}`);
       handleNotFoundError(response, ` for repository ${username}/${repoName} at path "${repoPath}"`);
-      throw new Error(`GitHub API error: HTTP ${response.status} for ${apiUrl}`);
+      return { success: false, message: `GitHub API error: HTTP ${response.status} for ${apiUrl}` };
     }
 
     /** @type {GitHubItem|GitHubItem[]} */
@@ -131,9 +134,13 @@ async function fetchRepoContentsRecursive(
       logger.warn(`Expected an array of items from API for path "${repoPath}", but received:`, typeof items, items);
       if (items && items.type === 'file' && items.download_url) {
         const filePath = path.join(localDestPath, items.name);
-        await downloadFile(items.download_url, filePath, githubToken);
+        try {
+          await downloadFile(items.download_url, filePath, githubToken);
+        } catch (error) {
+          return { success: false, message: `Error downloading single file: ${error.message}` };
+        }
       }
-      return;
+      return { success: true, message: `Processed single item at path "${repoPath}"` };
     }
 
     for (const item of items) {
@@ -146,32 +153,44 @@ async function fetchRepoContentsRecursive(
 
       if (item.type === 'file') {
         if (item.download_url) {
-          await downloadFile(item.download_url, currentLocalPath, githubToken);
+          try {
+            await downloadFile(item.download_url, currentLocalPath, githubToken);
+          } catch (error) {
+            return { success: false, message: `Error downloading file "${item.name}": ${error.message}` };
+          }
         }
       } else if (item.type === 'dir') {
-        await fetchRepoContentsRecursive(
+        const result = await fetchRepoContentsRecursive(
           username,
           repoName,
           item.path,
           currentLocalPath,
+          githubToken,
           includeDotGithub,
           0, // Reset retry count for new recursive calls
           maxRetries,
         );
+        if (!result.success) {
+          return result; // Propagate failure from subdirectory
+        }
       } else if (item.type === 'symlink') {
-        //logger.warn(`Skipping symlink: ${item.name} (content not fetched)`);
+        logger.warn(`Skipping symlink: ${item.name} (content not fetched)`);
       } else if (item.type === 'submodule') {
-        //logger.warn(`Skipping submodule: ${item.name} (content not fetched)`);
+        logger.warn(`Skipping submodule: ${item.name} (content not fetched)`);
       } else {
-        //logger.warn(`Unknown item type "${item.type}" for item: ${item.name}`);
+        logger.warn(`Unknown item type "${item.type}" for item: ${item.name}`);
       }
     }
+
+    return { success: true, message: `Successfully processed directory "${repoPath}"` };
+
   } catch (error) {
     logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error);
     handleNotFoundError(error, ` for repository ${username}/${repoName}" at path "${repoPath}"`);
-    throw error; // Re-throw the error for the caller to handle
+    return { success: false, message: `Exception during processing of "${repoPath}": ${error.message}` };
   }
 }
+
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 /**
  * Lists the names of public repositories for a given GitHub username.
