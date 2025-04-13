@@ -1,7 +1,7 @@
 {
   "name": "chatbot",
-  "version": "1.0.0",
-  "description": "Gemini chatbot demo",
+  "version": "1.1.0",
+  "description": "Gemini chatbot action demo",
   "main": "./chatbot.js",
   "bin": "./chatbot.js",
   "scripts": {
