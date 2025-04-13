@@ -72,21 +72,21 @@ jobs:
             local commit_message="$2"
             local commit_title=$(echo "$commit_message" | head -n 1)
             if echo "$commit_title" | grep -q "^feat"; then
-              echo "- Feature: ${commit_title#*:} (in $file)"
+              echo "- **Feature**: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^fix"; then
-              echo "- Fix: ${commit_title#*:} (in $file)"
+              echo "- **Fix**: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^docs"; then
-              echo "- Documentation: ${commit_title#*:} (in $file)"
+              echo "- **Documentation**: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^chore"; then
-              echo "- Chore: ${commit_title#*:} (in $file)"
+              echo "- **Chore**: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^refactor"; then
-              echo "- Refactor: ${commit_title#*:} (in $file)"
+              echo "- **Refactor**: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^test"; then
-              echo "- Test: ${commit_title#*:} (in $file)"
+              echo "- **Test**: ${commit_title#*:} (in $file)"
             elif echo "$commit_title" | grep -q "^style"; then
-              echo "- Style: ${commit_title#*:} (in $file)"
+              echo "- **Style**: ${commit_title#*:} (in $file)"
             else
-              echo "- Other: ${commit_title} (in $file)"
+              echo "- **Other**: ${commit_title} (in $file)"
             fi
           }
   

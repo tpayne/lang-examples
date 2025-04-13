@@ -5,7 +5,7 @@ This repo contains a simple example chatbot that runs using the Gemini API.
 
 The web page is a very simple interface, so if you wish to create something more complex, feel free.
 
-(Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
+(Note - *This* sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
 Pre-Requisites
 --------------
