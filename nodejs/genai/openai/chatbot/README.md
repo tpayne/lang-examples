@@ -108,6 +108,14 @@ A few samples are
     -X POST localhost:8080/chat
 ```
 
+Support is added for:
+* Listing repos owned by a user
+* Listing branches in a repo
+* Listing build jobs (actions)
+* Listing commit history for a file
+* Listing the files in a repo
+* Creating a pull request for a branch to merge
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
