@@ -123,7 +123,7 @@ jobs:
           fi
           echo "# Changelog" > /tmp/ch.md
           cat "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" | grep -v "# Changelog" >> /tmp/ch.md
-          cp /tmp/ch.md "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
+          grep -v '^$' /tmp/ch.md > "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
       - name: Commit and Push Changelog
         if: steps.update-changelog.outcome == 'success'
         shell: bash
