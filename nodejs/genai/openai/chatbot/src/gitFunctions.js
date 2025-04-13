@@ -50,7 +50,7 @@ async function downloadFile(url, localFilePath, token = null) {
   try {
     // --- Superagent File Download ---
     const request = superagent.get(url);
-    request.set('User-Agent', 'Node.js-Fetch-Script-Superagent');
+    request.set('User-Agent', USER_AGENT);
     if (token) { request.set('Authorization', `token ${token}`); }
 
     request.buffer(true); // Tell superagent to receive the response body as a Buffer
@@ -188,7 +188,7 @@ async function listPublicRepos(username) {
  * @throws {Error} If API request fails or repository is not found.
  */
 async function listBranches(username, repoName) {
-  const url = 'https://api.github.com/repos/${username}/${repoName}/branches';
+  const url = `https://api.github.com/repos/${username}/${repoName}/branches`;
   try {
     const response = await superagent
       .get(url)
