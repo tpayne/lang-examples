@@ -131,6 +131,7 @@ jobs:
           cd "${{ inputs.SUBDIRECTORY_PATH }}"
           git add CHANGELOG.md
           git commit -m "docs: Update CHANGELOG.md"
+          git pull --rebase
           git push origin HEAD:${{ github.ref_name }}
   
       - name: Send Notification
