@@ -41,8 +41,11 @@ jobs:
       - name: Get Changed Files
         id: changed-files
         shell: bash
+        continue-on-error: true
         run: |
-          CHANGED_FILES=$(git diff --name-only --relative "${{ inputs.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" | tr '\n' ' ')
+          CHANGED_FILES=$(git diff --name-only --relative \
+            "${{ inputs.SUBDIRECTORY_PATH }}" "${{ github.event.before }}".."${{ github.sha }}" \
+            | tr '\n' ' ')
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
   
       - name: Debug Changed Files
