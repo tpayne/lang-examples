@@ -8,7 +8,7 @@ on:
         type: string
       DEFAULT_COMMIT_MESSAGE_TITLE:
         required: false
-        default: "chore: CHANGELOG update"
+        default: "CHANGELOG update"
         type: string
       SLACK_WEBHOOK_URL:
         required: false
