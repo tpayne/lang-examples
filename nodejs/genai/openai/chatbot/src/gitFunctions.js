@@ -45,79 +45,99 @@ async function handleGitHubApiError(response, context = '') {
 }
 
 /**
-* Helper function to download a file from a URL using Superagent.
-* @param {string} url - The URL to download from.
-* @param {string} localFilePath - The local path to save the file.
-* @param {string|null} [token=null] - Optional GitHub token (usually not needed for download_url).
-*/
+ * Helper function to download a file from a URL using Superagent.
+ * @param {string} url - The URL to download from.
+ * @param {string} localFilePath - The local path to save the file.
+ * @param {string|null} [token=null] - Optional GitHub token.
+ */
 async function downloadFile(url, localFilePath, token = null) {
   try {
-    // --- Superagent File Download ---
     const request = superagent.get(url);
     request.set('User-Agent', USER_AGENT);
-    if (token) { request.set('Authorization', `token ${token}`); }
+    if (token) {
+      request.set('Authorization', `token ${token}`);
+    }
 
-    request.buffer(true); // Tell superagent to receive the response body as a Buffer
-    request.parse(superagent.parse['application/octet-stream']); // Treat response as binary
+    request.buffer(true);
+    request.parse(superagent.parse['application/octet-stream']);
 
     const response = await request;
-    // response.body should now be a Node.js Buffer
+
+    if (response.status !== 200) {
+      throw new Error(`Error downloading ${url}: HTTP ${response.status} - ${response.text}`);
+    }
+
     if (Buffer.isBuffer(response.body)) {
       await fs.writeFile(localFilePath, response.body);
-      // console.log(`  Downloaded: ${url} -> ${localFilePath}`);
     } else {
-      throw new Error(`  Error downloading ${url}: Expected Buffer, received ${typeof response.body}`);
+      throw new Error(`Error downloading ${url}: Expected Buffer, received ${typeof response.body}`);
     }
   } catch (error) {
-    logger.error('Error downloading (exception):', url, localFilePath, error);
+    logger.error('Error downloading (exception):', url, localFilePath, error.message || error);
     handleNotFoundError(error, ` for downloading ${url}`);
+    throw error; // Re-throw the error for the caller to handle
   }
 }
 
 /**
-* Recursively fetches files and directories from a GitHub repository
-*
-* @param {string} username - The owner of the repository (user or organization).
-* @param {string} repoName - The name of the repository.
-* @param {string} repoPath - The starting path within the repository (use '' or '/' for the root).
-* @param {string} localDestPath - The local directory path where content should be saved.
-* @param {boolean} [includeDotGithub=true] - Whether to include the .github directory nor not
-*/
+ * Recursively fetches files and directories from a GitHub repository
+ *
+ * @param {string} username - The owner of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @param {string} repoPath - The starting path within the repository.
+ * @param {string} localDestPath - The local directory path where content should be saved.
+ * @param {boolean} [includeDotGithub=true] - Whether to include the .github directory.
+ * @param {number} [retryCount=0] - Internal retry counter.
+ * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
+ */
 async function fetchRepoContentsRecursive(
   username,
   repoName,
   repoPath,
   localDestPath,
   includeDotGithub = true,
+  retryCount = 0,
+  maxRetries = 3,
 ) {
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
 
   try {
-    // Ensure the local destination directory exists for the current level
     await fs.mkdir(localDestPath, { recursive: true });
 
-    // --- Superagent Request ---
     const request = superagent.get(apiUrl);
     request.set('Accept', 'application/vnd.github.v3+json');
-    request.set('User-Agent', USER_AGENT); // Identify script
+    request.set('User-Agent', USER_AGENT);
     request.set('Authorization', `token ${githubToken}`);
 
-    const response = await request; // Await the request promise
-    const items = response.body; // Superagent parses JSON response body by default
+    const response = await request;
+
+    if (response.status === 403 && response.headers['x-ratelimit-remaining'] === '0' && retryCount < maxRetries) {
+      const resetTime = parseInt(response.headers['x-ratelimit-reset'], 10) * 1000;
+      const waitTime = resetTime - Date.now() + 1000; // Add a small buffer
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+      return fetchRepoContentsRecursive(username, repoName, repoPath, localDestPath, githubToken, includeDotGithub, retryCount + 1, maxRetries);
+    }
+
+    if (response.status !== 200) {
+      logger.error(`GitHub API error for path "${repoPath}": HTTP ${response.status} - ${response.text}`);
+      handleNotFoundError(response, ` for repository ${username}/${repoName} at path "${repoPath}"`);
+      throw new Error(`GitHub API error: HTTP ${response.status} for ${apiUrl}`);
+    }
+
+    /** @type {GitHubItem|GitHubItem[]} */
+    const items = response.body;
 
     if (!Array.isArray(items)) {
-      logger.error(`Error: Expected an array of items from API for path "${repoPath}", but received:`, typeof items);
-      // Handle potential single file response if repoPath points directly to a file
+      logger.warn(`Expected an array of items from API for path "${repoPath}", but received:`, typeof items, items);
       if (items && items.type === 'file' && items.download_url) {
         const filePath = path.join(localDestPath, items.name);
         await downloadFile(items.download_url, filePath, githubToken);
       }
-      return; // Stop processing this path if response is not an array
+      return;
     }
 
-    /* eslint-disable no-continue, no-restricted-syntax, no-await-in-loop, consistent-return */
     for (const item of items) {
-      const currentRepoPath = item.path; // Full path from repo root
+      const currentRepoPath = item.path;
       const currentLocalPath = path.join(localDestPath, item.name);
 
       if (!includeDotGithub && (item.name === '.github' || currentRepoPath.startsWith('.github/'))) {
@@ -135,23 +155,23 @@ async function fetchRepoContentsRecursive(
           item.path,
           currentLocalPath,
           includeDotGithub,
-          githubToken,
+          0, // Reset retry count for new recursive calls
+          maxRetries,
         );
       } else if (item.type === 'symlink') {
-        // logger.warn(` Skipping symlink: ${item.name} (content not fetched)`);
+        //logger.warn(`Skipping symlink: ${item.name} (content not fetched)`);
       } else if (item.type === 'submodule') {
-        // logger.warn(` Skipping submodule: ${item.name} (content not fetched)`);
+        //logger.warn(`Skipping submodule: ${item.name} (content not fetched)`);
       } else {
-        // logger.warn(` Unknown item type "${item.type}" for item: ${item.name}`);
+        //logger.warn(`Unknown item type "${item.type}" for item: ${item.name}`);
       }
     }
-    /* eslint-enable no-continue, no-restricted-syntax, no-await-in-loop, consistent-return */
   } catch (error) {
-    logger.error('Error downloading (exception):', repoPath, error);
-    handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
+    logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error);
+    handleNotFoundError(error, ` for repository ${username}/${repoName}" at path "${repoPath}"`);
+    throw error; // Re-throw the error for the caller to handle
   }
 }
-
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 /**
  * Lists the names of public repositories for a given GitHub username.
@@ -482,8 +502,11 @@ const funcs = [
           repoName: { type: 'string', description: 'The repository name.' },
           repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
           localDestPath: { type: 'string', description: 'The target local directory path.' },
+          includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
+          retryCount: { type: 'number', description: 'The retry count to use.' },
+          maxRetries: { type: 'number', description: 'The maximum number of retries.' },
         },
-        required: ['username', 'repoName', 'repoPath', 'localDestPath'],
+        required: ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
       },
     },
   },
