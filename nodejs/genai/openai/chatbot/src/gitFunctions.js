@@ -1,11 +1,16 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
+const util = require('util');
 
 const GITHUB_API_VERSION = '2022-11-28';
 const USER_AGENT = 'AIBot';
 const githubToken = process.env.GITHUB_TOKEN;
 const superagent = require('superagent');
 const logger = require('./logger');
+
+async function mkdir(localDestPath) {
+  await fs.mkdir(localDestPath, { recursive: true });
+}
 
 /**
  * Handles "Not Found" errors from the GitHub API.
@@ -94,7 +99,7 @@ async function fetchRepoContentsRecursive(
   username,
   repoName,
   repoPath,
-  localDestPath,
+  localDestPath = './',
   includeDotGithub = true,
   retryCount = 0,
   maxRetries = 3,
@@ -102,7 +107,7 @@ async function fetchRepoContentsRecursive(
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
 
   try {
-    await fs.mkdir(localDestPath, { recursive: true });
+    await mkdir(localDestPath);
 
     const request = superagent.get(apiUrl);
     request.set('Accept', 'application/vnd.github.v3+json');
@@ -201,9 +206,21 @@ async function fetchRepoContentsRecursive(
     };
     /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
   } catch (error) {
+    logger.debug(`Error object is ${util.inspect(error, { depth: null })}`);
     logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error);
-    handleNotFoundError(error, ` for repository ${username}/${repoName}" at path "${repoPath}"`);
-    return { success: false, message: `Exception during processing of "${repoPath}": ${error.message}` };
+    if (error.response) {
+      logger.error(`Error downloading files (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check repo and directory names.');
+      }
+      if (error.response.body && error.response.body.errors
+        && error.response.body.errors.length > 0) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to download repo');
+    } else {
+      throw error;
+    }
   }
 }
 
@@ -536,7 +553,7 @@ const funcs = [
           username: { type: 'string', description: 'The GitHub username.' },
           repoName: { type: 'string', description: 'The repository name.' },
           repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-          localDestPath: { type: 'string', description: 'The target local directory path.' },
+          localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
           includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
           retryCount: { type: 'number', description: 'The retry count to use.' },
           maxRetries: { type: 'number', description: 'The maximum number of retries.' },
