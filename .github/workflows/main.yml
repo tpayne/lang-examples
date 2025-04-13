@@ -224,14 +224,13 @@ jobs:
 
   update-changelog-openai:
     name: Update OpenAI Chatbot Changelog
-    needs: build-and-push-image
+    needs: update-changelog-gemini
     if: ${{ !startsWith(github.event.head_commit.message, github.event.inputs.DEFAULT_COMMIT_MESSAGE_TITLE) }}
     secrets: inherit
     uses: ./.github/workflows/changelog-workflow.yml
     with:
       SUBDIRECTORY_PATH: 'nodejs/genai/openai/chatbot'
       DEFAULT_COMMIT_MESSAGE_TITLE: 'chore: update'
-
 
   update-dev-manifest:
     name: Update Dev deployment manifest
