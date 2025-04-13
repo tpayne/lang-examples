@@ -2,18 +2,41 @@ name: Build images and update manifest info for Demo
 on:
   push:
     branches: [master]
+    inputs:
+      DEFAULT_COMMIT_MESSAGE_TITLE:
+        description: "Default commit message title to skip changelog"
+        required: false
+        default: "chore: update"
+        type: string
   pull_request:
     branches: [master]
-  # Triggers the workflow on push or pull request events but only for the main branch
+    inputs:
+      DEFAULT_COMMIT_MESSAGE_TITLE:
+        description: "Default commit message title to skip changelog"
+        required: false
+        default: "chore: update"
+        type: string
+  pull_request:  # Triggers the workflow on push or pull request events but only for the main branch
   registry_package:
     types: [published, updated]
-  # Allows you to run this workflow manually from the Actions tab
+    inputs:
+      DEFAULT_COMMIT_MESSAGE_TITLE:
+        description: "Default commit message title to skip changelog"
+        required: false
+        default: "chore: update"
+        type: string
+  pull_request:  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
       id:
         description: "run identifier"
         required: false
         default: "Job001"
+        type: string
+      DEFAULT_COMMIT_MESSAGE_TITLE:
+        description: "Default commit message title to skip changelog"
+        required: false
+        default: "chore: update"
         type: string
 
 concurrency:
