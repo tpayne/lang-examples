@@ -215,7 +215,7 @@ jobs:
   update-changelog-gemini:
     name: Update Gemini Chatbot Changelog
     needs: build-and-push-image
-    if: ${{ !startsWith(github.event.head_commit.message, github.event.inputs.DEFAULT_COMMIT_MESSAGE_TITLE) }}
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore: update') }}
     secrets: inherit
     uses: ./.github/workflows/changelog-workflow.yml
     with:
@@ -225,7 +225,7 @@ jobs:
   update-changelog-openai:
     name: Update OpenAI Chatbot Changelog
     needs: update-changelog-gemini
-    if: ${{ !startsWith(github.event.head_commit.message, github.event.inputs.DEFAULT_COMMIT_MESSAGE_TITLE) }}
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore: update') }}
     secrets: inherit
     uses: ./.github/workflows/changelog-workflow.yml
     with:
