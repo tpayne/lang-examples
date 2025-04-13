@@ -31,8 +31,12 @@ function handleNotFoundError(error, context = '') {
  * @throws {Error} Custom error detailing the GitHub API error.
  */
 async function handleGitHubApiError(response, context = '') {
-  logger.error(`GitHub API Error ${context} (status):`, response.status,
-    response.statusText, response.body);
+  logger.error(
+    `GitHub API Error ${context} (status):`,
+    response.status,
+    response.statusText,
+    response.body,
+  );
   let errorMessage = `GitHub API Error ${context}: ${response.status} - ${response.statusText}`;
   if (response.body && response.body.message) {
     errorMessage += ` - ${response.body.message}`;
@@ -66,7 +70,7 @@ async function downloadFile(url, localFilePath, token = null) {
     }
   } catch (error) {
     logger.error('Error downloading (exception):', url, localFilePath, error);
-    handleNotFoundError(error, ' for repository ${username}/${repoName}"');
+    handleNotFoundError(error, ` for downloading ${url}`);
   }
 }
 
@@ -144,7 +148,7 @@ async function fetchRepoContentsRecursive(
     /* eslint-enable no-continue, no-restricted-syntax, no-await-in-loop, consistent-return */
   } catch (error) {
     logger.error('Error downloading (exception):', repoPath, error);
-    handleNotFoundError(error, ' for repository ${username}/${repoName}"');
+    handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
   }
 }
 
@@ -199,10 +203,10 @@ async function listBranches(username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    await handleGitHubApiError(response, 'listing branches for ${username}/${repoName}"');
+    await handleGitHubApiError(response, `listing branches for ${username}/${repoName}"`);
   } catch (error) {
     logger.error('Error listing branches (exception):', username, repoName, error);
-    handleNotFoundError(error, ' for repository ${username}/${repoName}"');
+    handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
   }
 }
 
@@ -235,10 +239,10 @@ async function listCommitHistory(username, repoName, filePath) {
         date: commit.commit.author.date,
       }));
     }
-    await handleGitHubApiError(response, 'listing commit history for ${filePath}" in "${username}/{repoName}"');
+    await handleGitHubApiError(response, `listing commit history for ${filePath}" in "${username}/{repoName}"`);
   } catch (error) {
     logger.error('Error listing commit history (exception):', username, repoName, filePath, error);
-    handleNotFoundError(error, ' for file ${filePath}" in "${username}/{repoName}"');
+    handleNotFoundError(error, ` for file ${filePath}" in "${username}/${repoName}"`);
   }
 }
 
@@ -270,10 +274,10 @@ async function listDirectoryContents(username, repoName, xpath = '') {
         path: item.path,
       }));
     }
-    await handleGitHubApiError(response, 'listing directory contents for ${path}" in "${username}/{repoName}"');
+    await handleGitHubApiError(response, `listing directory contents for ${path}" in "${username}/{repoName}"`);
   } catch (error) {
     logger.error('Error listing directories (exception):', username, repoName, xpath, error);
-    handleNotFoundError(error, ' for path ${xpath}" in "${username}/{repoName}"');
+    handleNotFoundError(error, ` for path "${xpath}" in "${username}/${repoName}"`);
   }
 }
 
@@ -299,7 +303,7 @@ async function createGithubPullRequest(
   targetBranch,
   body = '',
 ) {
-  const url = 'https://api.github.com/repos/${username}/${repoName}/pulls';
+  const url = `https://api.github.com/repos/${username}/${repoName}/pulls`;
   const postData = {
     title, head: sourceBranch, base: targetBranch, body,
   };
@@ -316,7 +320,7 @@ async function createGithubPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleGitHubApiError(response, 'creating pull request for ${username}/${repoName}"');
+    await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
