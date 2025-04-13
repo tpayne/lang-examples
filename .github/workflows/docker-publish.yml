@@ -33,7 +33,7 @@ concurrency:
 jobs:
   buildPush:
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/master')
+    if: (github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
     permissions:
       contents: read
       packages: write

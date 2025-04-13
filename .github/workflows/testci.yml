@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref != 'refs/heads/master')
+    if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
     outputs:
       dotnet8-image: ${{ steps.dotnet8-image.outputs.image }}
       dotnet8-tag: ${{ steps.dotnet8-image.outputs.tag }}
