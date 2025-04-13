@@ -112,13 +112,26 @@ async function fetchRepoContentsRecursive(
     }
 
     const response = await request;
+    /* eslint-disable max-len, no-promise-executor-return,
+                      no-restricted-syntax,
+                      no-await-in-loop,
+                      no-continue */
 
     if (response.status === 403 && response.headers['x-ratelimit-remaining'] === '0' && retryCount < maxRetries) {
       const resetTime = parseInt(response.headers['x-ratelimit-reset'], 10) * 1000;
       const waitTime = resetTime - Date.now() + 1000; // Add a small buffer
       logger.warn(`Rate limit hit. Retrying in ${waitTime / 1000} seconds (Attempt ${retryCount + 1}/${maxRetries}).`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
-      return fetchRepoContentsRecursive(username, repoName, repoPath, localDestPath, githubToken, includeDotGithub, retryCount + 1, maxRetries);
+      return fetchRepoContentsRecursive(
+        username,
+        repoName,
+        repoPath,
+        localDestPath,
+        githubToken,
+        includeDotGithub,
+        retryCount + 1,
+        maxRetries,
+      );
     }
 
     if (response.status !== 200) {
@@ -181,9 +194,12 @@ async function fetchRepoContentsRecursive(
         logger.warn(`Unknown item type "${item.type}" for item: ${item.name}`);
       }
     }
-
-    return { success: true, message: `Successfully processed directory "${repoPath}"` };
-
+    return {
+      success: true,
+      message:
+      `Successfully processed directory "${repoPath}"`,
+    };
+    /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
   } catch (error) {
     logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error);
     handleNotFoundError(error, ` for repository ${username}/${repoName}" at path "${repoPath}"`);
