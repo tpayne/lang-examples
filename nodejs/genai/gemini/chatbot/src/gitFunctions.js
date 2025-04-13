@@ -259,7 +259,7 @@ async function listCommitHistory(username, repoName, filePath) {
  * @throws {Error} If API request fails or repository/path not found.
  */
 async function listDirectoryContents(username, repoName, xpath = '') {
-  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${path}`;
+  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${xpath}`;
   try {
     const response = await superagent
       .get(url)
@@ -274,7 +274,7 @@ async function listDirectoryContents(username, repoName, xpath = '') {
         path: item.path,
       }));
     }
-    await handleGitHubApiError(response, `listing directory contents for ${path}" in "${username}/{repoName}"`);
+    await handleGitHubApiError(response, `listing directory contents for ${xpath}" in "${username}/{repoName}"`);
   } catch (error) {
     logger.error('Error listing directories (exception):', username, repoName, xpath, error);
     handleNotFoundError(error, ` for path "${xpath}" in "${username}/${repoName}"`);
