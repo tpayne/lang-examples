@@ -15,11 +15,6 @@ on:
         required: false
         default: "Job001"
         type: string
-      DEFAULT_COMMIT_MESSAGE_TITLE:
-        description: "Default commit message title to skip changelog"
-        required: false
-        default: "chore: update"
-        type: string
 
 concurrency:
   group: ${{ github.ref }}Ci
