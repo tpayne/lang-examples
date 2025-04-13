@@ -108,7 +108,7 @@ A few samples are
     -X POST localhost:8080/chat
 ```
 
-Support is added for:
+GitHub support is added for:
 * Listing repos owned by a user
 * Listing branches in a repo
 * Listing build jobs (actions)
