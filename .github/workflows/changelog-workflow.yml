@@ -123,6 +123,11 @@ jobs:
         if: steps.update-changelog.outcome == 'success'
         shell: bash
         run: |
+          set -e
+          if [ -z "${CHANGED_FILES}" ]; then
+            echo "No relevant changes detected in ${{ inputs.SUBDIRECTORY_PATH }}. Exiting."
+            exit 0
+          fi
           cd "${{ inputs.SUBDIRECTORY_PATH }}"
           git add CHANGELOG.md
           git commit -m "docs: Update CHANGELOG.md"
