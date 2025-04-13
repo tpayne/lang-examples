@@ -1,9 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+
+const GITHUB_API_VERSION = '2022-11-28';
+const USER_AGENT = 'AIBot';
+const githubToken = process.env.GITHUB_TOKEN;
 const superagent = require('superagent');
 const logger = require('./logger');
-
-const githubToken = process.env.GITHUB_TOKEN;
-const USER_AGENT = 'AIBot';
-const GITHUB_API_VERSION = '2022-11-28';
 
 /**
  * Handles "Not Found" errors from the GitHub API.
@@ -16,7 +18,7 @@ const GITHUB_API_VERSION = '2022-11-28';
  */
 function handleNotFoundError(error, context = '') {
   if (error.message === 'Not Found') {
-    throw new Error(`<span class="math-inline">\{error\}</span>{context}: Please reword the request as it was not understood`);
+    throw new Error(`<span class="math-inline">${error}</span>${context}: Please reword the request as it was not understood`);
   }
   throw error;
 }
@@ -29,13 +31,125 @@ function handleNotFoundError(error, context = '') {
  * @throws {Error} Custom error detailing the GitHub API error.
  */
 async function handleGitHubApiError(response, context = '') {
-  logger.error(`GitHub API Error ${context} (status):`, response.status,
-    response.statusText, response.body);
+  logger.error(
+    `GitHub API Error ${context} (status):`,
+    response.status,
+    response.statusText,
+    response.body,
+  );
   let errorMessage = `GitHub API Error ${context}: ${response.status} - ${response.statusText}`;
   if (response.body && response.body.message) {
     errorMessage += ` - ${response.body.message}`;
   }
   throw new Error(errorMessage);
+}
+
+/**
+* Helper function to download a file from a URL using Superagent.
+* @param {string} url - The URL to download from.
+* @param {string} localFilePath - The local path to save the file.
+* @param {string|null} [token=null] - Optional GitHub token (usually not needed for download_url).
+*/
+async function downloadFile(url, localFilePath, token = null) {
+  try {
+    // --- Superagent File Download ---
+    const request = superagent.get(url);
+    request.set('User-Agent', 'Node.js-Fetch-Script-Superagent');
+    if (token) { request.set('Authorization', `token ${token}`); }
+
+    request.buffer(true); // Tell superagent to receive the response body as a Buffer
+    request.parse(superagent.parse['application/octet-stream']); // Treat response as binary
+
+    const response = await request;
+    // response.body should now be a Node.js Buffer
+    if (Buffer.isBuffer(response.body)) {
+      await fs.writeFile(localFilePath, response.body);
+      // console.log(`  Downloaded: ${url} -> ${localFilePath}`);
+    } else {
+      throw new Error(`  Error downloading ${url}: Expected Buffer, received ${typeof response.body}`);
+    }
+  } catch (error) {
+    logger.error('Error downloading (exception):', url, localFilePath, error);
+    handleNotFoundError(error, ' for repository "<span class="math-inline">{username}/</span>{repoName}"');
+  }
+}
+
+/**
+* Recursively fetches files and directories from a GitHub repository
+*
+* @param {string} username - The owner of the repository (user or organization).
+* @param {string} repoName - The name of the repository.
+* @param {string} repoPath - The starting path within the repository (use '' or '/' for the root).
+* @param {string} localDestPath - The local directory path where content should be saved.
+* @param {boolean} [includeDotGithub=true] - Whether to include the .github directory nor not
+*/
+async function fetchRepoContentsRecursive(
+  username,
+  repoName,
+  repoPath,
+  localDestPath,
+  includeDotGithub = true,
+) {
+  const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
+
+  try {
+    // Ensure the local destination directory exists for the current level
+    await fs.mkdir(localDestPath, { recursive: true });
+
+    // --- Superagent Request ---
+    const request = superagent.get(apiUrl);
+    request.set('Accept', 'application/vnd.github.v3+json');
+    request.set('User-Agent', USER_AGENT); // Identify script
+    request.set('Authorization', `token ${githubToken}`);
+
+    const response = await request; // Await the request promise
+    const items = response.body; // Superagent parses JSON response body by default
+
+    if (!Array.isArray(items)) {
+      logger.error(`Error: Expected an array of items from API for path "${repoPath}", but received:`, typeof items);
+      // Handle potential single file response if repoPath points directly to a file
+      if (items && items.type === 'file' && items.download_url) {
+        const filePath = path.join(localDestPath, items.name);
+        await downloadFile(items.download_url, filePath, githubToken);
+      }
+      return; // Stop processing this path if response is not an array
+    }
+
+    /* eslint-disable no-continue, no-restricted-syntax, no-await-in-loop, consistent-return */
+    for (const item of items) {
+      const currentRepoPath = item.path; // Full path from repo root
+      const currentLocalPath = path.join(localDestPath, item.name);
+
+      if (!includeDotGithub && (item.name === '.github' || currentRepoPath.startsWith('.github/'))) {
+        continue;
+      }
+
+      if (item.type === 'file') {
+        if (item.download_url) {
+          await downloadFile(item.download_url, currentLocalPath, githubToken);
+        }
+      } else if (item.type === 'dir') {
+        await fetchRepoContentsRecursive(
+          username,
+          repoName,
+          item.path,
+          currentLocalPath,
+          includeDotGithub,
+          githubToken,
+        );
+      } else if (item.type === 'symlink') {
+        // logger.warn(` Skipping symlink: ${item.name} (content not fetched)`);
+      } else if (item.type === 'submodule') {
+        // logger.warn(` Skipping submodule: ${item.name} (content not fetched)`);
+      } else {
+        // logger.warn(` Unknown item type "${item.type}" for item: ${item.name}`);
+      }
+    }
+    /* eslint-enable no-continue, no-restricted-syntax, no-await-in-loop, consistent-return */
+  } catch (error) {
+    logger.error('Error downloading (exception):', repoPath, error);
+    handleNotFoundError(error, ' for repository "<span class="math-inline">{username}/</span>{repoName}"');
+  }
 }
 
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
@@ -78,7 +192,7 @@ async function listPublicRepos(username) {
  * @throws {Error} If API request fails or repository is not found.
  */
 async function listBranches(username, repoName) {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/branches`;
+  const url = 'https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/branches';
   try {
     const response = await superagent
       .get(url)
@@ -89,10 +203,10 @@ async function listBranches(username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    await handleGitHubApiError(response, `listing branches for "<span class="math-inline">\{username\}/</span>{repoName}"`);
+    await handleGitHubApiError(response, 'listing branches for "<span class="math-inline">{username}/</span>{repoName}"');
   } catch (error) {
     logger.error('Error listing branches (exception):', username, repoName, error);
-    handleNotFoundError(error, ` for repository "<span class="math-inline">\{username\}/</span>{repoName}"`);
+    handleNotFoundError(error, ' for repository "<span class="math-inline">{username}/</span>{repoName}"');
   }
 }
 
@@ -109,7 +223,7 @@ async function listBranches(username, repoName) {
  * @throws {Error} If API request fails or file/repository not found.
  */
 async function listCommitHistory(username, repoName, filePath) {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/commits?path=${filePath}`;
+  const url = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/commits?path=${filePath}`;
   try {
     const response = await superagent
       .get(url)
@@ -125,10 +239,10 @@ async function listCommitHistory(username, repoName, filePath) {
         date: commit.commit.author.date,
       }));
     }
-    await handleGitHubApiError(response, `listing commit history for "<span class="math-inline">\{filePath\}" in "</span>{username}/${repoName}"`);
+    await handleGitHubApiError(response, 'listing commit history for "<span class="math-inline">{filePath}" in "</span>{username}/{repoName}"');
   } catch (error) {
     logger.error('Error listing commit history (exception):', username, repoName, filePath, error);
-    handleNotFoundError(error, ` for file "<span class="math-inline">\{filePath\}" in "</span>{username}/${repoName}"`);
+    handleNotFoundError(error, ' for file "<span class="math-inline">{filePath}" in "</span>{username}/{repoName}"');
   }
 }
 
@@ -139,13 +253,13 @@ async function listCommitHistory(username, repoName, filePath) {
  * @async
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} [path=''] Optional path to the directory.
+ * @param {string} [xpath=''] Optional path to the directory.
  * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
  * Array of directory content objects.
  * @throws {Error} If API request fails or repository/path not found.
  */
-async function listDirectoryContents(username, repoName, path = '') {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/contents/${path}`;
+async function listDirectoryContents(username, repoName, xpath = '') {
+  const url = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/contents/${path}`;
   try {
     const response = await superagent
       .get(url)
@@ -160,10 +274,10 @@ async function listDirectoryContents(username, repoName, path = '') {
         path: item.path,
       }));
     }
-    await handleGitHubApiError(response, `listing directory contents for "<span class="math-inline">\{path\}" in "</span>{username}/${repoName}"`);
+    await handleGitHubApiError(response, 'listing directory contents for "<span class="math-inline">{path}" in "</span>{username}/{repoName}"');
   } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, path, error);
-    handleNotFoundError(error, ` for path "<span class="math-inline">\{path\}" in "</span>{username}/${repoName}"`);
+    logger.error('Error listing directories (exception):', username, repoName, xpath, error);
+    handleNotFoundError(error, ' for path "<span class="math-inline">{xpath}" in "</span>{username}/{repoName}"');
   }
 }
 
@@ -189,7 +303,7 @@ async function createGithubPullRequest(
   targetBranch,
   body = '',
 ) {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/pulls`;
+  const url = 'https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/pulls';
   const postData = {
     title, head: sourceBranch, base: targetBranch, body,
   };
@@ -206,7 +320,7 @@ async function createGithubPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleGitHubApiError(response, `creating pull request for "<span class="math-inline">\{username\}/</span>{repoName}"`);
+    await handleGitHubApiError(response, 'creating pull request for "<span class="math-inline">{username}/</span>{repoName}"');
   } catch (error) {
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
@@ -214,7 +328,7 @@ async function createGithubPullRequest(
         throw new Error('Not Found: Check repo and branch names.');
       }
       if (error.response.body && error.response.body.errors
-          && error.response.body.errors.length > 0) {
+        && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to create PR');
@@ -232,12 +346,14 @@ async function createGithubPullRequest(
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @param {string} [status='in_progress'] Status to filter workflows (optional).
- * @returns {Promise<Array<{ workflow_run_id: number, workflow_name: string, job_id: number, job_name: string, html_url: string, status: string, started_at: string }>>}
+ * @returns {Promise<Array<{ workflow_run_id: number, workflow_name: string,
+ *           job_id: number, job_name: string, html_url: string, status: string,
+ *           started_at: string }>>}
  * Array of running/queued GitHub Action job details.
  * @throws {Error} If API request fails or repository/user not found.
  */
 async function listGitHubActions(username, repoName, status = 'in_progress') {
-  const urlRuns = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/actions/runs?status=${status}`;
+  const urlRuns = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/actions/runs?status=${status}`;
   try {
     const runsResponse = await superagent
       .get(urlRuns)
@@ -254,7 +370,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
 
     const runningJobs = [];
     for (const run of runsData.workflow_runs) {
-      const urlJobs = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/actions/runs/${run.id}/jobs`;
+      const urlJobs = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/actions/runs/${run.id}/jobs`;
       const jobsResponse = await superagent
         .get(urlJobs)
         .set('Authorization', `Bearer ${githubToken}`)
@@ -289,7 +405,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
         throw new Error('Not Found: Check user and repo names.');
       }
       if (error.response.body && error.response.body.errors
-          && error.response.body.errors.length > 0) {
+        && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to list actions');
@@ -306,6 +422,10 @@ const availableFunctionsRegistry = {
   create_pull_request: {
     func: createGithubPullRequest,
     params: ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+  },
+  fetch_repo_contents: {
+    func: fetchRepoContentsRecursive,
+    params: ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub'],
   },
   list_actions: {
     func: listGitHubActions,
@@ -347,6 +467,23 @@ const funcs = [
           body: { type: 'string', description: 'The description or body of the pull request.' },
         },
         required: ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fetch_repo_contents',
+      description: 'Fetch or download the contents of a GitHub repository.',
+      parameters: {
+        type: 'object',
+        properties: {
+          username: { type: 'string', description: 'The GitHub username.' },
+          repoName: { type: 'string', description: 'The repository name.' },
+          repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+          localDestPath: { type: 'string', description: 'The target local directory path.' },
+        },
+        required: ['username', 'repoName', 'repoPath', 'localDestPath'],
       },
     },
   },

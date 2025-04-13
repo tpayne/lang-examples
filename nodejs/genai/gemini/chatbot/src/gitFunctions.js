@@ -78,7 +78,7 @@ async function listPublicRepos(username) {
  * @throws {Error} If API request fails or repository is not found.
  */
 async function listBranches(username, repoName) {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/branches`;
+  const url = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/branches`;
   try {
     const response = await superagent
       .get(url)
@@ -89,10 +89,10 @@ async function listBranches(username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    await handleGitHubApiError(response, `listing branches for "<span class="math-inline">\{username\}/</span>{repoName}"`);
+    await handleGitHubApiError(response, `listing branches for "<span class="math-inline">{username}/</span>{repoName}"`);
   } catch (error) {
     logger.error('Error listing branches (exception):', username, repoName, error);
-    handleNotFoundError(error, ` for repository "<span class="math-inline">\{username\}/</span>{repoName}"`);
+    handleNotFoundError(error, ` for repository "<span class="math-inline">{username}/</span>{repoName}"`);
   }
 }
 
@@ -109,7 +109,7 @@ async function listBranches(username, repoName) {
  * @throws {Error} If API request fails or file/repository not found.
  */
 async function listCommitHistory(username, repoName, filePath) {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/commits?path=${filePath}`;
+  const url = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/commits?path=${filePath}`;
   try {
     const response = await superagent
       .get(url)
@@ -145,7 +145,7 @@ async function listCommitHistory(username, repoName, filePath) {
  * @throws {Error} If API request fails or repository/path not found.
  */
 async function listDirectoryContents(username, repoName, path = '') {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/contents/${path}`;
+  const url = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/contents/${path}`;
   try {
     const response = await superagent
       .get(url)
@@ -189,7 +189,7 @@ async function createGithubPullRequest(
   targetBranch,
   body = '',
 ) {
-  const url = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/pulls`;
+  const url = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/pulls`;
   const postData = {
     title, head: sourceBranch, base: targetBranch, body,
   };
@@ -206,7 +206,7 @@ async function createGithubPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleGitHubApiError(response, `creating pull request for "<span class="math-inline">\{username\}/</span>{repoName}"`);
+    await handleGitHubApiError(response, `creating pull request for "<span class="math-inline">{username}/</span>{repoName}"`);
   } catch (error) {
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
@@ -237,7 +237,7 @@ async function createGithubPullRequest(
  * @throws {Error} If API request fails or repository/user not found.
  */
 async function listGitHubActions(username, repoName, status = 'in_progress') {
-  const urlRuns = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/actions/runs?status=${status}`;
+  const urlRuns = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/actions/runs?status=${status}`;
   try {
     const runsResponse = await superagent
       .get(urlRuns)
@@ -254,7 +254,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
 
     const runningJobs = [];
     for (const run of runsData.workflow_runs) {
-      const urlJobs = `https://api.github.com/repos/<span class="math-inline">\{username\}/</span>{repoName}/actions/runs/${run.id}/jobs`;
+      const urlJobs = `https://api.github.com/repos/<span class="math-inline">{username}/</span>{repoName}/actions/runs/${run.id}/jobs`;
       const jobsResponse = await superagent
         .get(urlJobs)
         .set('Authorization', `Bearer ${githubToken}`)
