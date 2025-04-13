@@ -93,7 +93,7 @@ jobs:
           > temp_changelog.md
           git log --reverse --format="%H|%s" "${{ github.event.before }}".."${{ github.sha }}" -- "${{ inputs.SUBDIRECTORY_PATH }}" | \
           while IFS='|' read -r commit_hash commit_message; do
-            changed_files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit_hash" | grep "^${{ inputs.SUBDIRECTORY_PATH }}/")
+            changed_files_in_commit=$(git diff-tree --no-commit-id --name-only -r "$commit_hash" | grep "^${{ inputs.SUBDIRECTORY_PATH }}/") || true
             for file in $changed_files_in_commit; do
               entry=$(generate_changelog_entry "$file" "$commit_message")
               echo "$entry" >> temp_changelog.md
@@ -114,7 +114,9 @@ jobs:
               sed -i "1s/^/# Changelog\n\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
             fi
             DATE=$(date '+%Y-%m-%d')
-            sed -i "1s/^/## $DATE\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
+            awk 'BEGIN{date_str = "## '""$(date '+%Y-%m-%d')""'"} {if (NR == 1) { printf("\n%s\n%s",date_str,$0);} else {print $0;}}' \
+              "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" > temp_changelog.md \
+              && mv temp_changelog.md "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
           else
             echo "No changes to record in CHANGELOG.md"
             rm temp_changelog.md
