@@ -124,7 +124,7 @@ GitHub support is added for:
 * Listing commit history for a file
 * Listing the files in a repo
 * Creating a pull request for a branch to merge
-* Fetch files from a repo (for processing them)
+* Fetch files from a repo (for processing them in the future)
 
 Cleaning Up
 -----------
