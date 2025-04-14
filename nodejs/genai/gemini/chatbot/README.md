@@ -118,13 +118,13 @@ A few samples are
 ```
 
 GitHub support is added for:
-* Listing repos owned by a user
+* Creating a pull request for a branch to merge
+* Fetch files from a repo (for processing them in the future)
 * Listing branches in a repo
 * Listing build jobs (actions)
 * Listing commit history for a file
+* Listing repos owned by a user
 * Listing the files in a repo
-* Creating a pull request for a branch to merge
-* Fetch files from a repo (for processing them in the future)
 
 Cleaning Up
 -----------
