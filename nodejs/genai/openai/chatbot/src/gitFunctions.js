@@ -108,12 +108,18 @@ async function fetchRepoContentsRecursive(
   username,
   repoName,
   repoPath,
-  localDestPath = '/tmp/fetch/',
+  localDestPath,
   includeDotGithub = true,
   retryCount = 0,
   maxRetries = 3,
 ) {
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
+
+  if (!localDestPath || localDestPath === "." ||
+       localDestPath === `./${repoName}` ||
+       localDestPath === repoName) {
+    return { success: false, message: `Error: You need to specify a download directory` }; 
+  }
 
   try {
     await mkdir(localDestPath);
