@@ -113,8 +113,8 @@ jobs:
             if ! grep -q "^# Changelog" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"; then
               sed -i "1s/^/# Changelog\n\n/" "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
             fi
-            DATE=$(date '+%Y-%m-%d')
-            awk 'BEGIN{date_str = "## '""$(date '+%Y-%m-%d')""'"} {if (NR == 1) { printf("\n%s\n%s",date_str,$0);} else {printf("\n%s",$0);}}' \
+            DATE=$(date '+%Y-%m-%d %H:%M:%S %Z%z')
+            awk 'BEGIN{date_str = "## '""$(date '+%Y-%m-%d %H:%M:%S %Z%z')""'"} {if (NR == 1) { printf("\n%s\n%s",date_str,$0);} else {printf("\n%s",$0);}}' \
               "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md" > temp_changelog.md \
               && mv temp_changelog.md "${{ inputs.SUBDIRECTORY_PATH }}/CHANGELOG.md"
           else
