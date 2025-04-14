@@ -9,6 +9,15 @@ const superagent = require('superagent');
 const logger = require('./logger');
 
 async function mkdir(localDestPath) {
+  try {
+    // Recursively delete the directory if it exists
+    await fs.rm(localDestPath, { recursive: true, force: true });
+  } catch (error) {
+    // Handle the error if the directory does not exist
+    if (error.code !== 'ENOENT') {
+      throw error; // Rethrow the error if it's not a "not found" error
+    }
+  }
   await fs.mkdir(localDestPath, { recursive: true });
 }
 
@@ -99,7 +108,7 @@ async function fetchRepoContentsRecursive(
   username,
   repoName,
   repoPath,
-  localDestPath = './',
+  localDestPath = '/tmp/fetch/',
   includeDotGithub = true,
   retryCount = 0,
   maxRetries = 3,
