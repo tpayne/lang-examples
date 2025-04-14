@@ -9,6 +9,10 @@ const {
   listPublicRepos,
 } = require('./gitFunctions');
 
+const {
+  codeReviews,
+} = require('./codeReviews');
+
 /* eslint-disable max-len */
 
 /**
@@ -72,6 +76,21 @@ function registerFunction(name, func, params, description, parametersSchema, req
     },
   };
   funcs.push(functionMetadata);
+}
+
+function loadCodeReviews() {
+  registerFunction(
+    'perform_code_review',
+    codeReviews,
+    ['username', 'repoName', 'repoPath'],
+    'Perform a code review on a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+    },
+    ['username', 'repoName', 'repoPath'],
+  );
 }
 
 function loadGitHub() {
@@ -170,7 +189,7 @@ function loadGitHub() {
     },
     ['username', 'repoName'],
   );
-};
+}
 
 /* eslint-enable max-len */
 
@@ -184,6 +203,7 @@ function getAvailableFunctions() {
 }
 
 loadGitHub();
+loadCodeReviews();
 
 module.exports = {
   getAvailableFunctions,

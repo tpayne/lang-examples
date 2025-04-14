@@ -197,13 +197,13 @@ const getChatResponse = async (userInput, forceJson = false) => {
         const functionName = toolCall.function.name;
         const functionArguments = JSON.parse(toolCall.function.arguments);
 
-        logger.info('Initiating tool call', { functionName, functionArguments, toolCallId: toolCall.id }); // Suggestion 6
+        logger.info(`Initiating tool call, ${functionName} => ${JSON.stringify(functionArguments)}, ${toolCall.id}`); // Suggestion 6
 
+        // Make the response an Array of items...
         const functionResponse = await handleFunctionCall({
           name: functionName,
           args: functionArguments,
         });
-
         messages.push(responseMsg);
         messages.push({
           tool_call_id: toolCall.id,
@@ -299,3 +299,4 @@ const startServer = () => {
 };
 
 startServer();
+
