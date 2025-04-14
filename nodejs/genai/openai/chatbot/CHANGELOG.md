@@ -1,4 +1,9 @@
 # Changelog
+## 2025-04-14	(12:36:26-UTC+0000)
+- **Chore**:  Split functions into different files and make loadable (in nodejs/genai/openai/chatbot/src/chatbot.js)
+- **Chore**:  Split functions into different files and make loadable (in nodejs/genai/openai/chatbot/src/functions.js)
+- **Chore**:  Split functions into different files and make loadable (in nodejs/genai/openai/chatbot/src/gitFunctions.js)
+- **Other**: WIP Split functions work (in nodejs/genai/openai/chatbot/src/gitFunctions.js)
 ## 2025-04-14	(12:00:01-UTC+0000)
 - **Other**: Fix download directories (in nodejs/genai/openai/chatbot/src/gitFunctions.js)
 ## 2025-04-14	(01:46:08-UTC+0000)
