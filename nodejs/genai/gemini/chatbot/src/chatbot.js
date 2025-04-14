@@ -11,10 +11,11 @@ const logger = require('./logger'); // Assuming you have a logger module
 const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
 
 const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
+
 const {
   getAvailableFunctions,
   getFunctionDefinitionsForTool,
-} = require('./gitFunctions');
+} = require('./functions');
 
 dotenv.config();
 

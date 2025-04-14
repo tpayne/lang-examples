@@ -14,7 +14,7 @@ const { loadProperties } = require('./properties');
 const {
   getAvailableFunctions,
   getFunctionDefinitionsForTool,
-} = require('./gitFunctions');
+} = require('./functions');
 
 dotenv.config();
 
