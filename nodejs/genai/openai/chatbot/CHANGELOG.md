@@ -1,4 +1,6 @@
 # Changelog
+## 2025-04-14	(12:00:01-UTC+0000)
+- **Other**: Fix download directories (in nodejs/genai/openai/chatbot/src/gitFunctions.js)
 ## 2025-04-14	(01:46:08-UTC+0000)
 - **Other**: Update README for bots (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-04-14
