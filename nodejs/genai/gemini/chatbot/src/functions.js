@@ -74,101 +74,103 @@ function registerFunction(name, func, params, description, parametersSchema, req
   funcs.push(functionMetadata);
 }
 
-// Register the existing functions
-registerFunction(
-  'create_pull_request',
-  createGithubPullRequest,
-  ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
-  'Create a pull request on a given GitHub repository.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-    repoName: { type: 'string', description: 'The repository name.' },
-    title: { type: 'string', description: 'The Pull Request title.' },
-    sourceBranch: { type: 'string', description: 'The source branch name.' },
-    targetBranch: { type: 'string', description: 'The target branch name.' },
-    body: { type: 'string', description: 'The description or body of the pull request.' },
-  },
-  ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
-);
+function loadGitHub() {
+  // Register the existing functions
+  registerFunction(
+    'create_pull_request',
+    createGithubPullRequest,
+    ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+    'Create a pull request on a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      title: { type: 'string', description: 'The Pull Request title.' },
+      sourceBranch: { type: 'string', description: 'The source branch name.' },
+      targetBranch: { type: 'string', description: 'The target branch name.' },
+      body: { type: 'string', description: 'The description or body of the pull request.' },
+    },
+    ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+  );
 
-registerFunction(
-  'fetch_repo_contents',
-  fetchRepoContentsRecursive,
-  ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
-  'Fetch or download the contents of a GitHub repository.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-    repoName: { type: 'string', description: 'The repository name.' },
-    repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-    localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
-    includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
-    retryCount: { type: 'number', description: 'The retry count to use.' },
-    maxRetries: { type: 'number', description: 'The maximum number of retries.' },
-  },
-  ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
-);
+  registerFunction(
+    'fetch_repo_contents',
+    fetchRepoContentsRecursive,
+    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    'Fetch or download the contents of a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
+      includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
+      retryCount: { type: 'number', description: 'The retry count to use.' },
+      maxRetries: { type: 'number', description: 'The maximum number of retries.' },
+    },
+    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+  );
 
-registerFunction(
-  'list_actions',
-  listGitHubActions,
-  ['username', 'repoName', 'status'],
-  'Lists the GitHub actions running in a GitHub repository.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-    repoName: { type: 'string', description: 'The repository name.' },
-    status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
-  },
-  ['username', 'repoName'],
-);
+  registerFunction(
+    'list_actions',
+    listGitHubActions,
+    ['username', 'repoName', 'status'],
+    'Lists the GitHub actions running in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
+    },
+    ['username', 'repoName'],
+  );
 
-registerFunction(
-  'list_public_repos',
-  listPublicRepos,
-  ['username'],
-  'Lists public repositories for a given GitHub username.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-  },
-  ['username'],
-);
+  registerFunction(
+    'list_public_repos',
+    listPublicRepos,
+    ['username'],
+    'Lists public repositories for a given GitHub username.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+    },
+    ['username'],
+  );
 
-registerFunction(
-  'list_branches',
-  listBranches,
-  ['username', 'repoName'],
-  'Lists branches for a given GitHub repository.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-    repoName: { type: 'string', description: 'The repository name.' },
-  },
-  ['username', 'repoName'],
-);
+  registerFunction(
+    'list_branches',
+    listBranches,
+    ['username', 'repoName'],
+    'Lists branches for a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['username', 'repoName'],
+  );
 
-registerFunction(
-  'list_commit_history',
-  listCommitHistory,
-  ['username', 'repoName', 'filePath'],
-  'Lists commit history for a file in a GitHub repository.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-    repoName: { type: 'string', description: 'The repository name.' },
-    filePath: { type: 'string', description: 'The file path.' },
-  },
-  ['username', 'repoName', 'filePath'],
-);
+  registerFunction(
+    'list_commit_history',
+    listCommitHistory,
+    ['username', 'repoName', 'filePath'],
+    'Lists commit history for a file in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      filePath: { type: 'string', description: 'The file path.' },
+    },
+    ['username', 'repoName', 'filePath'],
+  );
 
-registerFunction(
-  'list_directory_contents',
-  listDirectoryContents,
-  ['username', 'repoName', 'path'],
-  'Lists the contents of a directory in a GitHub repository.',
-  {
-    username: { type: 'string', description: 'The GitHub username.' },
-    repoName: { type: 'string', description: 'The repository name.' },
-    path: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
-  },
-  ['username', 'repoName'],
-);
+  registerFunction(
+    'list_directory_contents',
+    listDirectoryContents,
+    ['username', 'repoName', 'path'],
+    'Lists the contents of a directory in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      path: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+    },
+    ['username', 'repoName'],
+  );
+};
 
 /* eslint-enable max-len */
 
@@ -180,6 +182,8 @@ function getFunctionDefinitionsForTool() {
 function getAvailableFunctions() {
   return availableFunctionsRegistry;
 }
+
+loadGitHub();
 
 module.exports = {
   getAvailableFunctions,
