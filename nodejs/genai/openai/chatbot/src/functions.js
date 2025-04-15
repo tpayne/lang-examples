@@ -13,6 +13,10 @@ const {
   codeReviews,
 } = require('./codeReviews');
 
+const {
+  getVehicleHistory,
+} = require('./dosaFunctions');
+
 /* eslint-disable max-len */
 
 /**
@@ -90,6 +94,19 @@ function loadCodeReviews() {
       repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
     },
     ['username', 'repoName', 'repoPath'],
+  );
+}
+
+function loadDosa() {
+  registerFunction(
+    'get_mot_history',
+    getVehicleHistory,
+    ['registrationNumber'],
+    'Get the MOT History for a vehicle.',
+    {
+      registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
+    },
+    ['registrationNumber'],
   );
 }
 
@@ -202,8 +219,19 @@ function getAvailableFunctions() {
   return availableFunctionsRegistry;
 }
 
-loadGitHub();
-loadCodeReviews();
+if (process.env.GITHUB_TOKEN) {
+  logger.info('Loading GitHub integration...');
+  loadGitHub();
+  logger.info('Loading GitHub code review integration...');
+  loadCodeReviews();
+}
+
+if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
+    && process.env.DOSA_AUTH_TENANT_ID
+    && process.env.DOSA_CLIENT_ID) {
+  logger.info('Loading DOSA/DLVA integration...');
+  loadDosa();
+}
 
 module.exports = {
   getAvailableFunctions,
