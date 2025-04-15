@@ -8,18 +8,9 @@ const githubToken = process.env.GITHUB_TOKEN;
 const superagent = require('superagent');
 const logger = require('./logger');
 
-async function mkdir(localDestPath) {
-  try {
-    // Recursively delete the directory if it exists
-    await fs.rm(localDestPath, { recursive: true, force: true });
-  } catch (error) {
-    // Handle the error if the directory does not exist
-    if (error.code !== 'ENOENT') {
-      throw error; // Rethrow the error if it's not a "not found" error
-    }
-  }
-  await fs.mkdir(localDestPath, { recursive: true });
-}
+const {
+  mkdir,
+} = require('./utilities');
 
 /**
  * Handles "Not Found" errors from the GitHub API.
@@ -115,10 +106,10 @@ async function fetchRepoContentsRecursive(
 ) {
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
 
-  if (!localDestPath || localDestPath === "." ||
-       localDestPath === `./${repoName}` ||
-       localDestPath === repoName) {
-    return { success: false, message: `Error: You need to specify a download directory` }; 
+  if (!localDestPath || localDestPath === '.'
+       || localDestPath === `./${repoName}`
+       || localDestPath === repoName) {
+    return { success: false, message: 'Error: You need to specify a download directory' };
   }
 
   try {
