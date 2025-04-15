@@ -218,7 +218,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
             const functionName = part.functionCall.name;
             const functionArgs = part.functionCall.args;
 
-            logger.info('Initiating tool call', { functionName, functionArguments: functionArgs, iteration: numFunctionCalls }); // Suggestion 6
+            logger.info(`Initiating tool call, ${functionName} => ${JSON.stringify(functionArgs)}`); // Suggestion 6
 
             functionCallResult = await handleFunctionCall(part.functionCall);
 
