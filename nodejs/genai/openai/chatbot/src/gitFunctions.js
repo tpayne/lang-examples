@@ -325,38 +325,74 @@ async function listCommitHistory(username, repoName, filePath) {
 }
 
 /**
- * Lists the contents of a directory (or root if no path) in a GitHub repo.
- * Fetches content data and extracts name, type ('file'/'dir'), and path.
- * Handles API errors and "Not Found" exceptions.
- * @async
+ * Recursively lists the contents of a directory in a GitHub repository.
+ *
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} [xpath=''] Optional path to the directory.
+ * @param {string} dirPath The path to the directory to read.
+ * @param {boolean} recursive scan recursively.
  * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
- * Array of directory content objects.
- * @throws {Error} If API request fails or repository/path not found.
+ * A promise that resolves with an array of file/directory objects.
  */
-async function listDirectoryContents(username, repoName, xpath = '') {
-  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${xpath}`;
-  try {
-    const response = await superagent
-      .get(url)
-      .set('Authorization', `Bearer ${githubToken}`)
-      .set('Accept', 'application/json')
-      .set('User-Agent', USER_AGENT);
+async function listGitHubRepoContents(username, repoName, dirPath='', scanRecursive) {
+    const url = `https://api.github.com/repos/${username}/${repoName}/contents/${dirPath}`;
+    try {
+        const response = await superagent
+            .get(url)
+            .set('Authorization', `Bearer ${githubToken}`)
+            .set('Accept', 'application/json')
+            .set('User-Agent', USER_AGENT);
 
-    if (response.status === 200) {
-      return response.body.map((item) => ({
-        name: item.name,
-        type: item.type, // "file" or "dir"
-        path: item.path,
-      }));
+        if (response.status === 200) {
+            const contents = response.body;
+            const results = [];
+
+            for (const item of contents) {
+                if (item.type === 'file') {
+                    results.push({
+                        name: item.name,
+                        type: 'file',
+                        path: item.path,
+                    });
+                } else if (item.type === 'dir') {
+                  if (scanRecursive) {
+                    // Recursively call for subdirectories
+                    const subDirContents = await listGitHubRepoContents(username, repoName, item.path);
+                    results.push({
+                        name: item.name,
+                        type: 'dir',
+                        path: item.path,
+                    },...subDirContents); //concat the arrays
+                  } else {
+                    results.push({
+                        name: item.name,
+                        type: 'dir',
+                        path: item.path
+                    });
+                  }
+                }
+                 else {
+                    results.push({
+                        name: item.name,
+                        type: item.type,
+                        path: item.path,
+                    });
+                }
+            }
+            return results;
+        } else {
+            // Improved error handling:  Use a consistent error format.
+            throw new Error(`GitHub API error: ${response.status} - ${response.body?.message || 'Failed to list contents'}`);
+        }
+    } catch (error) {
+        // Wrap non-HTTP errors (e.g., network issues) consistently.
+       if (error instanceof Error) {
+            throw error;
+        }
+        else {
+            throw new Error(`Error listing directory contents for ${dirPath} in ${username}/${repoName}: ${error}`);
+        }
     }
-    await handleGitHubApiError(response, `listing directory contents for ${xpath}" in "${username}/{repoName}"`);
-  } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, xpath, error);
-    handleNotFoundError(error, ` for path "${xpath}" in "${username}/${repoName}"`);
-  }
 }
 
 /**
