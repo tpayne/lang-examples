@@ -1,4 +1,13 @@
 # Changelog
+## 2025-04-15	(17:05:38-UTC+0000)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/Dockerfile)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/README.md)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/resources/app.properties)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/src/chatbot.js)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/src/codeReviews.js)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/src/dosaFunctions.js)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/src/functions.js)
+- **Other**: WIP framework entry for DOSA functions (in nodejs/genai/openai/chatbot/src/dosaFunctions.js)
 ## 2025-04-15	(11:02:37-UTC+0000)
 - **Other**: Update CHANGELOG.md (in nodejs/genai/openai/chatbot/CHANGELOG.md)
 ## 2025-04-15	(10:41:05-UTC+0000)
