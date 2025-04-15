@@ -1,4 +1,6 @@
 # Changelog
+## 2025-04-15	(11:02:37-UTC+0000)
+- **Other**: Update CHANGELOG.md (in nodejs/genai/openai/chatbot/CHANGELOG.md)
 ## 2025-04-15	(10:41:05-UTC+0000)
 - **Feature**:  Add developer context for more focused answers (in nodejs/genai/openai/chatbot/contexts/developer.txt)
 - **Feature**:  Simplify logic (in nodejs/genai/openai/chatbot/src/codeReviews.js)
