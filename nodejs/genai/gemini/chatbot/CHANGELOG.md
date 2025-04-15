@@ -1,4 +1,10 @@
 # Changelog
+## 2025-04-15	(17:05:29-UTC+0000)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/Dockerfile)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/README.md)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/src/codeReviews.js)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/src/dosaFunctions.js)
+- **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/src/functions.js)
 ## 2025-04-15	(10:40:53-UTC+0000)
 - **Feature**:  Add code review for Gemini (in nodejs/genai/gemini/chatbot/src/codeReviews.js)
 - **Feature**:  Add code review for Gemini (in nodejs/genai/gemini/chatbot/src/functions.js)
