@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Agent Chatbot</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        #chat-container {
+            height: 500px;
+            max-width: 600px;
+            margin: 2rem auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow-y: auto; /* Keep vertical scroll */
+            padding: 1rem;
+            background-color: #f7fafc;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            display: flex; /* Enable flexbox for horizontal scrolling */
+            flex-direction: column; /* Stack messages vertically */
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            width: 100%; /* Ensure each message takes full width initially */
+        }
+
+        .sender {
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .user {
+            align-items: flex-end;
+        }
+
+        .agent {
+            align-items: flex-start;
+        }
+
+        .message-content {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+            white-space: pre-wrap; /* Allow wrapping of long text */
+            overflow-x: auto; /* Enable horizontal scroll for content */
+        }
+
+        .user .message-content {
+            background-color: #dcf8c6;
+            color: #15803d;
+            margin-left: auto;
+        }
+
+        .agent .message-content {
+            background-color: #e0f2fe;
+            /* Light blue for bot messages */
+            color: #4b5563;
+            margin-right: auto;
+        }
+
+        .message.bot .message-content {
+            background-color: #e0f2fe;
+            /* Light blue for bot messages */
+            color: #4b5563;
+            margin-right: auto;
+        }
+
+        #input-container {
+            display: flex;
+            justify-content: center;
+            margin: 1rem auto;
+            max-width: 600px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem 0 0 0.5rem;
+            margin-right: 0;
+            font-size: 1rem;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        #send-button {
+            padding: 0.75rem 1.5rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0 0.5rem 0.5rem 0;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        #send-button:hover {
+            background-color: #2563eb;
+        }
+
+        #send-button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            margin-left: 0.5rem;
+        }
+
+        .typing-indicator span {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: #a0aec0;
+            margin: 0 0.25rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.2;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
+        }
+
+        @media (max-width: 640px) {
+            #chat-container {
+                margin: 1rem;
+                width: 100%;
+                max-width: none;
+            }
+
+            #input-container {
+                margin: 1rem;
+                width: 100%;
+                max-width: none;
+            }
+
+            #user-input {
+                border-radius: 0.5rem 0 0 0.5rem;
+            }
+
+            #send-button {
+                border-radius: 0 0.5rem 0.5rem 0;
+            }
+        }
+    </style>
+</head>
+<div style="margin-left:10px;">
+    <h2>GPT Chatbot</h2>
+    <br>
+    <p>
+        This is a simple chatbot page to act as a demo.
+        <br><br>
+        (<b>Note</b> - Answers may <i>not</i> always be correct)
+    </p>
+</div>
+
+<body class="bg-gray-100">
+    <div id="chat-container" class="bg-white rounded-lg shadow-md overflow-hidden">
+    </div>
+    <div id="input-container" class="flex justify-center mt-4">
+        <input type="text" id="user-input" placeholder="Type your message..."
+            class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
+        <button id="send-button"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
+    </div>
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') {
+                return;
+            }
+            appendMessage('User', message);
+            userInput.value = '';
+            userInput.disabled = true;
+            sendButton.disabled = true;
+            chatContainer.style.cursor = "wait";
+
+            appendTypingIndicator();
+            getResponse(message).then(response => {
+                removeTypingIndicator();
+                appendMessage('Bot', response);
+                chatContainer.style.cursor = "";
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+            });
+        }
+
+        function appendMessage(sender, message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender.toLowerCase());
+
+            const senderSpan = document.createElement('span');
+            senderSpan.classList.add('sender', 'text-gray-600');
+            senderSpan.textContent = sender + ':';
+
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.classList.add('message-content');
+
+            let dataApp = message;
+
+            if (sender === 'Bot') {
+                if (typeof message === 'object' && message !== null) {
+                    dataApp = JSON.stringify(message);
+                }
+                else {
+                    dataApp = String(message);
+                }
+                let lStr = dataApp;
+                lStr = lStr.replace(/^[\u200B\u200C\u200D\u200E\u200F\uFEFF]+/, "");
+                const mStr = marked.parse(lStr);
+                messageContentDiv.innerHTML = mStr.replace(/(^\s*(?!.+)\n+)|(\n+\s+(?!.+)$)/g, "");
+            } else {
+                messageContentDiv.textContent = message;
+            }
+
+            messageElement.appendChild(senderSpan);
+            messageElement.appendChild(messageContentDiv);
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function appendTypingIndicator() {
+            const typingIndicator = document.createElement('div');
+            typingIndicator.classList.add('message', 'agent');
+
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.classList.add('typing-indicator');
+            for (let i = 0; i < 3; i++) {
+                const dotSpan = document.createElement('span');
+                indicatorDiv.appendChild(dotSpan);
+            }
+
+            typingIndicator.appendChild(indicatorDiv);
+            chatContainer.appendChild(typingIndicator);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = chatContainer.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        async function getResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            if (lowerMessage.includes('hello')) {
+                return "Hello there!";
+            } else {
+                try {
+                    const response = await fetch("/chat", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ message: userMessage }),
+                    });
+                    if (!response.ok) {
+                        throw new Error(`Error occurred: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (data && data.response) {
+                        return data.response;
+                    } else {
+                        console.error("Invalid response format:", data);
+                        return "The server returned an invalid response."
+                    }
+                } catch (err) {
+                    console.error("Invalid server response:", err);
+                    return "The server returned an invalid response."
+                }
+            }
+        }
+
+        userInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        sendButton.addEventListener('click', sendMessage);
+
+        appendMessage('Bot', 'Hello! How can I help you today?');
+
+    </script>
+</body>
+
+</html>
