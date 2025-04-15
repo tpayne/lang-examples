@@ -116,6 +116,48 @@ GitHub support is added for:
 * Listing commit history for a file
 * Listing repos owned by a user
 * Listing the files in a repo
+* Downloading the contents of a repo
+
+Automated Code Reviews
+----------------------
+As part of interactions with GitHub, a capability was added that allows automated code reviews of all or part of a GitHub repo. This is based on the AIs capability to review code and suggest improvements based on your questions.
+
+For example, you could ask for...
+* General improvements
+* Security reviews
+* Efficiency improvements and bug detection
+* Enhancements to formatting
+* Code documentation etc.
+
+The command format is something like...
+
+```bash
+curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load developer.txt"}' \
+    -X POST localhost:8080/chat && \
+curl -H "Content-Type: application/json" \
+    -d '{"message":"please perform a detailed code review of the files under the directory samples/DemoApp/src/main/java/  in the github repo tpayne/CloudRun and tell me improvements for the content to make it more efficient"}' \
+     -X POST localhost:8080/chat
+
+curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load developer.txt"}' \
+    -X POST localhost:8080/chat && \
+curl -H "Content-Type: application/json" \
+    -d '{"message":"please perform a security review of the terraform code in the github repo tpayne/terraform-examples under the directory samples/Azure/templates/modules and give me a security analysis of the content. Let me know if there are any security issues I should fix"}' \
+    -X POST localhost:8080/chat
+
+curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load developer.txt"}' \
+    -X POST localhost:8080/chat && \
+curl -H "Content-Type: application/json" \
+    -d '{"message":"please perform a security review of the terraform code in the github repo tpayne/terraform-examples and give me a security analysis of the content. Let me know if there are any security issues I should fix"}' \
+    -X POST localhost:8080/chat
+```
+
+Notes:
+- The process will take time if you are asking for a lot of code to be reviewed
+- Error handling could be improved. I have not tested lots of different error conditions.
+- You may also run into model limits if processing lots of info
 
 Cleaning Up
 -----------
