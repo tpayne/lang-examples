@@ -10,7 +10,6 @@ const {
   readFilesInDirectory,
 } = require('./utilities');
 
-
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 /**
@@ -25,7 +24,6 @@ const {
  * @throws {Error} If API request fails or user is not found.
  */
 async function codeReviews(username, repoName, repoPath) {
-  const responseMap = new Map();
   try {
     const tmpDir = await createUniqueTempDir();
     const response = await fetchRepoContentsRecursive(
