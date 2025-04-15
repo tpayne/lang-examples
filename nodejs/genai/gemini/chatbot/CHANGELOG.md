@@ -1,4 +1,6 @@
 # Changelog
+## 2025-04-15	(21:31:41-UTC+0000)
+- **Other**: bugfix: Minor fix (in nodejs/genai/gemini/chatbot/src/chatbot.js)
 ## 2025-04-15	(17:05:29-UTC+0000)
 - **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/Dockerfile)
 - **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/gemini/chatbot/README.md)
