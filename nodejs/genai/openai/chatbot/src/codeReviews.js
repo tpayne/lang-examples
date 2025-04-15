@@ -42,22 +42,8 @@ async function codeReviews(username, repoName, repoPath) {
       };
     }
     const files = await readFilesInDirectory(tmpDir);
-
     await deleteDirectoryRecursively(tmpDir);
-    let count = 0;
-    const counter = files.size; // Assuming files is an array
-    for (const [fileN, fileContent] of files) {
-      if (!fileContent) {
-        continue;
-      }
-      responseMap.set(fileN,fileContent);
-      count++;
-    }
-
-    return Array.from(responseMap.entries()).map(([fileN, analysis]) => ({
-      fileName: fileN,
-      result: analysis,
-    }));
+    return Array.from(files);
   } catch (error) {
     logger.error(`Error getting files for review (exception): ${error.message || error}`);
     throw error;
