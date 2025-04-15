@@ -168,6 +168,34 @@ Notes:
 - Error handling could be improved. I have not tested lots of different error conditions.
 - You may also run into model limits if processing lots of info
 
+DOSA Functionality
+------------------
+The chatbot has the capability of interacting with the DOSA REST API.
+
+To run the DOSA functionality, you will need to be registered to use the API and set the following: -
+* DOSA_API_KEY - Your API KEY for DOSA usage
+* DOSA_API_SECRET - Your API SECRET for DOSA usage
+* DOSA_CLIENT_ID - Your CLIENT ID for DOSA usage
+* DOSA_AUTH_TENANT_ID - Your MSN TENANTID for DOSA usage
+
+Setting these will allow queries to be run on the DOSA MOT history database.
+
+```bash
+curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -X POST localhost:8080/chat &&\
+curl -H "Content-Type: application/json" \
+    -d '{"message":"give me the mot history for the car ABC123"}' \
+    -X POST localhost:8080/chat
+
+curl -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -X POST localhost:8080/chat &&\
+curl -H "Content-Type: application/json" \
+    -d '{"message":"tell me all the MOT defects for ABC123"}' \
+    -X POST localhost:8080/chat
+```
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
