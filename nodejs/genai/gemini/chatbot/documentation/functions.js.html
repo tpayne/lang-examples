@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: functions.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: functions.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const logger = require('./logger');
+const {
+  createGithubPullRequest,
+  fetchRepoContentsRecursive,
+  listBranches,
+  listCommitHistory,
+  listDirectoryContents,
+  listGitHubActions,
+  listPublicRepos,
+} = require('./gitFunctions');
+
+const {
+  codeReviews,
+} = require('./codeReviews');
+
+const {
+  getVehicleHistory,
+} = require('./dosaFunctions');
+
+/* eslint-disable max-len */
+
+/**
+ * @typedef {object} FunctionMetadata
+ * @property {string} type - The type of the tool, typically 'function'.
+ * @property {object} function - The function definition.
+ * @property {string} function.name - The name of the function.
+ * @property {string} function.description - A description of what the function does.
+ * @property {object} function.parameters - The parameters the function accepts.
+ * @property {string} function.parameters.type - The type of the parameters object ('object').
+ * @property {object} function.parameters.properties - The individual parameters.
+ * @property {object} function.parameters.properties.[parameterName] - Metadata for a specific parameter.
+ * @property {string} function.parameters.properties.[parameterName].type - The type of the parameter (e.g., 'string', 'number', 'boolean').
+ * @property {string} function.parameters.properties.[parameterName].description - A description of the parameter.
+ * @property {string[]} function.parameters.required - An array of required parameter names.
+ */
+
+/**
+ * @typedef {object} RegisteredFunction
+ * @property {Function} func - The actual JavaScript function to execute.
+ * @property {string[]} params - An array of parameter names the function expects.
+ */
+
+/**
+ * Registry of available GitHub functions for AI.
+ * @type {Record&lt;string, RegisteredFunction>}
+ */
+const availableFunctionsRegistry = {};
+
+/**
+ * Metadata for GitHub functions as AI tools.
+ * @type {FunctionMetadata[]}
+ */
+const funcs = [];
+
+/**
+ * Registers a new GitHub function for AI.
+ * @param {string} name - The unique name of the function (used as the key).
+ * @param {Function} func - The JavaScript function to execute.
+ * @param {string[]} params - An array of parameter names the function expects.
+ * @param {string} description - A description of what the function does.
+ * @param {object} parametersSchema - The JSON schema for the function's parameters.
+ * @param {string[]} required - An array of required parameter names.
+ */
+function registerFunction(name, func, params, description, parametersSchema, required) {
+  if (availableFunctionsRegistry[name]) {
+    logger.warn(`Function with name '${name}' already registered and will be overwritten.`);
+  }
+  availableFunctionsRegistry[name] = { func, params };
+
+  const functionMetadata = {
+    type: 'function',
+    function: {
+      name,
+      description,
+      parameters: {
+        type: 'object',
+        properties: parametersSchema,
+        required,
+      },
+    },
+  };
+  funcs.push(functionMetadata);
+}
+
+function loadCodeReviews() {
+  registerFunction(
+    'perform_code_review',
+    codeReviews,
+    ['username', 'repoName', 'repoPath'],
+    'Perform a code review on a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+    },
+    ['username', 'repoName', 'repoPath'],
+  );
+}
+
+function loadDosa() {
+  registerFunction(
+    'get_mot_history',
+    getVehicleHistory,
+    ['registrationNumber'],
+    'Get the MOT History for a vehicle.',
+    {
+      registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
+    },
+    ['registrationNumber'],
+  );
+}
+
+function loadGitHub() {
+  // Register the existing functions
+  registerFunction(
+    'create_pull_request',
+    createGithubPullRequest,
+    ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+    'Create a pull request on a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      title: { type: 'string', description: 'The Pull Request title.' },
+      sourceBranch: { type: 'string', description: 'The source branch name.' },
+      targetBranch: { type: 'string', description: 'The target branch name.' },
+      body: { type: 'string', description: 'The description or body of the pull request.' },
+    },
+    ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+  );
+
+  registerFunction(
+    'fetch_repo_contents',
+    fetchRepoContentsRecursive,
+    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    'Fetch or download the contents of a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
+      includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
+      retryCount: { type: 'number', description: 'The retry count to use.' },
+      maxRetries: { type: 'number', description: 'The maximum number of retries.' },
+    },
+    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+  );
+
+  registerFunction(
+    'list_actions',
+    listGitHubActions,
+    ['username', 'repoName', 'status'],
+    'Lists the GitHub actions running in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
+    },
+    ['username', 'repoName'],
+  );
+
+  registerFunction(
+    'list_public_repos',
+    listPublicRepos,
+    ['username'],
+    'Lists public repositories for a given GitHub username.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+    },
+    ['username'],
+  );
+
+  registerFunction(
+    'list_branches',
+    listBranches,
+    ['username', 'repoName'],
+    'Lists branches for a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['username', 'repoName'],
+  );
+
+  registerFunction(
+    'list_commit_history',
+    listCommitHistory,
+    ['username', 'repoName', 'filePath'],
+    'Lists commit history for a file in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      filePath: { type: 'string', description: 'The file path.' },
+    },
+    ['username', 'repoName', 'filePath'],
+  );
+
+  registerFunction(
+    'list_directory_contents',
+    listDirectoryContents,
+    ['username', 'repoName', 'repoDirName', 'recursive'],
+    'Lists the contents of a directory in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to false if not provided' },
+    },
+    ['username', 'repoName'],
+  );
+}
+
+/* eslint-enable max-len */
+
+// Define the getFunctionDefinitionsForTool function
+function getFunctionDefinitionsForTool() {
+  return funcs;
+}
+
+function getAvailableFunctions() {
+  return availableFunctionsRegistry;
+}
+
+if (process.env.GITHUB_TOKEN) {
+  logger.info('Loading GitHub integration...');
+  loadGitHub();
+  logger.info('Loading GitHub code review integration...');
+  loadCodeReviews();
+}
+
+if (process.env.DOSA_API_KEY &amp;&amp; process.env.DOSA_API_SECRET
+    &amp;&amp; process.env.DOSA_AUTH_TENANT_ID
+    &amp;&amp; process.env.DOSA_CLIENT_ID) {
+  logger.info('Loading DOSA/DLVA integration...');
+  loadDosa();
+}
+
+module.exports = {
+  getAvailableFunctions,
+  getFunctionDefinitionsForTool, // Renamed function
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authToken">authToken</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcs">funcs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#tokenExpiry">tokenExpiry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Apr 16 2025 15:39:01 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
