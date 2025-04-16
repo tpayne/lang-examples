@@ -1,4 +1,7 @@
 # Changelog
+## 2025-04-16	(13:21:11-UTC+0000)
+- **Chore**:  Add recursive scanning (in nodejs/genai/gemini/chatbot/src/functions.js)
+- **Chore**:  Add recursive scanning (in nodejs/genai/gemini/chatbot/src/gitFunctions.js)
 ## 2025-04-15	(21:31:41-UTC+0000)
 - **Other**: bugfix: Minor fix (in nodejs/genai/gemini/chatbot/src/chatbot.js)
 ## 2025-04-15	(17:05:29-UTC+0000)
