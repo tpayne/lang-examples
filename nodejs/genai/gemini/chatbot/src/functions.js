@@ -197,12 +197,13 @@ function loadGitHub() {
   registerFunction(
     'list_directory_contents',
     listDirectoryContents,
-    ['username', 'repoName', 'xpath'],
+    ['username', 'repoName', 'repoDirName', 'recursive'],
     'Lists the contents of a directory in a GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      xpath: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+      repoDirName: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to false if not provided' },
     },
     ['username', 'repoName'],
   );

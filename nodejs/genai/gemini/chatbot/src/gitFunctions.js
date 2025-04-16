@@ -107,8 +107,8 @@ async function fetchRepoContentsRecursive(
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
 
   if (!localDestPath || localDestPath === '.'
-       || localDestPath === `./${repoName}`
-       || localDestPath === repoName) {
+    || localDestPath === `./${repoName}`
+    || localDestPath === repoName) {
     return { success: false, message: 'Error: You need to specify a download directory' };
   }
 
@@ -208,7 +208,7 @@ async function fetchRepoContentsRecursive(
     return {
       success: true,
       message:
-      `Successfully processed directory "${repoPath}"`,
+        `Successfully processed directory "${repoPath}"`,
     };
     /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
   } catch (error) {
@@ -331,13 +331,15 @@ async function listCommitHistory(username, repoName, filePath) {
  * @async
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} [xpath=''] Optional path to the directory.
+ * @param {string} [repoDirName=''] Optional path to the directory.
+ * @param {boolean} [recursive=false] Optional recursive scan.
+ *
  * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
  * Array of directory content objects.
  * @throws {Error} If API request fails or repository/path not found.
  */
-async function listDirectoryContents(username, repoName, xpath = '') {
-  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${xpath}`;
+async function listDirectoryContents(username, repoName, repoDirName = '', recursive = false) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${repoDirName}`;
   try {
     const response = await superagent
       .get(url)
@@ -345,17 +347,49 @@ async function listDirectoryContents(username, repoName, xpath = '') {
       .set('Accept', 'application/json')
       .set('User-Agent', USER_AGENT);
 
-    if (response.status === 200) {
+    const contents = response.body;
+    const results = [];
+
+    if (!recursive) {
       return response.body.map((item) => ({
         name: item.name,
         type: item.type, // "file" or "dir"
         path: item.path,
       }));
     }
-    await handleGitHubApiError(response, `listing directory contents for ${xpath}" in "${username}/{repoName}"`);
+
+    for (const item of contents) {
+      if (item.type === 'file') {
+        results.push({
+          name: item.name,
+          type: 'file',
+          path: item.path,
+        });
+      } else if (item.type === 'dir') {
+        // Recursively call for subdirectories
+        const subDirContents = await listDirectoryContents(
+          username,
+          repoName,
+          item.path,
+          recursive,
+        );
+        results.push({
+          name: item.name,
+          type: 'dir',
+          path: item.path,
+        }, ...subDirContents); // concat the arrays
+      } else {
+        results.push({
+          name: item.name,
+          type: item.type,
+          path: item.path,
+        });
+      }
+    }
+    return results;
   } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, xpath, error);
-    handleNotFoundError(error, ` for path "${xpath}" in "${username}/${repoName}"`);
+    logger.error('Error listing directories (exception):', username, repoName, repoDirName, error);
+    handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
   }
 }
 
