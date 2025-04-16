@@ -332,13 +332,13 @@ async function listCommitHistory(username, repoName, filePath) {
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @param {string} [repoDirName=''] Optional path to the directory.
- * @param {boolean} [recursive=false] Optional recursive scan.
+ * @param {boolean} [recursive=true] Optional recursive scan.
  *
  * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
  * Array of directory content objects.
  * @throws {Error} If API request fails or repository/path not found.
  */
-async function listDirectoryContents(username, repoName, repoDirName = '', recursive = false) {
+async function listDirectoryContents(username, repoName, repoDirName = '', recursive = true) {
   const url = `https://api.github.com/repos/${username}/${repoName}/contents/${repoDirName}`;
   try {
     const response = await superagent

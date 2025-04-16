@@ -177,8 +177,8 @@ const getChatResponse = async (userInput, forceJson = false) => {
     const functionDefs = tools.map((func) => func.function);
     const generationConfig = {
       maxOutputTokens: Number(getConfig().maxTokens),
-      temperature: 1,
-      topP: 1,
+      temperature: Number(getConfig().temperature),
+      topP: Number(getConfig().top_p),
     };
     const parts = [{ role: 'user', text: `${ctxStr}\n${contxtStr}` }];
     const toolsConfig = { tools: [{ functionDeclarations: functionDefs }] };

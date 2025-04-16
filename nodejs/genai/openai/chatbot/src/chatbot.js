@@ -182,10 +182,10 @@ const getChatResponse = async (userInput, forceJson = false) => {
       tool_choice: 'auto',
       response_format: forceJson ? { type: 'json_object' } : undefined,
       max_tokens: Number(getConfig().maxTokens),
-      temperature: 1,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
+      temperature: Number(getConfig().temperature),
+      top_p: Number(getConfig().top_p),
+      frequency_penalty: Number(getConfig().frequency_penalty),
+      presence_penalty: Number(getConfig().presence_penalty),
     });
 
     let responseMsg = response.choices[0].message;
