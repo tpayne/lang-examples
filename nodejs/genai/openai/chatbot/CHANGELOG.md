@@ -1,4 +1,7 @@
 # Changelog
+## 2025-04-16	(13:21:23-UTC+0000)
+- **Chore**:  Add recursive scanning (in nodejs/genai/openai/chatbot/src/functions.js)
+- **Chore**:  Add recursive scanning (in nodejs/genai/openai/chatbot/src/gitFunctions.js)
 ## 2025-04-15	(17:05:38-UTC+0000)
 - **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/Dockerfile)
 - **Feature**:  Add MOT History functionality+refactor func loading (in nodejs/genai/openai/chatbot/README.md)
