@@ -153,6 +153,7 @@ const getChatResponse = async (userInput, forceJson = false) => {
       case 'show':
         return ctxStr || 'Context is empty - ignored';
       case 'reset':
+        loadProperties('resources/app.properties');
         ctxStr = '';
         return 'Context reset';
       default:
