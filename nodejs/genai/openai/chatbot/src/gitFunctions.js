@@ -333,7 +333,7 @@ async function listCommitHistory(username, repoName, filePath) {
  * @param {string} repoName The name of the repository.
  * @param {string} [repoDirName=''] Optional path to the directory.
  * @param {boolean} [recursive=false] Optional recursive scan.
- * 
+ *
  * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
  * Array of directory content objects.
  * @throws {Error} If API request fails or repository/path not found.
@@ -367,14 +367,18 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
         });
       } else if (item.type === 'dir') {
         // Recursively call for subdirectories
-        const subDirContents = await listDirectoryContents(username, repoName, item.path, recursive);
+        const subDirContents = await listDirectoryContents(
+          username,
+          repoName,
+          item.path,
+          recursive,
+        );
         results.push({
           name: item.name,
           type: 'dir',
           path: item.path,
-        }, ...subDirContents); //concat the arrays
-      }
-      else {
+        }, ...subDirContents); // concat the arrays
+      } else {
         results.push({
           name: item.name,
           type: item.type,
