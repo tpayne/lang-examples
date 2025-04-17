@@ -1,4 +1,7 @@
 # Changelog
+## 2025-04-17	(01:12:15-UTC+0000)
+- **Chore**:  Update verbage for CRs (in nodejs/genai/openai/chatbot/documentation/functions.js.html)
+- **Chore**:  Update verbage for CRs (in nodejs/genai/openai/chatbot/src/functions.js)
 ## 2025-04-17	(00:30:36-UTC+0000)
 - **Chore**:  Perform some tuning (in nodejs/genai/openai/chatbot/documentation/chatbot.js.html)
 - **Chore**:  Perform some tuning (in nodejs/genai/openai/chatbot/documentation/codeReviews.js.html)
