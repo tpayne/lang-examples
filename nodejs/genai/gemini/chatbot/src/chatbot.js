@@ -178,7 +178,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
     }
 
-    // Handle special commands per session
+    // Handle special commands per session (these should likely interact with the chat session too)
     if (userInput.includes('help')) return 'Sample *Help* text';
     if (userInput.includes('bot-echo-string')) {
         return userInput || 'No string to echo';
@@ -188,6 +188,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         switch (botCmd[1]) {
             case 'load':
                 session.context = await readContext(botCmd[2].trim());
+                // Consider adding a system message to the chat session with the initial context
+                if (session.chat && session.context) {
+                    await session.chat.sendMessage({ parts: [{ text: `Context loaded: ${session.context}` }] });
+                }
                 return session.context ? 'Context loaded for this session' : 'Context file could not be read or is empty';
             case 'show':
                 return session.context || 'Context is empty for this session';
@@ -203,14 +207,14 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         }
     }
 
-    if (!session.context) return 'Error: Context is not set for this session. Please load one.';
+    if (!session.context && !session.chat?.history?.length) return 'Error: Context is not set for this session and no previous conversation exists. Please load one or start a new interaction.';
 
     const cachedResponse = getResponse(sessionId, userInput);
     if (cachedResponse) return cachedResponse;
 
     try {
         const chat = getChatSession(sessionId);
-        let prompt = `${session.context}\n${userInput}`;
+        let prompt = `${session.context ? session.context + '\n' : ''}${userInput}`;
         if (forceJson) {
             prompt += '\nYour response must be in JSON format.';
         }
