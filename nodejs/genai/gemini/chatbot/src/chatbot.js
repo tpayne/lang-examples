@@ -10,26 +10,28 @@ const logger = require('./logger');
 const morganMiddleware = require('./morganmw');
 const { getConfig, loadProperties } = require('./properties');
 const { getAvailableFunctions, getFunctionDefinitionsForTool } = require('./functions');
-const session = require('express-session'); // Import express-session
+const session = require('express-session');
+const RedisStore = require('connect-redis').default;
+const { createClient } = require('redis');
 
 dotenv.config();
 
 const app = express();
 
-// Configure session middleware
+// Configure session middleware (as before)
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key', // Replace with a strong, random secret
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' }, // Only send cookie over HTTPS in production
-    // You can also configure store for persistent sessions (see Phase 3)
+    cookie: { secure: process.env.NODE_ENV === 'production' },
+    // store: ... (Redis store configuration as before)
 }));
 
-// Rate limiting per IP address (can be combined with session ID if needed)
+// Rate limiting (as before)
 const limiter = RateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // max 100 requests per windowMs
-    keyGenerator: (req) => req.ip, // Or consider using req.sessionID for user-based limiting
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    keyGenerator: (req) => req.sessionID, // Use session ID for rate limiting
 });
 app.use(limiter);
 
@@ -38,31 +40,18 @@ const ai = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
 /**
  * Stores the conversation history and context for each client session.
  * The key is the client's session ID.
- * @type {Map<string, { context: string, chat: import('@google/generative-ai').ChatSession }>}
+ * @type {Map<string, { context: string, chat: import('@google/generative-ai').ChatSession | null, history: Array<import('@google/generative-ai').Part[]> }>}
  */
 const sessions = new Map();
 
 app.use(bodyParser.json());
 app.use(morganMiddleware);
 
-/**
- * Normalizes a string to create a consistent key.
- * @param {string} keyString The string to normalize.
- * @returns {string} The normalized key.
- */
 const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
 
-/**
- * Adds a query and its response to a specific session's message cache.
- * Limits the cache size per session.
- * @param {string} sessionId The ID of the client session.
- * @param {string} query The user's query.
- * @param {string} response The chatbot's response.
- * @returns {boolean} True if the response was added to the cache.
- */
 const addResponse = (sessionId, query, response) => {
     if (!sessions.has(sessionId)) {
-        sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
+        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
     }
     const session = sessions.get(sessionId);
     const cache = session.messageCache;
@@ -75,22 +64,11 @@ const addResponse = (sessionId, query, response) => {
     return true;
 };
 
-/**
- * Retrieves a cached response for a given query within a specific session.
- * @param {string} sessionId The ID of the client session.
- * @param {string} query The user's query.
- * @returns {string} The cached response, or an empty string if not found.
- */
 const getResponse = (sessionId, query) => {
     const session = sessions.get(sessionId);
     return session?.messageCache?.get(getKey(query)) || '';
 };
 
-/**
- * Reads the context from a file.
- * @param {string} contextStr The name of the context file.
- * @returns {Promise<string>} The content of the context file.
- */
 const readContext = async (contextStr) => {
     try {
         const contextPath = path.resolve('contexts', contextStr);
@@ -106,12 +84,6 @@ const readContext = async (contextStr) => {
     }
 };
 
-/**
- * Calls a function by its name with provided arguments.
- * @param {string} name The name of the function.
- * @param {object} args The arguments for the function.
- * @returns {Promise<any>} The result of the function call.
- */
 const callFunctionByName = async (name, args) => {
     const functionInfo = getAvailableFunctions()[name];
     if (functionInfo && functionInfo.func) {
@@ -129,30 +101,25 @@ const callFunctionByName = async (name, args) => {
     return { error: `Function '${name}' not found` };
 };
 
-/**
- * Handles a function call from the Gemini API.
- * @param {object} functionCall The function call details.
- * @returns {Promise<any>} The result of the function call.
- */
 const handleFunctionCall = async (functionCall) => {
     const { name, args } = functionCall;
     return await callFunctionByName(name, args);
 };
 
 /**
- * Gets or creates a chat session for a given client.
+ * Gets or creates a chat session for a given client, initializing with history.
  * @param {string} sessionId The ID of the client session.
  * @returns {import('@google/generative-ai').ChatSession} The chat session.
  */
 const getChatSession = (sessionId) => {
     if (!sessions.has(sessionId)) {
-        sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
+        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
     }
     const session = sessions.get(sessionId);
     if (!session.chat) {
         const model = ai.generativeModel({ model: getConfig().aiModel });
         session.chat = model.startChat({
-            history: [], // Initialize with empty history for a new session
+            history: session.history, // Initialize with stored history
             generationConfig: {
                 maxOutputTokens: Number(getConfig().maxTokens),
                 temperature: Number(getConfig().temperature),
@@ -175,10 +142,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     const session = sessions.get(sessionId);
 
     if (!session) {
-        sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
+        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
     }
 
-    // Handle special commands per session (these should likely interact with the chat session too)
+    // Handle special commands per session (as before)
     if (userInput.includes('help')) return 'Sample *Help* text';
     if (userInput.includes('bot-echo-string')) {
         return userInput || 'No string to echo';
@@ -188,10 +155,6 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         switch (botCmd[1]) {
             case 'load':
                 session.context = await readContext(botCmd[2].trim());
-                // Consider adding a system message to the chat session with the initial context
-                if (session.chat && session.context) {
-                    await session.chat.sendMessage({ parts: [{ text: `Context loaded: ${session.context}` }] });
-                }
                 return session.context ? 'Context loaded for this session' : 'Context file could not be read or is empty';
             case 'show':
                 return session.context || 'Context is empty for this session';
@@ -199,6 +162,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
                 session.context = '';
                 const model = ai.generativeModel({ model: getConfig().aiModel });
                 session.chat = model.startChat({ history: [], generationConfig: { maxOutputTokens: Number(getConfig().maxTokens), temperature: Number(getConfig().temperature), topP: Number(getConfig().top_p) } });
+                session.history = []; // Reset history
                 session.messageCache = new Map();
                 loadProperties('resources/app.properties');
                 return 'Context and chat history reset for this session';
@@ -207,14 +171,14 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         }
     }
 
-    if (!session.context && !session.chat?.history?.length) return 'Error: Context is not set for this session and no previous conversation exists. Please load one or start a new interaction.';
+    if (!session.context) return 'Error: Context is not set for this session. Please load one.';
 
     const cachedResponse = getResponse(sessionId, userInput);
     if (cachedResponse) return cachedResponse;
 
     try {
         const chat = getChatSession(sessionId);
-        let prompt = `${session.context ? session.context + '\n' : ''}${userInput}`;
+        let prompt = `${session.context}\n${userInput}`;
         if (forceJson) {
             prompt += '\nYour response must be in JSON format.';
         }
@@ -226,10 +190,11 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         let functionCallResult = null;
         let numFunctionCalls = 0;
         const maxFunctionCalls = 5;
+        let currentTurnParts = [{ text: prompt }];
 
         while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
             const result = await chat.sendMessage({
-                parts: [{ text: prompt }],
+                parts: currentTurnParts,
                 ...toolConfig,
             });
             const response = await result.response;
@@ -238,6 +203,8 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
                 const candidate = response.candidates[0];
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
                     const part = candidate.content.parts[0];
+                    session.history.push(currentTurnParts); // Store user's turn
+
                     if (part.functionCall) {
                         numFunctionCalls++;
                         const functionName = part.functionCall.name;
@@ -246,16 +213,17 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
                         functionCallResult = await handleFunctionCall(part.functionCall);
                         logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${util.inspect(functionCallResult)}`);
 
-                        await chat.sendMessage({
-                            parts: [{
-                                functionResponse: {
-                                    name: functionName,
-                                    response: { functionCallResult },
-                                },
-                            }],
-                        });
+                        const functionResponsePart = {
+                            functionResponse: {
+                                name: functionName,
+                                response: { functionCallResult },
+                            },
+                        };
+                        session.history.push([functionResponsePart]); // Store function response turn
+                        await chat.sendMessage({ parts: [functionResponsePart] });
                     } else if (part.text) {
                         finalResponse = part.text;
+                        session.history.push([{ text: finalResponse }]); // Store bot's final response
                     }
                 }
             } else {
@@ -266,13 +234,15 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
             if (numFunctionCalls >= maxFunctionCalls && !finalResponse) {
                 finalResponse = 'Error: Maximum function call limit reached without a final response.';
             }
-            prompt = ''; // Clear prompt for subsequent turns in the loop
+            currentTurnParts = []; // Clear for the next potential turn in the loop
         }
 
         if (!finalResponse && functionCallResult !== null && typeof functionCallResult !== 'object' && !functionCallResult.error) {
             finalResponse = functionCallResult;
+            session.history.push([{ text: finalResponse }]);
         } else if (!finalResponse && functionCallResult && functionCallResult.error) {
             finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
+            session.history.push([{ text: finalResponse }]);
         }
 
         if (!finalResponse) {
@@ -294,7 +264,7 @@ app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 app.post('/chat', async (req, res) => {
     const userMessage = req.body.message;
-    const sessionId = req.sessionID; // Use the session ID from express-session
+    const sessionId = req.sessionID;
     logger.info(`Chat request received [Session: ${sessionId}]`, { message: userMessage });
     const resp = await getChatResponse(sessionId, userMessage);
     res.json({ response: (resp) || 'Error: no response was detected' });
