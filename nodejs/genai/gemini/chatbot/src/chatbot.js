@@ -1,346 +1,303 @@
-const { GoogleGenAI } = require('@google/genai');
-
+const { GoogleGenerativeAI } = require('@google/genai');
 const RateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
-const fs = require('fs');
+const fs = require('fs').promises; // Use the promise-based API for async operations
 const path = require('path');
 const util = require('util');
-const logger = require('./logger'); // Assuming you have a logger module
-const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
-
-const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
-
-const {
-  getAvailableFunctions,
-  getFunctionDefinitionsForTool,
-} = require('./functions');
+const logger = require('./logger');
+const morganMiddleware = require('./morganmw');
+const { getConfig, loadProperties } = require('./properties');
+const { getAvailableFunctions, getFunctionDefinitionsForTool } = require('./functions');
 
 dotenv.config();
 
 const app = express();
+
+// Rate limiting per IP address
 const limiter = RateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // max 100 requests per windowMs
-  keyGenerator: (req) => req.ip, // Rate limit per IP address (Suggestion 4)
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // max 100 requests per windowMs
+    keyGenerator: (req) => req.ip,
 });
 app.use(limiter);
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
-let ctxStr = '';
-const msgCache = new Map();
+const ai = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+/**
+ * Stores the conversation history and context for each client session.
+ * The key is the client's IP address.
+ * @type {Map<string, { context: string, chat: import('@google/generative-ai').ChatSession }>}
+ */
+const sessions = new Map();
 
 app.use(bodyParser.json());
 app.use(morganMiddleware);
 
 /**
- * Normalizes a string to create a consistent key for the message cache.
- * Removes non-alphanumeric characters and converts to uppercase.
+ * Normalizes a string to create a consistent key.
  * @param {string} keyString The string to normalize.
  * @returns {string} The normalized key.
  */
 const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
 
 /**
- * Adds a query and its response to the message cache.
- * Limits the cache size to 1000 entries, removing the oldest 100 if full.
+ * Adds a query and its response to a specific session's message cache.
+ * Limits the cache size per session.
+ * @param {string} sessionId The ID of the client session (e.g., IP address).
  * @param {string} query The user's query.
  * @param {string} response The chatbot's response.
  * @returns {boolean} True if the response was added to the cache.
  */
-const addResponse = (query, response) => {
-  const keyStr = getKey(query);
-  if (msgCache.has(keyStr)) return true;
-  if (msgCache.size > 1000) {
-    Array.from(msgCache.keys()).slice(0, 100).forEach((key) => msgCache.delete(key));
-  }
-  msgCache.set(keyStr, response);
-  return true;
+const addResponse = (sessionId, query, response) => {
+    if (!sessions.has(sessionId)) {
+        sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
+    }
+    const session = sessions.get(sessionId);
+    const cache = session.messageCache;
+    const keyStr = getKey(query);
+    if (cache.has(keyStr)) return true;
+    if (cache.size > 1000) {
+        Array.from(cache.keys()).slice(0, 100).forEach((key) => cache.delete(key));
+    }
+    cache.set(keyStr, response);
+    return true;
 };
 
 /**
- * Retrieves a cached response for a given query.
+ * Retrieves a cached response for a given query within a specific session.
+ * @param {string} sessionId The ID of the client session.
  * @param {string} query The user's query.
  * @returns {string} The cached response, or an empty string if not found.
  */
-const getResponse = (query) => msgCache.get(getKey(query)) || '';
+const getResponse = (sessionId, query) => {
+    const session = sessions.get(sessionId);
+    return session?.messageCache?.get(getKey(query)) || '';
+};
 
 /**
- * Reads the context from a file in the 'contexts' directory.
- * Validates the path to prevent accessing files outside the context directory.
- * Uses asynchronous file reading for better performance.
+ * Reads the context from a file.
  * @param {string} contextStr The name of the context file.
- * @returns {Promise<string>} The content of the context file
+ * @returns {Promise<string>} The content of the context file.
  */
 const readContext = async (contextStr) => {
-  try {
-    const contextPath = path.resolve('contexts', contextStr);
-    const normalizedContextPath = path.normalize(contextPath);
-    const normalizedContextsPath = path.normalize(path.resolve('contexts'));
-    if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
-      throw new Error('Invalid context path');
+    try {
+        const contextPath = path.resolve('contexts', contextStr);
+        const normalizedContextPath = path.normalize(contextPath);
+        const normalizedContextsPath = path.normalize(path.resolve('contexts'));
+        if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
+            throw new Error('Invalid context path');
+        }
+        return await fs.readFile(contextPath, 'utf-8');
+    } catch (err) {
+        logger.error(`Cannot load context '${contextStr}'`, err);
+        return '';
     }
-    return await fs.promises.readFile(contextPath, 'utf-8'); // Suggestion 1
-  } catch (err) {
-    logger.error(`Cannot load '${contextStr}'`, err);
-    return '';
-  }
 };
 
-/* eslint-disable no-return-await, prefer-spread */
 /**
- * Calls a function by its name, using the provided arguments.
- * Retrieves the function definition from the available functions registry.
- * Handles potential errors during function execution and logs them.
- * Returns a structured error object on failure.
- * @param {string} name The name of the function to call.
- * @param {object} args An object containing the arguments for the function.
- * @returns {Promise<any>} The result of the function call, or an error object.
+ * Calls a function by its name with provided arguments.
+ * @param {string} name The name of the function.
+ * @param {object} args The arguments for the function.
+ * @returns {Promise<any>} The result of the function call.
  */
 const callFunctionByName = async (name, args) => {
-  const functionInfo = getAvailableFunctions()[name];
-  if (functionInfo && functionInfo.func) {
-    const { func, params } = functionInfo;
-    const argValues = params.map((paramName) => args[paramName]);
-
-    try {
-      const result = await func.apply(null, argValues);
-      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
-      return result;
-    } catch (error) {
-      const errStr = error.message;
-      logger.error(`Error executing function '${name}'`, { arguments: args, error: errStr }); // Suggestion 6
-      return { error: 'Function execution failed', details: errStr }; // Suggestion 3
+    const functionInfo = getAvailableFunctions()[name];
+    if (functionInfo && functionInfo.func) {
+        const { func, params } = functionInfo;
+        const argValues = params.map((paramName) => args[paramName]);
+        try {
+            const result = await func.apply(null, argValues);
+            logger.info(`Function '${name}' executed`, { arguments: args, result });
+            return result;
+        } catch (error) {
+            logger.error(`Error executing function '${name}'`, { arguments: args, error: error.message });
+            return { error: 'Function execution failed', details: error.message };
+        }
     }
-  }
-  return { error: `Function '${name}' not recognized` };
+    return { error: `Function '${name}' not found` };
 };
 
 /**
- * Handles a function call initiated by the Gemini API.
- * Extracts the function name and arguments and calls the corresponding function.
- * @param {object} functionCall The function call object received from the Gemini API.
+ * Handles a function call from the Gemini API.
+ * @param {object} functionCall The function call details.
  * @returns {Promise<any>} The result of the function call.
  */
 const handleFunctionCall = async (functionCall) => {
-  const { name, args } = functionCall;
-  return await callFunctionByName(name, args);
+    const { name, args } = functionCall;
+    return await callFunctionByName(name, args);
 };
-/* eslint-enable no-return-await,prefer-spread */
 
 /**
- * Gets a chat response from the Gemini API based on user input and the current context.
- * Handles special commands, retrieves cached responses, and manages multi-turn function calls.
- * @param {string} userInput The user's message.
- * @param {boolean} [forceJson=false] Whether to force the Gemini response to be in JSON format
- * @returns {Promise<string|object>} The chatbot's response or an error message/object.
+ * Gets or creates a chat session for a given client.
+ * @param {string} sessionId The ID of the client session (e.g., IP address).
+ * @returns {import('@google/generative-ai').ChatSession} The chat session.
  */
-const getChatResponse = async (userInput, forceJson = false) => {
-  const tools = getFunctionDefinitionsForTool();
-
-  // Handle special commands (Suggestion 8 - could be moved to config for more flexibility)
-  if (userInput.includes('help')) return 'Sample *Help* text';
-  if (userInput.includes('bot-echo-string')) {
-    return userInput || 'No string to echo';
-  }
-  if (userInput.includes('bot-context')) {
-    const botCmd = userInput.split(' ');
-    switch (botCmd[1]) {
-      case 'load':
-        ctxStr = '';
-        ctxStr = await readContext(botCmd[2].trim()); // Await the async function
-        return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
-      case 'show':
-        return ctxStr || 'Context is empty - ignored';
-      case 'reset':
-        loadProperties('resources/app.properties');
-        ctxStr = '';
-        return 'Context reset';
-      default:
-        return 'Invalid command';
+const getChatSession = (sessionId) => {
+    if (!sessions.has(sessionId)) {
+        sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
     }
-  }
+    const session = sessions.get(sessionId);
+    if (!session.chat) {
+        const model = ai.generativeModel({ model: getConfig().aiModel });
+        session.chat = model.startChat({
+            history: [], // Initialize with empty history for a new session
+            generationConfig: {
+                maxOutputTokens: Number(getConfig().maxTokens),
+                temperature: Number(getConfig().temperature),
+                topP: Number(getConfig().top_p),
+            },
+        });
+    }
+    return session.chat;
+};
 
-  // Check if context is set
-  if (!ctxStr) return 'Error: Context is not set. Please load one';
+/**
+ * Gets a chat response from the Gemini API, maintaining state per session.
+ * @param {string} sessionId The ID of the client session.
+ * @param {string} userInput The user's message.
+ * @param {boolean} [forceJson=false] Whether to request a JSON response.
+ * @returns {Promise<string|object>} The chatbot's response.
+ */
+const getChatResponse = async (sessionId, userInput, forceJson = false) => {
+    const tools = getFunctionDefinitionsForTool();
+    const session = sessions.get(sessionId);
 
-  // Check for cached response
-  const cachedResponse = getResponse(userInput);
-  if (cachedResponse) return cachedResponse;
-
-  try {
-    let contxtStr = userInput;
-    if (forceJson) {
-      contxtStr += '\nYour response must be in json format.'; // Note: Gemini's direct JSON enforcement might differ
+    if (!session) {
+        sessions.set(sessionId, { context: '', chat: null, messageCache: new Map() });
     }
 
-    const functionDefs = tools.map((func) => func.function);
-    const generationConfig = {
-      maxOutputTokens: Number(getConfig().maxTokens),
-      temperature: Number(getConfig().temperature),
-      topP: Number(getConfig().top_p),
-    };
-    const parts = [{ role: 'user', text: `${ctxStr}\n${contxtStr}` }];
-    const toolsConfig = { tools: [{ functionDeclarations: functionDefs }] };
+    // Handle special commands per session
+    if (userInput.includes('help')) return 'Sample *Help* text';
+    if (userInput.includes('bot-echo-string')) {
+        return userInput || 'No string to echo';
+    }
+    if (userInput.includes('bot-context')) {
+        const botCmd = userInput.split(' ');
+        switch (botCmd[1]) {
+            case 'load':
+                session.context = await readContext(botCmd[2].trim());
+                return session.context ? 'Context loaded for this session' : 'Context file could not be read or is empty';
+            case 'show':
+                return session.context || 'Context is empty for this session';
+            case 'reset':
+                session.context = '';
+                const model = ai.generativeModel({ model: getConfig().aiModel });
+                session.chat = model.startChat({ history: [], generationConfig: { maxOutputTokens: Number(getConfig().maxTokens), temperature: Number(getConfig().temperature), topP: Number(getConfig().top_p) } });
+                session.messageCache = new Map();
+                loadProperties('resources/app.properties');
+                return 'Context and chat history reset for this session';
+            default:
+                return 'Invalid command';
+        }
+    }
 
-    let finalResponse = null;
-    let functionCallResult = null;
-    let numFunctionCalls = 0;
-    const maxFunctionCalls = 5; // Limit to prevent infinite loops
+    if (!session.context) return 'Error: Context is not set for this session. Please load one.';
 
-    /* eslint-disable no-return-await,max-len,no-plusplus,no-await-in-loop */
-    while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
-      if (getConfig().debug === 'true') {
-        logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
-      }
-      const result = await ai.models.generateContent({
-        model: getConfig().aiModel,
-        contents: parts,
-        generationConfig,
-        config: toolsConfig.tools.length > 0 ? toolsConfig : [],
-      });
+    const cachedResponse = getResponse(sessionId, userInput);
+    if (cachedResponse) return cachedResponse;
 
-      if (!result || typeof result !== 'object') {
-        logger.error('Gemini API error: No response object');
-        return 'Error: No response from the API';
-      }
+    try {
+        const chat = getChatSession(sessionId);
+        let prompt = `${session.context}\n${userInput}`;
+        if (forceJson) {
+            prompt += '\nYour response must be in JSON format.';
+        }
 
-      const response = result;
-      if (getConfig().debug === 'true') {
-        logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
-      }
-      if (response.candidates && response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          const part = candidate.content.parts[0];
-          if (part.functionCall) {
-            numFunctionCalls++;
-            const functionName = part.functionCall.name;
-            const functionArgs = part.functionCall.args;
+        const functionDefs = tools.map((tool) => tool.function);
+        const toolConfig = tools.length > 0 ? { tools: [{ functionDeclarations: functionDefs }] } : {};
 
-            logger.info(`Initiating tool call, ${functionName} => ${JSON.stringify(functionArgs)}`); // Suggestion 6
+        let finalResponse = null;
+        let functionCallResult = null;
+        let numFunctionCalls = 0;
+        const maxFunctionCalls = 5;
 
-            functionCallResult = await handleFunctionCall(part.functionCall);
+        while (!finalResponse && numFunctionCalls < maxFunctionCalls) {
+            const result = await chat.sendMessage({
+                parts: [{ text: prompt }],
+                ...toolConfig,
+            });
+            const response = await result.response;
 
-            if (getConfig().debug === 'true') {
-              logger.debug(`Function call detected (iteration ${numFunctionCalls}): ${functionName} with args: ${JSON.stringify(functionArgs)}`);
-              logger.debug(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
+            if (response.candidates && response.candidates.length > 0) {
+                const candidate = response.candidates[0];
+                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                    const part = candidate.content.parts[0];
+                    if (part.functionCall) {
+                        numFunctionCalls++;
+                        const functionName = part.functionCall.name;
+                        const functionArgs = part.functionCall.args;
+                        logger.info(`Tool call initiated [Session: ${sessionId}], ${functionName} => ${JSON.stringify(functionArgs)}`);
+                        functionCallResult = await handleFunctionCall(part.functionCall);
+                        logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${util.inspect(functionCallResult)}`);
+
+                        await chat.sendMessage({
+                            parts: [{
+                                functionResponse: {
+                                    name: functionName,
+                                    response: { functionCallResult },
+                                },
+                            }],
+                        });
+                    } else if (part.text) {
+                        finalResponse = part.text;
+                    }
+                }
+            } else {
+                logger.warn(`Gemini API: No candidates in response [Session: ${sessionId}]`);
+                break;
             }
 
-            const functionResponsePart = {
-              name: functionName,
-              response: { functionCallResult },
-            };
-
-            // Send the function call result back to the model for a follow-up
-            parts.push({
-              role: 'model',
-              parts: [{
-                functionCall: part.functionCall,
-              }],
-            });
-            parts.push({
-              role: 'user',
-              parts: [{
-                functionResponse: functionResponsePart,
-              }],
-            });
-          } else if (part.text) {
-            finalResponse = part.text;
-          }
+            if (numFunctionCalls >= maxFunctionCalls && !finalResponse) {
+                finalResponse = 'Error: Maximum function call limit reached without a final response.';
+            }
+            prompt = ''; // Clear prompt for subsequent turns in the loop
         }
-      } else {
-        logger.warn('Gemini API: No candidates in the response.');
-        break;
-      }
 
-      if (numFunctionCalls >= maxFunctionCalls && !finalResponse) {
-        finalResponse = 'Error: Maximum function call limit reached without a final response.';
-      }
+        if (!finalResponse && functionCallResult !== null && typeof functionCallResult !== 'object' && !functionCallResult.error) {
+            finalResponse = functionCallResult;
+        } else if (!finalResponse && functionCallResult && functionCallResult.error) {
+            finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
+        }
+
+        if (!finalResponse) {
+            throw Error('Not able to get a final response from Gemini.');
+        }
+
+        addResponse(sessionId, userInput, finalResponse);
+        return finalResponse;
+
+    } catch (err) {
+        logger.error(`Gemini API error [Session: ${sessionId}]:`, err);
+        return `Error processing request - ${err}`;
     }
-    /* eslint-enable no-return-await,max-len,no-plusplus,no-await-in-loop */
-
-    if (!finalResponse && functionCallResult !== null && typeof functionCallResult !== 'object' && !functionCallResult.error) {
-      // If the last action was a successful function call and no final text response
-      finalResponse = functionCallResult;
-    } else if (!finalResponse && functionCallResult && functionCallResult.error) {
-      finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
-    }
-
-    if (!finalResponse) {
-      throw Error('Not able to get a final response from Gemini.');
-    }
-
-    addResponse(contxtStr, finalResponse);
-    return finalResponse;
-  } catch (err) {
-    logger.error('Gemini API error:', err);
-    return `Error processing request - ${err}`;
-  }
 };
 
-/**
- * Handles GET requests to the root path, serving the 'indexBot.html' file.
- * @param {object} req The Express.js request object.
- * @param {object} res The Express.js response object.
- */
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
-
-/**
- * Handles GET requests to the '/version' path, returning the application version as JSON.
- * @param {object} req The Express.js request object.
- * @param {object} res The Express.js response object.
- */
 app.get('/version', (req, res) => res.json({ version: '1.0' }));
-
-/**
- * Handles GET requests to the '/status' path, returning the application status as JSON.
- * @param {object} req The Express.js request object.
- * @param {object} res The Express.js response object.
- */
 app.get('/status', (req, res) => res.json({ status: 'live' }));
 
-/**
- * Handles POST requests to the '/chat' path
- * Logs the user input.
- * @param {object} req The Express.js request object, containing the user's message in the body.
- * @param {object} res The Express.js response object, sending the chatbot's response as JSON.
- */
 app.post('/chat', async (req, res) => {
-  const userMessage = req.body.message;
-  logger.info('Chat request received', { message: userMessage }); // Suggestion 5
-  const resp = await getChatResponse(userMessage);
-  res.json({ response: (resp) || 'Error: no response was detected' });
+    const userMessage = req.body.message;
+    const sessionId = req.ip; // Use the client's IP address as a simple session key
+    logger.info(`Chat request received [Session: ${sessionId}]`, { message: userMessage });
+    const resp = await getChatResponse(sessionId, userMessage);
+    res.json({ response: (resp) || 'Error: no response was detected' });
 });
 
-process.on('SIGINT', () => {
-  process.exit(0);
-});
+process.on('SIGINT', () => process.exit(0));
+process.on('SIGILL', () => process.exit(1));
+process.on('SIGSEG', () => process.exit(1));
+process.on('SIGBUS', () => process.exit(1));
 
-process.on('SIGILL', () => {
-  process.exit(1);
-});
-
-process.on('SIGSEG', () => {
-  process.exit(1);
-});
-
-process.on('SIGBUS', () => {
-  process.exit(1);
-});
-
-/**
- * Starts the Express.js server after loading application properties.
- * Exits the process if the properties file cannot be loaded.
- */
 const startServer = () => {
-  if (loadProperties('resources/app.properties')) {
-    const port = Number(getConfig().port) || 5000;
-    app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
-  } else {
-    process.exit(1);
-  }
+    if (loadProperties('resources/app.properties')) {
+        const port = Number(getConfig().port) || 5000;
+        app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
+    } else {
+        process.exit(1);
+    }
 };
 
 startServer();
