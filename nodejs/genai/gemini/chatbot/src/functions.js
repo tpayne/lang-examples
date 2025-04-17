@@ -84,7 +84,7 @@ function registerFunction(name, func, params, description, parametersSchema, req
 
 function loadCodeReviews() {
   registerFunction(
-    'perform_code_review',
+    'file_review',
     codeReviews,
     ['username', 'repoName', 'repoPath'],
     'Review files in a given GitHub repository.',

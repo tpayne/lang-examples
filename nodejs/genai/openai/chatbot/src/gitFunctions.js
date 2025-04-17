@@ -155,8 +155,7 @@ async function fetchRepoContentsRecursive(
     const items = response.body;
 
     if (!Array.isArray(items)) {
-      logger.warn(`Expected an array of items from API for path "${repoPath}", but received:`, typeof items, items);
-      if (items && items.type === 'file' && items.download_url) {
+      logger.warn(`Expected an array of items from API for path "${repoPath}", but received: ${typeof items}`); if (items && items.type === 'file' && items.download_url) {
         const filePath = path.join(localDestPath, items.name);
         try {
           await downloadFile(items.download_url, filePath, githubToken);
