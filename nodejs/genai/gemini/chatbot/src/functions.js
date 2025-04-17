@@ -87,7 +87,7 @@ function loadCodeReviews() {
     'perform_code_review',
     codeReviews,
     ['username', 'repoName', 'repoPath'],
-    'Code review files in a given GitHub repository.',
+    'Review files in a given GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
