@@ -184,14 +184,14 @@ function loadGitHub() {
   registerFunction(
     'list_commit_history',
     listCommitHistory,
-    ['username', 'repoName', 'filePath'],
+    ['username', 'repoName', 'dirName'],
     'Lists commit history for a file in a GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      filePath: { type: 'string', description: 'The file path.' },
+      dirName: { type: 'string', description: 'The file or directory path.' },
     },
-    ['username', 'repoName', 'filePath'],
+    ['username', 'repoName', 'dirName'],
   );
 
   registerFunction(
@@ -228,8 +228,8 @@ if (process.env.GITHUB_TOKEN) {
 }
 
 if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
-    && process.env.DOSA_AUTH_TENANT_ID
-    && process.env.DOSA_CLIENT_ID) {
+  && process.env.DOSA_AUTH_TENANT_ID
+  && process.env.DOSA_CLIENT_ID) {
   logger.info('Loading DOSA/DLVA integration...');
   loadDosa();
 }

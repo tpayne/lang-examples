@@ -287,40 +287,60 @@ async function listBranches(username, repoName) {
     handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
   }
 }
-
 /**
- * Lists commit history for a specific file in a given GitHub repository.
- * Fetches commit data and extracts SHA, message, author, and date.
+ * Lists commit history for a specific file or directory in a given GitHub repository.
+ * First, verifies that the file or directory exists by querying the repository contents API.
+ * If the path exists, it fetches commit data and extracts SHA, message, author, and date.
  * Handles API errors and "Not Found" exceptions.
+ *
  * @async
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} filePath The path to the file within the repository.
+ * @param {string} dirName The path to the file or directory within the repository.
  * @returns {Promise<Array<{ sha: string, message: string, author: string, date: string }>>}
- * Array of commit history objects.
- * @throws {Error} If API request fails or file/repository not found.
+ *          Array of commit history objects.
+ * @throws {Error} If API requests fail or file/directory not found.
  */
-async function listCommitHistory(username, repoName, filePath) {
-  const url = `https://api.github.com/repos/${username}/${repoName}/commits?path=${filePath}`;
+async function listCommitHistory(username, repoName, dirName) {
+  // Pre-validate that the file or directory exists using the GitHub contents API.
+  const contentsUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${encodeURIComponent(dirName)}`;
+
   try {
-    const response = await superagent
-      .get(url)
+    await superagent
+      .get(contentsUrl)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT);
+  } catch (contentsError) {
+    // Log and re-throw as a more specific error.
+    logger.error('Error fetching path contents:', username, repoName, dirName, contentsError);
+    throw new Error(`The path "${dirName}" in "${username}/${repoName}" does not exist.`);
+  }
+
+  // Now that the path exists, construct the commits URL with the path filter.
+  const commitsUrl = `https://api.github.com/repos/${username}/${repoName}/commits?path=${encodeURIComponent(dirName)}`;
+
+  try {
+    const commitResponse = await superagent
+      .get(commitsUrl)
       .set('Authorization', `Bearer ${githubToken}`)
       .set('Accept', 'application/json')
       .set('User-Agent', USER_AGENT);
 
-    if (response.status === 200) {
-      return response.body.map((commit) => ({
+    if (commitResponse.status === 200) {
+      return commitResponse.body.map((commit) => ({
         sha: commit.sha,
         message: commit.commit.message,
         author: commit.commit.author.name,
         date: commit.commit.author.date,
       }));
     }
-    await handleGitHubApiError(response, `listing commit history for ${filePath}" in "${username}/{repoName}"`);
+
+    // If the commit status isn't 200, use the helper to handle specific API error info.
+    await handleGitHubApiError(commitResponse, `listing commit history for "${dirName}" in "${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error listing commit history (exception):', username, repoName, filePath, error);
-    handleNotFoundError(error, ` for file ${filePath}" in "${username}/${repoName}"`);
+    logger.error('Error listing commit history (exception):', username, repoName, dirName, error);
+    handleNotFoundError(error, ` for path "${dirName}" in "${username}/${repoName}"`);
   }
 }
 
