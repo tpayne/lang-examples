@@ -3,23 +3,33 @@ const RateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
-const fs = require('fs').promises; // Use the promise-based API for async operations
+const fs = require('fs').promises;
 const path = require('path');
 const util = require('util');
 const logger = require('./logger');
 const morganMiddleware = require('./morganmw');
 const { getConfig, loadProperties } = require('./properties');
 const { getAvailableFunctions, getFunctionDefinitionsForTool } = require('./functions');
+const session = require('express-session'); // Import express-session
 
 dotenv.config();
 
 const app = express();
 
-// Rate limiting per IP address
+// Configure session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key', // Replace with a strong, random secret
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: process.env.NODE_ENV === 'production' }, // Only send cookie over HTTPS in production
+    // You can also configure store for persistent sessions (see Phase 3)
+}));
+
+// Rate limiting per IP address (can be combined with session ID if needed)
 const limiter = RateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // max 100 requests per windowMs
-    keyGenerator: (req) => req.ip,
+    keyGenerator: (req) => req.ip, // Or consider using req.sessionID for user-based limiting
 });
 app.use(limiter);
 
@@ -27,7 +37,7 @@ const ai = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 /**
  * Stores the conversation history and context for each client session.
- * The key is the client's IP address.
+ * The key is the client's session ID.
  * @type {Map<string, { context: string, chat: import('@google/generative-ai').ChatSession }>}
  */
 const sessions = new Map();
@@ -45,7 +55,7 @@ const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
 /**
  * Adds a query and its response to a specific session's message cache.
  * Limits the cache size per session.
- * @param {string} sessionId The ID of the client session (e.g., IP address).
+ * @param {string} sessionId The ID of the client session.
  * @param {string} query The user's query.
  * @param {string} response The chatbot's response.
  * @returns {boolean} True if the response was added to the cache.
@@ -131,7 +141,7 @@ const handleFunctionCall = async (functionCall) => {
 
 /**
  * Gets or creates a chat session for a given client.
- * @param {string} sessionId The ID of the client session (e.g., IP address).
+ * @param {string} sessionId The ID of the client session.
  * @returns {import('@google/generative-ai').ChatSession} The chat session.
  */
 const getChatSession = (sessionId) => {
@@ -280,7 +290,7 @@ app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 app.post('/chat', async (req, res) => {
     const userMessage = req.body.message;
-    const sessionId = req.ip; // Use the client's IP address as a simple session key
+    const sessionId = req.sessionID; // Use the session ID from express-session
     logger.info(`Chat request received [Session: ${sessionId}]`, { message: userMessage });
     const resp = await getChatResponse(sessionId, userMessage);
     res.json({ response: (resp) || 'Error: no response was detected' });
