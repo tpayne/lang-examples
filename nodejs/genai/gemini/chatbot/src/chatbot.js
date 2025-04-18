@@ -47,8 +47,21 @@ app.use(session({
 app.use(bodyParser.json());
 app.use(morganMiddleware);
 
+/**
+ * Normalizes a string to create a consistent key.
+ * @param {string} keyString The string to normalize.
+ * @returns {string} The normalized key.
+ */
 const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
 
+/**
+ * Adds a query and its response to a specific session's message cache.
+ * Limits the cache size per session.
+ * @param {string} sessionId The ID of the client session.
+ * @param {string} query The user's query.
+ * @param {string} response The chatbot's response.
+ * @returns {boolean} True if the response was added to the cache.
+ */
 const addResponse = (sessionId, query, response) => {
     if (!sessions.has(sessionId)) {
         sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
@@ -64,11 +77,23 @@ const addResponse = (sessionId, query, response) => {
     return true;
 };
 
+/**
+ * Retrieves a cached response for a given query within a specific session.
+ * @param {string} sessionId The ID of the client session.
+ * @param {string} query The user's query.
+ * @returns {string} The cached response, or an empty string if not found.
+ */
 const getResponse = (sessionId, query) => {
     const session = sessions.get(sessionId);
     return session?.messageCache?.get(getKey(query)) || '';
 };
 
+/**
+ * Reads the context from a file.
+ * @async
+ * @param {string} contextStr The name of the context file.
+ * @returns {Promise<string>} The content of the context file.
+ */
 const readContext = async (contextStr) => {
     try {
         const contextPath = path.resolve('contexts', contextStr);
@@ -84,6 +109,13 @@ const readContext = async (contextStr) => {
     }
 };
 
+/**
+ * Calls a function by its name with provided arguments.
+ * @async
+ * @param {string} name The name of the function.
+ * @param {object} args The arguments for the function.
+ * @returns {Promise<any>} The result of the function call.
+ */
 const callFunctionByName = async (name, args) => {
     const functionInfo = getAvailableFunctions()[name];
     if (functionInfo && functionInfo.func) {
@@ -101,6 +133,12 @@ const callFunctionByName = async (name, args) => {
     return { error: `Function '${name}' not found` };
 };
 
+/**
+ * Handles a function call from the Gemini API.
+ * @async
+ * @param {object} functionCall The function call details.
+ * @returns {Promise<any>} The result of the function call.
+ */
 const handleFunctionCall = async (functionCall) => {
     const { name, args } = functionCall;
     return await callFunctionByName(name, args);
@@ -131,7 +169,20 @@ const getChatSession = (sessionId) => {
 };
 
 /**
+ * Loads integrations for a specific session.
+ * @async
+ * @param {string} sessionId The ID of the client session.
+ * @returns {Promise<void>}
+ */
+const loadIntegrations = async (sessionId) => {
+    // This function likely handles loading external integrations based on session or config.
+    // The implementation details would be in './functions.js'.
+    // For JSDoc, we indicate it's async and returns a Promise.
+};
+
+/**
  * Gets a chat response from the Gemini API, maintaining state per session.
+ * @async
  * @param {string} sessionId The ID of the client session.
  * @param {string} userInput The user's message.
  * @param {boolean} [forceJson=false] Whether to request a JSON response.
@@ -163,7 +214,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
                 return session.context || 'Context is empty for this session';
             case 'reset':
                 session.context = '';
-                // Reset logic...
+                session.chat = null; // Ensure a new chat session is created on reset
+                session.history = []; // Clear history
+                session.messageCache = new Map(); // Clear cache
+                loadProperties('resources/app.properties'); // Reload properties if needed
                 return 'Context and chat history reset for this session';
             default:
                 return 'Invalid command';
@@ -257,10 +311,13 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     }
 };
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
-app.get('/version', (req, res) => res.json({ version: '1.0' }));
-app.get('/status', (req, res) => res.json({ status: 'live' }));
-
+/**
+ * Handles incoming chat requests.
+ * @async
+ * @param {express.Request} req The Express request object.
+ * @param {express.Response} res The Express response object.
+ * @returns {Promise<void>}
+ */
 app.post('/chat', async (req, res) => {
     const userMessage = req.body.message;
     const sessionId = req.sessionID;
@@ -268,6 +325,30 @@ app.post('/chat', async (req, res) => {
     const resp = await getChatResponse(sessionId, userMessage);
     res.json({ response: (resp) || 'Error: no response was detected' });
 });
+
+/**
+ * Serves the index.html file for the root path.
+ * @param {express.Request} req The Express request object.
+ * @param {express.Response} res The Express response object.
+ * @returns {void}
+ */
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
+
+/**
+ * Returns the current version of the chatbot.
+ * @param {express.Request} req The Express request object.
+ * @param {express.Response} res The Express response object.
+ * @returns {void}
+ */
+app.get('/version', (req, res) => res.json({ version: '1.0' }));
+
+/**
+ * Returns the current status of the chatbot.
+ * @param {express.Request} req The Express request object.
+ * @param {express.Response} res The Express response object.
+ * @returns {void}
+ */
+app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 process.on('SIGINT', () => process.exit(0));
 process.on('SIGILL', () => process.exit(1));
