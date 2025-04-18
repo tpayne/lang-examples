@@ -7,8 +7,7 @@ const path = require('path');
 const session = require('express-session');
 const util = require('util');
 /* eslint-disable no-unused-vars */
-// Updated import to use the latest @google/genai library
-const { GoogleGenerativeAI, ChatSession, Part, Tool, FunctionDeclarationSchema } = require('@google/genai'); // Import necessary types
+const { GoogleGenerativeAI, ChatSession, Part } = require('@google/genai'); // Import necessary types
 /* eslint-enable no-unused-vars */
 
 const MemcachedStore = require('connect-memcached')(session);
@@ -397,19 +396,19 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
  * @returns {Promise<void>}
  */
 app.post('/chat', async (req, res) => {
-  const userMessage = req.body.message;
-  const sessionId = req.sessionID;
-
+    const userMessage = req.body.message;
+    let sessionId = req.sessionID || req.ip;
+  
   if (!userMessage) {
       logger.warn(`Chat request with empty message [Session: ${sessionId}]`);
       return res.status(400).json({ error: 'Message is required' });
   }
 
   logger.info(`Chat request received [Session: ${sessionId}]`, { message: userMessage });
-
+  
   try {
     const resp = await getChatResponse(sessionId, userMessage);
-    // Ensure response is always a string, even if function call result was an object
+      // Ensure response is always a string, even if function call result was an object
     // In this updated logic, getChatResponse aims to return the final text response or an error string.
     res.json({ response: resp });
   } catch (error) {
