@@ -3,6 +3,8 @@ ARG nodeVersion=18
 ARG alpineVersion=3.18
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    && apk -U upgrade
 
 WORKDIR /source
 
@@ -18,7 +20,9 @@ COPY templates ./templates
 RUN npm install && npm test
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
-
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    && apk -U upgrade
+    
 WORKDIR /source
 
 COPY package.json package-lock.json* ./
@@ -33,8 +37,9 @@ COPY templates ./templates
 
 COPY package.json package-lock.json* ./src/
 
-RUN npm install -g pkg && \
-    pkg -t node${nodeVersion} ./src/ -o nodeexe --no-sign
+RUN npm install --omit=dev && \
+    npm install -g pkg && \
+    pkg -t node18 ./src/ -o nodeexe --no-sign
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
