@@ -52,9 +52,9 @@ RUN addgroup --system ${account} && adduser ${account} --system &&\
 WORKDIR /app
 
 COPY --from=imagebuilder /source/nodeexe ./
-COPY --from=imagebuilder /source/contexts ./contexts
-COPY --from=imagebuilder /source/resources ./resources
-COPY --from=imagebuilder /source/templates ./templates
+COPY --from=imagebuilder /source/src/contexts ./contexts
+COPY --from=imagebuilder /source/src/resources ./resources
+COPY --from=imagebuilder /source/src/templates ./templates
 RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
 
 # Supervisor configuration
