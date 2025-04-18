@@ -22,20 +22,15 @@ RUN npm install && npm test
 FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
-    
+
 WORKDIR /source
 
-COPY package.json package-lock.json* ./
-
-# Copy the built node_modules from the prebuild stage
-COPY --from=prebuild /source/node_modules ./node_modules
 COPY src/ ./src/
+COPY package.json package-lock.json* ./
 COPY package.json package-lock.json* ./src/
-COPY contexts ./contexts
-COPY resources ./resources
-COPY templates ./templates
-
-COPY package.json package-lock.json* ./src/
+COPY contexts ./src/contexts
+COPY resources ./src/resources
+COPY templates ./src/templates
 
 RUN npm install --omit=dev && \
     npm install -g pkg && \
