@@ -28,8 +28,8 @@
         <article>
             <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
 const dotenv = require('dotenv');
-const logger = require('./logger');
 const { Mutex } = require('async-mutex');
+const logger = require('./logger');
 
 dotenv.config();
 
@@ -57,10 +57,10 @@ const sessionTokenMutexes = new Map();
  * @returns {Mutex} The mutex for the session.
  */
 function getSessionTokenMutex(sessionId) {
-    if (!sessionTokenMutexes.has(sessionId)) {
-        sessionTokenMutexes.set(sessionId, new Mutex());
-    }
-    return sessionTokenMutexes.get(sessionId);
+  if (!sessionTokenMutexes.has(sessionId)) {
+    sessionTokenMutexes.set(sessionId, new Mutex());
+  }
+  return sessionTokenMutexes.get(sessionId);
 }
 
 /**
@@ -82,55 +82,55 @@ function getSessionTokenMutex(sessionId) {
  * @throws {Error} - Throws an error if the token request fails.
  */
 async function getAuthToken(
-    sessionId,
-    tenantId,
-    clientId,
-    clientSecret,
-    scope,
-    apiKey,
+  sessionId,
+  tenantId,
+  clientId,
+  clientSecret,
+  scope,
+  apiKey,
 ) {
-    const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
-    const mutex = getSessionTokenMutex(sessionId);
-    const release = await mutex.acquire();
-    let authToken = sessionAuthTokens.get(sessionId);
-    let tokenExpiry = sessionTokenExpiries.get(sessionId);
+  const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const mutex = getSessionTokenMutex(sessionId);
+  const release = await mutex.acquire();
+  let authToken = sessionAuthTokens.get(sessionId);
+  let tokenExpiry = sessionTokenExpiries.get(sessionId);
 
-    try {
-        // Check if a valid cached token exists for this session
-        if (authToken &amp;&amp; tokenExpiry &amp;&amp; Date.now() &lt; tokenExpiry) {
-            return authToken;
-        }
-
-        if (!apiKey || !clientId || !clientSecret || !tenantId) {
-            throw new Error('Parameters not specified');
-        }
-
-        // Make a POST request to the authentication endpoint
-        const response = await superagent
-            .post(authUrl)
-            .set('Content-Type', 'application/x-www-form-urlencoded')
-            .send('grant_type=client_credentials')
-            .send(`client_id=${clientId}`)
-            .send(`client_secret=${clientSecret}`)
-            .send(`scope=${scope}`);
-
-        // Check if the request was successful and the response contains a token
-        if (response.status === 200 &amp;&amp; response.body &amp;&amp; response.body.access_token) {
-            authToken = response.body.access_token;
-            // Assuming the token has a 60-minute validity, set expiry to 59 minutes for safety.
-            tokenExpiry = Date.now() + (59 * 60 * 1000);
-            sessionAuthTokens.set(sessionId, authToken);
-            sessionTokenExpiries.set(sessionId, tokenExpiry);
-            return authToken;
-        }
-        logger.error(`Error obtaining auth token [Session: ${sessionId}]: ${response.status} ${JSON.stringify(response.body)}`);
-        throw new Error('Failed to obtain auth token from Microsoft server.');
-    } catch (error) {
-        logger.error(`Error during auth token request [Session: ${sessionId}]: ${error.message}`);
-        throw error;
-    } finally {
-        release();
+  try {
+    // Check if a valid cached token exists for this session
+    if (authToken &amp;&amp; tokenExpiry &amp;&amp; Date.now() &lt; tokenExpiry) {
+      return authToken;
     }
+
+    if (!apiKey || !clientId || !clientSecret || !tenantId) {
+      throw new Error('Parameters not specified');
+    }
+
+    // Make a POST request to the authentication endpoint
+    const response = await superagent
+      .post(authUrl)
+      .set('Content-Type', 'application/x-www-form-urlencoded')
+      .send('grant_type=client_credentials')
+      .send(`client_id=${clientId}`)
+      .send(`client_secret=${clientSecret}`)
+      .send(`scope=${scope}`);
+
+    // Check if the request was successful and the response contains a token
+    if (response.status === 200 &amp;&amp; response.body &amp;&amp; response.body.access_token) {
+      authToken = response.body.access_token;
+      // Assuming the token has a 60-minute validity, set expiry to 59 minutes for safety.
+      tokenExpiry = Date.now() + (59 * 60 * 1000);
+      sessionAuthTokens.set(sessionId, authToken);
+      sessionTokenExpiries.set(sessionId, tokenExpiry);
+      return authToken;
+    }
+    logger.error(`Error obtaining auth token [Session: ${sessionId}]: ${response.status} ${JSON.stringify(response.body)}`);
+    throw new Error('Failed to obtain auth token from Microsoft server.');
+  } catch (error) {
+    logger.error(`Error during auth token request [Session: ${sessionId}]: ${error.message}`);
+    throw error;
+  } finally {
+    release();
+  }
 }
 
 /**
@@ -144,53 +144,54 @@ async function getAuthToken(
  * @throws {Error} If there is an error during the API call.
  */
 async function getVehicleHistory(sessionId, registrationNumber) {
-    const apiKey = process.env.DOSA_API_KEY;
-    const clientId = process.env.DOSA_CLIENT_ID;
-    const clientSecret = process.env.DOSA_API_SECRET;
-    const tenantId = process.env.DOSA_AUTH_TENANT_ID;
-    logger.debug(`Invoking get MOT history [Session: ${sessionId}]`);
-    try {
-        // Get a valid authentication token for the session
-        const token = await getAuthToken(
-            sessionId,
-            tenantId,
-            clientId,
-            clientSecret,
-            'https://tapi.dvsa.gov.uk/.default',
-            apiKey,
-        );
+  const apiKey = process.env.DOSA_API_KEY;
+  const clientId = process.env.DOSA_CLIENT_ID;
+  const clientSecret = process.env.DOSA_API_SECRET;
+  const tenantId = process.env.DOSA_AUTH_TENANT_ID;
+  logger.debug(`Invoking get MOT history [Session: ${sessionId}]`);
+  try {
+    // Get a valid authentication token for the session
+    const token = await getAuthToken(
+      sessionId,
+      tenantId,
+      clientId,
+      clientSecret,
+      'https://tapi.dvsa.gov.uk/.default',
+      apiKey,
+    );
 
-        if (!token) {
-            throw new Error('Error: The authToken was not generated successfully');
-        }
-
-        const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(registrationNumber)}`;
-
-        // Make a GET request to the vehicle history endpoint
-        const response = await superagent
-            .get(apiUrl)
-            .set('Authorization', `Bearer ${token}`)
-            .set('X-API-Key', apiKey)
-            .set('Accept', 'application/json');
-
-        // Handle different response statuses
-        if (response.status === 200) {
-            return response.body;
-        } if (response.status === 404) {
-            logger.error(`Vehicle with registration '${registrationNumber}' not found [Session: ${sessionId}]`);
-            return null;
-        }
-        logger.error(`Error querying vehicle history [Session: ${sessionId}]: ${response.status} ${response.body}`);
-        throw new Error(`Failed to query vehicle history: ${response.status}`);
-    } catch (error) {
-        logger.error(`Error during vehicle history query [Session: ${sessionId}]: ${error.message}`);
-        throw error;
+    if (!token) {
+      throw new Error('Error: The authToken was not generated successfully');
     }
+
+    const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(registrationNumber)}`;
+
+    // Make a GET request to the vehicle history endpoint
+    const response = await superagent
+      .get(apiUrl)
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-API-Key', apiKey)
+      .set('Accept', 'application/json');
+
+    // Handle different response statuses
+    if (response.status === 200) {
+      return response.body;
+    } if (response.status === 404) {
+      logger.error(`Vehicle with registration '${registrationNumber}' not found [Session: ${sessionId}]`);
+      return null;
+    }
+    logger.error(`Error querying vehicle history [Session: ${sessionId}]: ${response.status} ${response.body}`);
+    throw new Error(`Failed to query vehicle history: ${response.status}`);
+  } catch (error) {
+    logger.error(`Error during vehicle history query [Session: ${sessionId}]: ${error.message}`);
+    throw error;
+  }
 }
 
 module.exports = {
-    getVehicleHistory,
-};</code></pre>
+  getVehicleHistory,
+};
+</code></pre>
         </article>
     </section>
 
@@ -206,7 +207,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 18 2025 15:56:11 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 18 2025 19:16:08 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

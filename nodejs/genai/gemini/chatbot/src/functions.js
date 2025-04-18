@@ -1,23 +1,23 @@
-const logger = require('./logger');
 const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
+const logger = require('./logger');
 
 const {
-    createGithubPullRequest,
-    fetchRepoContentsRecursive,
-    listBranches,
-    listCommitHistory,
-    listDirectoryContents,
-    listGitHubActions,
-    listPublicRepos,
+  createGithubPullRequest,
+  fetchRepoContentsRecursive,
+  listBranches,
+  listCommitHistory,
+  listDirectoryContents,
+  listGitHubActions,
+  listPublicRepos,
 } = require('./gitFunctions');
 
 const {
-    codeReviews,
-    cleanupSession: cleanupCodeReviewSession, // Import cleanup for code reviews
+  codeReviews,
+  cleanupSession: cleanupCodeReviewSession, // Import cleanup for code reviews
 } = require('./codeReviews');
 
 const {
-    getVehicleHistory,
+  getVehicleHistory,
 } = require('./dosaFunctions');
 
 /* eslint-disable max-len */
@@ -67,15 +67,15 @@ const registryMutex = new Mutex();
  * @returns {Record<string, RegisteredFunction>} The function registry for the session.
  */
 async function getSessionFunctionRegistry(sessionId) {
-    const release = await registryMutex.acquire();
-    try {
-        if (!availableFunctionsRegistry.has(sessionId)) {
-            availableFunctionsRegistry.set(sessionId, {});
-        }
-        return availableFunctionsRegistry.get(sessionId);
-    } finally {
-        release();
+  const release = await registryMutex.acquire();
+  try {
+    if (!availableFunctionsRegistry.has(sessionId)) {
+      availableFunctionsRegistry.set(sessionId, {});
     }
+    return availableFunctionsRegistry.get(sessionId);
+  } finally {
+    release();
+  }
 }
 
 /**
@@ -84,15 +84,15 @@ async function getSessionFunctionRegistry(sessionId) {
  * @returns {FunctionMetadata[]} The function metadata array for the session.
  */
 async function getSessionFuncsMetadata(sessionId) {
-    const release = await registryMutex.acquire();
-    try {
-        if (!funcsMetadata.has(sessionId)) {
-            funcsMetadata.set(sessionId, []);
-        }
-        return funcsMetadata.get(sessionId);
-    } finally {
-        release();
+  const release = await registryMutex.acquire();
+  try {
+    if (!funcsMetadata.has(sessionId)) {
+      funcsMetadata.set(sessionId, []);
     }
+    return funcsMetadata.get(sessionId);
+  } finally {
+    release();
+  }
 }
 
 /**
@@ -106,167 +106,167 @@ async function getSessionFuncsMetadata(sessionId) {
  * @param {string[]} required - An array of required parameter names.
  */
 async function registerFunction(sessionId, name, func, params, description, parametersSchema, required) {
-    const sessionRegistry = await getSessionFunctionRegistry(sessionId);
-    const sessionFuncs = await getSessionFuncsMetadata(sessionId);
+  const sessionRegistry = await getSessionFunctionRegistry(sessionId);
+  const sessionFuncs = await getSessionFuncsMetadata(sessionId);
 
-    const release = await registryMutex.acquire();
-    try {
-        if (sessionRegistry[name]) {
-            logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be overwritten.`);
-        }
-        sessionRegistry[name] = { func, params };
-
-        const functionMetadata = {
-            type: 'function',
-            function: {
-                name,
-                description,
-                parameters: {
-                    type: 'object',
-                    properties: parametersSchema,
-                    required,
-                },
-            },
-        };
-        sessionFuncs.push(functionMetadata);
-    } finally {
-        release();
+  const release = await registryMutex.acquire();
+  try {
+    if (sessionRegistry[name]) {
+      logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be overwritten.`);
     }
+    sessionRegistry[name] = { func, params };
+
+    const functionMetadata = {
+      type: 'function',
+      function: {
+        name,
+        description,
+        parameters: {
+          type: 'object',
+          properties: parametersSchema,
+          required,
+        },
+      },
+    };
+    sessionFuncs.push(functionMetadata);
+  } finally {
+    release();
+  }
 }
 
 async function loadCodeReviews(sessionId) {
-    await registerFunction(
-        sessionId,
-        'file_review',
-        (username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
-        ['username', 'repoName', 'repoPath'],
-        'Review files in a given GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-            repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-        },
-        ['username', 'repoName', 'repoPath'],
-    );
+  await registerFunction(
+    sessionId,
+    'file_review',
+    (username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
+    ['username', 'repoName', 'repoPath'],
+    'Review files in a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+    },
+    ['username', 'repoName', 'repoPath'],
+  );
 }
 
 async function loadDosa(sessionId) {
-    await registerFunction(
-        sessionId,
-        'get_mot_history',
-        (registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
-        ['registrationNumber'],
-        'Get the MOT History for a vehicle.',
-        {
-            registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
-        },
-        ['registrationNumber'],
-    );
+  await registerFunction(
+    sessionId,
+    'get_mot_history',
+    (registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
+    ['registrationNumber'],
+    'Get the MOT History for a vehicle.',
+    {
+      registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
+    },
+    ['registrationNumber'],
+  );
 }
 
 async function loadGitHub(sessionId) {
-    await registerFunction(
-        sessionId,
-        'create_pull_request',
-        createGithubPullRequest,
-        ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
-        'Create a pull request on a given GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-            title: { type: 'string', description: 'The Pull Request title.' },
-            sourceBranch: { type: 'string', description: 'The source branch name.' },
-            targetBranch: { type: 'string', description: 'The target branch name.' },
-            body: { type: 'string', description: 'The description or body of the pull request.' },
-        },
-        ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
-    );
+  await registerFunction(
+    sessionId,
+    'create_pull_request',
+    createGithubPullRequest,
+    ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+    'Create a pull request on a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      title: { type: 'string', description: 'The Pull Request title.' },
+      sourceBranch: { type: 'string', description: 'The source branch name.' },
+      targetBranch: { type: 'string', description: 'The target branch name.' },
+      body: { type: 'string', description: 'The description or body of the pull request.' },
+    },
+    ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+  );
 
-    await registerFunction(
-        sessionId,
-        'fetch_repo_contents',
-        fetchRepoContentsRecursive,
-        ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
-        'Fetch or download the contents of a GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-            repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-            localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
-            includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
-            retryCount: { type: 'number', description: 'The retry count to use.' },
-            maxRetries: { type: 'number', description: 'The maximum number of retries.' },
-        },
-        ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
-    );
+  await registerFunction(
+    sessionId,
+    'fetch_repo_contents',
+    fetchRepoContentsRecursive,
+    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    'Fetch or download the contents of a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
+      includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
+      retryCount: { type: 'number', description: 'The retry count to use.' },
+      maxRetries: { type: 'number', description: 'The maximum number of retries.' },
+    },
+    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+  );
 
-    await registerFunction(
-        sessionId,
-        'list_actions',
-        listGitHubActions,
-        ['username', 'repoName', 'status'],
-        'Lists the GitHub actions running in a GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-            status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
-        },
-        ['username', 'repoName'],
-    );
+  await registerFunction(
+    sessionId,
+    'list_actions',
+    listGitHubActions,
+    ['username', 'repoName', 'status'],
+    'Lists the GitHub actions running in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
+    },
+    ['username', 'repoName'],
+  );
 
-    await registerFunction(
-        sessionId,
-        'list_public_repos',
-        listPublicRepos,
-        ['username'],
-        'Lists public repositories for a given GitHub username.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-        },
-        ['username'],
-    );
+  await registerFunction(
+    sessionId,
+    'list_public_repos',
+    listPublicRepos,
+    ['username'],
+    'Lists public repositories for a given GitHub username.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+    },
+    ['username'],
+  );
 
-    await registerFunction(
-        sessionId,
-        'list_branches',
-        listBranches,
-        ['username', 'repoName'],
-        'Lists branches for a given GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-        },
-        ['username', 'repoName'],
-    );
+  await registerFunction(
+    sessionId,
+    'list_branches',
+    listBranches,
+    ['username', 'repoName'],
+    'Lists branches for a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['username', 'repoName'],
+  );
 
-    await registerFunction(
-        sessionId,
-        'list_commit_history',
-        listCommitHistory,
-        ['username', 'repoName', 'dirName'],
-        'Lists commit history for a file in a GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-            dirName: { type: 'string', description: 'The file or directory path.' },
-        },
-        ['username', 'repoName', 'dirName'],
-    );
+  await registerFunction(
+    sessionId,
+    'list_commit_history',
+    listCommitHistory,
+    ['username', 'repoName', 'dirName'],
+    'Lists commit history for a file in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      dirName: { type: 'string', description: 'The file or directory path.' },
+    },
+    ['username', 'repoName', 'dirName'],
+  );
 
-    await registerFunction(
-        sessionId,
-        'list_directory_contents',
-        listDirectoryContents,
-        ['username', 'repoName', 'repoDirName', 'recursive'],
-        'Lists the contents of a directory in a GitHub repository.',
-        {
-            username: { type: 'string', description: 'The GitHub username.' },
-            repoName: { type: 'string', description: 'The repository name.' },
-            repoDirName: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
-            recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to false if not provided' },
-        },
-        ['username', 'repoName'],
-    );
+  await registerFunction(
+    sessionId,
+    'list_directory_contents',
+    listDirectoryContents,
+    ['username', 'repoName', 'repoDirName', 'recursive'],
+    'Lists the contents of a directory in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to false if not provided' },
+    },
+    ['username', 'repoName'],
+  );
 }
 
 /**
@@ -275,7 +275,7 @@ async function loadGitHub(sessionId) {
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
  */
 async function getFunctionDefinitionsForTool(sessionId) {
-    return await getSessionFuncsMetadata(sessionId);
+  return await getSessionFuncsMetadata(sessionId);
 }
 
 /**
@@ -284,40 +284,40 @@ async function getFunctionDefinitionsForTool(sessionId) {
  * @returns {Promise<Record<string, RegisteredFunction>>} An object mapping function names to their implementations.
  */
 async function getAvailableFunctions(sessionId) {
-    return await getSessionFunctionRegistry(sessionId);
+  return await getSessionFunctionRegistry(sessionId);
 }
 
 async function loadIntegrations(sessionId) {
-    if (process.env.GITHUB_TOKEN) {
-        logger.info(`Loading GitHub integration for session: ${sessionId}`);
-        await loadGitHub(sessionId);
-        logger.info(`Loading GitHub code review integration for session: ${sessionId}`);
-        await loadCodeReviews(sessionId);
-    }
+  if (process.env.GITHUB_TOKEN) {
+    logger.info(`Loading GitHub integration for session: ${sessionId}`);
+    await loadGitHub(sessionId);
+    logger.info(`Loading GitHub code review integration for session: ${sessionId}`);
+    await loadCodeReviews(sessionId);
+  }
 
-    if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
+  if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
         && process.env.DOSA_AUTH_TENANT_ID
         && process.env.DOSA_CLIENT_ID) {
-        logger.info(`Loading DOSA/DLVA integration for session: ${sessionId}`);
-        await loadDosa(sessionId);
-    }
+    logger.info(`Loading DOSA/DLVA integration for session: ${sessionId}`);
+    await loadDosa(sessionId);
+  }
 }
 
 async function cleanupSession(sessionId) {
-    const release = await registryMutex.acquire();
-    try {
-        availableFunctionsRegistry.delete(sessionId);
-        funcsMetadata.delete(sessionId);
-    } finally {
-        release();
-    }
-    await cleanupCodeReviewSession(sessionId); // Clean up resources from codeReviews
-    logger.info(`Cleaned up function registry for session: ${sessionId}`);
+  const release = await registryMutex.acquire();
+  try {
+    availableFunctionsRegistry.delete(sessionId);
+    funcsMetadata.delete(sessionId);
+  } finally {
+    release();
+  }
+  await cleanupCodeReviewSession(sessionId); // Clean up resources from codeReviews
+  logger.info(`Cleaned up function registry for session: ${sessionId}`);
 }
 
 module.exports = {
-    getAvailableFunctions,
-    getFunctionDefinitionsForTool,
-    loadIntegrations,
-    cleanupSession,
+  getAvailableFunctions,
+  getFunctionDefinitionsForTool,
+  loadIntegrations,
+  cleanupSession,
 };

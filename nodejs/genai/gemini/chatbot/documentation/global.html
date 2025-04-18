@@ -602,7 +602,7 @@
 
         
             
-<h4 class="name" id="sessions"><span class="type-signature">(constant) </span>sessions<span class="type-signature"></span></h4>
+<h4 class="name" id="sessions"><span class="type-signature">(constant) </span>sessions<span class="type-signature"> :Map.&lt;string, {context: string, chat: (ChatSession|null), history: Array.&lt;Array.&lt;Part>>}></span></h4>
 
 
 
@@ -613,6 +613,16 @@ The key is the client's session ID.
 </div>
 
 
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Map.&lt;string, {context: string, chat: (ChatSession|null), history: Array.&lt;Array.&lt;Part>>}></span>
+
+
+        </li>
+    </ul>
 
 
 
@@ -647,7 +657,7 @@ The key is the client's session ID.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line34">line 34</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line35">line 35</a>
     </li></ul></dd>
     
 
@@ -823,7 +833,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line65">line 65</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line66">line 66</a>
     </li></ul></dd>
     
 
@@ -1005,7 +1015,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line119">line 119</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -1164,7 +1174,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line83">line 83</a>
+        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line82">line 82</a>
     </li></ul></dd>
     
 
@@ -1793,7 +1803,7 @@ Handles API errors, including specific GitHub errors.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line471">line 471</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line470">line 470</a>
     </li></ul></dd>
     
 
@@ -3526,7 +3536,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line179">line 179</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line180">line 180</a>
     </li></ul></dd>
     
 
@@ -3584,7 +3594,7 @@ authentication endpoint using the client credentials grant type.
     
 
     
-    <h4 class="name" id="getChatSession"><span class="type-signature"></span>getChatSession<span class="signature">(sessionId)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getChatSession"><span class="type-signature"></span>getChatSession<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {ChatSession}</span></h4>
     
 
     
@@ -3685,7 +3695,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line152">line 152</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line153">line 153</a>
     </li></ul></dd>
     
 
@@ -3713,7 +3723,23 @@ authentication endpoint using the client credentials grant type.
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    The chat session.
+</div>
 
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">ChatSession</span>
+
+
+    </dd>
+</dl>
 
     
 
@@ -4169,7 +4195,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line55">line 55</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line56">line 56</a>
     </li></ul></dd>
     
 
@@ -4351,7 +4377,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line86">line 86</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -5359,7 +5385,7 @@ if found, or null if the vehicle is not found (404).
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line142">line 142</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line143">line 143</a>
     </li></ul></dd>
     
 
@@ -6941,7 +6967,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line531">line 531</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line530">line 530</a>
     </li></ul></dd>
     
 
@@ -7514,7 +7540,7 @@ that is not due to the directory not existing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line97">line 97</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -8978,7 +9004,7 @@ and the values are the contents of the files.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 18 2025 15:56:11 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 18 2025 19:16:08 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
