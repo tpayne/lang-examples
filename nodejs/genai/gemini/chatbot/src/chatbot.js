@@ -8,7 +8,8 @@ const morganMiddleware = require('./morganmw');
 const path = require('path');
 const session = require('express-session');
 const util = require('util');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI, ChatSession, Part } = require("@google/generative-ai"); // Import necessary types
+
 const { getAvailableFunctions, getFunctionDefinitionsForTool, loadIntegrations } = require('./functions');
 const { getConfig, loadProperties } = require('./properties');
 
@@ -29,7 +30,7 @@ const ai = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
 /**
  * Stores the conversation history and context for each client session.
  * The key is the client's session ID.
- * @type {Map<string, { context: string, chat: import('@google/generative-ai').ChatSession | null, history: Array<import('@google/generative-ai').Part[]> }>}
+ * @type {Map<string, { context: string, chat: ChatSession | null, history: Part[][] }>}
  */
 const sessions = new Map();
 
@@ -147,11 +148,11 @@ const handleFunctionCall = async (functionCall) => {
 /**
  * Gets or creates a chat session for a given client, initializing with history.
  * @param {string} sessionId The ID of the client session.
- * @returns {import('@google/generative-ai').ChatSession} The chat session.
+ * @returns {ChatSession} The chat session.
  */
 const getChatSession = (sessionId) => {
     if (!sessions.has(sessionId)) {
-        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
+        sessions.set(sessionId, { context: '', chat: null, history: [] });
     }
     const session = sessions.get(sessionId);
     if (!session.chat) {
