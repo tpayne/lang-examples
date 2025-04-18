@@ -9,7 +9,7 @@ concurrency:
 
 # Tasks and jobs to run
 jobs:
-  build:
+  build-c:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
     outputs:
@@ -61,6 +61,10 @@ jobs:
           (cd CPPExamples/MessageUtils && \
           docker build . -f Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/messageutils:latest)
 
+  build-node:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
+
       - name: Build the NodeJS Parse Docker image...
         id: nodejsparse-image
         run: |
@@ -97,6 +101,9 @@ jobs:
           (cd nodejs/dbops/app/ && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsdb:1.0)
 
+  build-node-azure:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
       - name: Build the NodeJS Table Docker image...
         id: nodejstable-image
         run: |
@@ -119,6 +126,20 @@ jobs:
           (cd nodejs/Azure/File/ && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsfile:1.0)
 
+      - name: Build the NodeJS Graph Docker image...
+        id: nodejsquery-image
+        run: |
+            IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery
+            IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+            echo "::set-output name=image::$IMAGE_ID"
+            echo "::set-output name=tag::$IMAGE_TAG"
+  
+            (cd nodejs/Azure/Graph/ && \
+            docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery:1.0)
+ 
+  build-node-ai:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
       - name: Build the NodeJS OpenAI chatbot Docker image...
         id: nodejschatbot-image
         run: |
@@ -154,18 +175,7 @@ jobs:
             sleep 10 && curl localhost:8080/status && \
             curl localhost:8080/ && \
             docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0)
-    
-      - name: Build the NodeJS Graph Docker image...
-        id: nodejsquery-image
-        run: |
-            IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery
-            IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
-            echo "::set-output name=image::$IMAGE_ID"
-            echo "::set-output name=tag::$IMAGE_TAG"
-  
-            (cd nodejs/Azure/Graph/ && \
-            docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsquery:1.0)
-  
+     
       - name: Stopping containers for further testing...
         run: (docker stop $(docker container ls -q))
 
