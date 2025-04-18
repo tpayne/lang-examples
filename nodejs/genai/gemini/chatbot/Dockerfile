@@ -21,6 +21,7 @@ FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 WORKDIR /source
 
 COPY package.json package-lock.json* ./
+COPY .*lint* ./
 
 # Copy the built node_modules from the prebuild stage
 COPY --from=prebuild /source/node_modules ./node_modules
