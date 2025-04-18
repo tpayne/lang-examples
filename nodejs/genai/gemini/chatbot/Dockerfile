@@ -26,9 +26,12 @@ COPY package.json package-lock.json* ./
 # Copy the built node_modules from the prebuild stage
 COPY --from=prebuild /source/node_modules ./node_modules
 COPY src/ ./src/
+COPY package.json package-lock.json* ./src/
 COPY contexts ./contexts
 COPY resources ./resources
 COPY templates ./templates
+
+COPY package.json package-lock.json* ./src/
 
 RUN npm install -g pkg && \
     pkg -t node${nodeVersion} ./src/ -o nodeexe --no-sign
