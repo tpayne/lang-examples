@@ -174,8 +174,7 @@ jobs:
               -e GOOGLE_API_KEY=ABCD \
               ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0 && \
             sleep 10 && curl localhost:8080/status && \
-            curl localhost:8080/ && \
-            docker push ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0)
+            curl localhost:8080/)
      
       - name: Stopping containers for further testing...
         run: (docker stop $(docker container ls -q))
