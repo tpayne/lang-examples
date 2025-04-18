@@ -5,5 +5,9 @@ module.exports = {
 	"attr-name-ignore-regex": false,
 	"id-class-ignore-regex": false,
 	"line-max-len-ignore-regex": false,
-	"rules": {}
+	"rules": {
+		"indent-style": false,
+		"id-class-style": false,
+		"tag-bans": false
+	}
 }
