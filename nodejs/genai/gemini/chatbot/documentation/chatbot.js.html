@@ -26,353 +26,292 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>const { GoogleGenAI } = require('@google/genai');
-
-const RateLimit = require('express-rate-limit');
+            <pre class="prettyprint source linenums"><code>const RateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
-const fs = require('fs');
+const fs = require('fs').promises;
+const logger = require('./logger');
+const morganMiddleware = require('./morganmw');
 const path = require('path');
+const session = require('express-session');
 const util = require('util');
-const logger = require('./logger'); // Assuming you have a logger module
-const morganMiddleware = require('./morganmw'); // Assuming you have a morgan middleware module
-
-const { getConfig, loadProperties } = require('./properties'); // Assuming you have a properties module
-
-const {
-  getAvailableFunctions,
-  getFunctionDefinitionsForTool,
-} = require('./functions');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { getAvailableFunctions, getFunctionDefinitionsForTool, loadIntegrations } = require('./functions');
+const { getConfig, loadProperties } = require('./properties');
 
 dotenv.config();
 
 const app = express();
+
+// Rate limiting (as before)
 const limiter = RateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // max 100 requests per windowMs
-  keyGenerator: (req) => req.ip, // Rate limit per IP address (Suggestion 4)
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    keyGenerator: (req) => req.sessionID, // Use session ID for rate limiting
 });
 app.use(limiter);
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
-let ctxStr = '';
-const msgCache = new Map();
+const ai = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+/**
+ * Stores the conversation history and context for each client session.
+ * The key is the client's session ID.
+ * @type {Map&lt;string, { context: string, chat: import('@google/generative-ai').ChatSession | null, history: Array&lt;import('@google/generative-ai').Part[]> }>}
+ */
+const sessions = new Map();
+
+const MemcachedStore = require('connect-memcached')(session);
+
+app.use(session({
+    secret: process.env.GOOGLE_API_KEY,
+    resave: false,
+    saveUninitialized: true,
+    store: new MemcachedStore({
+        hosts: ['127.0.0.1:11211']
+    })
+}));
 
 app.use(bodyParser.json());
 app.use(morganMiddleware);
 
-/**
- * Normalizes a string to create a consistent key for the message cache.
- * Removes non-alphanumeric characters and converts to uppercase.
- * @param {string} keyString The string to normalize.
- * @returns {string} The normalized key.
- */
 const getKey = (keyString) => keyString.replace(/\W+/g, '').toUpperCase();
 
-/**
- * Adds a query and its response to the message cache.
- * Limits the cache size to 1000 entries, removing the oldest 100 if full.
- * @param {string} query The user's query.
- * @param {string} response The chatbot's response.
- * @returns {boolean} True if the response was added to the cache.
- */
-const addResponse = (query, response) => {
-  const keyStr = getKey(query);
-  if (msgCache.has(keyStr)) return true;
-  if (msgCache.size > 1000) {
-    Array.from(msgCache.keys()).slice(0, 100).forEach((key) => msgCache.delete(key));
-  }
-  msgCache.set(keyStr, response);
-  return true;
-};
-
-/**
- * Retrieves a cached response for a given query.
- * @param {string} query The user's query.
- * @returns {string} The cached response, or an empty string if not found.
- */
-const getResponse = (query) => msgCache.get(getKey(query)) || '';
-
-/**
- * Reads the context from a file in the 'contexts' directory.
- * Validates the path to prevent accessing files outside the context directory.
- * Uses asynchronous file reading for better performance.
- * @param {string} contextStr The name of the context file.
- * @returns {Promise&lt;string>} The content of the context file
- */
-const readContext = async (contextStr) => {
-  try {
-    const contextPath = path.resolve('contexts', contextStr);
-    const normalizedContextPath = path.normalize(contextPath);
-    const normalizedContextsPath = path.normalize(path.resolve('contexts'));
-    if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
-      throw new Error('Invalid context path');
+const addResponse = (sessionId, query, response) => {
+    if (!sessions.has(sessionId)) {
+        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
     }
-    return await fs.promises.readFile(contextPath, 'utf-8'); // Suggestion 1
-  } catch (err) {
-    logger.error(`Cannot load '${contextStr}'`, err);
-    return '';
-  }
+    const session = sessions.get(sessionId);
+    const cache = session.messageCache;
+    const keyStr = getKey(query);
+    if (cache.has(keyStr)) return true;
+    if (cache.size > 1000) {
+        Array.from(cache.keys()).slice(0, 100).forEach((key) => cache.delete(key));
+    }
+    cache.set(keyStr, response);
+    return true;
 };
 
-/* eslint-disable no-return-await, prefer-spread */
-/**
- * Calls a function by its name, using the provided arguments.
- * Retrieves the function definition from the available functions registry.
- * Handles potential errors during function execution and logs them.
- * Returns a structured error object on failure.
- * @param {string} name The name of the function to call.
- * @param {object} args An object containing the arguments for the function.
- * @returns {Promise&lt;any>} The result of the function call, or an error object.
- */
+const getResponse = (sessionId, query) => {
+    const session = sessions.get(sessionId);
+    return session?.messageCache?.get(getKey(query)) || '';
+};
+
+const readContext = async (contextStr) => {
+    try {
+        const contextPath = path.resolve('contexts', contextStr);
+        const normalizedContextPath = path.normalize(contextPath);
+        const normalizedContextsPath = path.normalize(path.resolve('contexts'));
+        if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
+            throw new Error('Invalid context path');
+        }
+        return await fs.readFile(contextPath, 'utf-8');
+    } catch (err) {
+        logger.error(`Cannot load context '${contextStr}'`, err);
+        return '';
+    }
+};
+
 const callFunctionByName = async (name, args) => {
-  const functionInfo = getAvailableFunctions()[name];
-  if (functionInfo &amp;&amp; functionInfo.func) {
-    const { func, params } = functionInfo;
-    const argValues = params.map((paramName) => args[paramName]);
+    const functionInfo = getAvailableFunctions()[name];
+    if (functionInfo &amp;&amp; functionInfo.func) {
+        const { func, params } = functionInfo;
+        const argValues = params.map((paramName) => args[paramName]);
+        try {
+            const result = await func.apply(null, argValues);
+            logger.info(`Function '${name}' executed`, { arguments: args, result });
+            return result;
+        } catch (error) {
+            logger.error(`Error executing function '${name}'`, { arguments: args, error: error.message });
+            return { error: 'Function execution failed', details: error.message };
+        }
+    }
+    return { error: `Function '${name}' not found` };
+};
+
+const handleFunctionCall = async (functionCall) => {
+    const { name, args } = functionCall;
+    return await callFunctionByName(name, args);
+};
+
+/**
+ * Gets or creates a chat session for a given client, initializing with history.
+ * @param {string} sessionId The ID of the client session.
+ * @returns {import('@google/generative-ai').ChatSession} The chat session.
+ */
+const getChatSession = (sessionId) => {
+    if (!sessions.has(sessionId)) {
+        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
+    }
+    const session = sessions.get(sessionId);
+    if (!session.chat) {
+        const model = ai.generativeModel({ model: getConfig().aiModel });
+        session.chat = model.startChat({
+            history: session.history, // Initialize with stored history
+            generationConfig: {
+                maxOutputTokens: Number(getConfig().maxTokens),
+                temperature: Number(getConfig().temperature),
+                topP: Number(getConfig().top_p),
+            },
+        });
+    }
+    return session.chat;
+};
+
+/**
+ * Gets a chat response from the Gemini API, maintaining state per session.
+ * @param {string} sessionId The ID of the client session.
+ * @param {string} userInput The user's message.
+ * @param {boolean} [forceJson=false] Whether to request a JSON response.
+ * @returns {Promise&lt;string|object>} The chatbot's response.
+ */
+const getChatResponse = async (sessionId, userInput, forceJson = false) => {
+    await loadIntegrations(sessionId);
+    const tools = getFunctionDefinitionsForTool();
+    let session = sessions.get(sessionId); // Retrieve the session
+
+    // Initialize the session if it doesn't exist
+    if (!session) {
+        session = { context: '', chat: null, history: [], messageCache: new Map() };
+        sessions.set(sessionId, session); // Set the newly created session
+    }
+
+    // Handle special commands per session
+    if (userInput.includes('help')) return 'Sample *Help* text';
+    if (userInput.includes('bot-echo-string')) {
+        return userInput || 'No string to echo';
+    }
+    if (userInput.includes('bot-context')) {
+        const botCmd = userInput.split(' ');
+        switch (botCmd[1]) {
+            case 'load':
+                session.context = await readContext(botCmd[2].trim()); // Now session is guaranteed to be defined
+                return session.context ? 'Context loaded for this session' : 'Context file could not be read or is empty';
+            case 'show':
+                return session.context || 'Context is empty for this session';
+            case 'reset':
+                session.context = '';
+                // Reset logic...
+                return 'Context and chat history reset for this session';
+            default:
+                return 'Invalid command';
+        }
+    }
+
+    if (!session.context) return 'Error: Context is not set for this session. Please load one.';
+
+    const cachedResponse = getResponse(sessionId, userInput);
+    if (cachedResponse) return cachedResponse;
 
     try {
-      const result = await func.apply(null, argValues);
-      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
-      return result;
-    } catch (error) {
-      const errStr = error.message;
-      logger.error(`Error executing function '${name}'`, { arguments: args, error: errStr }); // Suggestion 6
-      return { error: 'Function execution failed', details: errStr }; // Suggestion 3
-    }
-  }
-  return { error: `Function '${name}' not recognized` };
-};
+        const chat = getChatSession(sessionId);
+        let prompt = `${session.context}\n${userInput}`;
+        if (forceJson) {
+            prompt += '\nYour response must be in JSON format.';
+        }
 
-/**
- * Handles a function call initiated by the Gemini API.
- * Extracts the function name and arguments and calls the corresponding function.
- * @param {object} functionCall The function call object received from the Gemini API.
- * @returns {Promise&lt;any>} The result of the function call.
- */
-const handleFunctionCall = async (functionCall) => {
-  const { name, args } = functionCall;
-  return await callFunctionByName(name, args);
-};
-/* eslint-enable no-return-await,prefer-spread */
+        const functionDefs = tools.map((tool) => tool.function);
+        const toolConfig = tools.length > 0 ? { tools: [{ functionDeclarations: functionDefs }] } : {};
 
-/**
- * Gets a chat response from the Gemini API based on user input and the current context.
- * Handles special commands, retrieves cached responses, and manages multi-turn function calls.
- * @param {string} userInput The user's message.
- * @param {boolean} [forceJson=false] Whether to force the Gemini response to be in JSON format
- * @returns {Promise&lt;string|object>} The chatbot's response or an error message/object.
- */
-const getChatResponse = async (userInput, forceJson = false) => {
-  const tools = getFunctionDefinitionsForTool();
+        let finalResponse = null;
+        let functionCallResult = null;
+        let numFunctionCalls = 0;
+        const maxFunctionCalls = 5;
+        let currentTurnParts = [{ text: prompt }];
 
-  // Handle special commands (Suggestion 8 - could be moved to config for more flexibility)
-  if (userInput.includes('help')) return 'Sample *Help* text';
-  if (userInput.includes('bot-echo-string')) {
-    return userInput || 'No string to echo';
-  }
-  if (userInput.includes('bot-context')) {
-    const botCmd = userInput.split(' ');
-    switch (botCmd[1]) {
-      case 'load':
-        ctxStr = '';
-        ctxStr = await readContext(botCmd[2].trim()); // Await the async function
-        return ctxStr ? 'Context loaded' : 'Context file could not be read or is empty';
-      case 'show':
-        return ctxStr || 'Context is empty - ignored';
-      case 'reset':
-        loadProperties('resources/app.properties');
-        ctxStr = '';
-        return 'Context reset';
-      default:
-        return 'Invalid command';
-    }
-  }
+        while (!finalResponse &amp;&amp; numFunctionCalls &lt; maxFunctionCalls) {
+            const result = await chat.sendMessage({
+                parts: currentTurnParts,
+                ...toolConfig,
+            });
+            const response = await result.response;
 
-  // Check if context is set
-  if (!ctxStr) return 'Error: Context is not set. Please load one';
+            if (response.candidates &amp;&amp; response.candidates.length > 0) {
+                const candidate = response.candidates[0];
+                if (candidate.content &amp;&amp; candidate.content.parts &amp;&amp; candidate.content.parts.length > 0) {
+                    const part = candidate.content.parts[0];
+                    session.history.push(currentTurnParts); // Store user's turn
 
-  // Check for cached response
-  const cachedResponse = getResponse(userInput);
-  if (cachedResponse) return cachedResponse;
+                    if (part.functionCall) {
+                        numFunctionCalls++;
+                        const functionName = part.functionCall.name;
+                        const functionArgs = part.functionCall.args;
+                        logger.info(`Tool call initiated [Session: ${sessionId}], ${functionName} => ${JSON.stringify(functionArgs)}`);
+                        functionCallResult = await handleFunctionCall(part.functionCall);
+                        logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${util.inspect(functionCallResult)}`);
 
-  try {
-    let contxtStr = userInput;
-    if (forceJson) {
-      contxtStr += '\nYour response must be in json format.'; // Note: Gemini's direct JSON enforcement might differ
-    }
-
-    const functionDefs = tools.map((func) => func.function);
-    const generationConfig = {
-      maxOutputTokens: Number(getConfig().maxTokens),
-      temperature: Number(getConfig().temperature),
-      topP: Number(getConfig().top_p),
-    };
-    const parts = [{ role: 'user', text: `${ctxStr}\n${contxtStr}` }];
-    const toolsConfig = { tools: [{ functionDeclarations: functionDefs }] };
-
-    let finalResponse = null;
-    let functionCallResult = null;
-    let numFunctionCalls = 0;
-    const maxFunctionCalls = 5; // Limit to prevent infinite loops
-
-    /* eslint-disable no-return-await,max-len,no-plusplus,no-await-in-loop */
-    while (!finalResponse &amp;&amp; numFunctionCalls &lt; maxFunctionCalls) {
-      if (getConfig().debug === 'true') {
-        logger.debug(`Input into AI model (iteration ${numFunctionCalls}): ${util.inspect(parts, { depth: null })}`);
-      }
-      const result = await ai.models.generateContent({
-        model: getConfig().aiModel,
-        contents: parts,
-        generationConfig,
-        config: toolsConfig.tools.length > 0 ? toolsConfig : [],
-      });
-
-      if (!result || typeof result !== 'object') {
-        logger.error('Gemini API error: No response object');
-        return 'Error: No response from the API';
-      }
-
-      const response = result;
-      if (getConfig().debug === 'true') {
-        logger.debug(`Response from AI model (iteration ${numFunctionCalls}): ${util.inspect(response, { depth: null })}`);
-      }
-      if (response.candidates &amp;&amp; response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        if (candidate.content &amp;&amp; candidate.content.parts &amp;&amp; candidate.content.parts.length > 0) {
-          const part = candidate.content.parts[0];
-          if (part.functionCall) {
-            numFunctionCalls++;
-            const functionName = part.functionCall.name;
-            const functionArgs = part.functionCall.args;
-
-            logger.info(`Initiating tool call, ${functionName} => ${JSON.stringify(functionArgs)}`); // Suggestion 6
-
-            functionCallResult = await handleFunctionCall(part.functionCall);
-
-            if (getConfig().debug === 'true') {
-              logger.debug(`Function call detected (iteration ${numFunctionCalls}): ${functionName} with args: ${JSON.stringify(functionArgs)}`);
-              logger.debug(`Function call result (iteration ${numFunctionCalls}): ${functionCallResult}`);
+                        const functionResponsePart = {
+                            functionResponse: {
+                                name: functionName,
+                                response: { functionCallResult },
+                            },
+                        };
+                        session.history.push([functionResponsePart]); // Store function response turn
+                        await chat.sendMessage({ parts: [functionResponsePart] });
+                    } else if (part.text) {
+                        finalResponse = part.text;
+                        session.history.push([{ text: finalResponse }]); // Store bot's final response
+                    }
+                }
+            } else {
+                logger.warn(`Gemini API: No candidates in response [Session: ${sessionId}]`);
+                break;
             }
 
-            const functionResponsePart = {
-              name: functionName,
-              response: { functionCallResult },
-            };
-
-            // Send the function call result back to the model for a follow-up
-            parts.push({
-              role: 'model',
-              parts: [{
-                functionCall: part.functionCall,
-              }],
-            });
-            parts.push({
-              role: 'user',
-              parts: [{
-                functionResponse: functionResponsePart,
-              }],
-            });
-          } else if (part.text) {
-            finalResponse = part.text;
-          }
+            if (numFunctionCalls >= maxFunctionCalls &amp;&amp; !finalResponse) {
+                finalResponse = 'Error: Maximum function call limit reached without a final response.';
+            }
+            currentTurnParts = []; // Clear for the next potential turn in the loop
         }
-      } else {
-        logger.warn('Gemini API: No candidates in the response.');
-        break;
-      }
 
-      if (numFunctionCalls >= maxFunctionCalls &amp;&amp; !finalResponse) {
-        finalResponse = 'Error: Maximum function call limit reached without a final response.';
-      }
+        if (!finalResponse &amp;&amp; functionCallResult !== null &amp;&amp; typeof functionCallResult !== 'object' &amp;&amp; !functionCallResult.error) {
+            finalResponse = functionCallResult;
+            session.history.push([{ text: finalResponse }]);
+        } else if (!finalResponse &amp;&amp; functionCallResult &amp;&amp; functionCallResult.error) {
+            finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
+            session.history.push([{ text: finalResponse }]);
+        }
+
+        if (!finalResponse) {
+            throw Error('Not able to get a final response from Gemini.');
+        }
+
+        addResponse(sessionId, userInput, finalResponse);
+        return finalResponse;
+
+    } catch (err) {
+        logger.error(`Gemini API error [Session: ${sessionId}]:`, err);
+        return `Error processing request - ${err}`;
     }
-    /* eslint-enable no-return-await,max-len,no-plusplus,no-await-in-loop */
-
-    if (!finalResponse &amp;&amp; functionCallResult !== null &amp;&amp; typeof functionCallResult !== 'object' &amp;&amp; !functionCallResult.error) {
-      // If the last action was a successful function call and no final text response
-      finalResponse = functionCallResult;
-    } else if (!finalResponse &amp;&amp; functionCallResult &amp;&amp; functionCallResult.error) {
-      finalResponse = `Function call failed: ${functionCallResult.error} - ${functionCallResult.details || ''}`;
-    }
-
-    if (!finalResponse) {
-      throw Error('Not able to get a final response from Gemini.');
-    }
-
-    addResponse(contxtStr, finalResponse);
-    return finalResponse;
-  } catch (err) {
-    logger.error('Gemini API error:', err);
-    return `Error processing request - ${err}`;
-  }
 };
 
-/**
- * Handles GET requests to the root path, serving the 'indexBot.html' file.
- * @param {object} req The Express.js request object.
- * @param {object} res The Express.js response object.
- */
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
-
-/**
- * Handles GET requests to the '/version' path, returning the application version as JSON.
- * @param {object} req The Express.js request object.
- * @param {object} res The Express.js response object.
- */
 app.get('/version', (req, res) => res.json({ version: '1.0' }));
-
-/**
- * Handles GET requests to the '/status' path, returning the application status as JSON.
- * @param {object} req The Express.js request object.
- * @param {object} res The Express.js response object.
- */
 app.get('/status', (req, res) => res.json({ status: 'live' }));
 
-/**
- * Handles POST requests to the '/chat' path
- * Logs the user input.
- * @param {object} req The Express.js request object, containing the user's message in the body.
- * @param {object} res The Express.js response object, sending the chatbot's response as JSON.
- */
 app.post('/chat', async (req, res) => {
-  const userMessage = req.body.message;
-  logger.info('Chat request received', { message: userMessage }); // Suggestion 5
-  const resp = await getChatResponse(userMessage);
-  res.json({ response: (resp) || 'Error: no response was detected' });
+    const userMessage = req.body.message;
+    const sessionId = req.sessionID;
+    logger.info(`Chat request received [Session: ${sessionId}]`, { message: userMessage });
+    const resp = await getChatResponse(sessionId, userMessage);
+    res.json({ response: (resp) || 'Error: no response was detected' });
 });
 
-process.on('SIGINT', () => {
-  process.exit(0);
-});
+process.on('SIGINT', () => process.exit(0));
+process.on('SIGILL', () => process.exit(1));
+process.on('SIGSEG', () => process.exit(1));
+process.on('SIGBUS', () => process.exit(1));
 
-process.on('SIGILL', () => {
-  process.exit(1);
-});
-
-process.on('SIGSEG', () => {
-  process.exit(1);
-});
-
-process.on('SIGBUS', () => {
-  process.exit(1);
-});
-
-/**
- * Starts the Express.js server after loading application properties.
- * Exits the process if the properties file cannot be loaded.
- */
 const startServer = () => {
-  if (loadProperties('resources/app.properties')) {
-    const port = Number(getConfig().port) || 5000;
-    app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
-  } else {
-    process.exit(1);
-  }
+    if (loadProperties('resources/app.properties')) {
+        const port = Number(getConfig().port) || 5000;
+        app.listen(port, '0.0.0.0', () => logger.info(`Listening on port ${port}`));
+    } else {
+        process.exit(1);
+    }
 };
 
-startServer();
-</code></pre>
+startServer();</code></pre>
         </article>
     </section>
 
@@ -382,13 +321,13 @@ startServer();
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authToken">authToken</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcs">funcs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#tokenExpiry">tokenExpiry</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Apr 17 2025 10:55:30 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 18 2025 15:06:22 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

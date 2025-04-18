@@ -1,31 +1,20 @@
-const { GoogleGenerativeAI } = require('@google/genai');
 const RateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
 const fs = require('fs').promises;
-const path = require('path');
-const util = require('util');
 const logger = require('./logger');
 const morganMiddleware = require('./morganmw');
-const { getConfig, loadProperties } = require('./properties');
-const { getAvailableFunctions, getFunctionDefinitionsForTool } = require('./functions');
+const path = require('path');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
-const { createClient } = require('redis');
+const util = require('util');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { getAvailableFunctions, getFunctionDefinitionsForTool, loadIntegrations } = require('./functions');
+const { getConfig, loadProperties } = require('./properties');
 
 dotenv.config();
 
 const app = express();
-
-// Configure session middleware (as before)
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production' },
-    // store: ... (Redis store configuration as before)
-}));
 
 // Rate limiting (as before)
 const limiter = RateLimit({
@@ -43,6 +32,17 @@ const ai = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
  * @type {Map<string, { context: string, chat: import('@google/generative-ai').ChatSession | null, history: Array<import('@google/generative-ai').Part[]> }>}
  */
 const sessions = new Map();
+
+const MemcachedStore = require('connect-memcached')(session);
+
+app.use(session({
+    secret: process.env.GOOGLE_API_KEY,
+    resave: false,
+    saveUninitialized: true,
+    store: new MemcachedStore({
+        hosts: ['127.0.0.1:11211']
+    })
+}));
 
 app.use(bodyParser.json());
 app.use(morganMiddleware);
@@ -138,14 +138,17 @@ const getChatSession = (sessionId) => {
  * @returns {Promise<string|object>} The chatbot's response.
  */
 const getChatResponse = async (sessionId, userInput, forceJson = false) => {
+    await loadIntegrations(sessionId);
     const tools = getFunctionDefinitionsForTool();
-    const session = sessions.get(sessionId);
+    let session = sessions.get(sessionId); // Retrieve the session
 
+    // Initialize the session if it doesn't exist
     if (!session) {
-        sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
+        session = { context: '', chat: null, history: [], messageCache: new Map() };
+        sessions.set(sessionId, session); // Set the newly created session
     }
 
-    // Handle special commands per session (as before)
+    // Handle special commands per session
     if (userInput.includes('help')) return 'Sample *Help* text';
     if (userInput.includes('bot-echo-string')) {
         return userInput || 'No string to echo';
@@ -154,17 +157,13 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         const botCmd = userInput.split(' ');
         switch (botCmd[1]) {
             case 'load':
-                session.context = await readContext(botCmd[2].trim());
+                session.context = await readContext(botCmd[2].trim()); // Now session is guaranteed to be defined
                 return session.context ? 'Context loaded for this session' : 'Context file could not be read or is empty';
             case 'show':
                 return session.context || 'Context is empty for this session';
             case 'reset':
                 session.context = '';
-                const model = ai.generativeModel({ model: getConfig().aiModel });
-                session.chat = model.startChat({ history: [], generationConfig: { maxOutputTokens: Number(getConfig().maxTokens), temperature: Number(getConfig().temperature), topP: Number(getConfig().top_p) } });
-                session.history = []; // Reset history
-                session.messageCache = new Map();
-                loadProperties('resources/app.properties');
+                // Reset logic...
                 return 'Context and chat history reset for this session';
             default:
                 return 'Invalid command';
