@@ -169,18 +169,6 @@ const getChatSession = (sessionId) => {
 };
 
 /**
- * Loads integrations for a specific session.
- * @async
- * @param {string} sessionId The ID of the client session.
- * @returns {Promise<void>}
- */
-const loadIntegrations = async (sessionId) => {
-    // This function likely handles loading external integrations based on session or config.
-    // The implementation details would be in './functions.js'.
-    // For JSDoc, we indicate it's async and returns a Promise.
-};
-
-/**
  * Gets a chat response from the Gemini API, maintaining state per session.
  * @async
  * @param {string} sessionId The ID of the client session.
