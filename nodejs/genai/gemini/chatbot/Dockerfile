@@ -7,6 +7,7 @@ FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
 WORKDIR /source
 
 COPY package.json package-lock.json* ./
+COPY .*lint* ./
 
 # Copy only necessary source for dependencies and testing
 COPY src/ ./src/
@@ -21,7 +22,6 @@ FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 WORKDIR /source
 
 COPY package.json package-lock.json* ./
-COPY .*lint* ./
 
 # Copy the built node_modules from the prebuild stage
 COPY --from=prebuild /source/node_modules ./node_modules
