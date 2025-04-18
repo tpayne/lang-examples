@@ -42,7 +42,8 @@ EXPOSE 11211
 EXPOSE 8080
 
 ARG account=nodejs
-RUN addgroup --system ${account} && adduser --system --group ${account} ${account}
+RUN addgroup --system ${account} && adduser ${account} --system &&\
+    adduser ${account} ${account}
 
 WORKDIR /app
 
