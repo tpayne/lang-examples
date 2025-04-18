@@ -64,7 +64,7 @@ jobs:
   build-node:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
-
+    steps:
       - name: Build the NodeJS Parse Docker image...
         id: nodejsparse-image
         run: |
@@ -104,6 +104,7 @@ jobs:
   build-node-azure:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
+    steps:
       - name: Build the NodeJS Table Docker image...
         id: nodejstable-image
         run: |
@@ -140,6 +141,7 @@ jobs:
   build-node-ai:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
+    steps:
       - name: Build the NodeJS OpenAI chatbot Docker image...
         id: nodejschatbot-image
         run: |
