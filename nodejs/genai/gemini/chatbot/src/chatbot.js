@@ -7,7 +7,7 @@ const path = require('path');
 const session = require('express-session');
 const util = require('util');
 /* eslint-disable no-unused-vars */
-const { GoogleGenerativeAI, ChatSession, Part } = require('@google/genai'); // Import necessary types
+const { GoogleGenAI } = require('@google/genai');
 /* eslint-enable no-unused-vars */
 
 const MemcachedStore = require('connect-memcached')(session);
@@ -27,8 +27,7 @@ const limiter = RateLimit({
 app.use(limiter);
 
 // Updated initialization for @google/genai
-const ai = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 /**
  * Stores the conversation history and context for each client session.
  * The key is the client's session ID.
