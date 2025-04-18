@@ -6,13 +6,15 @@ const logger = require('./logger');
 dotenv.config();
 
 /**
- * Stores the current authentication token obtained from the Microsoft OAuth2 server per session.
+ * Stores the current authentication token obtained
+ * from the Microsoft OAuth2 server per session.
  * @type {Map<string, string|null>}
  */
 const sessionAuthTokens = new Map();
 
 /**
- * Stores the timestamp (in milliseconds) when the current authentication token will expire per session.
+ * Stores the timestamp (in milliseconds) when the current
+ * authentication token will expire per session.
  * @type {Map<string, number|null>}
  */
 const sessionTokenExpiries = new Map();
@@ -106,8 +108,10 @@ async function getAuthToken(
 }
 
 /**
- * Asynchronously queries the MOT history of a vehicle given its registration number for a specific session.
- * It first ensures a valid authentication token is available before making the API call.
+ * Asynchronously queries the MOT history of a vehicle given
+ * its registration number for a specific session.
+ * It first ensures a valid authentication token is available
+ * before making the API call.
  * @async
  * @param {string} sessionId The unique identifier for the session.
  * @param {string} registrationNumber The registration number of the vehicle to query.

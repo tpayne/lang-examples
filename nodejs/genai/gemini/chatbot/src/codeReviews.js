@@ -31,7 +31,9 @@ function getSessionMutex(sessionId) {
  * @param {string} username The GitHub username.
  * @param {string} repoName The GitHub repo name.
  * @param {string} repoPath The GitHub path name.
- * @returns {Promise<string[]|{ success: boolean, message: string }>} Array of public file content or an error object.
+ * @returns {Promise<string[]|{ success: boolean,
+ *           message: string }>}
+ *          Array of public file content or an error object.
  * @throws {Error} If API request fails or user is not found.
  */
 async function codeReviews(sessionId, username, repoName, repoPath) {

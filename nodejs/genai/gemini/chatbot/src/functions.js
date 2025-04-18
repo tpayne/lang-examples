@@ -275,7 +275,7 @@ async function loadGitHub(sessionId) {
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
  */
 async function getFunctionDefinitionsForTool(sessionId) {
-  return await getSessionFuncsMetadata(sessionId);
+  return getSessionFuncsMetadata(sessionId);
 }
 
 /**
@@ -284,7 +284,7 @@ async function getFunctionDefinitionsForTool(sessionId) {
  * @returns {Promise<Record<string, RegisteredFunction>>} An object mapping function names to their implementations.
  */
 async function getAvailableFunctions(sessionId) {
-  return await getSessionFunctionRegistry(sessionId);
+  return getSessionFunctionRegistry(sessionId);
 }
 
 async function loadIntegrations(sessionId) {

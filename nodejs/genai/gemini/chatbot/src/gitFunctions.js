@@ -14,6 +14,12 @@ const {
 } = require('./utilities');
 
 /**
+ * Manages mutexes for download URLs per session to prevent concurrent downloads of the same file.
+ * @type {Map<string, Map<string, Mutex>>}
+ */
+const downloadMutexes = new Map();
+
+/**
  * Handles "Not Found" errors from the GitHub API.
  * If the error message indicates "Not Found", it throws a more
  * user-friendly error suggesting the user reword their request.
@@ -48,6 +54,23 @@ async function handleGitHubApiError(response, context = '') {
     errorMessage += ` - ${response.body.message}`;
   }
   throw new Error(errorMessage);
+}
+
+/**
+ * Gets or creates a mutex for a specific download URL within a session.
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} downloadUrl The URL of the file being downloaded.
+ * @returns {Mutex} The mutex for the download URL in the session.
+ */
+function getDownloadMutex(sessionId, downloadUrl) {
+  if (!downloadMutexes.has(sessionId)) {
+    downloadMutexes.set(sessionId, new Map());
+  }
+  const sessionMutexes = downloadMutexes.get(sessionId);
+  if (!sessionMutexes.has(downloadUrl)) {
+    sessionMutexes.set(downloadUrl, new Mutex());
+  }
+  return sessionMutexes.get(downloadUrl);
 }
 
 /**
@@ -89,29 +112,6 @@ async function downloadFile(sessionId, url, localFilePath, token = null) {
   } finally {
     release();
   }
-}
-
-/**
- * Manages mutexes for download URLs per session to prevent concurrent downloads of the same file.
- * @type {Map<string, Map<string, Mutex>>}
- */
-const downloadMutexes = new Map();
-
-/**
- * Gets or creates a mutex for a specific download URL within a session.
- * @param {string} sessionId The unique identifier for the session.
- * @param {string} downloadUrl The URL of the file being downloaded.
- * @returns {Mutex} The mutex for the download URL in the session.
- */
-function getDownloadMutex(sessionId, downloadUrl) {
-  if (!downloadMutexes.has(sessionId)) {
-    downloadMutexes.set(sessionId, new Map());
-  }
-  const sessionMutexes = downloadMutexes.get(sessionId);
-  if (!sessionMutexes.has(downloadUrl)) {
-    sessionMutexes.set(downloadUrl, new Mutex());
-  }
-  return sessionMutexes.get(downloadUrl);
 }
 
 /**
@@ -324,9 +324,12 @@ async function listBranches(sessionId, username, repoName) {
 
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 /**
- * Lists commit history for a specific file or directory in a given GitHub repository for a specific session.
- * First, verifies that the file or directory exists by querying the repository contents API.
- * If the path exists, it fetches commit data and extracts SHA, message, author, and date.
+ * Lists commit history for a specific file or directory in a
+ * given GitHub repository for a specific session.
+ * First, verifies that the file or directory exists by
+ * querying the repository contents API.
+ * If the path exists, it fetches commit data and extracts SHA,
+ * message, author, and date.
  * Handles API errors and "Not Found" exceptions.
  *
  * @async
@@ -573,7 +576,7 @@ async function listGitHubActions(sessionId, username, repoName, status = 'in_pro
     }
     return runningJobs;
   } catch (error) {
-    logger.error('Error listing actions (exception) [Session: ${sessionId}]:', username, repoName, status, error);
+    logger.error(`Error listing actions (exception) [Session: ${sessionId}]: ${username} ${repoName} ${status} ${error}`);
     if (error.response) {
       logger.error(`Error listing actions (exception) [Session: ${sessionId}]: ${error.response.text}`);
       if (error.response.status === 404) {
