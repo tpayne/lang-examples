@@ -150,6 +150,7 @@ async function loadCodeReviews(sessionId) {
       repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
     },
     ['username', 'repoName', 'repoPath'],
+    true,
   );
 }
 
@@ -164,6 +165,7 @@ async function loadDosa(sessionId) {
       registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
     },
     ['registrationNumber'],
+    true,
   );
 }
 
@@ -201,6 +203,7 @@ async function loadGitHub(sessionId) {
       maxRetries: { type: 'number', description: 'The maximum number of retries.' },
     },
     ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    true,
   );
 
   await registerFunction(
