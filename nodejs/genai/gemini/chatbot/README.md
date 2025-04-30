@@ -213,5 +213,6 @@ References
 ----------
 - [Gemini AI Studio](https://aistudio.google.com/)
 - [API Docs](https://ai.google.dev/gemini-api/docs?authuser=1)
+- [API Details](https://googleapis.github.io/js-genai/main/classes/types.FunctionResponse.html)
 
 
