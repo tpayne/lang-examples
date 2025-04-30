@@ -7,7 +7,10 @@ const path = require('path');
 const session = require('express-session');
 const util = require('util');
 /* eslint-disable no-unused-vars */
-const { GoogleGenAI } = require('@google/genai');
+const { 
+  FunctionCallingConfigMode,
+  GoogleGenAI 
+} = require('@google/genai');
 /* eslint-enable no-unused-vars */
 
 const MemcachedStore = require('connect-memcached')(session);
@@ -107,7 +110,7 @@ const readContext = async (contextStr) => {
   try {
     // Basic path sanitation
     if (contextStr.includes('..') || contextStr.startsWith('/')) {
-        throw new Error('Invalid characters in context path');
+      throw new Error('Invalid characters in context path');
     }
     const contextPath = path.resolve('contexts', contextStr);
     const normalizedContextPath = path.normalize(contextPath);
@@ -128,21 +131,28 @@ const readContext = async (contextStr) => {
 /**
  * Calls a function by its name with provided arguments.
  * @async
+ * @param {string} sessionId The ID of the client session.
  * @param {string} name The name of the function.
  * @param {object} args The arguments for the function.
  * @returns {Promise<any>} The result of the function call.
  */
-const callFunctionByName = async (name, args) => {
-  const functionInfo = getAvailableFunctions()[name];
+const callFunctionByName = async (sessionId, name, args) => {
+  const functionCache = await getAvailableFunctions(sessionId);
+  const functionInfo = functionCache[name];
+
   if (functionInfo && functionInfo.func) {
-    const { func, params } = functionInfo;
+    const { func, params, needSession } = functionInfo;
     // Ensure arguments match expected parameters
     const argValues = params.map((paramName) => args[paramName]);
-    try {
+    if (needSession) {
+      argValues.unshift(sessionId);
+    }
+    
+    try {  
       /* eslint-disable prefer-spread */
       const result = await func.apply(null, argValues);
       /* eslint-enable prefer-spread */
-      logger.info(`Function '${name}' executed`, { arguments: args, result });
+      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
       return result;
     } catch (error) {
       logger.error(`Error executing function '${name}'`, { arguments: args, error: error.message });
@@ -157,13 +167,14 @@ const callFunctionByName = async (name, args) => {
 /**
  * Handles a function call from the Gemini API.
  * @async
+ * @param {string} sessionId The ID of the client session.
  * @param {object} functionCall The function call details.
  * @returns {Promise<any>} The result of the function call.
  */
-const handleFunctionCall = async (functionCall) => {
+const handleFunctionCall = async (sessionId, functionCall) => {
   const { name, args } = functionCall;
-   // Using await here is fine and necessary
-   return await callFunctionByName(name, args);
+  // Using await here is fine and necessary
+  return await callFunctionByName(sessionId, name, args);
 };
 
 /**
@@ -179,25 +190,22 @@ const getChatSession = (sessionId, tools) => {
   const xsession = sessions.get(sessionId);
 
   if (!xsession.chat) {
-    // Updated: Use ai.getGenerativeModel and pass tools and history to startChat
-    const model = ai.getGenerativeModel({
-      model: getConfig().aiModel,
-      generationConfig: {
+    const functionDefs = tools.map((func) => func.function);
+    xsession.chat = ai.chats.create({
+      config: {
+        tools: tools.length > 0 ? [{
+          functionDeclarations: functionDefs,
+        }] : [],
         maxOutputTokens: Number(getConfig().maxTokens),
         temperature: Number(getConfig().temperature),
         topP: Number(getConfig().top_p),
       },
-      tools: tools && tools.length > 0 ? tools : undefined, // Pass tools here
-    });
-
-    xsession.chat = model.startChat({
+      model: getConfig().aiModel,
       history: xsession.history, // Initialize with stored history
     });
     logger.info(`New chat session created [Session: ${sessionId}]`);
   } else {
-     // If session exists, update tools if necessary (though startChat is better for initial tools)
-     // For dynamic tool updates mid-session, you'd need to re-create the model or manage tools differently.
-     // Keeping tools in startChat simplifies this example.
+    logger.info(`Return existing chat session [Session: ${sessionId}]`);
   }
 
   return xsession.chat;
@@ -217,10 +225,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
   await loadIntegrations(sessionId);
 
   // Get function definitions formatted for the API
-  const functionDefinitions = getFunctionDefinitionsForTool();
-  const tools = functionDefinitions.length > 0 ? [{
-      functionDeclarations: functionDefinitions,
-  }] : [];
+  const functionDefinitions = await getFunctionDefinitionsForTool(sessionId);
 
   let xsession = sessions.get(sessionId); // Retrieve the session
 
@@ -270,19 +275,19 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
   // If context is required and not set, inform the user
   if (!xsession.context && getConfig().requireContext === 'true') { // Assuming getConfig can provide this
-      return 'Error: Context is required and not set for this session. Please use "bot-context load <file>" to load one.';
+    return 'Error: Context is required and not set for this session. Please use "bot-context load <file>" to load one.';
   }
 
   // Check cache before calling the API
   const cachedResponse = getResponse(sessionId, userInput);
   if (cachedResponse) {
-      logger.info(`Returning cached response [Session: ${sessionId}]`);
-      return cachedResponse;
+    logger.info(`Returning cached response [Session: ${sessionId}]`);
+    return cachedResponse;
   }
 
   try {
     // Get or create the chat session with the current tools
-    const chat = getChatSession(sessionId, tools);
+    const chat = getChatSession(sessionId, functionDefinitions);
 
     // Construct the prompt including the context if available
     let prompt = xsession.context ? `${xsession.context}\n${userInput}` : userInput;
@@ -303,9 +308,11 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       numSteps++;
 
       logger.info(`Sending message to Gemini [Session: ${sessionId}], Step ${numSteps}`);
-      const result = await chat.sendMessage(prompt); // Send the prompt
-      const response = result.response;
+      const response = await chat.sendMessage({
+        message: prompt
+      }); // Send the prompt
 
+      logger.debug(`Response object is ${util.inspect(response, { depth: null })} [Session: ${sessionId}]`);
       if (!response.candidates || response.candidates.length === 0) {
         logger.warn(`Gemini API: No candidates in response [Session: ${sessionId}]`);
         // If no candidates, we can't continue this turn
@@ -326,22 +333,22 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
           let functionCallResult;
           try {
-              functionCallResult = await handleFunctionCall(part.functionCall);
+            functionCallResult = await handleFunctionCall(sessionId, part.functionCall);
           } catch (error) {
-              logger.error(`Error during handleFunctionCall for ${functionName} [Session: ${sessionId}]`, error);
-              // Return a structured error for the model
-              functionCallResult = { error: 'Internal error executing function', details: error.message };
+            logger.error(`Error during handleFunctionCall for ${functionName} [Session: ${sessionId}]`, error);
+            // Return a structured error for the model
+            functionCallResult = { error: 'Internal error executing function', details: error.message };
           }
           logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${util.inspect(functionCallResult)}`);
 
           // Send the function response back to the model
           // The structure for sending function responses has changed slightly
           prompt = [{
-              functionResponse: {
-                name: functionName,
-                // The response key now directly contains the result object/value
-                response: functionCallResult,
-              },
+            functionResponse: {
+              name: functionName,
+              // The response key now directly contains the result object/value
+              response: functionCallResult,
+            },
           }];
           // The model will process this and generate the next turn (either text or another tool call)
           // We continue the loop with the function response as the new "prompt" for the model.
@@ -352,10 +359,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
           logger.info(`Received final text response [Session: ${sessionId}]`);
           break; // Exit loop as we have the final text response
         } else {
-            // Handle other potential part types if necessary, or treat as no response
-            logger.warn(`Gemini API: Received unexpected part type [Session: ${sessionId}]`, part);
-            chatResponse = 'Received an unexpected response format from the model.';
-            break;
+          // Handle other potential part types if necessary, or treat as no response
+          logger.warn(`Gemini API: Received unexpected part type [Session: ${sessionId}]`, part);
+          chatResponse = 'Received an unexpected response format from the model.';
+          break;
         }
       } else {
         logger.warn(`Gemini API: Candidate content is empty or malformed [Session: ${sessionId}]`);
@@ -366,9 +373,9 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     /* eslint-enable no-await-in-loop, no-plusplus */
 
     if (!chatResponse) {
-        // If loop finished without a response (e.g., maxSteps reached during function calls)
-        logger.warn(`Gemini API: Max steps reached without final response [Session: ${sessionId}]`);
-        chatResponse = 'Reached maximum processing steps without a final response.';
+      // If loop finished without a response (e.g., maxSteps reached during function calls)
+      logger.warn(`Gemini API: Max steps reached without final response [Session: ${sessionId}]`);
+      chatResponse = 'Reached maximum processing steps without a final response.';
     }
 
     // History is managed internally by the ChatSession object in @google/genai
@@ -395,24 +402,24 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
  * @returns {Promise<void>}
  */
 app.post('/chat', async (req, res) => {
-    const userMessage = req.body.message;
-    let sessionId = req.sessionID || req.ip;
-  
+  const userMessage = req.body.message;
+  let sessionId = req.sessionID || req.ip;
+
   if (!userMessage) {
-      logger.warn(`Chat request with empty message [Session: ${sessionId}]`);
-      return res.status(400).json({ error: 'Message is required' });
+    logger.warn(`Chat request with empty message [Session: ${sessionId}]`);
+    return res.status(400).json({ error: 'Message is required' });
   }
 
   logger.info(`Chat request received [Session: ${sessionId}]`, { message: userMessage });
-  
+
   try {
     const resp = await getChatResponse(sessionId, userMessage);
-      // Ensure response is always a string, even if function call result was an object
+    // Ensure response is always a string, even if function call result was an object
     // In this updated logic, getChatResponse aims to return the final text response or an error string.
     res.json({ response: resp });
   } catch (error) {
-      logger.error(`Unhandled error in /chat route [Session: ${sessionId}]`, error);
-      res.status(500).json({ error: 'An internal server error occurred.' });
+    logger.error(`Unhandled error in /chat route [Session: ${sessionId}]`, error);
+    res.status(500).json({ error: 'An internal server error occurred.' });
   }
 });
 
@@ -442,9 +449,9 @@ app.get('/status', (req, res) => res.json({ status: 'live' }));
 
 // Clean shutdown handling
 const shutdown = (signal) => {
-    logger.info(`${signal} received. Shutting down gracefully.`);
-    // Add any cleanup logic here (e.g., closing database connections, etc.)
-    process.exit(0);
+  logger.info(`${signal} received. Shutting down gracefully.`);
+  // Add any cleanup logic here (e.g., closing database connections, etc.)
+  process.exit(0);
 };
 
 process.on('SIGINT', () => shutdown('SIGINT'));
@@ -452,15 +459,15 @@ process.on('SIGTERM', () => shutdown('SIGTERM')); // Often used by process manag
 
 // Consider adding error handling for unhandled rejections and uncaught exceptions
 process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Depending on the severity, you might want to shut down or just log
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Depending on the severity, you might want to shut down or just log
 });
 
 process.on('uncaughtException', (err) => {
-    logger.error('Uncaught Exception:', err);
-    // This is a critical error, the process is in an unstable state.
-    // Perform necessary cleanup and then exit.
-    shutdown('UncaughtException'); // Exit after logging
+  logger.error('Uncaught Exception:', err);
+  // This is a critical error, the process is in an unstable state.
+  // Perform necessary cleanup and then exit.
+  shutdown('UncaughtException'); // Exit after logging
 });
 
 

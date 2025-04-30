@@ -27,7 +27,7 @@
     "url": "git+https://github.com/tpayne/lang-examples.git"
   },
   "dependencies": {
-    "@google/genai": "^0.8.0",
+    "@google/genai": "^0.10.0",
     "async-mutex": "0.5.0",
     "body-parser": "2.2.0",
     "connect-memcached": "^2.0.0",
@@ -46,7 +46,7 @@
     "winston": "^3.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
+    "@eslint/js": "^9.25.1",
     "@linthtml/linthtml": "^0.10.1",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
@@ -57,7 +57,7 @@
     "globals": "^16.0.0",
     "husky": "^9.1.7",
     "jsdoc": "^4.0.4",
-    "nodemon": "^3.1.0",
+    "nodemon": "^3.1.10",
     "npm-run-all2": "7.0.2",
     "typescript-eslint": "^8.30.1",
     "yaml-lint": "1.7.0"

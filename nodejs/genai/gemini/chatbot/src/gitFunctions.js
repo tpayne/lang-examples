@@ -139,8 +139,8 @@ async function fetchRepoContentsRecursive(
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
 
   if (!localDestPath || localDestPath === '.'
-        || localDestPath === `./${repoName}`
-        || localDestPath === repoName) {
+    || localDestPath === `./${repoName}`
+    || localDestPath === repoName) {
     return { success: false, message: 'Error: You need to specify a download directory' };
   }
 
@@ -240,7 +240,7 @@ async function fetchRepoContentsRecursive(
     return {
       success: true,
       message:
-                `Successfully processed directory "${repoPath}"`,
+        `Successfully processed directory "${repoPath}"`,
     };
     /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
   } catch (error) {
@@ -252,7 +252,7 @@ async function fetchRepoContentsRecursive(
         throw new Error('Not Found: Check repo and directory names.');
       }
       if (error.response.body && error.response.body.errors
-                && error.response.body.errors.length > 0) {
+        && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to download repo');
@@ -264,16 +264,15 @@ async function fetchRepoContentsRecursive(
 
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 /**
- * Lists the names of public repositories for a given GitHub username for a specific session.
+ * Lists the names of public repositories for a given GitHub username.
  * Fetches repo data and extracts the 'name' property.
  * Handles API errors and "Not Found" exceptions.
  * @async
- * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @returns {Promise<string[]>} Array of public repository names.
  * @throws {Error} If API request fails or user is not found.
  */
-async function listPublicRepos(sessionId, username) {
+async function listPublicRepos(username) {
   const url = `https://api.github.com/users/${username}/repos`;
   try {
     const response = await superagent
@@ -285,25 +284,24 @@ async function listPublicRepos(sessionId, username) {
     if (response.status === 200) {
       return response.body.map((repo) => repo.name);
     }
-    await handleGitHubApiError(response, `listing repos for user "${username}" [Session: ${sessionId}]`);
+    await handleGitHubApiError(response, `listing repos for user "${username}"`);
   } catch (error) {
-    logger.error('Error listing repos (exception):', username, error, `[Session: ${sessionId}]`);
+    logger.error('Error listing repos (exception):', username, error);
     handleNotFoundError(error, ` for user "${username}"`);
   }
 }
 
 /**
- * Lists the names of branches for a given GitHub repository for a specific session.
+ * Lists the names of branches for a given GitHub repository.
  * Fetches branch data and extracts the 'name' property.
  * Handles API errors and "Not Found" exceptions.
  * @async
- * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @returns {Promise<string[]>} Array of branch names.
  * @throws {Error} If API request fails or repository is not found.
  */
-async function listBranches(sessionId, username, repoName) {
+async function listBranches(username, repoName) {
   const url = `https://api.github.com/repos/${username}/${repoName}/branches`;
   try {
     const response = await superagent
@@ -315,9 +313,9 @@ async function listBranches(sessionId, username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    await handleGitHubApiError(response, `listing branches for ${username}/${repoName}" [Session: ${sessionId}]`);
+    await handleGitHubApiError(response, `listing branches for ${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error listing branches (exception):', username, repoName, error, `[Session: ${sessionId}]`);
+    logger.error('Error listing branches (exception):', username, repoName, error);
     handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
   }
 }
@@ -325,7 +323,7 @@ async function listBranches(sessionId, username, repoName) {
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 /**
  * Lists commit history for a specific file or directory in a
- * given GitHub repository for a specific session.
+ * given GitHub repository.
  * First, verifies that the file or directory exists by
  * querying the repository contents API.
  * If the path exists, it fetches commit data and extracts SHA,
@@ -333,7 +331,6 @@ async function listBranches(sessionId, username, repoName) {
  * Handles API errors and "Not Found" exceptions.
  *
  * @async
- * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @param {string} dirName The path to the file or directory within the repository.
@@ -341,7 +338,7 @@ async function listBranches(sessionId, username, repoName) {
  * Array of commit history objects.
  * @throws {Error} If API requests fail or file/directory not found.
  */
-async function listCommitHistory(sessionId, username, repoName, dirName) {
+async function listCommitHistory(username, repoName, dirName) {
   // Pre-validate that the file or directory exists using the GitHub contents API.
   const contentsUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${encodeURIComponent(dirName)}`;
 
@@ -353,7 +350,7 @@ async function listCommitHistory(sessionId, username, repoName, dirName) {
       .set('User-Agent', USER_AGENT);
   } catch (contentsError) {
     // Log and re-throw as a more specific error.
-    logger.error('Error fetching path contents:', username, repoName, dirName, contentsError, `[Session: ${sessionId}]`);
+    logger.error('Error fetching path contents (exception):', username, repoName, dirName, contentsError);
     throw new Error(`The path "${dirName}" in "${username}/${repoName}" does not exist.`);
   }
 
@@ -377,19 +374,18 @@ async function listCommitHistory(sessionId, username, repoName, dirName) {
     }
 
     // If the commit status isn't 200, use the helper to handle specific API error info.
-    await handleGitHubApiError(commitResponse, `listing commit history for "${dirName}" in "${username}/${repoName}" [Session: ${sessionId}]`);
+    await handleGitHubApiError(commitResponse, `listing commit history for "${dirName}" in "${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error listing commit history (exception):', username, repoName, dirName, error, `[Session: ${sessionId}]`);
+    logger.error('Error listing commit history (exception):', username, repoName, dirName, error);
     handleNotFoundError(error, ` for path "${dirName}" in "${username}/${repoName}"`);
   }
 }
 
 /**
- * Lists the contents of a directory (or root if no path) in a GitHub repo for a specific session.
+ * Lists the contents of a directory (or root if no path) in a GitHub repo.
  * Fetches content data and extracts name, type ('file'/'dir'), and path.
  * Handles API errors and "Not Found" exceptions.
  * @async
- * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @param {string} [repoDirName=''] Optional path to the directory.
@@ -399,7 +395,7 @@ async function listCommitHistory(sessionId, username, repoName, dirName) {
  * Array of directory content objects.
  * @throws {Error} If API request fails or repository/path not found.
  */
-async function listDirectoryContents(sessionId, username, repoName, repoDirName = '', recursive = true) {
+async function listDirectoryContents(username, repoName, repoDirName = '', recursive = true) {
   const url = `https://api.github.com/repos/${username}/${repoName}/contents/${repoDirName}`;
   try {
     const response = await superagent
@@ -429,7 +425,6 @@ async function listDirectoryContents(sessionId, username, repoName, repoDirName 
       } else if (item.type === 'dir') {
         // Recursively call for subdirectories
         const subDirContents = await listDirectoryContents(
-          sessionId,
           username,
           repoName,
           item.path,
@@ -450,17 +445,16 @@ async function listDirectoryContents(sessionId, username, repoName, repoDirName 
     }
     return results;
   } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, repoDirName, error, `[Session: ${sessionId}]`);
+    logger.error('Error listing directories (exception):', username, repoName, repoDirName, error);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
   }
 }
 
 /**
- * Creates a pull request on a given GitHub repository for a specific session.
+ * Creates a pull request on a given GitHub repository.
  * Sends a POST request to the GitHub API.
  * Handles API errors, including specific GitHub errors.
  * @async
- * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @param {string} title The title of the pull request.
@@ -471,7 +465,6 @@ async function listDirectoryContents(sessionId, username, repoName, repoDirName 
  * @throws {Error} If API request fails, repo/branches not found, or validation errors.
  */
 async function createGithubPullRequest(
-  sessionId,
   username,
   repoName,
   title,
@@ -496,16 +489,16 @@ async function createGithubPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}" [Session: ${sessionId}]`);
+    await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
-    logger.error(`Error creating pull request (exception) [Session: ${sessionId}]:`, error);
+    logger.error(`Error creating pull request (exception):`, error);
     if (error.response) {
-      logger.error(`Error creating pull request (exception) [Session: ${sessionId}]: ${error.response.text}`);
+      logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Check repo and branch names.');
       }
       if (error.response.body && error.response.body.errors
-                && error.response.body.errors.length > 0) {
+        && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to create PR');
@@ -516,11 +509,10 @@ async function createGithubPullRequest(
 }
 
 /**
- * Lists running or queued GitHub Actions workflows and their jobs for a specific session.
+ * Lists running or queued GitHub Actions workflows and their jobs.
  * Fetches workflow runs by status, then fetches jobs for each run.
  * Filters jobs by 'queued' or the provided status.
  * @async
- * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
  * @param {string} [status='in_progress'] Status to filter workflows (optional).
@@ -530,7 +522,7 @@ async function createGithubPullRequest(
  * Array of running/queued GitHub Action job details.
  * @throws {Error} If API request fails or repository/user not found.
  */
-async function listGitHubActions(sessionId, username, repoName, status = 'in_progress') {
+async function listGitHubActions(username, repoName, status = 'in_progress') {
   const urlRuns = `https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`;
   try {
     const runsResponse = await superagent
@@ -576,14 +568,14 @@ async function listGitHubActions(sessionId, username, repoName, status = 'in_pro
     }
     return runningJobs;
   } catch (error) {
-    logger.error(`Error listing actions (exception) [Session: ${sessionId}]: ${username} ${repoName} ${status} ${error}`);
+    logger.error(`Error listing actions (exception): ${username} ${repoName} ${status} ${error}`);
     if (error.response) {
-      logger.error(`Error listing actions (exception) [Session: ${sessionId}]: ${error.response.text}`);
+      logger.error(`Error listing actions (exception): ${error.response.text}`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Check user and repo names.');
       }
       if (error.response.body && error.response.body.errors
-                && error.response.body.errors.length > 0) {
+        && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to list actions');

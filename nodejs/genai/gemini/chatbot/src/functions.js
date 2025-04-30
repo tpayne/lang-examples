@@ -104,31 +104,34 @@ async function getSessionFuncsMetadata(sessionId) {
  * @param {string} description - A description of what the function does.
  * @param {object} parametersSchema - The JSON schema for the function's parameters.
  * @param {string[]} required - An array of required parameter names.
+ * @param {boolean} needSession - Session needed
  */
-async function registerFunction(sessionId, name, func, params, description, parametersSchema, required) {
+async function registerFunction(sessionId, name, func, params, description, 
+  parametersSchema, required, needSession=false) {
   const sessionRegistry = await getSessionFunctionRegistry(sessionId);
   const sessionFuncs = await getSessionFuncsMetadata(sessionId);
 
   const release = await registryMutex.acquire();
   try {
     if (sessionRegistry[name]) {
-      logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be overwritten.`);
-    }
-    sessionRegistry[name] = { func, params };
+      logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be reused.`);
+    } else {
+      sessionRegistry[name] = { func, params, needSession };
 
-    const functionMetadata = {
-      type: 'function',
-      function: {
-        name,
-        description,
-        parameters: {
-          type: 'object',
-          properties: parametersSchema,
-          required,
+      const functionMetadata = {
+        type: 'function',
+        function: {
+          name,
+          description,
+          parameters: {
+            type: 'object',
+            properties: parametersSchema,
+            required,
+          },
         },
-      },
-    };
-    sessionFuncs.push(functionMetadata);
+      };
+      sessionFuncs.push(functionMetadata);
+    }
   } finally {
     release();
   }
