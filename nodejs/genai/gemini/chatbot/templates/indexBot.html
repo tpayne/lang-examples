@@ -296,6 +296,7 @@
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({ message: userMessage }),
+                        credentials: 'include' // Include cookies with the request
                     });
                     if (!response.ok) {
                         throw new Error(`Error occurred: ${response.status}`);
