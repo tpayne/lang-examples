@@ -1,4 +1,6 @@
 # Changelog
+## 2025-04-25	(14:55:04-UTC+0000)
+- **Fix**:  update dependency @google/genai to ^0.10.0 (in nodejs/genai/gemini/chatbot/package.json)
 ## 2025-04-17	(10:06:19-UTC+0000)
 - **Chore**:  Version updates (in nodejs/genai/gemini/chatbot/documentation/chatbot.js.html)
 - **Chore**:  Version updates (in nodejs/genai/gemini/chatbot/documentation/codeReviews.js.html)
