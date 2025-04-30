@@ -147,7 +147,7 @@ const callFunctionByName = async (sessionId, name, args) => {
     if (needSession) {
       argValues.unshift(sessionId);
     }
-    
+
     try {  
       /* eslint-disable prefer-spread */
       const result = await func.apply(null, argValues);
@@ -347,7 +347,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
             functionResponse: {
               name: functionName,
               // The response key now directly contains the result object/value
-              response: functionCallResult,
+              response: { output: functionCallResult },
             },
           }];
           // The model will process this and generate the next turn (either text or another tool call)
