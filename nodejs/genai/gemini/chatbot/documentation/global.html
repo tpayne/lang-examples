@@ -224,7 +224,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line98">line 98</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line20">line 20</a>
     </li></ul></dd>
     
 
@@ -392,7 +392,8 @@
 
 
 <div class="description">
-    Stores the current authentication token obtained from the Microsoft OAuth2 server per session.
+    Stores the current authentication token obtained
+from the Microsoft OAuth2 server per session.
 </div>
 
 
@@ -440,7 +441,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line12">line 12</a>
+        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line13">line 13</a>
     </li></ul></dd>
     
 
@@ -464,7 +465,8 @@
 
 
 <div class="description">
-    Stores the timestamp (in milliseconds) when the current authentication token will expire per session.
+    Stores the timestamp (in milliseconds) when the current
+authentication token will expire per session.
 </div>
 
 
@@ -512,7 +514,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line18">line 18</a>
+        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line20">line 20</a>
     </li></ul></dd>
     
 
@@ -584,7 +586,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line24">line 24</a>
+        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line26">line 26</a>
     </li></ul></dd>
     
 
@@ -602,7 +604,7 @@
 
         
             
-<h4 class="name" id="sessions"><span class="type-signature">(constant) </span>sessions<span class="type-signature"> :Map.&lt;string, {context: string, chat: (ChatSession|null), history: Array.&lt;Array.&lt;Part>>}></span></h4>
+<h4 class="name" id="sessions"><span class="type-signature">(constant) </span>sessions<span class="type-signature"> :Map.&lt;string, {context: string, chat: (ChatSession|null), history: Array.&lt;Array.&lt;Part>>, messageCache: Map.&lt;string, string>}></span></h4>
 
 
 
@@ -618,7 +620,7 @@ The key is the client's session ID.
     <ul>
         <li>
             
-<span class="param-type">Map.&lt;string, {context: string, chat: (ChatSession|null), history: Array.&lt;Array.&lt;Part>>}></span>
+<span class="param-type">Map.&lt;string, {context: string, chat: (ChatSession|null), history: Array.&lt;Array.&lt;Part>>, messageCache: Map.&lt;string, string>}></span>
 
 
         </li>
@@ -657,7 +659,7 @@ The key is the client's session ID.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line34">line 34</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line41">line 41</a>
     </li></ul></dd>
     
 
@@ -833,7 +835,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line66">line 66</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line73">line 73</a>
     </li></ul></dd>
     
 
@@ -891,7 +893,7 @@ Limits the cache size per session.
     
 
     
-    <h4 class="name" id="callFunctionByName"><span class="type-signature">(async) </span>callFunctionByName<span class="signature">(name, args)</span><span class="type-signature"> &rarr; {Promise.&lt;any>}</span></h4>
+    <h4 class="name" id="callFunctionByName"><span class="type-signature">(async) </span>callFunctionByName<span class="signature">(sessionId, name, args)</span><span class="type-signature"> &rarr; {Promise.&lt;any>}</span></h4>
     
 
     
@@ -931,6 +933,29 @@ Limits the cache size per session.
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the client session.</td>
+        </tr>
+
     
 
         <tr>
@@ -1015,7 +1040,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line125">line 125</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line141">line 141</a>
     </li></ul></dd>
     
 
@@ -1470,7 +1495,7 @@ Uses a temporary directory and ensures thread safety per session.
     
 
     
-    <h4 class="name" id="createGithubPullRequest"><span class="type-signature">(async) </span>createGithubPullRequest<span class="signature">(sessionId, username, repoName, title, sourceBranch, targetBranch, body<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="createGithubPullRequest"><span class="type-signature">(async) </span>createGithubPullRequest<span class="signature">(username, repoName, title, sourceBranch, targetBranch, body<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -1478,7 +1503,7 @@ Uses a temporary directory and ensures thread safety per session.
 
 
 <div class="description">
-    Creates a pull request on a given GitHub repository for a specific session.
+    Creates a pull request on a given GitHub repository.
 Sends a POST request to the GitHub API.
 Handles API errors, including specific GitHub errors.
 </div>
@@ -1516,41 +1541,6 @@ Handles API errors, including specific GitHub errors.
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
     
 
         <tr>
@@ -1803,7 +1793,7 @@ Handles API errors, including specific GitHub errors.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line470">line 470</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line467">line 467</a>
     </li></ul></dd>
     
 
@@ -2433,7 +2423,7 @@ will log the error and re-throw it.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line60">line 60</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -3099,7 +3089,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line38">line 38</a>
+        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line40">line 40</a>
     </li></ul></dd>
     
 
@@ -3287,7 +3277,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line286">line 286</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line300">line 300</a>
     </li></ul></dd>
     
 
@@ -3354,6 +3344,7 @@ authentication endpoint using the client credentials grant type.
 
 <div class="description">
     Gets a chat response from the Gemini API, maintaining state per session.
+Handles special commands, context, caching, and function calling.
 </div>
 
 
@@ -3536,7 +3527,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line185">line 185</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line230">line 230</a>
     </li></ul></dd>
     
 
@@ -3594,7 +3585,7 @@ authentication endpoint using the client credentials grant type.
     
 
     
-    <h4 class="name" id="getChatSession"><span class="type-signature"></span>getChatSession<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {ChatSession}</span></h4>
+    <h4 class="name" id="getChatSession"><span class="type-signature"></span>getChatSession<span class="signature">(sessionId, tools)</span><span class="type-signature"> &rarr; {ChatSession}</span></h4>
     
 
     
@@ -3602,7 +3593,8 @@ authentication endpoint using the client credentials grant type.
 
 
 <div class="description">
-    Gets or creates a chat session for a given client, initializing with history.
+    Gets or creates a chat session for a given client, initializing with history
+and tools.
 </div>
 
 
@@ -3658,6 +3650,29 @@ authentication endpoint using the client credentials grant type.
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>tools</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Tool></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">An array of tool definitions.</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -3695,7 +3710,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line158">line 158</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line191">line 191</a>
     </li></ul></dd>
     
 
@@ -3877,7 +3892,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line106">line 106</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line65">line 65</a>
     </li></ul></dd>
     
 
@@ -4036,7 +4051,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line277">line 277</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -4195,7 +4210,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line56">line 56</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line63">line 63</a>
     </li></ul></dd>
     
 
@@ -4377,7 +4392,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line89">line 89</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line97">line 97</a>
     </li></ul></dd>
     
 
@@ -5013,7 +5028,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line31">line 31</a>
+        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line33">line 33</a>
     </li></ul></dd>
     
 
@@ -5079,8 +5094,10 @@ authentication endpoint using the client credentials grant type.
 
 
 <div class="description">
-    Asynchronously queries the MOT history of a vehicle given its registration number for a specific session.
-It first ensures a valid authentication token is available before making the API call.
+    Asynchronously queries the MOT history of a vehicle given
+its registration number for a specific session.
+It first ensures a valid authentication token is available
+before making the API call.
 </div>
 
 
@@ -5196,7 +5213,7 @@ It first ensures a valid authentication token is available before making the API
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line118">line 118</a>
+        <a href="dosaFunctions.js.html">dosaFunctions.js</a>, <a href="dosaFunctions.js.html#line122">line 122</a>
     </li></ul></dd>
     
 
@@ -5284,7 +5301,7 @@ if found, or null if the vehicle is not found (404).
     
 
     
-    <h4 class="name" id="handleFunctionCall"><span class="type-signature">(async) </span>handleFunctionCall<span class="signature">(functionCall)</span><span class="type-signature"> &rarr; {Promise.&lt;any>}</span></h4>
+    <h4 class="name" id="handleFunctionCall"><span class="type-signature">(async) </span>handleFunctionCall<span class="signature">(sessionId, functionCall)</span><span class="type-signature"> &rarr; {Promise.&lt;any>}</span></h4>
     
 
     
@@ -5324,6 +5341,29 @@ if found, or null if the vehicle is not found (404).
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The ID of the client session.</td>
+        </tr>
+
     
 
         <tr>
@@ -5385,7 +5425,7 @@ if found, or null if the vehicle is not found (404).
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line148">line 148</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line176">line 176</a>
     </li></ul></dd>
     
 
@@ -5600,7 +5640,7 @@ indicate an error status. Includes status, text, and body message.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line39">line 39</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line45">line 45</a>
     </li></ul></dd>
     
 
@@ -5824,7 +5864,7 @@ Otherwise, it re-throws the original error.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line25">line 25</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line31">line 31</a>
     </li></ul></dd>
     
 
@@ -5889,7 +5929,7 @@ Otherwise, it re-throws the original error.
     
 
     
-    <h4 class="name" id="listBranches"><span class="type-signature">(async) </span>listBranches<span class="signature">(sessionId, username, repoName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
+    <h4 class="name" id="listBranches"><span class="type-signature">(async) </span>listBranches<span class="signature">(username, repoName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
     
 
     
@@ -5897,7 +5937,7 @@ Otherwise, it re-throws the original error.
 
 
 <div class="description">
-    Lists the names of branches for a given GitHub repository for a specific session.
+    Lists the names of branches for a given GitHub repository.
 Fetches branch data and extracts the 'name' property.
 Handles API errors and "Not Found" exceptions.
 </div>
@@ -5931,29 +5971,6 @@ Handles API errors and "Not Found" exceptions.
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
     
 
         <tr>
@@ -6038,7 +6055,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line306">line 306</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line304">line 304</a>
     </li></ul></dd>
     
 
@@ -6125,7 +6142,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listCommitHistory"><span class="type-signature">(async) </span>listCommitHistory<span class="signature">(sessionId, username, repoName, dirName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{sha: string, message: string, author: string, date: string}>>}</span></h4>
+    <h4 class="name" id="listCommitHistory"><span class="type-signature">(async) </span>listCommitHistory<span class="signature">(username, repoName, dirName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{sha: string, message: string, author: string, date: string}>>}</span></h4>
     
 
     
@@ -6133,9 +6150,12 @@ Handles API errors and "Not Found" exceptions.
 
 
 <div class="description">
-    Lists commit history for a specific file or directory in a given GitHub repository for a specific session.
-First, verifies that the file or directory exists by querying the repository contents API.
-If the path exists, it fetches commit data and extracts SHA, message, author, and date.
+    Lists commit history for a specific file or directory in a
+given GitHub repository.
+First, verifies that the file or directory exists by
+querying the repository contents API.
+If the path exists, it fetches commit data and extracts SHA,
+message, author, and date.
 Handles API errors and "Not Found" exceptions.
 </div>
 
@@ -6168,29 +6188,6 @@ Handles API errors and "Not Found" exceptions.
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
     
 
         <tr>
@@ -6385,7 +6382,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(sessionId, username, repoName, repoDirName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
+    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, repoDirName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
     
 
     
@@ -6393,7 +6390,7 @@ Handles API errors and "Not Found" exceptions.
 
 
 <div class="description">
-    Lists the contents of a directory (or root if no path) in a GitHub repo for a specific session.
+    Lists the contents of a directory (or root if no path) in a GitHub repo.
 Fetches content data and extracts name, type ('file'/'dir'), and path.
 Handles API errors and "Not Found" exceptions.
 </div>
@@ -6431,41 +6428,6 @@ Handles API errors and "Not Found" exceptions.
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
     
 
         <tr>
@@ -6652,7 +6614,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line399">line 399</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line398">line 398</a>
     </li></ul></dd>
     
 
@@ -6739,7 +6701,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listGitHubActions"><span class="type-signature">(async) </span>listGitHubActions<span class="signature">(sessionId, username, repoName, status<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{workflow_run_id: number, workflow_name: string, job_id: number, job_name: string, html_url: string, status: string, started_at: string}>>}</span></h4>
+    <h4 class="name" id="listGitHubActions"><span class="type-signature">(async) </span>listGitHubActions<span class="signature">(username, repoName, status<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{workflow_run_id: number, workflow_name: string, job_id: number, job_name: string, html_url: string, status: string, started_at: string}>>}</span></h4>
     
 
     
@@ -6747,7 +6709,7 @@ Handles API errors and "Not Found" exceptions.
 
 
 <div class="description">
-    Lists running or queued GitHub Actions workflows and their jobs for a specific session.
+    Lists running or queued GitHub Actions workflows and their jobs.
 Fetches workflow runs by status, then fetches jobs for each run.
 Filters jobs by 'queued' or the provided status.
 </div>
@@ -6785,41 +6747,6 @@ Filters jobs by 'queued' or the provided status.
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
     
 
         <tr>
@@ -6967,7 +6894,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line530">line 530</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line525">line 525</a>
     </li></ul></dd>
     
 
@@ -7054,7 +6981,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listPublicRepos"><span class="type-signature">(async) </span>listPublicRepos<span class="signature">(sessionId, username)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
+    <h4 class="name" id="listPublicRepos"><span class="type-signature">(async) </span>listPublicRepos<span class="signature">(username)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
     
 
     
@@ -7062,7 +6989,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists the names of public repositories for a given GitHub username for a specific session.
+    Lists the names of public repositories for a given GitHub username.
 Fetches repo data and extracts the 'name' property.
 Handles API errors and "Not Found" exceptions.
 </div>
@@ -7096,29 +7023,6 @@ Handles API errors and "Not Found" exceptions.
     </thead>
 
     <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
     
 
         <tr>
@@ -7180,7 +7084,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line276">line 276</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line275">line 275</a>
     </li></ul></dd>
     
 
@@ -7540,7 +7444,7 @@ that is not due to the directory not existing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line103">line 103</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line111">line 111</a>
     </li></ul></dd>
     
 
@@ -8141,7 +8045,7 @@ and the values are the contents of the files.
     
 
     
-    <h4 class="name" id="registerFunction"><span class="type-signature">(async) </span>registerFunction<span class="signature">(sessionId, name, func, params, description, parametersSchema, required)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="registerFunction"><span class="type-signature">(async) </span>registerFunction<span class="signature">(sessionId, name, func, params, description, parametersSchema, required, needSession)</span><span class="type-signature"></span></h4>
     
 
     
@@ -8175,6 +8079,8 @@ and the values are the contents of the files.
         
 
         
+        <th>Default</th>
+        
 
         <th class="last">Description</th>
     </tr>
@@ -8200,6 +8106,10 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The unique identifier for the session.</td>
         </tr>
@@ -8222,6 +8132,10 @@ and the values are the contents of the files.
 
             
 
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The unique name of the function (used as the key).</td>
@@ -8246,6 +8160,10 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The JavaScript function to execute.</td>
         </tr>
@@ -8268,6 +8186,10 @@ and the values are the contents of the files.
 
             
 
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">An array of parameter names the function expects.</td>
@@ -8292,6 +8214,10 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">A description of what the function does.</td>
         </tr>
@@ -8314,6 +8240,10 @@ and the values are the contents of the files.
 
             
 
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The JSON schema for the function's parameters.</td>
@@ -8338,8 +8268,41 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">An array of required parameter names.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>needSession</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">Session needed</td>
         </tr>
 
     
@@ -8380,7 +8343,7 @@ and the values are the contents of the files.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line108">line 108</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line109">line 109</a>
     </li></ul></dd>
     
 
@@ -9004,7 +8967,7 @@ and the values are the contents of the files.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Apr 18 2025 21:12:39 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu May 01 2025 00:52:38 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

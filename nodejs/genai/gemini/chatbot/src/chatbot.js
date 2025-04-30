@@ -7,9 +7,9 @@ const path = require('path');
 const session = require('express-session');
 const util = require('util');
 /* eslint-disable no-unused-vars */
-const { 
+const {
   FunctionCallingConfigMode,
-  GoogleGenAI 
+  GoogleGenAI,
 } = require('@google/genai');
 /* eslint-enable no-unused-vars */
 
@@ -34,7 +34,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 /**
  * Stores the conversation history and context for each client session.
  * The key is the client's session ID.
- * @type {Map<string, { context: string, chat: ChatSession | null, history: Part[][], messageCache: Map<string, string> }>}
+ * @type {Map<string, { context: string,
+ *                      chat: ChatSession | null, history: Part[][],
+ *                      messageCache: Map<string, string> }>}
  */
 const sessions = new Map();
 
@@ -148,7 +150,7 @@ const callFunctionByName = async (sessionId, name, args) => {
       argValues.unshift(sessionId);
     }
 
-    try {  
+    try {
       /* eslint-disable prefer-spread */
       const result = await func.apply(null, argValues);
       /* eslint-enable prefer-spread */
@@ -174,18 +176,23 @@ const callFunctionByName = async (sessionId, name, args) => {
 const handleFunctionCall = async (sessionId, functionCall) => {
   const { name, args } = functionCall;
   // Using await here is fine and necessary
+  /* eslint-disable no-return-await */
   return await callFunctionByName(sessionId, name, args);
+  /* eslint-enable no-return-await */
 };
 
 /**
- * Gets or creates a chat session for a given client, initializing with history and tools.
+ * Gets or creates a chat session for a given client, initializing with history
+ * and tools.
  * @param {string} sessionId The ID of the client session.
  * @param {Tool[]} tools An array of tool definitions.
  * @returns {ChatSession} The chat session.
  */
 const getChatSession = (sessionId, tools) => {
   if (!sessions.has(sessionId)) {
-    sessions.set(sessionId, { context: '', chat: null, history: [], messageCache: new Map() });
+    sessions.set(sessionId, {
+      context: '', chat: null, history: [], messageCache: new Map(),
+    });
   }
   const xsession = sessions.get(sessionId);
 
@@ -245,7 +252,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     return userInput.substring('bot-echo-string'.length).trim() || 'No string to echo';
   }
   if (lowerInput.startsWith('bot-context')) {
-    const parts = lowerInput.split(' ').map(p => p.trim()).filter(p => p);
+    const parts = lowerInput.split(' ').map((p) => p.trim()).filter((p) => p);
     const command = parts[1];
     const arg = parts.slice(2).join(' ');
 
@@ -309,7 +316,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
       logger.info(`Sending message to Gemini [Session: ${sessionId}], Step ${numSteps}`);
       const response = await chat.sendMessage({
-        message: prompt
+        message: prompt,
       }); // Send the prompt
 
       logger.debug(`Response object is ${util.inspect(response, { depth: null })} [Session: ${sessionId}]`);
@@ -350,9 +357,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
               response: { output: functionCallResult },
             },
           }];
-          // The model will process this and generate the next turn (either text or another tool call)
-          // We continue the loop with the function response as the new "prompt" for the model.
-
+          // The model will process this and generate the next turn (either text
+          // or another tool call)
+          // We continue the loop with the function response as the new "prompt"
+          // for the model.
         } else if (part.text) {
           // If the response is text, this is the final response
           chatResponse = part.text;
@@ -373,26 +381,26 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     /* eslint-enable no-await-in-loop, no-plusplus */
 
     if (!chatResponse) {
-      // If loop finished without a response (e.g., maxSteps reached during function calls)
+      // If loop finished without a response (e.g., maxSteps reached during
+      // function calls)
       logger.warn(`Gemini API: Max steps reached without final response [Session: ${sessionId}]`);
       chatResponse = 'Reached maximum processing steps without a final response.';
     }
 
     // History is managed internally by the ChatSession object in @google/genai
     // You no longer need to manually push turns to xsession.history
-    // The chat object itself holds the history. You can retrieve it via `chat.getHistory()` if needed.
-    // xsession.history = chat.getHistory(); // Optional: if you need to save history manually elsewhere
+    // The chat object itself holds the history. You can retrieve it via
+    // `chat.getHistory()` if needed.
+    // xsession.history = chat.getHistory();
 
     addResponse(sessionId, userInput, chatResponse);
     return chatResponse;
-
   } catch (err) {
     logger.error(`Gemini API error [Session: ${sessionId}]:`, err);
     // Provide a more informative error to the user
     return `Error processing your request: ${err.message}. Please try again or contact support.`;
   }
 };
-
 
 /**
  * Handles incoming chat requests.
@@ -403,7 +411,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
  */
 app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
-  let sessionId = req.sessionID || req.ip;
+  const sessionId = req.sessionID || req.ip;
 
   if (!userMessage) {
     logger.warn(`Chat request with empty message [Session: ${sessionId}]`);
@@ -414,12 +422,10 @@ app.post('/chat', async (req, res) => {
 
   try {
     const resp = await getChatResponse(sessionId, userMessage);
-    // Ensure response is always a string, even if function call result was an object
-    // In this updated logic, getChatResponse aims to return the final text response or an error string.
-    res.json({ response: resp });
+    return res.json({ response: resp });
   } catch (error) {
     logger.error(`Unhandled error in /chat route [Session: ${sessionId}]`, error);
-    res.status(500).json({ error: 'An internal server error occurred.' });
+    return res.status(500).json({ error: 'An internal server error occurred.' });
   }
 });
 
@@ -469,7 +475,6 @@ process.on('uncaughtException', (err) => {
   // Perform necessary cleanup and then exit.
   shutdown('UncaughtException'); // Exit after logging
 });
-
 
 const startServer = () => {
   if (loadProperties('resources/app.properties')) {

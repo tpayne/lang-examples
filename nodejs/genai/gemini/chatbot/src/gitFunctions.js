@@ -491,7 +491,7 @@ async function createGithubPullRequest(
     }
     await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
-    logger.error(`Error creating pull request (exception):`, error);
+    logger.error('Error creating pull request (exception):', error);
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {

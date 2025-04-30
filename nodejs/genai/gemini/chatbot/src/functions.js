@@ -106,8 +106,16 @@ async function getSessionFuncsMetadata(sessionId) {
  * @param {string[]} required - An array of required parameter names.
  * @param {boolean} needSession - Session needed
  */
-async function registerFunction(sessionId, name, func, params, description, 
-  parametersSchema, required, needSession=false) {
+async function registerFunction(
+  sessionId,
+  name,
+  func,
+  params,
+  description,
+  parametersSchema,
+  required,
+  needSession = false,
+) {
   const sessionRegistry = await getSessionFunctionRegistry(sessionId);
   const sessionFuncs = await getSessionFuncsMetadata(sessionId);
 
