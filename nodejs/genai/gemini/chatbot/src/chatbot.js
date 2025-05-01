@@ -50,6 +50,10 @@ app.use(session({
   store: new MemcachedStore({
     hosts: ['127.0.0.1:11211'],
   }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // Enforce SSL in production
+    httpOnly: true, // Prevent client-side access to the cookie
+  },
 }));
 
 app.use(bodyParser.json());
