@@ -215,7 +215,9 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     switch (command) {
       case 'load':
         if (!arg) return 'Usage: bot-context load <context_file_name>';
+        /* eslint-disable no-case-declarations */
         const newContext = await readContext(arg);
+        /* eslint-enable no-case-declarations */
         if (newContext) {
           xsession.context = newContext;
           // Reset history entirely on context change
