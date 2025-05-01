@@ -1,17 +1,32 @@
 # Image builder...
 ARG nodeVersion=18
 ARG alpineVersion=3.18
-FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 
-# Set up APK repositories and upgrade (consider stable)
+FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
     && apk -U upgrade
 
 WORKDIR /source
 
 COPY package.json package-lock.json* ./
+COPY .*lint* ./
+
+# Copy only necessary source for dependencies and testing
+COPY src/ ./src/
+COPY contexts ./contexts
+COPY resources ./resources
+COPY templates ./templates
+
+RUN npm install && npm test
+
+FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    && apk -U upgrade
+
+WORKDIR /source
 
 COPY src/ ./src/
+COPY package.json package-lock.json* ./
 COPY package.json package-lock.json* ./src/
 COPY contexts ./src/contexts
 COPY resources ./src/resources
@@ -23,8 +38,12 @@ RUN npm install --omit=dev && \
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    && apk -U upgrade
+
+RUN apk add --no-cache memcached supervisor && \
+    apk -U upgrade
+
+EXPOSE 11211
+EXPOSE 8080
 
 ARG account=nodejs
 RUN addgroup --system ${account} && adduser ${account} --system &&\
@@ -33,12 +52,14 @@ RUN addgroup --system ${account} && adduser ${account} --system &&\
 WORKDIR /app
 
 COPY --from=imagebuilder /source/nodeexe ./
-COPY contexts ./contexts
-COPY resources ./resources
-COPY templates ./templates
-RUN mkdir logs/
+COPY --from=imagebuilder /source/src/contexts ./contexts
+COPY --from=imagebuilder /source/src/resources ./resources
+COPY --from=imagebuilder /source/src/templates ./templates
+RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
 
-USER ${account}:${account}
+# Supervisor configuration
+COPY supervisord.conf /etc/supervisord.conf
 
-CMD ["./nodeexe"]
-EXPOSE 8080
+USER ${account}
+
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]

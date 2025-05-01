@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs').promises;
 const util = require('util');
+const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 
 const GITHUB_API_VERSION = '2022-11-28';
 const USER_AGENT = 'AIBot';
@@ -11,6 +12,12 @@ const logger = require('./logger');
 const {
   mkdir,
 } = require('./utilities');
+
+/**
+ * Manages mutexes for download URLs per session to prevent concurrent downloads of the same file.
+ * @type {Map<string, Map<string, Mutex>>}
+ */
+const downloadMutexes = new Map();
 
 /**
  * Handles "Not Found" errors from the GitHub API.
@@ -50,12 +57,33 @@ async function handleGitHubApiError(response, context = '') {
 }
 
 /**
- * Helper function to download a file from a URL using Superagent.
+ * Gets or creates a mutex for a specific download URL within a session.
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} downloadUrl The URL of the file being downloaded.
+ * @returns {Mutex} The mutex for the download URL in the session.
+ */
+function getDownloadMutex(sessionId, downloadUrl) {
+  if (!downloadMutexes.has(sessionId)) {
+    downloadMutexes.set(sessionId, new Map());
+  }
+  const sessionMutexes = downloadMutexes.get(sessionId);
+  if (!sessionMutexes.has(downloadUrl)) {
+    sessionMutexes.set(downloadUrl, new Mutex());
+  }
+  return sessionMutexes.get(downloadUrl);
+}
+
+/**
+ * Helper function to download a file from a URL using Superagent, specific to a session.
+ * @param {string} sessionId The unique identifier for the session.
  * @param {string} url - The URL to download from.
  * @param {string} localFilePath - The local path to save the file.
  * @param {string|null} [token=null] - Optional GitHub token.
  */
-async function downloadFile(url, localFilePath, token = null) {
+async function downloadFile(sessionId, url, localFilePath, token = null) {
+  // Basic rate limiting per session to avoid concurrent downloads of the same URL
+  const downloadMutex = getDownloadMutex(sessionId, url);
+  const release = await downloadMutex.acquire();
   try {
     const request = superagent.get(url);
     request.set('User-Agent', USER_AGENT);
@@ -78,15 +106,18 @@ async function downloadFile(url, localFilePath, token = null) {
       throw new Error(`Error downloading ${url}: Expected Buffer, received ${typeof response.body}`);
     }
   } catch (error) {
-    logger.error('Error downloading (exception):', url, localFilePath, error.message || error);
+    logger.error('Error downloading (exception):', url, localFilePath, error.message || error, `[Session: ${sessionId}]`);
     handleNotFoundError(error, ` for downloading ${url}`);
     throw error; // Re-throw the error for the caller to handle
+  } finally {
+    release();
   }
 }
 
 /**
- * Recursively fetches files and directories from a GitHub repository
+ * Recursively fetches files and directories from a GitHub repository for a specific session.
  *
+ * @param {string} sessionId The unique identifier for the session.
  * @param {string} username - The owner of the repository.
  * @param {string} repoName - The name of the repository.
  * @param {string} repoPath - The starting path within the repository.
@@ -96,6 +127,7 @@ async function downloadFile(url, localFilePath, token = null) {
  * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
  */
 async function fetchRepoContentsRecursive(
+  sessionId,
   username,
   repoName,
   repoPath,
@@ -124,21 +156,21 @@ async function fetchRepoContentsRecursive(
 
     const response = await request;
     /* eslint-disable max-len, no-promise-executor-return,
-                      no-restricted-syntax,
-                      no-await-in-loop,
-                      no-continue */
+             no-restricted-syntax,
+             no-await-in-loop,
+             no-continue */
 
     if (response.status === 403 && response.headers['x-ratelimit-remaining'] === '0' && retryCount < maxRetries) {
       const resetTime = parseInt(response.headers['x-ratelimit-reset'], 10) * 1000;
       const waitTime = resetTime - Date.now() + 1000; // Add a small buffer
-      logger.warn(`Rate limit hit. Retrying in ${waitTime / 1000} seconds (Attempt ${retryCount + 1}/${maxRetries}).`);
+      logger.warn(`Rate limit hit for session ${sessionId}. Retrying in ${waitTime / 1000} seconds (Attempt ${retryCount + 1}/${maxRetries}).`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
       return fetchRepoContentsRecursive(
+        sessionId,
         username,
         repoName,
         repoPath,
         localDestPath,
-        githubToken,
         includeDotGithub,
         retryCount + 1,
         maxRetries,
@@ -146,7 +178,7 @@ async function fetchRepoContentsRecursive(
     }
 
     if (response.status !== 200) {
-      logger.error(`GitHub API error for path "${repoPath}": HTTP ${response.status} - ${response.text}`);
+      logger.error(`GitHub API error for path "${repoPath}" [Session: ${sessionId}]: HTTP ${response.status} - ${response.text}`);
       handleNotFoundError(response, ` for repository ${username}/${repoName} at path "${repoPath}"`);
       return { success: false, message: `GitHub API error: HTTP ${response.status} for ${apiUrl}` };
     }
@@ -155,11 +187,11 @@ async function fetchRepoContentsRecursive(
     const items = response.body;
 
     if (!Array.isArray(items)) {
-      logger.warn(`Expected an array of items from API for path "${repoPath}", but received: ${typeof items}`);
+      logger.warn(`Expected an array of items from API for path "${repoPath}", but received: ${typeof items} [Session: ${sessionId}]`);
       if (items && items.type === 'file' && items.download_url) {
         const filePath = path.join(localDestPath, items.name);
         try {
-          await downloadFile(items.download_url, filePath, githubToken);
+          await downloadFile(sessionId, items.download_url, filePath, githubToken);
         } catch (error) {
           return { success: false, message: `Error downloading single file: ${error.message}` };
         }
@@ -178,18 +210,18 @@ async function fetchRepoContentsRecursive(
       if (item.type === 'file') {
         if (item.download_url) {
           try {
-            await downloadFile(item.download_url, currentLocalPath, githubToken);
+            await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
           } catch (error) {
             return { success: false, message: `Error downloading file "${item.name}": ${error.message}` };
           }
         }
       } else if (item.type === 'dir') {
         const result = await fetchRepoContentsRecursive(
+          sessionId,
           username,
           repoName,
           item.path,
           currentLocalPath,
-          githubToken,
           includeDotGithub,
           0, // Reset retry count for new recursive calls
           maxRetries,
@@ -198,11 +230,11 @@ async function fetchRepoContentsRecursive(
           return result; // Propagate failure from subdirectory
         }
       } else if (item.type === 'symlink') {
-        logger.warn(`Skipping symlink: ${item.name} (content not fetched)`);
+        logger.warn(`Skipping symlink: ${item.name} (content not fetched) [Session: ${sessionId}]`);
       } else if (item.type === 'submodule') {
-        logger.warn(`Skipping submodule: ${item.name} (content not fetched)`);
+        logger.warn(`Skipping submodule: ${item.name} (content not fetched) [Session: ${sessionId}]`);
       } else {
-        logger.warn(`Unknown item type "${item.type}" for item: ${item.name}`);
+        logger.warn(`Unknown item type "${item.type}" for item: ${item.name} [Session: ${sessionId}]`);
       }
     }
     return {
@@ -212,10 +244,10 @@ async function fetchRepoContentsRecursive(
     };
     /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
   } catch (error) {
-    logger.debug(`Error object is ${util.inspect(error, { depth: null })}`);
-    logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error);
+    logger.debug(`Error object is ${util.inspect(error, { depth: null })} [Session: ${sessionId}]`);
+    logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error, `[Session: ${sessionId}]`);
     if (error.response) {
-      logger.error(`Error downloading files (exception): ${error.response.text}`);
+      logger.error(`Error downloading files (exception): ${error.response.text} [Session: ${sessionId}]`);
       if (error.response.status === 404) {
         throw new Error('Not Found: Check repo and directory names.');
       }
@@ -287,10 +319,15 @@ async function listBranches(username, repoName) {
     handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
   }
 }
+
+/* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 /**
- * Lists commit history for a specific file or directory in a given GitHub repository.
- * First, verifies that the file or directory exists by querying the repository contents API.
- * If the path exists, it fetches commit data and extracts SHA, message, author, and date.
+ * Lists commit history for a specific file or directory in a
+ * given GitHub repository.
+ * First, verifies that the file or directory exists by
+ * querying the repository contents API.
+ * If the path exists, it fetches commit data and extracts SHA,
+ * message, author, and date.
  * Handles API errors and "Not Found" exceptions.
  *
  * @async
@@ -298,7 +335,7 @@ async function listBranches(username, repoName) {
  * @param {string} repoName The name of the repository.
  * @param {string} dirName The path to the file or directory within the repository.
  * @returns {Promise<Array<{ sha: string, message: string, author: string, date: string }>>}
- *          Array of commit history objects.
+ * Array of commit history objects.
  * @throws {Error} If API requests fail or file/directory not found.
  */
 async function listCommitHistory(username, repoName, dirName) {
@@ -313,7 +350,7 @@ async function listCommitHistory(username, repoName, dirName) {
       .set('User-Agent', USER_AGENT);
   } catch (contentsError) {
     // Log and re-throw as a more specific error.
-    logger.error('Error fetching path contents:', username, repoName, dirName, contentsError);
+    logger.error('Error fetching path contents (exception):', username, repoName, dirName, contentsError);
     throw new Error(`The path "${dirName}" in "${username}/${repoName}" does not exist.`);
   }
 
@@ -454,6 +491,7 @@ async function createGithubPullRequest(
     }
     await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
+    logger.error('Error creating pull request (exception):', error);
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
@@ -479,8 +517,8 @@ async function createGithubPullRequest(
  * @param {string} repoName The name of the repository.
  * @param {string} [status='in_progress'] Status to filter workflows (optional).
  * @returns {Promise<Array<{ workflow_run_id: number, workflow_name: string,
- *           job_id: number, job_name: string, html_url: string, status: string,
- *           started_at: string }>>}
+ * job_id: number, job_name: string, html_url: string, status: string,
+ * started_at: string }>>}
  * Array of running/queued GitHub Action job details.
  * @throws {Error} If API request fails or repository/user not found.
  */
@@ -530,7 +568,7 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
     }
     return runningJobs;
   } catch (error) {
-    logger.error('Error listing actions (exception):', username, repoName, status, error);
+    logger.error(`Error listing actions (exception): ${username} ${repoName} ${status} ${error}`);
     if (error.response) {
       logger.error(`Error listing actions (exception): ${error.response.text}`);
       if (error.response.status === 404) {

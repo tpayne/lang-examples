@@ -16,7 +16,7 @@ const logger = require('./logger'); // Assuming you have a logger module
  * @function mkdir
  * @param {string} localDestPath - The path to the directory to create.
  * @throws {Error} Throws an error if there is an issue deleting the directory
- *                 that is not due to the directory not existing.
+ * that is not due to the directory not existing.
  */
 async function mkdir(localDestPath) {
   try {
@@ -102,11 +102,12 @@ async function createUniqueTempDir() {
 }
 
 /**
-* Reads the content of a file.
-*
-* @param {string} filePath The path to the file to read.
-* @returns {Promise<string>} A promise that resolves with the file content as a string.
-*/
+ * Reads the content of a file.
+ *
+ * @param {string} filePath The path to the file to read.
+ * @returns {Promise<string|null>} A promise that resolves with the file content as a string,
+ * or null if an error occurred while reading the file.
+ */
 async function readFileContent(filePath) {
   try {
     const content = await fs.readFile(filePath, 'utf8');
@@ -124,11 +125,12 @@ async function readFileContent(filePath) {
 /* eslint-disable no-continue, no-restricted-syntax, no-await-in-loop,  */
 
 /**
-* Recursively reads all files in a directory and its subdirectories.
-*
-* @param {string} dirPath The path to the directory to read.
-* @returns {Promise<string[]>} A promise that resolves with an array of file paths.
-*/
+ * Recursively reads all files in a directory and its subdirectories.
+ *
+ * @param {string} dirPath The path to the directory to read.
+ * @returns {Promise<string[]>} A promise that resolves with an array of absolute file paths.
+ * @throws {Error} Throws an error if the initial directory cannot be read.
+ */
 async function readFilesRecursively(dirPath) {
   const files = [];
   try {
@@ -154,7 +156,7 @@ async function readFilesRecursively(dirPath) {
 }
 
 /**
- * Reads all files in a specified directory and returns a map of file paths and their contents.
+ * Reads all files in a specified directory and returns a Map of file paths and their contents.
  *
  * This function recursively retrieves all file paths in the given directory,
  * reads the content of each file, and stores the file path and content in a Map.
@@ -165,8 +167,8 @@ async function readFilesRecursively(dirPath) {
  * @function readFilesInDirectory
  * @param {string} directoryPath - The path to the directory from which to read files.
  * @returns {Promise<Map<string, string>>} A promise that resolves to a Map where the
- *                                         keys are file paths
- *                                         and the values are the contents of the files.
+ * keys are absolute file paths
+ * and the values are the contents of the files.
  * @throws {Error} Throws an error if there is an issue reading the directory.
  */
 async function readFilesInDirectory(directoryPath) {

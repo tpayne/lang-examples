@@ -44,7 +44,7 @@ const logger = require('./logger'); // Assuming you have a logger module
  * @function mkdir
  * @param {string} localDestPath - The path to the directory to create.
  * @throws {Error} Throws an error if there is an issue deleting the directory
- *                 that is not due to the directory not existing.
+ * that is not due to the directory not existing.
  */
 async function mkdir(localDestPath) {
   try {
@@ -130,11 +130,12 @@ async function createUniqueTempDir() {
 }
 
 /**
-* Reads the content of a file.
-*
-* @param {string} filePath The path to the file to read.
-* @returns {Promise&lt;string>} A promise that resolves with the file content as a string.
-*/
+ * Reads the content of a file.
+ *
+ * @param {string} filePath The path to the file to read.
+ * @returns {Promise&lt;string|null>} A promise that resolves with the file content as a string,
+ * or null if an error occurred while reading the file.
+ */
 async function readFileContent(filePath) {
   try {
     const content = await fs.readFile(filePath, 'utf8');
@@ -152,11 +153,12 @@ async function readFileContent(filePath) {
 /* eslint-disable no-continue, no-restricted-syntax, no-await-in-loop,  */
 
 /**
-* Recursively reads all files in a directory and its subdirectories.
-*
-* @param {string} dirPath The path to the directory to read.
-* @returns {Promise&lt;string[]>} A promise that resolves with an array of file paths.
-*/
+ * Recursively reads all files in a directory and its subdirectories.
+ *
+ * @param {string} dirPath The path to the directory to read.
+ * @returns {Promise&lt;string[]>} A promise that resolves with an array of absolute file paths.
+ * @throws {Error} Throws an error if the initial directory cannot be read.
+ */
 async function readFilesRecursively(dirPath) {
   const files = [];
   try {
@@ -182,7 +184,7 @@ async function readFilesRecursively(dirPath) {
 }
 
 /**
- * Reads all files in a specified directory and returns a map of file paths and their contents.
+ * Reads all files in a specified directory and returns a Map of file paths and their contents.
  *
  * This function recursively retrieves all file paths in the given directory,
  * reads the content of each file, and stores the file path and content in a Map.
@@ -193,8 +195,8 @@ async function readFilesRecursively(dirPath) {
  * @function readFilesInDirectory
  * @param {string} directoryPath - The path to the directory from which to read files.
  * @returns {Promise&lt;Map&lt;string, string>>} A promise that resolves to a Map where the
- *                                         keys are file paths
- *                                         and the values are the contents of the files.
+ * keys are absolute file paths
+ * and the values are the contents of the files.
  * @throws {Error} Throws an error if there is an issue reading the directory.
  */
 async function readFilesInDirectory(directoryPath) {
@@ -235,13 +237,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authToken">authToken</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcs">funcs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#tokenExpiry">tokenExpiry</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Apr 17 2025 10:55:30 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu May 01 2025 13:03:56 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
