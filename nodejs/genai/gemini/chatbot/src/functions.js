@@ -145,6 +145,8 @@ async function registerFunction(
   }
 }
 
+/* eslint-disable no-shadow */
+
 async function loadCodeReviews(sessionId) {
   await registerFunction(
     sessionId,
@@ -176,6 +178,8 @@ async function loadDosa(sessionId) {
     true,
   );
 }
+
+/* eslint-enable no-shadow */
 
 async function loadGitHub(sessionId) {
   await registerFunction(
