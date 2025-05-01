@@ -32,7 +32,9 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * The key is the client's session ID.
  * History is now in OpenAI's messages format.
  * @type {Map<string, { context: string,
- * history: Array<{ role: string, content?: string, tool_calls?: any[], tool_call_id?: string, name?: string, function_call?: any }>,
+ * history: Array<{ role: string, content: string,
+ * tool_calls: any[], tool_call_id: string,
+ * name: string, function_call: any }>,
  * messageCache: Map<string, string> }>}
  */
 const sessions = new Map();
@@ -41,7 +43,7 @@ const morganMiddleware = require('./morganmw');
 const logger = require('./logger');
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback_secret_should_be_strong_and_unique', // Use a dedicated session secret
+  secret: process.env.OPENAI_API_KEY, // Use a dedicated session secret
   resave: false,
   saveUninitialized: true,
   store: new MemcachedStore({
@@ -174,7 +176,8 @@ const callFunctionByName = async (sessionId, name, args) => {
  * @async
  * @param {string} sessionId The ID of the client session.
  * @param {string} userInput The user's message.
- * @param {boolean} [forceJson=false] Whether to request a JSON response. Note: OpenAI has a specific response_format parameter for JSON.
+ * @param {boolean} [forceJson=false] Whether to request a JSON response.
+ * Note: OpenAI has a specific response_format parameter for JSON.
  * @returns {Promise<string|object>} The chatbot's response (usually text).
  */
 const getChatResponse = async (sessionId, userInput, forceJson = false) => {
@@ -319,7 +322,9 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
       // Check if the model wants to call a tool
       if (message.tool_calls && message.tool_calls.length > 0) {
-        const toolCall = message.tool_calls[0]; // Assuming only one tool call per message for simplicity matching original logic
+        // Assuming only one tool call per message for simplicity
+        // matching original logic
+        const toolCall = message.tool_calls[0];
         const functionName = toolCall.function.name;
         const functionArgsJsonString = toolCall.function.arguments; // This is a JSON string
         const toolCallId = toolCall.id;
@@ -379,7 +384,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       const systemMessage = xsession.history.find((msg) => msg.role === 'system');
       let historyToKeep = systemMessage ? [systemMessage] : [];
       const messagesWithoutSystem = xsession.history.filter((msg) => msg.role !== 'system');
-      historyToKeep = historyToKeep.concat(messagesWithoutSystem.slice(-(maxHistoryLength - (systemMessage ? 1 : 0))));
+      const messagesToKeep = messagesWithoutSystem.slice(
+        -(maxHistoryLength - (systemMessage ? 1 : 0)),
+      );
+      historyToKeep = historyToKeep.concat(messagesToKeep);
       xsession.history = historyToKeep;
       logger.debug(`Trimmed history to ${xsession.history.length} messages [Session: ${sessionId}]`);
     }
