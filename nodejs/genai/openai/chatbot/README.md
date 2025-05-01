@@ -25,7 +25,17 @@ To run this solution please do the following steps. They will build and run the 
         -e GITHUB_TOKEN=<YourKey> \
         chatbot:1.0 
 
-If everything has worked as expected, then you can open the chatbot on port localhost:8080.
+If everything has worked as expected, then you can open the chatbot on port localhost:8080, e.g.
+
+```bash
+ curl -c cookies.txt -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -X POST localhost:8080/chat &&\
+    curl -b cookies.txt -H "Content-Type: application/json" \
+    -d '{"message":"what is a tvr?"}' \
+    -X POST localhost:8080/chat
+{"response":"Context loaded"}{"response":"Okay, cool! So, a TVR is a British sports car. They were known for being really fast, loud, and, let's just say, a bit wild! They were built in Blackpool, England, and they're famous for their lightweight bodies and powerful engines. They don't make 'em anymore, which makes them even more special.\n"}
+```
     
 You have various contexts available that the bot supports. These can be accessed using...
 
@@ -81,10 +91,9 @@ cd contexts
 cp tvr-cars.txt <custom-context>.txt
 ```
 
-Then edit the `<custom-context>.txt` to specify the rules you want as appropriate. Please refer to [here](https://help.openai.com/en/articles/10032626-prompt-engineering-best-practices-for-chatgpt) for guidance on how to modify the context file.
+Then edit the `<custom-context>.txt` to specify the rules you want as appropriate.
 
 You can then load it into the chatbot using the `bot-context load` command once the image is built.
-
 
 Interacting with GitHub
 -----------------------
@@ -93,17 +102,17 @@ A few sample chatbot actions have been created that show how the AI can be integ
 A few samples are
 
 ```bash
- curl -H "Content-Type: application/json" \
+ curl -c cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"bot-context load devops.txt"}' \
     -X POST localhost:8080/chat && \
-    curl -H "Content-Type: application/json" \
+    curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"list all the branches in the github repo CloudFunctions that is owned by the user tpayne"}' \
     -X POST localhost:8080/chat
 
- curl -H "Content-Type: application/json" \
+ curl -c cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"bot-context load devops.txt"}' \
     -X POST localhost:8080/chat && \
-    curl -H "Content-Type: application/json" \
+    curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"list all the files in the github repo CloudRun that is owned by the user tpayne"}' \
     -X POST localhost:8080/chat
 ```
@@ -116,7 +125,7 @@ GitHub support is added for:
 * Listing commit history for a file
 * Listing repos owned by a user
 * Listing the files in a repo
-* Downloading the contents of a repo
+* Downloading a repo or part of a repo
 
 Automated Code Reviews
 ----------------------
@@ -132,24 +141,24 @@ For example, you could ask for...
 The command format is something like...
 
 ```bash
-curl -H "Content-Type: application/json" \
+curl -c cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"bot-context load developer.txt"}' \
     -X POST localhost:8080/chat && \
-curl -H "Content-Type: application/json" \
+curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"please perform a detailed code review of the files under the directory samples/DemoApp/src/main/java/  in the github repo tpayne/CloudRun and tell me improvements for the content to make it more efficient"}' \
      -X POST localhost:8080/chat
 
-curl -H "Content-Type: application/json" \
+curl -c cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"bot-context load developer.txt"}' \
     -X POST localhost:8080/chat && \
-curl -H "Content-Type: application/json" \
+curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"please perform a security review of the terraform code in the github repo tpayne/terraform-examples under the directory samples/Azure/templates/modules and give me a security analysis of the content. Let me know if there are any security issues I should fix"}' \
     -X POST localhost:8080/chat
 
-curl -H "Content-Type: application/json" \
+curl -c cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"bot-context load developer.txt"}' \
     -X POST localhost:8080/chat && \
-curl -H "Content-Type: application/json" \
+curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"please perform a security review of the terraform code in the github repo tpayne/terraform-examples and give me a security analysis of the content. Let me know if there are any security issues I should fix"}' \
     -X POST localhost:8080/chat
 ```

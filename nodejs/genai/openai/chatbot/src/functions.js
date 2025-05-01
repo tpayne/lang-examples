@@ -1,4 +1,6 @@
+const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 const logger = require('./logger');
+
 const {
   createGithubPullRequest,
   fetchRepoContentsRecursive,
@@ -11,6 +13,7 @@ const {
 
 const {
   codeReviews,
+  cleanupSession: cleanupCodeReviewSession, // Import cleanup for code reviews
 } = require('./codeReviews');
 
 const {
@@ -41,51 +44,114 @@ const {
  */
 
 /**
- * Registry of available GitHub functions for AI.
- * @type {Record<string, RegisteredFunction>}
+ * Registry of available GitHub functions for AI, keyed by session ID.
+ * @type {Map<string, Record<string, RegisteredFunction>>}
  */
-const availableFunctionsRegistry = {};
+const availableFunctionsRegistry = new Map();
 
 /**
- * Metadata for GitHub functions as AI tools.
- * @type {FunctionMetadata[]}
+ * Metadata for GitHub functions as AI tools, stored per session.
+ * @type {Map<string, FunctionMetadata[]>}
  */
-const funcs = [];
+const funcsMetadata = new Map();
 
 /**
- * Registers a new GitHub function for AI.
+ * Mutex to control access to the function registries.
+ * @type {Mutex}
+ */
+const registryMutex = new Mutex();
+
+/**
+ * Gets or creates the function registry for a given session ID.
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {Record<string, RegisteredFunction>} The function registry for the session.
+ */
+async function getSessionFunctionRegistry(sessionId) {
+  const release = await registryMutex.acquire();
+  try {
+    if (!availableFunctionsRegistry.has(sessionId)) {
+      availableFunctionsRegistry.set(sessionId, {});
+    }
+    return availableFunctionsRegistry.get(sessionId);
+  } finally {
+    release();
+  }
+}
+
+/**
+ * Gets or creates the function metadata array for a given session ID.
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {FunctionMetadata[]} The function metadata array for the session.
+ */
+async function getSessionFuncsMetadata(sessionId) {
+  const release = await registryMutex.acquire();
+  try {
+    if (!funcsMetadata.has(sessionId)) {
+      funcsMetadata.set(sessionId, []);
+    }
+    return funcsMetadata.get(sessionId);
+  } finally {
+    release();
+  }
+}
+
+/**
+ * Registers a new function for AI for a specific session.
+ * @param {string} sessionId The unique identifier for the session.
  * @param {string} name - The unique name of the function (used as the key).
  * @param {Function} func - The JavaScript function to execute.
  * @param {string[]} params - An array of parameter names the function expects.
  * @param {string} description - A description of what the function does.
  * @param {object} parametersSchema - The JSON schema for the function's parameters.
  * @param {string[]} required - An array of required parameter names.
+ * @param {boolean} needSession - Session needed
  */
-function registerFunction(name, func, params, description, parametersSchema, required) {
-  if (availableFunctionsRegistry[name]) {
-    logger.warn(`Function with name '${name}' already registered and will be overwritten.`);
-  }
-  availableFunctionsRegistry[name] = { func, params };
+async function registerFunction(
+  sessionId,
+  name,
+  func,
+  params,
+  description,
+  parametersSchema,
+  required,
+  needSession = false,
+) {
+  const sessionRegistry = await getSessionFunctionRegistry(sessionId);
+  const sessionFuncs = await getSessionFuncsMetadata(sessionId);
 
-  const functionMetadata = {
-    type: 'function',
-    function: {
-      name,
-      description,
-      parameters: {
-        type: 'object',
-        properties: parametersSchema,
-        required,
-      },
-    },
-  };
-  funcs.push(functionMetadata);
+  const release = await registryMutex.acquire();
+  try {
+    if (sessionRegistry[name]) {
+      logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be reused.`);
+    } else {
+      sessionRegistry[name] = { func, params, needSession };
+
+      const functionMetadata = {
+        type: 'function',
+        function: {
+          name,
+          description,
+          parameters: {
+            type: 'object',
+            properties: parametersSchema,
+            required,
+          },
+        },
+      };
+      sessionFuncs.push(functionMetadata);
+    }
+  } finally {
+    release();
+  }
 }
 
-function loadCodeReviews() {
-  registerFunction(
+/* eslint-disable no-shadow */
+
+async function loadCodeReviews(sessionId) {
+  await registerFunction(
+    sessionId,
     'file_review',
-    codeReviews,
+    (sessionId, username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
     ['username', 'repoName', 'repoPath'],
     'Review files in a given GitHub repository.',
     {
@@ -94,25 +160,30 @@ function loadCodeReviews() {
       repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
     },
     ['username', 'repoName', 'repoPath'],
+    true,
   );
 }
 
-function loadDosa() {
-  registerFunction(
+async function loadDosa(sessionId) {
+  await registerFunction(
+    sessionId,
     'get_mot_history',
-    getVehicleHistory,
+    (sessionId, registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
     ['registrationNumber'],
     'Get the MOT History for a vehicle.',
     {
       registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
     },
     ['registrationNumber'],
+    true,
   );
 }
 
-function loadGitHub() {
-  // Register the existing functions
-  registerFunction(
+/* eslint-enable no-shadow */
+
+async function loadGitHub(sessionId) {
+  await registerFunction(
+    sessionId,
     'create_pull_request',
     createGithubPullRequest,
     ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
@@ -128,7 +199,8 @@ function loadGitHub() {
     ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
   );
 
-  registerFunction(
+  await registerFunction(
+    sessionId,
     'fetch_repo_contents',
     fetchRepoContentsRecursive,
     ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
@@ -143,9 +215,11 @@ function loadGitHub() {
       maxRetries: { type: 'number', description: 'The maximum number of retries.' },
     },
     ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    true,
   );
 
-  registerFunction(
+  await registerFunction(
+    sessionId,
     'list_actions',
     listGitHubActions,
     ['username', 'repoName', 'status'],
@@ -158,7 +232,8 @@ function loadGitHub() {
     ['username', 'repoName'],
   );
 
-  registerFunction(
+  await registerFunction(
+    sessionId,
     'list_public_repos',
     listPublicRepos,
     ['username'],
@@ -169,7 +244,8 @@ function loadGitHub() {
     ['username'],
   );
 
-  registerFunction(
+  await registerFunction(
+    sessionId,
     'list_branches',
     listBranches,
     ['username', 'repoName'],
@@ -181,7 +257,8 @@ function loadGitHub() {
     ['username', 'repoName'],
   );
 
-  registerFunction(
+  await registerFunction(
+    sessionId,
     'list_commit_history',
     listCommitHistory,
     ['username', 'repoName', 'dirName'],
@@ -194,7 +271,8 @@ function loadGitHub() {
     ['username', 'repoName', 'dirName'],
   );
 
-  registerFunction(
+  await registerFunction(
+    sessionId,
     'list_directory_contents',
     listDirectoryContents,
     ['username', 'repoName', 'repoDirName', 'recursive'],
@@ -209,32 +287,55 @@ function loadGitHub() {
   );
 }
 
-/* eslint-enable max-len */
-
-// Define the getFunctionDefinitionsForTool function
-function getFunctionDefinitionsForTool() {
-  return funcs;
+/**
+ * Returns the function definitions for the AI tool for a specific session.
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
+ */
+async function getFunctionDefinitionsForTool(sessionId) {
+  return getSessionFuncsMetadata(sessionId);
 }
 
-function getAvailableFunctions() {
-  return availableFunctionsRegistry;
+/**
+ * Returns the registry of available functions for a specific session.
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {Promise<Record<string, RegisteredFunction>>} An object mapping function names to their implementations.
+ */
+async function getAvailableFunctions(sessionId) {
+  return getSessionFunctionRegistry(sessionId);
 }
 
-if (process.env.GITHUB_TOKEN) {
-  logger.info('Loading GitHub integration...');
-  loadGitHub();
-  logger.info('Loading GitHub code review integration...');
-  loadCodeReviews();
+async function loadIntegrations(sessionId) {
+  if (process.env.GITHUB_TOKEN) {
+    logger.info(`Loading GitHub integration for session: ${sessionId}`);
+    await loadGitHub(sessionId);
+    logger.info(`Loading GitHub code review integration for session: ${sessionId}`);
+    await loadCodeReviews(sessionId);
+  }
+
+  if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
+        && process.env.DOSA_AUTH_TENANT_ID
+        && process.env.DOSA_CLIENT_ID) {
+    logger.info(`Loading DOSA/DLVA integration for session: ${sessionId}`);
+    await loadDosa(sessionId);
+  }
 }
 
-if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
-  && process.env.DOSA_AUTH_TENANT_ID
-  && process.env.DOSA_CLIENT_ID) {
-  logger.info('Loading DOSA/DLVA integration...');
-  loadDosa();
+async function cleanupSession(sessionId) {
+  const release = await registryMutex.acquire();
+  try {
+    availableFunctionsRegistry.delete(sessionId);
+    funcsMetadata.delete(sessionId);
+  } finally {
+    release();
+  }
+  await cleanupCodeReviewSession(sessionId); // Clean up resources from codeReviews
+  logger.info(`Cleaned up function registry for session: ${sessionId}`);
 }
 
 module.exports = {
   getAvailableFunctions,
-  getFunctionDefinitionsForTool, // Renamed function
+  getFunctionDefinitionsForTool,
+  loadIntegrations,
+  cleanupSession,
 };
