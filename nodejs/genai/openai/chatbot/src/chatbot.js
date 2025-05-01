@@ -32,8 +32,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * The key is the client's session ID.
  * History is now in OpenAI's messages format.
  * @type {Map<string, { context: string,
- * history: Array<{ role: string, content: string, tool_calls: any[],
- * tool_call_id: string, name: string, function_calle: any }>,
+ * history: Array<{ role: string, content?: string, tool_calls?: any[], tool_call_id?: string, name?: string, function_call?: any }>,
  * messageCache: Map<string, string> }>}
  */
 const sessions = new Map();
@@ -42,7 +41,7 @@ const morganMiddleware = require('./morganmw');
 const logger = require('./logger');
 
 app.use(session({
-  secret: process.env.OPENAI_API_KEY,
+  secret: process.env.SESSION_SECRET || 'fallback_secret_should_be_strong_and_unique', // Use a dedicated session secret
   resave: false,
   saveUninitialized: true,
   store: new MemcachedStore({
@@ -115,7 +114,7 @@ const readContext = async (contextStr) => {
   try {
     // Basic path sanitation
     if (contextStr.includes('..') || contextStr.startsWith('/')) {
-      throw new Error('Invalid characters in context path');
+        throw new Error('Invalid characters in context path');
     }
     const contextPath = path.resolve('contexts', contextStr);
     const normalizedContextPath = path.normalize(contextPath);
@@ -169,14 +168,14 @@ const callFunctionByName = async (sessionId, name, args) => {
   return JSON.stringify({ error: `Function '${name}' not found` });
 };
 
+
 /**
  * Gets a chat response from the OpenAI API, maintaining state per session.
  * Handles special commands, context, caching, and function calling.
  * @async
  * @param {string} sessionId The ID of the client session.
  * @param {string} userInput The user's message.
- * @param {boolean} [forceJson=false] Whether to request a JSON response.
- * Note: OpenAI has a specific response_format parameter for JSON.
+ * @param {boolean} [forceJson=false] Whether to request a JSON response. Note: OpenAI has a specific response_format parameter for JSON.
  * @returns {Promise<string|object>} The chatbot's response (usually text).
  */
 const getChatResponse = async (sessionId, userInput, forceJson = false) => {
@@ -213,24 +212,19 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
     switch (command) {
       case 'load':
-        if (!arg) {
-          return 'Usage: bot-context load <context_file_name>';
-        }
-        /* eslint-disable no-case-declarations */
+        if (!arg) return 'Usage: bot-context load <context_file_name>';
         const newContext = await readContext(arg);
-        /* eslint-enable no-case-declarations */
-
         if (newContext) {
           xsession.context = newContext;
-          // Reset history entirely on context change
+           // Reset history entirely on context change
           xsession.history = [{ role: 'system', content: xsession.context }];
           xsession.messageCache = new Map(); // Clear cache as context changed
           logger.info(`Context '${arg}' loaded and session reset [Session: ${sessionId}]`);
           return `Context '${arg}' loaded and session reset`;
+        } else {
+           logger.warn(`Context file '${arg}' could not be read or is empty [Session: ${sessionId}]`);
+           return `Context file '${arg}' could not be read or is empty`;
         }
-        logger.warn(`Context file '${arg}' could not be read or is empty [Session: ${sessionId}]`);
-        return `Context file '${arg}' could not be read or is empty`;
-
       case 'show':
         return xsession.context || 'Context is empty for this session';
       case 'reset':
@@ -248,26 +242,27 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
   // If context is required and not set, inform the user
   if (!xsession.context && getConfig().requireContext === 'true') { // Assuming getConfig can provide this
-    return 'Error: Context is required and not set for this session. Please use "bot-context load <file>" to load one.';
+      return 'Error: Context is required and not set for this session. Please use "bot-context load <file>" to load one.';
   }
 
   // Check cache before calling the API
   const cachedResponse = getResponse(sessionId, userInput);
   if (cachedResponse) {
-    logger.info(`Returning cached response [Session: ${sessionId}]`);
-    return cachedResponse;
+      logger.info(`Returning cached response [Session: ${sessionId}]`);
+      return cachedResponse;
   }
 
   try {
     // Add system message if context exists and it's the first message
     if (xsession.context && (xsession.history.length === 0 || xsession.history[0].role !== 'system')) {
-      xsession.history.unshift({ role: 'system', content: xsession.context });
-      logger.info(`Added system message from context [Session: ${sessionId}]`);
+        xsession.history.unshift({ role: 'system', content: xsession.context });
+        logger.info(`Added system message from context [Session: ${sessionId}]`);
     } else if (!xsession.context && xsession.history.length > 0 && xsession.history[0].role === 'system') {
-      // If context was removed, remove the old system message
-      xsession.history.shift();
-      logger.info(`Removed system message (context is empty) [Session: ${sessionId}]`);
+        // If context was removed, remove the old system message
+        xsession.history.shift();
+        logger.info(`Removed system message (context is empty) [Session: ${sessionId}]`);
     }
+
 
     // Add the user's message to the history for this turn
     xsession.history.push({ role: 'user', content: userInput });
@@ -287,125 +282,122 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       logger.debug(`Tools sent to OpenAI: ${util.inspect(tools, { depth: null })} [Session: ${sessionId}]`);
 
       const completionParams = {
-        model: getConfig().aiModel, // e.g., 'gpt-4o', 'gpt-3.5-turbo'
-        messages: xsession.history, // Send the full conversation history
-        temperature: Number(getConfig().temperature),
-        max_tokens: Number(getConfig().maxTokens),
-        top_p: Number(getConfig().top_p),
-        stream: false, // We are not using streaming in this example
-        tools, // Pass the tools here
-        // tool_choice: 'auto', // Let the model decide whether to call a tool or respond
+          model: getConfig().aiModel, // e.g., 'gpt-4o', 'gpt-3.5-turbo'
+          messages: xsession.history, // Send the full conversation history
+          temperature: Number(getConfig().temperature),
+          max_tokens: Number(getConfig().maxTokens),
+          top_p: Number(getConfig().top_p),
+          stream: false, // We are not using streaming in this example
+          tools: tools, // Pass the tools here
+          // tool_choice: 'auto', // Let the model decide whether to call a tool or respond
       };
 
       // Add JSON response format if requested and model supports it
       // Note: This requires specific models (e.g., gpt-4-turbo, gpt-3.5-turbo-1106)
       if (forceJson && completionParams.model.includes('turbo') && parseFloat(completionParams.model.split('-')[2]) >= 1106) {
-        completionParams.response_format = { type: 'json_object' };
-        logger.info(`Requesting JSON response format [Session: ${sessionId}]`);
+         completionParams.response_format = { type: "json_object" };
+         logger.info(`Requesting JSON response format [Session: ${sessionId}]`);
       }
 
       const response = await openai.chat.completions.create(completionParams);
 
       logger.debug(`OpenAI API response [Session: ${sessionId}]: ${util.inspect(response, { depth: null })}`);
 
-      const message = (response.choices[0] && response.choices[0].message)
-        ? response.choices[0].message : null;
+      const message = response.choices[0] ? response.choices[0].message : undefined;
 
       if (!message) {
-        logger.warn(`OpenAI API: No message in response choice [Session: ${sessionId}]`);
-        chatResponse = 'Could not get a valid message from the model.';
-        break;
+         logger.warn(`OpenAI API: No message in response choice [Session: ${sessionId}]`);
+         chatResponse = 'Could not get a valid message from the model.';
+         break;
       }
 
       // Add the assistant's response (either text or tool_calls) to history
       xsession.history.push(message);
-      logger.debug(
-        `Added assistant message to history [Session: ${sessionId}]`,
-        {
-          role: message.role,
-          content: message.content,
-          tool_calls: message.tool_calls.length,
-        },
-      );
-
+      logger.debug(`Added assistant message to history [Session: ${sessionId}]`, {
+        role: message.role,
+        content: message.content,
+        tool_calls: message.tool_calls ? message.tool_calls.length : undefined
+      });
+      
       // Check if the model wants to call a tool
       if (message.tool_calls && message.tool_calls.length > 0) {
-        // Assuming only one tool call per message for simplicity matching
-        // original logic
-        const toolCall = message.tool_calls[0];
-        const functionName = toolCall.function.name;
-        const functionArgsJsonString = toolCall.function.arguments; // This is a JSON string
-        const toolCallId = toolCall.id;
+          const toolCall = message.tool_calls[0]; // Assuming only one tool call per message for simplicity matching original logic
+          const functionName = toolCall.function.name;
+          const functionArgsJsonString = toolCall.function.arguments; // This is a JSON string
+          const toolCallId = toolCall.id;
 
-        logger.info(`Tool call initiated [Session: ${sessionId}], ${functionName} => ${functionArgsJsonString}`);
+          logger.info(`Tool call initiated [Session: ${sessionId}], ${functionName} => ${functionArgsJsonString}`);
 
-        let functionCallResult;
-        try {
-          const functionArgs = JSON.parse(functionArgsJsonString); // Parse the JSON string
-          functionCallResult = await callFunctionByName(sessionId, functionName, functionArgs);
-          // The result should ideally be a stringified JSON object or a simple string
-          if (typeof functionCallResult !== 'string') {
-            functionCallResult = JSON.stringify(functionCallResult);
+          let functionCallResult;
+          try {
+              const functionArgs = JSON.parse(functionArgsJsonString); // Parse the JSON string
+              functionCallResult = await callFunctionByName(sessionId, functionName, functionArgs);
+              // The result should ideally be a stringified JSON object or a simple string
+              if (typeof functionCallResult !== 'string') {
+                 functionCallResult = JSON.stringify(functionCallResult);
+              }
+          } catch (error) {
+              logger.error(`Error during tool call execution or parsing arguments for ${functionName} [Session: ${sessionId}]`, error);
+              // Return a structured error string for the model
+              functionCallResult = JSON.stringify({ error: 'Function execution or argument parsing failed', details: error.message });
           }
-        } catch (error) {
-          logger.error(`Error during tool call execution or parsing arguments for ${functionName} [Session: ${sessionId}]`, error);
-          // Return a structured error string for the model
-          functionCallResult = JSON.stringify({ error: 'Function execution or argument parsing failed', details: error.message });
-        }
-        logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${functionCallResult}`);
+          logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${functionCallResult}`);
 
-        // Add the tool result to the history
-        xsession.history.push({
-          role: 'tool',
-          tool_call_id: toolCallId, // Important: Link result to the specific tool call
-          content: functionCallResult, // Result of the function call (as a string)
-        });
-        logger.debug(`Added tool result to history [Session: ${sessionId}]`);
+          // Add the tool result to the history
+          xsession.history.push({
+              role: 'tool',
+              tool_call_id: toolCallId, // Important: Link result to the specific tool call
+              content: functionCallResult, // Result of the function call (as a string)
+          });
+          logger.debug(`Added tool result to history [Session: ${sessionId}]`);
 
-        // The loop continues, and the next API call will include the tool result message.
-        // The model will then likely generate a text response based on the tool result.
+          // The loop continues, and the next API call will include the tool result message.
+          // The model will then likely generate a text response based on the tool result.
+
       } else if (message.content) {
-        // If the response is text, this is the final response
-        chatResponse = message.content;
-        logger.info(`Received final text response [Session: ${sessionId}]`);
-        break; // Exit loop as we have the final text response
+          // If the response is text, this is the final response
+          chatResponse = message.content;
+          logger.info(`Received final text response [Session: ${sessionId}]`);
+          break; // Exit loop as we have the final text response
       } else {
-        // Handle cases where message exists but has neither content nor tool_calls
-        logger.warn(`OpenAI API: Received message with no content or tool_calls [Session: ${sessionId}]`, message);
-        chatResponse = 'Received an unexpected response format from the model.';
-        break;
+          // Handle cases where message exists but has neither content nor tool_calls
+          logger.warn(`OpenAI API: Received message with no content or tool_calls [Session: ${sessionId}]`, message);
+          chatResponse = 'Received an unexpected response format from the model.';
+          break;
       }
     }
     /* eslint-enable no-await-in-loop, no-plusplus */
 
     if (!chatResponse) {
-      // If loop finished without a final text response
-      logger.warn(`OpenAI API: Max steps reached without final text response [Session: ${sessionId}]`);
-      chatResponse = 'Reached maximum processing steps without a final text response.';
+        // If loop finished without a final text response
+        logger.warn(`OpenAI API: Max steps reached without final text response [Session: ${sessionId}]`);
+        chatResponse = 'Reached maximum processing steps without a final text response.';
     }
 
     // Ensure history doesn't grow indefinitely
     // Keep the system message and the last N turns
     const maxHistoryLength = 50; // Keep up to 50 messages (including system, user, assistant, tool)
     if (xsession.history.length > maxHistoryLength) {
-      // Keep the system message if it exists, then slice from the end
-      const systemMessage = xsession.history.find((msg) => msg.role === 'system');
-      let historyToKeep = systemMessage ? [systemMessage] : [];
-      const messagesWithoutSystem = xsession.history.filter((msg) => msg.role !== 'system');
-      historyToKeep = historyToKeep.concat(messagesWithoutSystem.slice(-(maxHistoryLength
-                              - (systemMessage ? 1 : 0))));
-      xsession.history = historyToKeep;
-      logger.debug(`Trimmed history to ${xsession.history.length} messages [Session: ${sessionId}]`);
+        // Keep the system message if it exists, then slice from the end
+        const systemMessage = xsession.history.find(msg => msg.role === 'system');
+        let historyToKeep = systemMessage ? [systemMessage] : [];
+        const messagesWithoutSystem = xsession.history.filter(msg => msg.role !== 'system');
+        historyToKeep = historyToKeep.concat(messagesWithoutSystem.slice(-(maxHistoryLength - (systemMessage ? 1 : 0))));
+        xsession.history = historyToKeep;
+        logger.debug(`Trimmed history to ${xsession.history.length} messages [Session: ${sessionId}]`);
     }
+
 
     addResponse(sessionId, userInput, chatResponse);
     return chatResponse;
+
   } catch (err) {
     logger.error(`OpenAI API error [Session: ${sessionId}]:`, err);
     // Provide a more informative error to the user
     return `Error processing your request: ${err.message}. Please try again or contact support.`;
   }
 };
+
 
 /**
  * Handles incoming chat requests.
@@ -484,6 +476,7 @@ process.on('uncaughtException', (err) => {
   // Perform necessary cleanup and then exit.
   shutdown('UncaughtException'); // Exit after logging
 });
+
 
 const startServer = () => {
   if (loadProperties('resources/app.properties')) {
