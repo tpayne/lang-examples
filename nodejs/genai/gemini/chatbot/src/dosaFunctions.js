@@ -140,6 +140,8 @@ async function getVehicleHistory(sessionId, registrationNumber) {
       throw new Error('Error: The authToken was not generated successfully');
     }
 
+    logger.debug(`DOSA token generated ok [Session: ${sessionId}]`);
+
     const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(registrationNumber)}`;
 
     // Make a GET request to the vehicle history endpoint
