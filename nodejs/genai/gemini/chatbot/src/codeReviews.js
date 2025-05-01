@@ -48,6 +48,7 @@ async function codeReviews(sessionId, username, repoName, repoPath) {
     }
 
     const response = await fetchRepoContentsRecursive(
+      sessionId,
       username,
       repoName,
       repoPath,
