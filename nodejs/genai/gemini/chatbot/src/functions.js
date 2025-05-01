@@ -149,7 +149,7 @@ async function loadCodeReviews(sessionId) {
   await registerFunction(
     sessionId,
     'file_review',
-    (username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
+    (sessionId, username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
     ['username', 'repoName', 'repoPath'],
     'Review files in a given GitHub repository.',
     {
@@ -166,7 +166,7 @@ async function loadDosa(sessionId) {
   await registerFunction(
     sessionId,
     'get_mot_history',
-    (registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
+    (sessionId, registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
     ['registrationNumber'],
     'Get the MOT History for a vehicle.',
     {

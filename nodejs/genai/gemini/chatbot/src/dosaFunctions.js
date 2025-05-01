@@ -124,7 +124,10 @@ async function getVehicleHistory(sessionId, registrationNumber) {
   const clientId = process.env.DOSA_CLIENT_ID;
   const clientSecret = process.env.DOSA_API_SECRET;
   const tenantId = process.env.DOSA_AUTH_TENANT_ID;
-  logger.debug(`Invoking get MOT history [Session: ${sessionId}]`);
+  const regNo = registrationNumber.toUpperCase();
+
+  logger.debug(`Invoking get MOT history for ${regNo} [Session: ${sessionId}]`);
+
   try {
     // Get a valid authentication token for the session
     const token = await getAuthToken(
@@ -140,9 +143,7 @@ async function getVehicleHistory(sessionId, registrationNumber) {
       throw new Error('Error: The authToken was not generated successfully');
     }
 
-    logger.debug(`DOSA token generated ok [Session: ${sessionId}]`);
-
-    const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(registrationNumber)}`;
+    const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(regNo)}`;
 
     // Make a GET request to the vehicle history endpoint
     const response = await superagent
