@@ -585,10 +585,130 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
   }
 }
 
+const DEFAULT_DESCRIPTION = 'Repository created by chatapp';
+
+/**
+ * Creates a GitHub repository.
+ *
+ * @async
+ * @param {string} repoName - The name of the repository to be created.
+ * @param {string} [orgName='user'] - The organization or user username under
+ * which the repository will be created. Defaults to 'user'.
+ * @param {string} [description=DEFAULT_DESCRIPTION] - A brief description
+ * of the repository. Defaults to 'Repository created by app'.
+ * @param {boolean} [isPrivate=false] - Whether the repository should be private.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESCRIPTION, isPrivate = false) {
+  const url = `https://api.github.com/${orgName}/repos`;
+
+  // Validate parameters
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+
+  try {
+    const response = await superagent
+      .post(url)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .send({
+        name: repoName,
+        private: isPrivate,
+        description,
+      });
+
+    if (response.status === 201) {
+      return { success: true, message: 'Repository created' };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    logger.error('Error creating repo (exception):', orgName, repoName, error);
+    throw new Error(`Failed to create repository: ${error.message}`);
+  }
+}
+
+/**
+ * Commits files to a GitHub repository.
+ *
+ * This function reads all files from a specified directory and uploads them
+ * to the specified GitHub repository. Each file is encoded in base64 before
+ * being sent to the GitHub API.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where files will be
+ * committed.
+ * @param {string} directoryPath - The path to the directory containing files
+ * to upload.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+const commitFiles = async (username, repoName, directoryPath) => {
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!directoryPath || typeof directoryPath !== 'string') {
+    throw new Error('Invalid directory path');
+  }
+
+  try {
+    const files = await fs.readdir(directoryPath);
+    const results = [];
+
+    for (const file of files) {
+      const filePath = path.join(directoryPath, file);
+      const content = await fs.readFile(filePath, { encoding: 'utf8' });
+      const base64Content = Buffer.from(content).toString('base64');
+      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${file}`;
+
+      try {
+        const response = await superagent
+          .put(apiUrl)
+          .set('Authorization', `token ${githubToken}`)
+          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+          .set('User-Agent', USER_AGENT)
+          .set('Accept', 'application/vnd.github+json')
+          .send({
+            message: `Add ${file}`,
+            content: base64Content,
+          });
+
+        if ([200, 201].includes(response.status)) {
+          results.push({ file, success: true, message: 'File uploaded' });
+        } else {
+          results.push({
+            file, success: false, status: response.status, message: response.body.message,
+          });
+        }
+      } catch (uploadError) {
+        logger.error('Error uploading file:', file, uploadError);
+        results.push({ file, success: false, message: `Failed to upload: ${uploadError.message}` });
+      }
+    }
+
+    return { success: true, results };
+  } catch (error) {
+    logger.error('Error reading directory or uploading files (exception):', username, repoName, error);
+    throw new Error(`Failed to commit files: ${error.message}`);
+  }
+};
+
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {
+  commitFiles,
   createGithubPullRequest,
+  createRepo,
   fetchRepoContentsRecursive,
   listBranches,
   listCommitHistory,

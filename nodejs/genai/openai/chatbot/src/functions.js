@@ -2,7 +2,9 @@ const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 const logger = require('./logger');
 
 const {
+  commitFiles,
   createGithubPullRequest,
+  createRepo,
   fetchRepoContentsRecursive,
   listBranches,
   listCommitHistory,
@@ -182,6 +184,35 @@ async function loadDosa(sessionId) {
 /* eslint-enable no-shadow */
 
 async function loadGitHub(sessionId) {
+  await registerFunction(
+    sessionId,
+    'create_repo',
+    createRepo,
+    ['repoName', 'orgName', 'description', 'isPrivate'],
+    'Create a GitHub repository under an organisation or user',
+    {
+      repoName: { type: 'string', description: 'The repository name.' },
+      orgName: { type: 'string', description: 'The GitHub organisation or user name.' },
+      description: { type: 'string', description: 'The description of the repository name (optional). Defaults if not provided' },
+      isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
+    },
+    ['repoName', 'orgName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'commit_files',
+    commitFiles,
+    ['username', 'repoName', 'directoryPath'],
+    'Uploads or commits files in a directory to a specified GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      directoryPath: { type: 'string', description: 'The local directory path that contains the files to upload/commit to the repository.' },
+    },
+    ['username', 'repoName', 'directoryPath'],
+  );
+
   await registerFunction(
     sessionId,
     'create_pull_request',
