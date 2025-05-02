@@ -407,6 +407,10 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
     const contents = response.body;
     const results = [];
 
+    if (contents.length === 0) {
+      return { success: false, message: 'There were no files found in the repo', status: 204 };
+    }
+
     if (!recursive) {
       return response.body.map((item) => ({
         name: item.name,
@@ -602,7 +606,8 @@ const DEFAULT_DESCRIPTION = 'Repository created by chatapp';
  * @throws {Error} - Throws an error if the API request fails.
  */
 async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESCRIPTION, isPrivate = false) {
-  const url = `https://api.github.com/${orgName}/repos`;
+  const url = (orgName !== 'user')
+    ? `https://api.github.com/orgs/${orgName}/repos` : 'https://api.github.com/user/repos';
 
   // Validate parameters
   if (!repoName || typeof repoName !== 'string') {
@@ -617,7 +622,7 @@ async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESC
       .set('Accept', 'application/vnd.github+json')
       .set('User-Agent', USER_AGENT)
       .send({
-        name: repoName,
+        name: `${repoName}`,
         private: isPrivate,
         description,
       });
@@ -665,40 +670,50 @@ const commitFiles = async (username, repoName, directoryPath) => {
     const files = await fs.readdir(directoryPath);
     const results = [];
 
+    logger.debug(`There are ${files.length} files to upload to ${username}/${repoName}`);
+
+    if (files.length === 0) {
+      return { success: false, message: 'There are no files to upload', status: 204 };
+    }
+
     for (const file of files) {
       const filePath = path.join(directoryPath, file);
-      const content = await fs.readFile(filePath, { encoding: 'utf8' });
-      const base64Content = Buffer.from(content).toString('base64');
-      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${file}`;
+      const stats = await fs.stat(filePath); // Get stats for the file
 
-      try {
-        const response = await superagent
-          .put(apiUrl)
-          .set('Authorization', `token ${githubToken}`)
-          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-          .set('User-Agent', USER_AGENT)
-          .set('Accept', 'application/vnd.github+json')
-          .send({
-            message: `Add ${file}`,
-            content: base64Content,
-          });
+      if (stats.isFile()) {
+        const content = await fs.readFile(filePath, { encoding: 'utf8' });
+        const base64Content = Buffer.from(content).toString('base64');
+        const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${file}`;
 
-        if ([200, 201].includes(response.status)) {
-          results.push({ file, success: true, message: 'File uploaded' });
-        } else {
-          results.push({
-            file, success: false, status: response.status, message: response.body.message,
-          });
+        try {
+          const response = await superagent
+            .put(apiUrl)
+            .set('Authorization', `token ${githubToken}`)
+            .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+            .set('User-Agent', USER_AGENT)
+            .set('Accept', 'application/vnd.github+json')
+            .send({
+              message: `Add ${file}`,
+              content: base64Content,
+            });
+
+          if ([200, 201].includes(response.status)) {
+            results.push({ file, success: true, message: 'File uploaded' });
+          } else {
+            results.push({
+              file, success: false, status: response.status, message: response.body.message,
+            });
+          }
+        } catch (uploadError) {
+          logger.error(`Error uploading file: ${file} ${uploadError}`);
+          results.push({ file, success: false, message: `Failed to upload: ${uploadError.message}` });
         }
-      } catch (uploadError) {
-        logger.error('Error uploading file:', file, uploadError);
-        results.push({ file, success: false, message: `Failed to upload: ${uploadError.message}` });
       }
     }
 
     return { success: true, results };
   } catch (error) {
-    logger.error('Error reading directory or uploading files (exception):', username, repoName, error);
+    logger.error(`Error reading directory or uploading files (exception): ${username}/${repoName} - ${error.message}`);
     throw new Error(`Failed to commit files: ${error.message}`);
   }
 };

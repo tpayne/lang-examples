@@ -280,10 +280,6 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     while (numSteps < maxSteps) {
       numSteps++;
 
-      logger.info(`Calling OpenAI chat.completions.create [Session: ${sessionId}], Step ${numSteps}`);
-      logger.debug(`History sent to OpenAI: ${util.inspect(xsession.history, { depth: null })} [Session: ${sessionId}]`);
-      logger.debug(`Tools sent to OpenAI: ${util.inspect(tools, { depth: null })} [Session: ${sessionId}]`);
-
       const completionParams = {
         model: getConfig().aiModel, // e.g., 'gpt-4o', 'gpt-3.5-turbo'
         messages: xsession.history, // Send the full conversation history

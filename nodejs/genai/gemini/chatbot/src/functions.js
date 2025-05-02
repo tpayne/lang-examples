@@ -192,11 +192,11 @@ async function loadGitHub(sessionId) {
     'Create a GitHub repository under an organisation or user',
     {
       repoName: { type: 'string', description: 'The repository name.' },
-      orgName: { type: 'string', description: 'The GitHub organisation or user name.' },
+      orgName: { type: 'string', description: 'The GitHub organisation to use (optional). Defaults to user repository.' },
       description: { type: 'string', description: 'The description of the repository name (optional). Defaults if not provided' },
       isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
     },
-    ['repoName', 'orgName'],
+    ['repoName'],
   );
 
   await registerFunction(
