@@ -325,6 +325,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       });
 
       // Check if the model wants to call a tool
+      /* eslint-disable no-await-in-loop, no-plusplus, no-restricted-syntax */
       if (message.tool_calls && message.tool_calls.length > 0) {
         // Assuming only one tool call per message for simplicity
         // matching original logic
@@ -373,7 +374,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         break;
       }
     }
-    /* eslint-enable no-await-in-loop, no-plusplus */
+    /* eslint-ensable no-await-in-loop, no-plusplus, no-restricted-syntax */
 
     if (!chatResponse) {
       // If loop finished without a final text response
@@ -383,7 +384,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
     // Ensure history doesn't grow indefinitely
     // Keep the system message and the last N turns
-    const maxHistoryLength = 500; // Keep up to 50 messages (including system, user, assistant, tool)
+    const maxHistoryLength = 500;
     if (xsession.history.length > maxHistoryLength) {
       // Keep the system message if it exists, then slice from the end
       const systemMessage = xsession.history.find((msg) => msg.role === 'system');
