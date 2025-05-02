@@ -290,6 +290,8 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         temperature: Number(getConfig().temperature),
         max_tokens: Number(getConfig().maxTokens),
         top_p: Number(getConfig().top_p),
+        frequency_penalty: Number(getConfig().frequency_penalty),
+        presence_penalty: Number(getConfig().presence_penalty),
         stream: false, // We are not using streaming in this example
         tools, // Pass the tools here
         // tool_choice: 'auto', // Let the model decide whether to call a tool or respond
@@ -326,36 +328,37 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       if (message.tool_calls && message.tool_calls.length > 0) {
         // Assuming only one tool call per message for simplicity
         // matching original logic
-        const toolCall = message.tool_calls[0];
-        const functionName = toolCall.function.name;
-        const functionArgsJsonString = toolCall.function.arguments; // This is a JSON string
-        const toolCallId = toolCall.id;
+        for (const toolCall of message.tool_calls) {
+          const functionName = toolCall.function.name;
+          const functionArgsJsonString = toolCall.function.arguments; // This is a JSON string
+          const toolCallId = toolCall.id;
 
-        logger.info(`Tool call initiated [Session: ${sessionId}], ${functionName} => ${functionArgsJsonString}`);
+          logger.info(`Tool call initiated [Session: ${sessionId}], ${functionName} => ${functionArgsJsonString}`);
 
-        let functionCallResult;
-        try {
-          const functionArgs = JSON.parse(functionArgsJsonString); // Parse the JSON string
-          functionCallResult = await callFunctionByName(sessionId, functionName, functionArgs);
-          // The result should ideally be a stringified JSON object or a simple string
-          if (typeof functionCallResult !== 'string') {
-            functionCallResult = JSON.stringify(functionCallResult);
+          let functionCallResult;
+          try {
+            const functionArgs = JSON.parse(functionArgsJsonString); // Parse the JSON string
+            functionCallResult = await callFunctionByName(sessionId, functionName, functionArgs);
+            // The result should ideally be a stringified JSON object or a simple string
+            if (typeof functionCallResult !== 'string') {
+              functionCallResult = JSON.stringify(functionCallResult);
+            }
+          } catch (error) {
+            logger.error(`Error during tool call execution or parsing arguments for ${functionName} [Session: ${sessionId}]`, error);
+            // Return a structured error string for the model
+            functionCallResult = JSON.stringify({ error: 'Function execution or argument parsing failed', details: error.message });
           }
-        } catch (error) {
-          logger.error(`Error during tool call execution or parsing arguments for ${functionName} [Session: ${sessionId}]`, error);
-          // Return a structured error string for the model
-          functionCallResult = JSON.stringify({ error: 'Function execution or argument parsing failed', details: error.message });
+          logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${functionCallResult}`);
+
+          // Add the tool result to the history
+          xsession.history.push({
+            tool_call_id: toolCallId, // Important: Link result to the specific tool call
+            role: 'tool',
+            name: functionName,
+            content: functionCallResult, // Result of the function call (as a string)
+          });
+          logger.debug(`Added tool result to history [Session: ${sessionId}]`);
         }
-        logger.info(`Tool call result [Session: ${sessionId}], ${functionName} => ${functionCallResult}`);
-
-        // Add the tool result to the history
-        xsession.history.push({
-          role: 'tool',
-          tool_call_id: toolCallId, // Important: Link result to the specific tool call
-          content: functionCallResult, // Result of the function call (as a string)
-        });
-        logger.debug(`Added tool result to history [Session: ${sessionId}]`);
-
         // The loop continues, and the next API call will include the tool result message.
         // The model will then likely generate a text response based on the tool result.
       } else if (message.content) {
@@ -380,7 +383,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
     // Ensure history doesn't grow indefinitely
     // Keep the system message and the last N turns
-    const maxHistoryLength = 50; // Keep up to 50 messages (including system, user, assistant, tool)
+    const maxHistoryLength = 500; // Keep up to 50 messages (including system, user, assistant, tool)
     if (xsession.history.length > maxHistoryLength) {
       // Keep the system message if it exists, then slice from the end
       const systemMessage = xsession.history.find((msg) => msg.role === 'system');
