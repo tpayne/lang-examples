@@ -25,6 +25,10 @@ const {
   getVehicleHistory,
 } = require('./dosaFunctions');
 
+const {
+  saveCodeToFile,
+} = require('./utilities');
+
 /* eslint-disable max-len */
 
 /**
@@ -200,6 +204,20 @@ async function loadGitHub(sessionId) {
       isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
     },
     ['repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'save_code_to_file',
+    saveCodeToFile,
+    ['code', 'filename', 'directory'],
+    'Save generated code to a local file',
+    {
+      code: { type: 'string', description: 'The generated code to save.' },
+      filename: { type: 'string', description: 'The local filename to save the generated code to.' },
+      directory: { type: 'string', description: 'The directory name that is used (optional). Defaults to /tmp/nodeapp/ if not provided' },
+    },
+    ['code', 'filename'],
   );
 
   await registerFunction(

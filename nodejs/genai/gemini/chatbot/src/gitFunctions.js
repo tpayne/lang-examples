@@ -125,6 +125,7 @@ async function downloadFile(sessionId, url, localFilePath, token = null) {
  * @param {boolean} [includeDotGithub=true] - Whether to include the .github directory.
  * @param {number} [retryCount=0] - Internal retry counter.
  * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
+ * @param {string} [tempDir=null] - Temporary context
  */
 async function fetchRepoContentsRecursive(
   sessionId,
@@ -135,17 +136,25 @@ async function fetchRepoContentsRecursive(
   includeDotGithub = true,
   retryCount = 0,
   maxRetries = 3,
+  tempDir = null
 ) {
   const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoPath}`;
 
-  if (!localDestPath || localDestPath === '.'
-    || localDestPath === `./${repoName}`
-    || localDestPath === repoName) {
+  // Handle the case where localDestPath is "." and set up a temporary directory
+  if (localDestPath === '.') {
+    if (!tempDir) {
+      tempDir = path.join(process.cwd(), `temp_${sessionId}_${Date.now()}`);
+      await mkdir(tempDir, { recursive: true });
+    }
+    localDestPath = tempDir;
+  } else if (!localDestPath || localDestPath === `./${repoName}` || localDestPath === repoName) {
     return { success: false, message: 'Error: You need to specify a download directory' };
   }
 
+  const downloadedFiles = []; // Array to keep track of downloaded file paths
+
   try {
-    await mkdir(localDestPath);
+    await mkdir(localDestPath, { recursive: true });
 
     const request = superagent.get(apiUrl);
     request.set('Accept', 'application/vnd.github.v3+json');
@@ -155,10 +164,6 @@ async function fetchRepoContentsRecursive(
     }
 
     const response = await request;
-    /* eslint-disable max-len, no-promise-executor-return,
-             no-restricted-syntax,
-             no-await-in-loop,
-             no-continue */
 
     if (response.status === 403 && response.headers['x-ratelimit-remaining'] === '0' && retryCount < maxRetries) {
       const resetTime = parseInt(response.headers['x-ratelimit-reset'], 10) * 1000;
@@ -174,16 +179,15 @@ async function fetchRepoContentsRecursive(
         includeDotGithub,
         retryCount + 1,
         maxRetries,
+        tempDir // Pass the temporary directory to recursive calls
       );
     }
 
     if (response.status !== 200) {
       logger.error(`GitHub API error for path "${repoPath}" [Session: ${sessionId}]: HTTP ${response.status} - ${response.text}`);
-      handleNotFoundError(response, ` for repository ${username}/${repoName} at path "${repoPath}"`);
       return { success: false, message: `GitHub API error: HTTP ${response.status} for ${apiUrl}` };
     }
 
-    /** @type {GitHubItem|GitHubItem[]} */
     const items = response.body;
 
     if (!Array.isArray(items)) {
@@ -192,11 +196,12 @@ async function fetchRepoContentsRecursive(
         const filePath = path.join(localDestPath, items.name);
         try {
           await downloadFile(sessionId, items.download_url, filePath, githubToken);
+          downloadedFiles.push(filePath); // Add the downloaded file path to the array
         } catch (error) {
           return { success: false, message: `Error downloading single file: ${error.message}` };
         }
       }
-      return { success: true, message: `Processed single item at path "${repoPath}"` };
+      return { success: true, message: `Processed single item at path "${repoPath}"`, downloadedFiles };
     }
 
     for (const item of items) {
@@ -211,6 +216,7 @@ async function fetchRepoContentsRecursive(
         if (item.download_url) {
           try {
             await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
+            downloadedFiles.push(currentLocalPath); // Add the downloaded file path to the array
           } catch (error) {
             return { success: false, message: `Error downloading file "${item.name}": ${error.message}` };
           }
@@ -225,10 +231,12 @@ async function fetchRepoContentsRecursive(
           includeDotGithub,
           0, // Reset retry count for new recursive calls
           maxRetries,
+          tempDir // Pass the temporary directory to recursive calls
         );
         if (!result.success) {
           return result; // Propagate failure from subdirectory
         }
+        downloadedFiles.push(...result.downloadedFiles); // Collect downloaded files from subdirectory
       } else if (item.type === 'symlink') {
         logger.warn(`Skipping symlink: ${item.name} (content not fetched) [Session: ${sessionId}]`);
       } else if (item.type === 'submodule') {
@@ -237,12 +245,12 @@ async function fetchRepoContentsRecursive(
         logger.warn(`Unknown item type "${item.type}" for item: ${item.name} [Session: ${sessionId}]`);
       }
     }
+
     return {
       success: true,
-      message:
-        `Successfully processed directory "${repoPath}"`,
+      message: `Successfully processed directory "${repoPath}"`,
+      downloadedFiles // Return the array of downloaded file paths
     };
-    /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
   } catch (error) {
     logger.debug(`Error object is ${util.inspect(error, { depth: null })} [Session: ${sessionId}]`);
     logger.error('Error in fetchRepoContentsRecursive (exception):', repoPath, error.message || error, `[Session: ${sessionId}]`);
@@ -251,8 +259,7 @@ async function fetchRepoContentsRecursive(
       if (error.response.status === 404) {
         throw new Error('Not Found: Check repo and directory names.');
       }
-      if (error.response.body && error.response.body.errors
-        && error.response.body.errors.length > 0) {
+      if (error.response.body && error.response.body.errors && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
       throw new Error(error.response.body.message || 'Failed to download repo');
@@ -449,7 +456,8 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
     }
     return results;
   } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, repoDirName, error);
+    logger.error(`Error listing directories (exception): ${username}/${repoName} `+
+      `${repoDirName} - ${error.message}`);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
   }
 }
@@ -495,7 +503,7 @@ async function createGithubPullRequest(
     }
     await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error creating pull request (exception):', error);
+    logger.error(`Error creating pull request (exception):, ${error.message}`);
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
@@ -654,7 +662,7 @@ async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESC
  * the success or failure of the operation.
  * @throws {Error} - Throws an error if the API request fails.
  */
-const commitFiles = async (username, repoName, directoryPath) => {
+const commitFiles = async (username, repoName, directoryPath = '/tmp/nodeapp/') => {
   // Validate parameters
   if (!username || typeof username !== 'string') {
     throw new Error('Invalid username');
@@ -705,7 +713,9 @@ const commitFiles = async (username, repoName, directoryPath) => {
             });
           }
         } catch (uploadError) {
-          logger.error(`Error uploading file: ${file} ${uploadError}`);
+          const status = uploadError.response.status || 'N/A';
+          const errorMessage = uploadError.response.body.message || uploadError.message;
+          logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}] ${errorMessage}`);
           results.push({ file, success: false, message: `Failed to upload: ${uploadError.message}` });
         }
       }

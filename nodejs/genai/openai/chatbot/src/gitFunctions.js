@@ -449,7 +449,8 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
     }
     return results;
   } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, repoDirName, error);
+    logger.error(`Error listing directories (exception): ${username}/${repoName} `+
+      `${repoDirName} - ${error.message}`);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
   }
 }
@@ -495,7 +496,7 @@ async function createGithubPullRequest(
     }
     await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error creating pull request (exception):', error);
+    logger.error(`Error creating pull request (exception):, ${error.message}`);
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
@@ -664,6 +665,7 @@ async function checkRepoExists(username, repoName) {
     const response = await superagent
       .get(url)
       .set('Accept', 'application/vnd.github+json')
+      .set('Authorization', `token ${githubToken}`)
       .set('User-Agent', USER_AGENT);
 
     // If the request is successful, the repository exists
@@ -711,6 +713,7 @@ async function checkBranchExists(username, repoName, branchName) {
     const response = await superagent
       .get(url)
       .set('Accept', 'application/vnd.github+json')
+      .set('Authorization', `token ${githubToken}`)
       .set('User-Agent', USER_AGENT);
 
     // If the request is successful, the branch exists
@@ -786,8 +789,9 @@ async function createBranch(username, repoName, branchName, baseBranch = 'main')
     }
     return { success: false, status: response.status, message: response.body.message };
   } catch (error) {
-    logger.error('Error creating branch (exception):', repoName, branchName, error);
-    throw new Error(`Failed to create branch: ${error.message}`);
+    const message = error.message || 'Creation failed';
+    logger.error(`Error creating branch (exception): ${message}`);
+    throw new Error(`Failed to create branch: ${message}`);
   }
 }
 
@@ -816,24 +820,6 @@ const walkDir = async (dir, rootDir = dir) => {
   return files;
 };
 
-/**
- * Commits files to a GitHub repository, including files in subdirectories.
- *
- * This function reads all files from a specified directory and its subdirectories
- * and uploads them to the specified GitHub repository, maintaining the directory structure.
- * Each file is encoded in base64 before being sent to the GitHub API.
- *
- * @async
- * @param {string} username - The username of the repository owner.
- * @param {string} repoName - The name of the repository where files will be
- * committed.
- * @param {string} directoryPath - The path to the local directory containing files
- * to upload.
- * @returns {Promise<Object>} - A promise that resolves to an object indicating
- * the success or failure of the operation, with results for each file.
- * @throws {Error} - Throws an error if initial validation or directory reading fails.
- */
-const commitFiles = async (username, repoName, directoryPath) => {
   // Validate parameters
   if (!username || typeof username !== 'string') {
     throw new Error('Invalid username');
@@ -869,8 +855,28 @@ const commitFiles = async (username, repoName, directoryPath) => {
         const base64Content = Buffer.from(content).toString('base64');
 
         // Construct the GitHub API URL using the relative file path
-        // The GitHub API will automatically create directories if they don't exist
         const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${relativeFilePath}`;
+
+        // First, check if the file already exists to get its SHA
+        let sha = null;
+        try {
+          const getResponse = await superagent
+            .get(apiUrl)
+            .set('Authorization', `token ${githubToken}`)
+            .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+            .set('User-Agent', USER_AGENT)
+            .set('Accept', 'application/vnd.github+json');
+
+          // If the file exists, retrieve its SHA
+          if (getResponse.status === 200) {
+            sha = getResponse.body.sha;
+          }
+        } catch (getError) {
+          // If the file does not exist, we can ignore the error
+          if (getError.response && getError.response.status !== 404) {
+            throw new Error(`Failed to check file existence: ${getError.message}`);
+          }
+        }
 
         logger.debug(`Uploading file: ${relativeFilePath} to ${apiUrl}`);
 
@@ -881,16 +887,13 @@ const commitFiles = async (username, repoName, directoryPath) => {
           .set('User-Agent', USER_AGENT)
           .set('Accept', 'application/vnd.github+json')
           .send({
-            // Commit message includes the file path
             message: `Add ${relativeFilePath}`,
             content: base64Content,
-            // Optionally, add 'sha' for updating existing files.
-            // For initial upload, omit 'sha'. To handle updates,
-            // you'd first need to get the file's current SHA.
+            sha: sha // Include SHA if it exists
           });
 
         if ([200, 201].includes(response.status)) {
-          results.push({ file: relativeFilePath, success: true, message: 'File uploaded' });
+          results.push({ file: relativeFilePath, success: true, message: 'File uploaded', sha: response.body.content.sha });
           logger.info(`Successfully uploaded file: ${relativeFilePath} [Status: ${response.status}]`);
         } else {
           const errorMessage = response.body.message || 'Unknown error';
@@ -900,10 +903,10 @@ const commitFiles = async (username, repoName, directoryPath) => {
           });
         }
       } catch (uploadError) {
-        // superagent errors have a response property with status and body
-        const status = uploadError.response.status || 'N/A';
-        const errorMessage = uploadError.response.body.message || uploadError.message;
-        logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}]`, uploadError);
+        // Handle upload errors
+        const status = uploadError.response ? uploadError.response.status : 'N/A';
+        const errorMessage = uploadError.response ? uploadError.response.body.message : uploadError.message;
+        logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}] ${errorMessage}`);
         results.push({ file: relativeFilePath, success: false, message: `Failed to upload: ${errorMessage}` });
       }
     }
@@ -913,12 +916,7 @@ const commitFiles = async (username, repoName, directoryPath) => {
 
     return { success: allSuccessful, results, message: allSuccessful ? 'All files processed' : 'Some files failed to upload' };
   } catch (error) {
-    logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
-    // Re-throw a clearer error if the initial directory read or setup failed
-    throw new Error(`Failed to process files for commit: ${error.message}`);
-  }
-};
-
+    logger.error(`Error
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {

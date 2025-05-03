@@ -208,9 +208,10 @@ async function loadGitHub(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      directoryPath: { type: 'string', description: 'The local directory path that contains the files to upload/commit to the repository.' },
+      directoryPath: { type: 'string', description: 'The local directory path that contains the files to upload/commit to the repository (optional). ' +
+        'Defaults to /tmp/nodeapp/ if not specified.' },
     },
-    ['username', 'repoName', 'directoryPath'],
+    ['username', 'repoName'],
   );
 
   await registerFunction(

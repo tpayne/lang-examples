@@ -273,7 +273,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
     let chatResponse = null;
     let numSteps = 0;
-    const maxSteps = 10; // Limit steps (API calls + function calls)
+    const maxSteps = getConfig().maxChatSteps; // Limit steps (API calls + function calls)
 
     // Loop to handle potential function calls and subsequent AI responses
     /* eslint-disable no-await-in-loop, no-plusplus */

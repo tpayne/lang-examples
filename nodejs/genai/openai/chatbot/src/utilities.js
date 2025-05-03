@@ -5,6 +5,43 @@ const path = require('path');
 const logger = require('./logger'); // Assuming you have a logger module
 
 /**
+ * Saves generated code to a local file.
+ *
+ * @async
+ * @param {string} code - The generated code to save.
+ * @param {string} filename - The name of the file to save the code in.
+ * @param {string} [directory] - The directory where the file will be saved. Defaults to /tmp if not specified.
+ * @returns {Promise<string>} - A promise that resolves to the path of the saved file.
+ * @throws {Error} - Throws an error if the file cannot be saved.
+ */
+async function saveCodeToFile(code, filename, directory) {
+  // Use /tmp if no directory is specified
+  if (!directory) {
+    directory = '/tmp/nodeapp/';
+  } else if (!directory.startsWith('/')) {
+    // Append /tmp to the start of the incoming directory if it does not start with '/'
+    directory = path.join('/tmp/nodeapp/', directory);
+  }
+
+  try {
+    // Ensure the directory exists
+    await fs.mkdir(directory, { recursive: true });
+
+    // Create the full file path
+    const filePath = path.join(directory, filename);
+
+    // Write the code to the file
+    await fs.writeFile(filePath, code, { encoding: 'utf8' });
+
+    // Return the path of the saved file
+    return filePath;
+  } catch (error) {
+    logger.error(`Error saving file: ${error.message}`);
+    throw new Error(`Failed to save file: ${error.message}`);
+  }
+}
+
+/**
  * Creates a directory at the specified path, deleting it first if it already exists.
  *
  * This function attempts to remove the directory at `localDestPath` recursively
@@ -198,4 +235,5 @@ module.exports = {
   deleteDirectoryRecursively,
   mkdir,
   readFilesInDirectory,
+  saveCodeToFile,
 };
