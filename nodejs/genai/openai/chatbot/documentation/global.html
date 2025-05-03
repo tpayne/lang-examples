@@ -1249,7 +1249,7 @@ given user or organization and repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line697">line 697</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line698">line 698</a>
     </li></ul></dd>
     
 
@@ -1463,7 +1463,7 @@ This function checks if a specified repository exists under a given user or orga
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line652">line 652</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line653">line 653</a>
     </li></ul></dd>
     
 
@@ -1957,10 +1957,11 @@ Uses a temporary directory and ensures thread safety per session.
 
 <div class="description">
     Commits files to a GitHub repository, including files in subdirectories.
+It checks for existing files to include their SHAs for updates.
 
 This function reads all files from a specified directory and its subdirectories
-and uploads them to the specified GitHub repository, maintaining the directory structure.
-Each file is encoded in base64 before being sent to the GitHub API.
+and uploads/updates them to the specified GitHub repository, maintaining the
+directory structure. Each file is encoded in base64.
 </div>
 
 
@@ -2101,7 +2102,7 @@ to upload.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line838">line 838</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line851">line 851</a>
     </li></ul></dd>
     
 
@@ -2382,7 +2383,7 @@ branch on (e.g., 'main').</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line746">line 746</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line747">line 747</a>
     </li></ul></dd>
     
 
@@ -2768,7 +2769,7 @@ Handles API errors, including specific GitHub errors.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line471">line 471</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line472">line 472</a>
     </li></ul></dd>
     
 
@@ -3091,7 +3092,7 @@ of the repository. Defaults to 'Repository created by app'.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line608">line 608</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line609">line 609</a>
     </li></ul></dd>
     
 
@@ -3235,7 +3236,7 @@ write permissions to it. The path of the created directory is returned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line101">line 101</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line115">line 115</a>
     </li></ul></dd>
     
 
@@ -3428,7 +3429,7 @@ will log the error and re-throw it.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line61">line 61</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line75">line 75</a>
     </li></ul></dd>
     
 
@@ -7829,7 +7830,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line529">line 529</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line530">line 530</a>
     </li></ul></dd>
     
 
@@ -8212,7 +8213,7 @@ process that is not related to the directory not existing, the error is re-throw
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line34">line 34</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line48">line 48</a>
     </li></ul></dd>
     
 
@@ -8538,7 +8539,7 @@ that is not due to the directory not existing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line138">line 138</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line152">line 152</a>
     </li></ul></dd>
     
 
@@ -8703,7 +8704,7 @@ occurs while reading the directory, it logs the error and re-throws it.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line185">line 185</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line199">line 199</a>
     </li></ul></dd>
     
 
@@ -8893,7 +8894,7 @@ and the values are the contents of the files.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line161">line 161</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line175">line 175</a>
     </li></ul></dd>
     
 
@@ -9314,7 +9315,7 @@ and the values are the contents of the files.
     
 
     
-    <h4 class="name" id="saveCodeToFile"><span class="type-signature">(async) </span>saveCodeToFile<span class="signature">(code, filename, directory)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+    <h4 class="name" id="saveCodeToFile"><span class="type-signature">(async) </span>saveCodeToFile<span class="signature">(code, filename, directory<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
     
 
     
@@ -9346,6 +9347,8 @@ and the values are the contents of the files.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -9371,6 +9374,14 @@ and the values are the contents of the files.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -9393,6 +9404,14 @@ and the values are the contents of the files.
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -9417,10 +9436,21 @@ and the values are the contents of the files.
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">The directory where the file will be saved.</td>
+            <td class="description last">The directory where the file will be saved.
+Defaults to DEFAULT_DIR if not specified.</td>
         </tr>
 
     
@@ -9461,7 +9491,7 @@ and the values are the contents of the files.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line17">line 17</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line20">line 20</a>
     </li></ul></dd>
     
 
@@ -9519,7 +9549,7 @@ and the values are the contents of the files.
 
         
 <div class="param-desc">
-    - A promise that resolves when the file is saved.
+    - A promise that resolves to the path of the saved file.
 </div>
 
 
@@ -9530,7 +9560,7 @@ and the values are the contents of the files.
     </dt>
     <dd>
         
-<span class="param-type">Promise.&lt;void></span>
+<span class="param-type">Promise.&lt;string></span>
 
 
     </dd>
@@ -9704,7 +9734,7 @@ and the values are the contents of the files.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line803">line 803</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line815">line 815</a>
     </li></ul></dd>
     
 
@@ -10350,7 +10380,7 @@ and the values are the contents of the files.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 03 2025 14:38:19 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 03 2025 16:34:03 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

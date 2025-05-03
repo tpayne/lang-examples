@@ -449,8 +449,8 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
     }
     return results;
   } catch (error) {
-    logger.error(`Error listing directories (exception): ${username}/${repoName} `+
-      `${repoDirName} - ${error.message}`);
+    logger.error(`Error listing directories (exception): ${username}/${repoName} `
+      + `${repoDirName} - ${error.message}`);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
   }
 }
@@ -761,6 +761,16 @@ async function createBranch(username, repoName, branchName, baseBranch = 'main')
     throw new Error('Invalid base branch name');
   }
 
+  // Check if the branch already exists, if it does, then exit
+  try {
+    const resp = await checkBranchExists(username, repoName, branchName);
+    if (resp.exists) {
+      return { success: true, message: 'Branch already exists' };
+    }
+  } catch (error) {
+    logger.error(`Branch check error ${error.message}`);
+  }
+
   try {
     // Get the SHA of the base branch
     const baseBranchResponse = await superagent
@@ -850,9 +860,10 @@ const commitFiles = async (username, repoName, directoryPath) => {
     throw new Error('Invalid directory path');
   }
   if (!githubToken) {
-     throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
+    throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
   }
 
+  /* eslint-disable no-continue */
   try {
     // Use walkDir to get all file paths, including those
     // in subdirectories, relative to directoryPath
@@ -886,26 +897,26 @@ const commitFiles = async (username, repoName, directoryPath) => {
           existingFileSha = getResponse.body.sha;
           logger.debug(`File exists, retrieved SHA: ${existingFileSha} for ${relativeFilePath}`);
         } else {
-           // This case should theoretically not be reached if status is not 404
-           logger.warn(`Unexpected status when checking file existence for ${relativeFilePath}: ${getResponse.status}`);
-           results.push({ file: relativeFilePath, success: false, message: `Failed to check existence (Status: ${getResponse.status})` });
-           continue; // Skip to the next file
+          // This case should theoretically not be reached if status is not 404
+          logger.warn(`Unexpected status when checking file existence for ${relativeFilePath}: ${getResponse.status}`);
+          results.push({ file: relativeFilePath, success: false, message: `Failed to check existence (Status: ${getResponse.status})` });
+          continue; // Skip to the next file
         }
-
       } catch (getError) {
-          // Handle error when checking for file existence
-          if (getError.response && getError.response.status === 404) {
-             // File does not exist, this is expected for new files
-             existingFileSha = null; // Explicitly set to null
-             logger.debug(`File does not exist: ${relativeFilePath}`);
-          } else {
-             // Other errors during GET request
-             const status = getError.response?.status || 'N/A';
-             const errorMessage = getError.response?.body?.message || getError.message;
-             logger.error(`Error checking existence of file ${relativeFilePath} [Status: ${status}]`, getError);
-             results.push({ file: relativeFilePath, success: false, message: `Failed to check existence: ${errorMessage}` });
-             continue; // Skip to the next file
-          }
+        // Handle error when checking for file existence
+        if (getError.response && getError.response.status === 404) {
+          // File does not exist, this is expected for new files
+          existingFileSha = null; // Explicitly set to null
+          logger.debug(`File does not exist: ${relativeFilePath}`);
+        } else {
+          // Other errors during GET request
+          const status = (getError.response && getError.response.status) || 'N/A';
+          const errorMessage = (getError.response && getError.response.body
+            && getError.response.body.message) || getError.message;
+          logger.error(`Error checking existence of file ${relativeFilePath} [Status: ${status}]`, getError);
+          results.push({ file: relativeFilePath, success: false, message: `Failed to check existence: ${errorMessage}` });
+          continue; // Skip to the next file
+        }
       }
 
       // STEP 2: Read file content and prepare for PUT
@@ -923,7 +934,7 @@ const commitFiles = async (username, repoName, directoryPath) => {
           putBody.sha = existingFileSha; // Include SHA for updates
           logger.debug(`Preparing to update file: ${relativeFilePath} with SHA ${existingFileSha}`);
         } else {
-           logger.debug(`Preparing to create file: ${relativeFilePath}`);
+          logger.debug(`Preparing to create file: ${relativeFilePath}`);
         }
 
         // STEP 3: Upload/Update the file
@@ -937,20 +948,27 @@ const commitFiles = async (username, repoName, directoryPath) => {
 
         if ([200, 201].includes(putResponse.status)) {
           const action = existingFileSha ? 'updated' : 'uploaded';
-          const newSha = putResponse.body?.content?.sha; // Get the new SHA from the response
-          results.push({ file: relativeFilePath, success: true, message: `File ${action}`, sha: newSha });
+          const newSha = (putResponse.body && putResponse.body.content
+            && putResponse.body.content.sha) || undefined; // Get the new SHA from the response
+          results.push({
+            file: relativeFilePath, success: true, message: `File ${action}`, sha: newSha,
+          });
           logger.info(`Successfully ${action} file: ${relativeFilePath} [Status: ${putResponse.status}, New SHA: ${newSha}]`);
         } else {
-           const errorMessage = putResponse.body?.message || 'Unknown error during PUT';
-           logger.warn(`Failed to upload/update file: ${relativeFilePath} [Status: ${putResponse.status}, Message: ${errorMessage}]`);
-           results.push({
-             file: relativeFilePath, success: false, status: putResponse.status, message: errorMessage,
-           });
+          const errorMessage = (putResponse.body && putResponse.body.message) || 'Unknown error during PUT';
+          logger.warn(`Failed to upload/update file: ${relativeFilePath} [Status: ${putResponse.status}, Message: ${errorMessage}]`);
+          results.push({
+            file: relativeFilePath,
+            success: false,
+            status: putResponse.status,
+            message: errorMessage,
+          });
         }
       } catch (putError) {
         // Error during PUT request (upload/update)
-        const status = putError.response?.status || 'N/A';
-        const errorMessage = putError.response?.body?.message || putError.message;
+        const status = (putError.response && putError.response.status) || 'N/A';
+        const errorMessage = (putError.response && putError.response.body
+          && putError.response.body.message) || putError.message;
         logger.error(`Error uploading/updating file: ${relativeFilePath} [Status: ${status}]`, putError);
         results.push({ file: relativeFilePath, success: false, message: `Failed to upload/update: ${errorMessage}` });
       }
@@ -960,12 +978,12 @@ const commitFiles = async (username, repoName, directoryPath) => {
     const allSuccessful = results.every((result) => result.success);
 
     return { success: allSuccessful, results, message: allSuccessful ? 'All files processed successfully' : 'Some files failed to process' };
-
   } catch (error) {
     logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
     // Re-throw a clearer error if the initial directory read or setup failed
     throw new Error(`Failed to process files for commit: ${error.message}`);
   }
+  /* eslint-enable no-continue */
 };
 
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */

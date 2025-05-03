@@ -5,6 +5,7 @@ const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 
 const GITHUB_API_VERSION = '2022-11-28';
 const USER_AGENT = 'AIBot';
+const DEFAULT_DIR = '/tmp/nodeapp/';
 const githubToken = process.env.GITHUB_TOKEN;
 const superagent = require('superagent');
 const logger = require('./logger');
@@ -662,7 +663,7 @@ async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESC
  * the success or failure of the operation.
  * @throws {Error} - Throws an error if the API request fails.
  */
-const commitFiles = async (username, repoName, directoryPath = '/tmp/nodeapp/') => {
+const commitFiles = async (username, repoName, directoryPath = DEFAULT_DIR) => {
   // Validate parameters
   if (!username || typeof username !== 'string') {
     throw new Error('Invalid username');

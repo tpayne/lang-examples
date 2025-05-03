@@ -2,7 +2,9 @@ const crypto = require('crypto');
 const fs = require('fs').promises;
 const os = require('os');
 const path = require('path');
-const logger = require('./logger'); // Assuming you have a logger module
+const logger = require('./logger');
+// Assuming you have a logger module
+const DEFAULT_DIR = '/tmp/nodeapp/';
 
 /**
  * Saves generated code to a local file.
@@ -10,25 +12,27 @@ const logger = require('./logger'); // Assuming you have a logger module
  * @async
  * @param {string} code - The generated code to save.
  * @param {string} filename - The name of the file to save the code in.
- * @param {string} [directory] - The directory where the file will be saved. Defaults to /tmp if not specified.
+ * @param {string} [directory] - The directory where the file will be saved.
+ * Defaults to DEFAULT_DIR if not specified.
  * @returns {Promise<string>} - A promise that resolves to the path of the saved file.
  * @throws {Error} - Throws an error if the file cannot be saved.
  */
 async function saveCodeToFile(code, filename, directory) {
   // Use /tmp if no directory is specified
-  if (!directory) {
-    directory = '/tmp/nodeapp/';
-  } else if (!directory.startsWith('/')) {
+  let lDir = directory;
+  if (!lDir) {
+    lDir = DEFAULT_DIR;
+  } else if (!lDir.startsWith('/')) {
     // Append /tmp to the start of the incoming directory if it does not start with '/'
-    directory = path.join('/tmp/nodeapp/', directory);
+    lDir = path.join(DEFAULT_DIR, lDir);
   }
 
   try {
     // Ensure the directory exists
-    await fs.mkdir(directory, { recursive: true });
+    await fs.mkdir(lDir, { recursive: true });
 
     // Create the full file path
-    const filePath = path.join(directory, filename);
+    const filePath = path.join(lDir, filename);
 
     // Write the code to the file
     await fs.writeFile(filePath, code, { encoding: 'utf8' });
