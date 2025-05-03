@@ -1,4 +1,3 @@
-
 const path = require('path');
 const fs = require('fs').promises;
 const util = require('util');
@@ -639,6 +638,160 @@ async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESC
 }
 
 /**
+ * Checks if a GitHub repository exists.
+ *
+ * This function checks if a specified repository exists under a given user or organization.
+ *
+ * @async
+ * @param {string} username - The username or organization name of the repository owner.
+ * @param {string} repoName - The name of the repository to check.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the existence of the repository.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function checkRepoExists(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT);
+
+    // If the request is successful, the repository exists
+    return { exists: true, status: response.status };
+  } catch (error) {
+    if (error.status === 404) {
+      // Repository does not exist
+      return { exists: false, status: 404 };
+    }
+    // Handle other errors
+    logger.error('Error checking repository existence (exception):', username, repoName, error);
+    throw new Error(`Failed to check repository existence: ${error.message}`);
+  }
+}
+
+/**
+ * Checks if a GitHub branch exists in a specified repository.
+ *
+ * This function checks if a specified branch exists under a
+ * given user or organization and repository.
+ *
+ * @async
+ * @param {string} username - The username or organization name of the repository owner.
+ * @param {string} repoName - The name of the repository to check.
+ * @param {string} branchName - The name of the branch to check.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the existence of the branch.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function checkBranchExists(username, repoName, branchName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/branches/${branchName}`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Invalid branch name');
+  }
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT);
+
+    // If the request is successful, the branch exists
+    return { exists: true, status: response.status };
+  } catch (error) {
+    if (error.status === 404) {
+      // Branch does not exist
+      return { exists: false, status: 404 };
+    }
+    // Handle other errors
+    logger.error('Error checking branch existence (exception):', username, repoName, branchName, error);
+    throw new Error(`Failed to check branch existence: ${error.message}`);
+  }
+}
+
+/**
+ * Creates a GitHub branch.
+ *
+ * This function creates a new branch in the specified repository based on an existing reference.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the branch will be created.
+ * @param {string} branchName - The name of the new branch to be created.
+ * @param {string} baseBranch - The name of the existing branch to base the new
+ * branch on (e.g., 'main').
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function createBranch(username, repoName, branchName, baseBranch = 'main') {
+  const url = `https://api.github.com/repos/${username}/${repoName}/git/refs`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Invalid branch name');
+  }
+  if (!baseBranch || typeof baseBranch !== 'string') {
+    throw new Error('Invalid base branch name');
+  }
+
+  try {
+    // Get the SHA of the base branch
+    const baseBranchResponse = await superagent
+      .get(`${url}/heads/${baseBranch}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT);
+
+    const baseBranchSha = baseBranchResponse.body.object.sha;
+
+    // Create the new branch
+    const response = await superagent
+      .post(url)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .send({
+        ref: `refs/heads/${branchName}`,
+        sha: baseBranchSha,
+      });
+
+    if (response.status === 201) {
+      return { success: true, message: 'Branch created' };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    logger.error('Error creating branch (exception):', repoName, branchName, error);
+    throw new Error(`Failed to create branch: ${error.message}`);
+  }
+}
+
+/**
  * Recursively walks a directory and returns a list of file paths relative to the start directory.
  * @async
  * @param {string} dir The directory to start walking from.
@@ -662,7 +815,6 @@ const walkDir = async (dir, rootDir = dir) => {
   }
   return files;
 };
-
 
 /**
  * Commits files to a GitHub repository, including files in subdirectories.
@@ -693,11 +845,12 @@ const commitFiles = async (username, repoName, directoryPath) => {
     throw new Error('Invalid directory path');
   }
   if (!githubToken) {
-     throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
+    throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
   }
 
   try {
-    // Use walkDir to get all file paths, including those in subdirectories, relative to directoryPath
+    // Use walkDir to get all file paths, including those
+    // in subdirectories, relative to directoryPath
     const filesToUpload = await walkDir(directoryPath);
     const results = [];
 
@@ -728,36 +881,37 @@ const commitFiles = async (username, repoName, directoryPath) => {
           .set('User-Agent', USER_AGENT)
           .set('Accept', 'application/vnd.github+json')
           .send({
-            message: `Add ${relativeFilePath}`, // Commit message includes the file path
+            // Commit message includes the file path
+            message: `Add ${relativeFilePath}`,
             content: base64Content,
             // Optionally, add 'sha' for updating existing files.
-            // For initial upload, omit 'sha'. To handle updates, you'd first need to get the file's current SHA.
+            // For initial upload, omit 'sha'. To handle updates,
+            // you'd first need to get the file's current SHA.
           });
 
         if ([200, 201].includes(response.status)) {
           results.push({ file: relativeFilePath, success: true, message: 'File uploaded' });
           logger.info(`Successfully uploaded file: ${relativeFilePath} [Status: ${response.status}]`);
         } else {
-           const errorMessage = response.body?.message || 'Unknown error';
-           logger.warn(`Failed to upload file: ${relativeFilePath} [Status: ${response.status}, Message: ${errorMessage}]`);
-           results.push({
-             file: relativeFilePath, success: false, status: response.status, message: errorMessage,
-           });
+          const errorMessage = response.body.message || 'Unknown error';
+          logger.warn(`Failed to upload file: ${relativeFilePath} [Status: ${response.status}, Message: ${errorMessage}]`);
+          results.push({
+            file: relativeFilePath, success: false, status: response.status, message: errorMessage,
+          });
         }
       } catch (uploadError) {
         // superagent errors have a response property with status and body
-        const status = uploadError.response?.status || 'N/A';
-        const errorMessage = uploadError.response?.body?.message || uploadError.message;
+        const status = uploadError.response.status || 'N/A';
+        const errorMessage = uploadError.response.body.message || uploadError.message;
         logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}]`, uploadError);
         results.push({ file: relativeFilePath, success: false, message: `Failed to upload: ${errorMessage}` });
       }
     }
 
     // Check if all uploads were successful
-    const allSuccessful = results.every(result => result.success);
+    const allSuccessful = results.every((result) => result.success);
 
     return { success: allSuccessful, results, message: allSuccessful ? 'All files processed' : 'Some files failed to upload' };
-
   } catch (error) {
     logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
     // Re-throw a clearer error if the initial directory read or setup failed
@@ -765,11 +919,13 @@ const commitFiles = async (username, repoName, directoryPath) => {
   }
 };
 
-
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {
+  checkBranchExists,
+  checkRepoExists,
   commitFiles,
+  createBranch,
   createGithubPullRequest,
   createRepo,
   fetchRepoContentsRecursive,
