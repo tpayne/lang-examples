@@ -820,6 +820,24 @@ const walkDir = async (dir, rootDir = dir) => {
   return files;
 };
 
+/**
+ * Commits files to a GitHub repository, including files in subdirectories.
+ *
+ * This function reads all files from a specified directory and its subdirectories
+ * and uploads them to the specified GitHub repository, maintaining the directory structure.
+ * Each file is encoded in base64 before being sent to the GitHub API.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where files will be
+ * committed.
+ * @param {string} directoryPath - The path to the local directory containing files
+ * to upload.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation, with results for each file.
+ * @throws {Error} - Throws an error if initial validation or directory reading fails.
+ */
+const commitFiles = async (username, repoName, directoryPath) => {
   // Validate parameters
   if (!username || typeof username !== 'string') {
     throw new Error('Invalid username');
@@ -855,28 +873,8 @@ const walkDir = async (dir, rootDir = dir) => {
         const base64Content = Buffer.from(content).toString('base64');
 
         // Construct the GitHub API URL using the relative file path
+        // The GitHub API will automatically create directories if they don't exist
         const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${relativeFilePath}`;
-
-        // First, check if the file already exists to get its SHA
-        let sha = null;
-        try {
-          const getResponse = await superagent
-            .get(apiUrl)
-            .set('Authorization', `token ${githubToken}`)
-            .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-            .set('User-Agent', USER_AGENT)
-            .set('Accept', 'application/vnd.github+json');
-
-          // If the file exists, retrieve its SHA
-          if (getResponse.status === 200) {
-            sha = getResponse.body.sha;
-          }
-        } catch (getError) {
-          // If the file does not exist, we can ignore the error
-          if (getError.response && getError.response.status !== 404) {
-            throw new Error(`Failed to check file existence: ${getError.message}`);
-          }
-        }
 
         logger.debug(`Uploading file: ${relativeFilePath} to ${apiUrl}`);
 
@@ -887,13 +885,16 @@ const walkDir = async (dir, rootDir = dir) => {
           .set('User-Agent', USER_AGENT)
           .set('Accept', 'application/vnd.github+json')
           .send({
+            // Commit message includes the file path
             message: `Add ${relativeFilePath}`,
             content: base64Content,
-            sha: sha // Include SHA if it exists
+            // Optionally, add 'sha' for updating existing files.
+            // For initial upload, omit 'sha'. To handle updates,
+            // you'd first need to get the file's current SHA.
           });
 
         if ([200, 201].includes(response.status)) {
-          results.push({ file: relativeFilePath, success: true, message: 'File uploaded', sha: response.body.content.sha });
+          results.push({ file: relativeFilePath, success: true, message: 'File uploaded' });
           logger.info(`Successfully uploaded file: ${relativeFilePath} [Status: ${response.status}]`);
         } else {
           const errorMessage = response.body.message || 'Unknown error';
@@ -903,9 +904,9 @@ const walkDir = async (dir, rootDir = dir) => {
           });
         }
       } catch (uploadError) {
-        // Handle upload errors
-        const status = uploadError.response ? uploadError.response.status : 'N/A';
-        const errorMessage = uploadError.response ? uploadError.response.body.message : uploadError.message;
+        // superagent errors have a response property with status and body
+        const status = uploadError.response.status || 'N/A';
+        const errorMessage = uploadError.response.body.message || uploadError.message;
         logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}] ${errorMessage}`);
         results.push({ file: relativeFilePath, success: false, message: `Failed to upload: ${errorMessage}` });
       }
@@ -916,7 +917,12 @@ const walkDir = async (dir, rootDir = dir) => {
 
     return { success: allSuccessful, results, message: allSuccessful ? 'All files processed' : 'Some files failed to upload' };
   } catch (error) {
-    logger.error(`Error
+    logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
+    // Re-throw a clearer error if the initial directory read or setup failed
+    throw new Error(`Failed to process files for commit: ${error.message}`);
+  }
+};
+
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {
