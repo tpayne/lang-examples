@@ -625,6 +625,7 @@ async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESC
       .send({
         name: `${repoName}`,
         private: isPrivate,
+        auto_init: true,
         description,
       });
 

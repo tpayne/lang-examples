@@ -282,7 +282,7 @@ async function loadGitHub(sessionId) {
     'commit_files',
     commitFiles,
     ['username', 'repoName', 'directoryPath'],
-    'Uploads or commits files in a directory to a specified GitHub repository.',
+    'Upload, push, load or commit files in a directory to a specified GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
