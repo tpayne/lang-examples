@@ -46,7 +46,7 @@
     "winston": "^3.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.25.1",
+    "@eslint/js": "^9.26.0",
     "@linthtml/linthtml": "^0.10.1",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
@@ -58,7 +58,7 @@
     "husky": "^9.1.7",
     "jsdoc": "^4.0.4",
     "nodemon": "^3.1.10",
-    "npm-run-all2": "7.0.2",
+    "npm-run-all2": "8.0.1",
     "typescript-eslint": "^8.31.1",
     "yaml-lint": "1.7.0"
   },
