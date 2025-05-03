@@ -1,3 +1,4 @@
+
 const path = require('path');
 const fs = require('fs').promises;
 const util = require('util');
@@ -638,21 +639,47 @@ async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESC
 }
 
 /**
- * Commits files to a GitHub repository.
+ * Recursively walks a directory and returns a list of file paths relative to the start directory.
+ * @async
+ * @param {string} dir The directory to start walking from.
+ * @param {string} [rootDir=dir] The original root directory for calculating relative paths.
+ * @returns {Promise<string[]>} A promise that resolves to an array of relative file paths.
+ */
+const walkDir = async (dir, rootDir = dir) => {
+  let files = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      // Recursively walk subdirectories
+      files = files.concat(await walkDir(fullPath, rootDir));
+    } else if (entry.isFile()) {
+      // Add the file path relative to the root directory
+      const relativePath = path.relative(rootDir, fullPath);
+      files.push(relativePath);
+    }
+  }
+  return files;
+};
+
+
+/**
+ * Commits files to a GitHub repository, including files in subdirectories.
  *
- * This function reads all files from a specified directory and uploads them
- * to the specified GitHub repository. Each file is encoded in base64 before
- * being sent to the GitHub API.
+ * This function reads all files from a specified directory and its subdirectories
+ * and uploads them to the specified GitHub repository, maintaining the directory structure.
+ * Each file is encoded in base64 before being sent to the GitHub API.
  *
  * @async
  * @param {string} username - The username of the repository owner.
  * @param {string} repoName - The name of the repository where files will be
  * committed.
- * @param {string} directoryPath - The path to the directory containing files
+ * @param {string} directoryPath - The path to the local directory containing files
  * to upload.
  * @returns {Promise<Object>} - A promise that resolves to an object indicating
- * the success or failure of the operation.
- * @throws {Error} - Throws an error if the API request fails.
+ * the success or failure of the operation, with results for each file.
+ * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
 const commitFiles = async (username, repoName, directoryPath) => {
   // Validate parameters
@@ -665,58 +692,79 @@ const commitFiles = async (username, repoName, directoryPath) => {
   if (!directoryPath || typeof directoryPath !== 'string') {
     throw new Error('Invalid directory path');
   }
+  if (!githubToken) {
+     throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
+  }
 
   try {
-    const files = await fs.readdir(directoryPath);
+    // Use walkDir to get all file paths, including those in subdirectories, relative to directoryPath
+    const filesToUpload = await walkDir(directoryPath);
     const results = [];
 
-    logger.debug(`There are ${files.length} files to upload to ${username}/${repoName}`);
+    logger.debug(`Found ${filesToUpload.length} files to upload to ${username}/${repoName}`);
 
-    if (files.length === 0) {
-      return { success: false, message: 'There are no files to upload', status: 204 };
+    if (filesToUpload.length === 0) {
+      return { success: false, message: 'No files found in the specified directory to upload', status: 204 };
     }
 
-    for (const file of files) {
-      const filePath = path.join(directoryPath, file);
-      const stats = await fs.stat(filePath); // Get stats for the file
+    for (const relativeFilePath of filesToUpload) {
+      const fullLocalFilePath = path.join(directoryPath, relativeFilePath);
 
-      if (stats.isFile()) {
-        const content = await fs.readFile(filePath, { encoding: 'utf8' });
+      try {
+        // Read file content
+        const content = await fs.readFile(fullLocalFilePath, { encoding: 'utf8' });
         const base64Content = Buffer.from(content).toString('base64');
-        const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${file}`;
 
-        try {
-          const response = await superagent
-            .put(apiUrl)
-            .set('Authorization', `token ${githubToken}`)
-            .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-            .set('User-Agent', USER_AGENT)
-            .set('Accept', 'application/vnd.github+json')
-            .send({
-              message: `Add ${file}`,
-              content: base64Content,
-            });
+        // Construct the GitHub API URL using the relative file path
+        // The GitHub API will automatically create directories if they don't exist
+        const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${relativeFilePath}`;
 
-          if ([200, 201].includes(response.status)) {
-            results.push({ file, success: true, message: 'File uploaded' });
-          } else {
-            results.push({
-              file, success: false, status: response.status, message: response.body.message,
-            });
-          }
-        } catch (uploadError) {
-          logger.error(`Error uploading file: ${file} ${uploadError}`);
-          results.push({ file, success: false, message: `Failed to upload: ${uploadError.message}` });
+        logger.debug(`Uploading file: ${relativeFilePath} to ${apiUrl}`);
+
+        const response = await superagent
+          .put(apiUrl)
+          .set('Authorization', `token ${githubToken}`)
+          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+          .set('User-Agent', USER_AGENT)
+          .set('Accept', 'application/vnd.github+json')
+          .send({
+            message: `Add ${relativeFilePath}`, // Commit message includes the file path
+            content: base64Content,
+            // Optionally, add 'sha' for updating existing files.
+            // For initial upload, omit 'sha'. To handle updates, you'd first need to get the file's current SHA.
+          });
+
+        if ([200, 201].includes(response.status)) {
+          results.push({ file: relativeFilePath, success: true, message: 'File uploaded' });
+          logger.info(`Successfully uploaded file: ${relativeFilePath} [Status: ${response.status}]`);
+        } else {
+           const errorMessage = response.body?.message || 'Unknown error';
+           logger.warn(`Failed to upload file: ${relativeFilePath} [Status: ${response.status}, Message: ${errorMessage}]`);
+           results.push({
+             file: relativeFilePath, success: false, status: response.status, message: errorMessage,
+           });
         }
+      } catch (uploadError) {
+        // superagent errors have a response property with status and body
+        const status = uploadError.response?.status || 'N/A';
+        const errorMessage = uploadError.response?.body?.message || uploadError.message;
+        logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}]`, uploadError);
+        results.push({ file: relativeFilePath, success: false, message: `Failed to upload: ${errorMessage}` });
       }
     }
 
-    return { success: true, results };
+    // Check if all uploads were successful
+    const allSuccessful = results.every(result => result.success);
+
+    return { success: allSuccessful, results, message: allSuccessful ? 'All files processed' : 'Some files failed to upload' };
+
   } catch (error) {
-    logger.error(`Error reading directory or uploading files (exception): ${username}/${repoName} - ${error.message}`);
-    throw new Error(`Failed to commit files: ${error.message}`);
+    logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
+    // Re-throw a clearer error if the initial directory read or setup failed
+    throw new Error(`Failed to process files for commit: ${error.message}`);
   }
 };
+
 
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
