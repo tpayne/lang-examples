@@ -14,6 +14,7 @@ const {
   listDirectoryContents,
   listGitHubActions,
   listPublicRepos,
+  switchBranch,
 } = require('./gitFunctions');
 
 const {
@@ -198,12 +199,26 @@ async function loadGitHub(sessionId) {
     ['repoName', 'orgName', 'description', 'isPrivate'],
     'Create a GitHub repository under an organisation or user',
     {
-      repoName: { type: 'string', description: 'The repository name.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
       orgName: { type: 'string', description: 'The GitHub organisation to use (optional). Defaults to user repository.' },
       description: { type: 'string', description: 'The description of the repository name (optional). Defaults if not provided' },
       isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
     },
     ['repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'switch_branch',
+    switchBranch,
+    ['username', 'repoName', 'branchName'],
+    'Switch a branch in a GitHub repository',
+    {
+      username: { type: 'string', description: 'The username of the repository owner.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      branchName: { type: 'string', description: 'The branch name to switch to.' },
+    },
+    ['username', 'repoName', 'branchName'],
   );
 
   await registerFunction(

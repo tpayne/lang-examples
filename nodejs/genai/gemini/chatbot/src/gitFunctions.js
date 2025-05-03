@@ -986,6 +986,48 @@ const commitFiles = async (username, repoName, directoryPath) => {
   /* eslint-enable no-continue */
 };
 
+/**
+ * Switches the default branch of a GitHub repository.
+ *
+ * This function updates the specified GitHub repository to change its default branch
+ * to the provided branch name. It uses the GitHub API to perform the update.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the default branch will be changed.
+ * @param {string} branchName - The name of the branch to set as the new default branch.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ *                              the success of the operation,
+ *                              with a message confirming the change.
+ * @throws {Error} - Throws an error if the API request fails or if
+ * there is an issue processing the request.
+ */
+const switchBranch = async (username, repoName, branchName) => {
+  try {
+    // Update the repository to change the default branch
+    const response = await superagent
+      .patch(`https://api.github.com/repos/${username}/${repoName}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .send({
+        default_branch: branchName,
+      });
+
+    if ([200, 201].includes(response.status)) {
+      return {
+        success: true,
+        message: `Default branch changed to "${branchName}" in repository "${username}/${repoName}".`,
+      };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    logger.error(`Error processing switch branch (exception): ${username}/${repoName} - ${error.message}`);
+    throw new Error(`Error processing switch branch: ${error.message}`);
+  }
+};
+
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {
@@ -1001,4 +1043,5 @@ module.exports = {
   listDirectoryContents,
   listGitHubActions,
   listPublicRepos,
+  switchBranch,
 };
