@@ -822,10 +822,11 @@ const walkDir = async (dir, rootDir = dir) => {
 
 /**
  * Commits files to a GitHub repository, including files in subdirectories.
+ * It checks for existing files to include their SHAs for updates.
  *
  * This function reads all files from a specified directory and its subdirectories
- * and uploads them to the specified GitHub repository, maintaining the directory structure.
- * Each file is encoded in base64 before being sent to the GitHub API.
+ * and uploads/updates them to the specified GitHub repository, maintaining the
+ * directory structure. Each file is encoded in base64.
  *
  * @async
  * @param {string} username - The username of the repository owner.
@@ -849,7 +850,7 @@ const commitFiles = async (username, repoName, directoryPath) => {
     throw new Error('Invalid directory path');
   }
   if (!githubToken) {
-    throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
+     throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
   }
 
   try {
@@ -858,64 +859,108 @@ const commitFiles = async (username, repoName, directoryPath) => {
     const filesToUpload = await walkDir(directoryPath);
     const results = [];
 
-    logger.debug(`Found ${filesToUpload.length} files to upload to ${username}/${repoName}`);
+    logger.debug(`Found ${filesToUpload.length} files to process for ${username}/${repoName}`);
 
     if (filesToUpload.length === 0) {
-      return { success: false, message: 'No files found in the specified directory to upload', status: 204 };
+      return { success: false, message: 'No non-hidden files found in the specified directory to upload', status: 204 };
     }
 
     for (const relativeFilePath of filesToUpload) {
       const fullLocalFilePath = path.join(directoryPath, relativeFilePath);
+      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${relativeFilePath}`;
+      let existingFileSha = null;
+
+      logger.debug(`Processing file: ${relativeFilePath}`);
 
       try {
-        // Read file content
+        // STEP 1: Check if the file exists and get its SHA
+        const getResponse = await superagent
+          .get(apiUrl)
+          .set('Authorization', `token ${githubToken}`)
+          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+          .set('User-Agent', USER_AGENT)
+          .set('Accept', 'application/vnd.github+json');
+
+        if (getResponse.status === 200) {
+          // File exists, get its SHA
+          existingFileSha = getResponse.body.sha;
+          logger.debug(`File exists, retrieved SHA: ${existingFileSha} for ${relativeFilePath}`);
+        } else {
+           // This case should theoretically not be reached if status is not 404
+           logger.warn(`Unexpected status when checking file existence for ${relativeFilePath}: ${getResponse.status}`);
+           results.push({ file: relativeFilePath, success: false, message: `Failed to check existence (Status: ${getResponse.status})` });
+           continue; // Skip to the next file
+        }
+
+      } catch (getError) {
+          // Handle error when checking for file existence
+          if (getError.response && getError.response.status === 404) {
+             // File does not exist, this is expected for new files
+             existingFileSha = null; // Explicitly set to null
+             logger.debug(`File does not exist: ${relativeFilePath}`);
+          } else {
+             // Other errors during GET request
+             const status = getError.response?.status || 'N/A';
+             const errorMessage = getError.response?.body?.message || getError.message;
+             logger.error(`Error checking existence of file ${relativeFilePath} [Status: ${status}]`, getError);
+             results.push({ file: relativeFilePath, success: false, message: `Failed to check existence: ${errorMessage}` });
+             continue; // Skip to the next file
+          }
+      }
+
+      // STEP 2: Read file content and prepare for PUT
+      try {
         const content = await fs.readFile(fullLocalFilePath, { encoding: 'utf8' });
         const base64Content = Buffer.from(content).toString('base64');
 
-        // Construct the GitHub API URL using the relative file path
-        // The GitHub API will automatically create directories if they don't exist
-        const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${relativeFilePath}`;
+        // Prepare the request body, including sha if the file exists
+        const putBody = {
+          message: existingFileSha ? `Update ${relativeFilePath}` : `Add ${relativeFilePath}`, // Adjust commit message
+          content: base64Content,
+        };
 
-        logger.debug(`Uploading file: ${relativeFilePath} to ${apiUrl}`);
+        if (existingFileSha) {
+          putBody.sha = existingFileSha; // Include SHA for updates
+          logger.debug(`Preparing to update file: ${relativeFilePath} with SHA ${existingFileSha}`);
+        } else {
+           logger.debug(`Preparing to create file: ${relativeFilePath}`);
+        }
 
-        const response = await superagent
+        // STEP 3: Upload/Update the file
+        const putResponse = await superagent
           .put(apiUrl)
           .set('Authorization', `token ${githubToken}`)
           .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
           .set('User-Agent', USER_AGENT)
           .set('Accept', 'application/vnd.github+json')
-          .send({
-            // Commit message includes the file path
-            message: `Add ${relativeFilePath}`,
-            content: base64Content,
-            // Optionally, add 'sha' for updating existing files.
-            // For initial upload, omit 'sha'. To handle updates,
-            // you'd first need to get the file's current SHA.
-          });
+          .send(putBody);
 
-        if ([200, 201].includes(response.status)) {
-          results.push({ file: relativeFilePath, success: true, message: 'File uploaded' });
-          logger.info(`Successfully uploaded file: ${relativeFilePath} [Status: ${response.status}]`);
+        if ([200, 201].includes(putResponse.status)) {
+          const action = existingFileSha ? 'updated' : 'uploaded';
+          const newSha = putResponse.body?.content?.sha; // Get the new SHA from the response
+          results.push({ file: relativeFilePath, success: true, message: `File ${action}`, sha: newSha });
+          logger.info(`Successfully ${action} file: ${relativeFilePath} [Status: ${putResponse.status}, New SHA: ${newSha}]`);
         } else {
-          const errorMessage = response.body.message || 'Unknown error';
-          logger.warn(`Failed to upload file: ${relativeFilePath} [Status: ${response.status}, Message: ${errorMessage}]`);
-          results.push({
-            file: relativeFilePath, success: false, status: response.status, message: errorMessage,
-          });
+           const errorMessage = putResponse.body?.message || 'Unknown error during PUT';
+           logger.warn(`Failed to upload/update file: ${relativeFilePath} [Status: ${putResponse.status}, Message: ${errorMessage}]`);
+           results.push({
+             file: relativeFilePath, success: false, status: putResponse.status, message: errorMessage,
+           });
         }
-      } catch (uploadError) {
-        // superagent errors have a response property with status and body
-        const status = uploadError.response.status || 'N/A';
-        const errorMessage = uploadError.response.body.message || uploadError.message;
-        logger.error(`Error uploading file: ${relativeFilePath} [Status: ${status}] ${errorMessage}`);
-        results.push({ file: relativeFilePath, success: false, message: `Failed to upload: ${errorMessage}` });
+      } catch (putError) {
+        // Error during PUT request (upload/update)
+        const status = putError.response?.status || 'N/A';
+        const errorMessage = putError.response?.body?.message || putError.message;
+        logger.error(`Error uploading/updating file: ${relativeFilePath} [Status: ${status}]`, putError);
+        results.push({ file: relativeFilePath, success: false, message: `Failed to upload/update: ${errorMessage}` });
       }
     }
 
     // Check if all uploads were successful
     const allSuccessful = results.every((result) => result.success);
 
-    return { success: allSuccessful, results, message: allSuccessful ? 'All files processed' : 'Some files failed to upload' };
+    return { success: allSuccessful, results, message: allSuccessful ? 'All files processed successfully' : 'Some files failed to process' };
+
   } catch (error) {
     logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
     // Re-throw a clearer error if the initial directory read or setup failed
