@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-04	(20:36:40-UTC+0000)
+- **Other**: Add some text to the page (in nodejs/genai/openai/chatbot/templates/indexBot.html)
 ## 2025-05-04	(17:18:36-UTC+0000)
 - **Other**: Update indexBot.html (in nodejs/genai/openai/chatbot/templates/indexBot.html)
 ## 2025-05-04	(14:45:21-UTC+0000)
