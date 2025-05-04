@@ -2,13 +2,19 @@ const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 const logger = require('./logger');
 
 const {
+  checkBranchExists,
+  checkRepoExists,
+  commitFiles,
+  createBranch,
   createGithubPullRequest,
+  createRepo,
   fetchRepoContentsRecursive,
   listBranches,
   listCommitHistory,
   listDirectoryContents,
   listGitHubActions,
   listPublicRepos,
+  switchBranch,
 } = require('./gitFunctions');
 
 const {
@@ -19,6 +25,10 @@ const {
 const {
   getVehicleHistory,
 } = require('./dosaFunctions');
+
+const {
+  saveCodeToFile,
+} = require('./utilities');
 
 /* eslint-disable max-len */
 
@@ -182,6 +192,105 @@ async function loadDosa(sessionId) {
 /* eslint-enable no-shadow */
 
 async function loadGitHub(sessionId) {
+  await registerFunction(
+    sessionId,
+    'create_repo',
+    createRepo,
+    ['repoName', 'username', 'orgName', 'description', 'isPrivate'],
+    'Create a GitHub repository under an organisation or user',
+    {
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      username: { type: 'string', description: 'The username of the repository owner.' },
+      description: { type: 'string', description: 'The description of the repository name (optional). Defaults if not provided' },
+      isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
+    },
+    ['repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'switch_branch',
+    switchBranch,
+    ['username', 'repoName', 'branchName'],
+    'Switch a branch in a GitHub repository',
+    {
+      username: { type: 'string', description: 'The username of the repository owner.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      branchName: { type: 'string', description: 'The branch name to switch to.' },
+    },
+    ['username', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'save_code_to_file',
+    saveCodeToFile,
+    ['code', 'filename', 'directory'],
+    'Save generated code to a local file',
+    {
+      code: { type: 'string', description: 'The generated code to save.' },
+      filename: { type: 'string', description: 'The local filename to save the generated code to.' },
+      directory: { type: 'string', description: 'The directory name that is used (optional). Defaults to /tmp/nodeapp/ if not provided' },
+    },
+    ['code', 'filename'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_branch',
+    createBranch,
+    ['username', 'repoName', 'branchName', 'baseBranch'],
+    'Create a new branch in a GitHub repository based on an existing branch',
+    {
+      username: { type: 'string', description: 'The username of the repository owner.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      branchName: { type: 'string', description: 'The name of the new branch to be created.' },
+      baseBranch: { type: 'string', description: 'The name of the existing branch to base the new branch on (optional). Defaults to "main".' },
+    },
+    ['username', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'check_branch_exists',
+    checkBranchExists,
+    ['username', 'repoName', 'branchName'],
+    'Check if a GitHub branch exists in a specified repository',
+    {
+      username: { type: 'string', description: 'The username or organization name of the repository owner.' },
+      repoName: { type: 'string', description: 'The name of the repository to check.' },
+      branchName: { type: 'string', description: 'The name of the branch to check.' },
+    },
+    ['username', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'check_repo_exists',
+    checkRepoExists,
+    ['username', 'repoName'],
+    'Check if a GitHub repository exists under a given user or organization',
+    {
+      username: { type: 'string', description: 'The username or organization name of the repository owner.' },
+      repoName: { type: 'string', description: 'The name of the repository to check.' },
+    },
+    ['username', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'commit_files',
+    commitFiles,
+    ['username', 'repoName', 'directoryPath'],
+    'Upload, push, load or commit files in a directory to a specified GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      directoryPath: { type: 'string', description: 'The local directory path that contains the files to upload/commit to the repository.' },
+    },
+    ['username', 'repoName', 'directoryPath'],
+  );
+
   await registerFunction(
     sessionId,
     'create_pull_request',

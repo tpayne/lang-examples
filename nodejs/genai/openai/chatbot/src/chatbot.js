@@ -273,16 +273,12 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
     let chatResponse = null;
     let numSteps = 0;
-    const maxSteps = 10; // Limit steps (API calls + function calls)
+    const maxSteps = getConfig().maxChatSteps; // Limit steps (API calls + function calls)
 
     // Loop to handle potential function calls and subsequent AI responses
     /* eslint-disable no-await-in-loop, no-plusplus */
     while (numSteps < maxSteps) {
       numSteps++;
-
-      logger.info(`Calling OpenAI chat.completions.create [Session: ${sessionId}], Step ${numSteps}`);
-      logger.debug(`History sent to OpenAI: ${util.inspect(xsession.history, { depth: null })} [Session: ${sessionId}]`);
-      logger.debug(`Tools sent to OpenAI: ${util.inspect(tools, { depth: null })} [Session: ${sessionId}]`);
 
       const completionParams = {
         model: getConfig().aiModel, // e.g., 'gpt-4o', 'gpt-3.5-turbo'

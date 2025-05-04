@@ -435,6 +435,10 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
     const contents = response.body;
     const results = [];
 
+    if (contents.length === 0) {
+      return { success: false, message: 'There were no files found in the repo', status: 204 };
+    }
+
     if (!recursive) {
       return response.body.map((item) => ({
         name: item.name,
@@ -473,7 +477,8 @@ async function listDirectoryContents(username, repoName, repoDirName = '', recur
     }
     return results;
   } catch (error) {
-    logger.error('Error listing directories (exception):', username, repoName, repoDirName, error);
+    logger.error(`Error listing directories (exception): ${username}/${repoName} `
+      + `${repoDirName} - ${error.message}`);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
   }
 }
@@ -519,7 +524,7 @@ async function createGithubPullRequest(
     }
     await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
-    logger.error('Error creating pull request (exception):', error);
+    logger.error(`Error creating pull request (exception):, ${error.message}`);
     if (error.response) {
       logger.error(`Error creating pull request (exception): ${error.response.text}`);
       if (error.response.status === 404) {
@@ -613,16 +618,467 @@ async function listGitHubActions(username, repoName, status = 'in_progress') {
   }
 }
 
+const DEFAULT_DESCRIPTION = 'Repository created by chatapp';
+
+/**
+ * Creates a GitHub repository.
+ *
+ * @async
+ * @param {string} repoName - The name of the repository to be created.
+ * @param {string} username - The name of the user owning the repo.
+ * @param {string} [orgName='user'] - The organization or user username under
+ * which the repository will be created. Defaults to 'user'.
+ * @param {string} [description=DEFAULT_DESCRIPTION] - A brief description
+ * of the repository. Defaults to 'Repository created by app'.
+ * @param {boolean} [isPrivate=false] - Whether the repository should be private.
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function createRepo(repoName, username, orgName = 'user', description = DEFAULT_DESCRIPTION, isPrivate = false) {
+  const url = (orgName !== 'user' &amp;&amp; !username)
+    ? `https://api.github.com/orgs/${orgName}/repos` : 'https://api.github.com/user/repos';
+
+  // Validate parameters
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+
+  try {
+    const response = await superagent
+      .post(url)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .send({
+        name: `${repoName}`,
+        private: isPrivate,
+        auto_init: true,
+        description,
+      });
+
+    if (response.status === 201) {
+      return { success: true, message: 'Repository created' };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    const message = error.response ? error.response.body.message : error.message || 'Repository creation failed';
+    logger.error(`Error creating repo (exception): ${orgName}, ${repoName} - ${message}`);
+    throw new Error(`Failed to create repository: ${message}`);
+  }
+}
+
+/**
+ * Checks if a GitHub repository exists.
+ *
+ * This function checks if a specified repository exists under a given user or organization.
+ *
+ * @async
+ * @param {string} username - The username or organization name of the repository owner.
+ * @param {string} repoName - The name of the repository to check.
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
+ * the existence of the repository.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function checkRepoExists(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Accept', 'application/vnd.github+json')
+      .set('Authorization', `token ${githubToken}`)
+      .set('User-Agent', USER_AGENT);
+
+    // If the request is successful, the repository exists
+    return { exists: true, status: response.status };
+  } catch (error) {
+    if (error.status === 404) {
+      // Repository does not exist
+      return { exists: false, status: 404 };
+    }
+    // Handle other errors
+    logger.error('Error checking repository existence (exception):', username, repoName, error);
+    throw new Error(`Failed to check repository existence: ${error.message}`);
+  }
+}
+
+/**
+ * Checks if a GitHub branch exists in a specified repository.
+ *
+ * This function checks if a specified branch exists under a
+ * given user or organization and repository.
+ *
+ * @async
+ * @param {string} username - The username or organization name of the repository owner.
+ * @param {string} repoName - The name of the repository to check.
+ * @param {string} branchName - The name of the branch to check.
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
+ * the existence of the branch.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function checkBranchExists(username, repoName, branchName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/branches/${branchName}`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Invalid branch name');
+  }
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Accept', 'application/vnd.github+json')
+      .set('Authorization', `token ${githubToken}`)
+      .set('User-Agent', USER_AGENT);
+
+    // If the request is successful, the branch exists
+    return { exists: true, status: response.status };
+  } catch (error) {
+    if (error.status === 404) {
+      // Branch does not exist
+      return { exists: false, status: 404 };
+    }
+    // Handle other errors
+    logger.error('Error checking branch existence (exception):', username, repoName, branchName, error);
+    throw new Error(`Failed to check branch existence: ${error.message}`);
+  }
+}
+
+/**
+ * Switches the default branch of a GitHub repository.
+ *
+ * This function updates the specified GitHub repository to change its default branch
+ * to the provided branch name. It uses the GitHub API to perform the update.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the default branch will be changed.
+ * @param {string} branchName - The name of the branch to set as the new default branch.
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
+ *                              the success of the operation,
+ *                              with a message confirming the change.
+ * @throws {Error} - Throws an error if the API request fails or if
+ * there is an issue processing the request.
+ */
+const switchBranch = async (username, repoName, branchName) => {
+  try {
+    // Update the repository to change the default branch
+    const response = await superagent
+      .patch(`https://api.github.com/repos/${username}/${repoName}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .send({
+        default_branch: branchName,
+      });
+
+    if ([200, 201].includes(response.status)) {
+      return {
+        success: true,
+        message: `Default branch changed to "${branchName}" in repository "${username}/${repoName}".`,
+      };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    logger.error(`Error processing switch branch (exception): ${username}/${repoName} - ${error.message}`);
+    throw new Error(`Error processing switch branch: ${error.message}`);
+  }
+};
+
+/**
+ * Creates a GitHub branch.
+ *
+ * This function creates a new branch in the specified repository based on an existing reference.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the branch will be created.
+ * @param {string} branchName - The name of the new branch to be created.
+ * @param {string} baseBranch - The name of the existing branch to base the new
+ * branch on (e.g., 'main').
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function createBranch(username, repoName, branchName, baseBranch = 'main') {
+  const url = `https://api.github.com/repos/${username}/${repoName}/git/refs`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Invalid branch name');
+  }
+  if (!baseBranch || typeof baseBranch !== 'string') {
+    throw new Error('Invalid base branch name');
+  }
+
+  // Check if the branch already exists, if it does, then exit
+  try {
+    const resp = await checkBranchExists(username, repoName, branchName);
+    if (resp.exists) {
+      return { success: true, message: 'Branch already exists' };
+    }
+  } catch (error) {
+    logger.error(`Branch check error ${error.message}`);
+  }
+
+  try {
+    // Get the SHA of the base branch
+    const baseBranchResponse = await superagent
+      .get(`${url}/heads/${baseBranch}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT);
+
+    const baseBranchSha = baseBranchResponse.body.object.sha;
+
+    // Create the new branch
+    let response = await superagent
+      .post(url)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .send({
+        ref: `refs/heads/${branchName}`,
+        sha: baseBranchSha,
+      });
+
+    if (response.status === 201) {
+      response = await switchBranch(username, repoName, branchName);
+      if (response.success) {
+        return { success: true, message: 'Branch created' };
+      }
+      return { success: false, message: 'Branch created, but could not switch context' };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    const message = error.message || 'Creation failed';
+    logger.error(`Error creating branch (exception): ${message}`);
+    throw new Error(`Failed to create branch: ${message}`);
+  }
+}
+
+/**
+ * Recursively walks a directory and returns a list of file paths relative to the start directory.
+ * @async
+ * @param {string} dir The directory to start walking from.
+ * @param {string} [rootDir=dir] The original root directory for calculating relative paths.
+ * @returns {Promise&lt;string[]>} A promise that resolves to an array of relative file paths.
+ */
+const walkDir = async (dir, rootDir = dir) => {
+  let files = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      // Recursively walk subdirectories
+      files = files.concat(await walkDir(fullPath, rootDir));
+    } else if (entry.isFile()) {
+      // Add the file path relative to the root directory
+      const relativePath = path.relative(rootDir, fullPath);
+      files.push(relativePath);
+    }
+  }
+  return files;
+};
+
+/**
+ * Commits files to a GitHub repository, including files in subdirectories.
+ * It checks for existing files to include their SHAs for updates.
+ *
+ * This function reads all files from a specified directory and its subdirectories
+ * and uploads/updates them to the specified GitHub repository, maintaining the
+ * directory structure. Each file is encoded in base64.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where files will be
+ * committed.
+ * @param {string} directoryPath - The path to the local directory containing files
+ * to upload.
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation, with results for each file.
+ * @throws {Error} - Throws an error if initial validation or directory reading fails.
+ */
+const commitFiles = async (username, repoName, directoryPath) => {
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!directoryPath || typeof directoryPath !== 'string') {
+    throw new Error('Invalid directory path');
+  }
+  if (!githubToken) {
+    throw new Error('GitHub token is not configured (GITHUB_TOKEN environment variable missing)');
+  }
+
+  /* eslint-disable no-continue */
+  try {
+    // Use walkDir to get all file paths, including those
+    // in subdirectories, relative to directoryPath
+    const filesToUpload = await walkDir(directoryPath);
+    const results = [];
+
+    logger.debug(`Found ${filesToUpload.length} files to process for ${username}/${repoName}`);
+
+    if (filesToUpload.length === 0) {
+      return { success: false, message: 'No non-hidden files found in the specified directory to upload', status: 204 };
+    }
+
+    for (const relativeFilePath of filesToUpload) {
+      const fullLocalFilePath = path.join(directoryPath, relativeFilePath);
+      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${relativeFilePath}`;
+      let existingFileSha = null;
+
+      logger.debug(`Processing file: ${relativeFilePath}`);
+
+      try {
+        // STEP 1: Check if the file exists and get its SHA
+        const getResponse = await superagent
+          .get(apiUrl)
+          .set('Authorization', `token ${githubToken}`)
+          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+          .set('User-Agent', USER_AGENT)
+          .set('Accept', 'application/vnd.github+json');
+
+        if (getResponse.status === 200) {
+          // File exists, get its SHA
+          existingFileSha = getResponse.body.sha;
+          logger.debug(`File exists, retrieved SHA: ${existingFileSha} for ${relativeFilePath}`);
+        } else {
+          // This case should theoretically not be reached if status is not 404
+          logger.warn(`Unexpected status when checking file existence for ${relativeFilePath}: ${getResponse.status}`);
+          results.push({ file: relativeFilePath, success: false, message: `Failed to check existence (Status: ${getResponse.status})` });
+          continue; // Skip to the next file
+        }
+      } catch (getError) {
+        // Handle error when checking for file existence
+        if (getError.response &amp;&amp; getError.response.status === 404) {
+          // File does not exist, this is expected for new files
+          existingFileSha = null; // Explicitly set to null
+          logger.debug(`File does not exist: ${relativeFilePath}`);
+        } else {
+          // Other errors during GET request
+          const status = (getError.response &amp;&amp; getError.response.status) || 'N/A';
+          const errorMessage = (getError.response &amp;&amp; getError.response.body
+            &amp;&amp; getError.response.body.message) || getError.message;
+          logger.error(`Error checking existence of file ${relativeFilePath} [Status: ${status}]`, getError);
+          results.push({ file: relativeFilePath, success: false, message: `Failed to check existence: ${errorMessage}` });
+          continue; // Skip to the next file
+        }
+      }
+
+      // STEP 2: Read file content and prepare for PUT
+      try {
+        const content = await fs.readFile(fullLocalFilePath, { encoding: 'utf8' });
+        const base64Content = Buffer.from(content).toString('base64');
+
+        // Prepare the request body, including sha if the file exists
+        const putBody = {
+          message: existingFileSha ? `Update ${relativeFilePath}` : `Add ${relativeFilePath}`, // Adjust commit message
+          content: base64Content,
+        };
+
+        if (existingFileSha) {
+          putBody.sha = existingFileSha; // Include SHA for updates
+          logger.debug(`Preparing to update file: ${relativeFilePath} with SHA ${existingFileSha}`);
+        } else {
+          logger.debug(`Preparing to create file: ${relativeFilePath}`);
+        }
+
+        // STEP 3: Upload/Update the file
+        const putResponse = await superagent
+          .put(apiUrl)
+          .set('Authorization', `token ${githubToken}`)
+          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+          .set('User-Agent', USER_AGENT)
+          .set('Accept', 'application/vnd.github+json')
+          .send(putBody);
+
+        if ([200, 201].includes(putResponse.status)) {
+          const action = existingFileSha ? 'updated' : 'uploaded';
+          const newSha = (putResponse.body &amp;&amp; putResponse.body.content
+            &amp;&amp; putResponse.body.content.sha) || undefined; // Get the new SHA from the response
+          results.push({
+            file: relativeFilePath, success: true, message: `File ${action}`, sha: newSha,
+          });
+          logger.info(`Successfully ${action} file: ${relativeFilePath} [Status: ${putResponse.status}, New SHA: ${newSha}]`);
+        } else {
+          const errorMessage = (putResponse.body &amp;&amp; putResponse.body.message) || 'Unknown error during PUT';
+          logger.warn(`Failed to upload/update file: ${relativeFilePath} [Status: ${putResponse.status}, Message: ${errorMessage}]`);
+          results.push({
+            file: relativeFilePath,
+            success: false,
+            status: putResponse.status,
+            message: errorMessage,
+          });
+        }
+      } catch (putError) {
+        // Error during PUT request (upload/update)
+        const status = (putError.response &amp;&amp; putError.response.status) || 'N/A';
+        const errorMessage = (putError.response &amp;&amp; putError.response.body
+          &amp;&amp; putError.response.body.message) || putError.message;
+        logger.error(`Error uploading/updating file: ${relativeFilePath} [Status: ${status}]`, putError);
+        results.push({ file: relativeFilePath, success: false, message: `Failed to upload/update: ${errorMessage}` });
+      }
+    }
+
+    // Check if all uploads were successful
+    const allSuccessful = results.every((result) => result.success);
+
+    return { success: allSuccessful, results, message: allSuccessful ? 'All files processed successfully' : 'Some files failed to process' };
+  } catch (error) {
+    logger.error(`Error processing directory or committing files (exception): ${username}/${repoName} - ${error.message}`, error);
+    // Re-throw a clearer error if the initial directory read or setup failed
+    throw new Error(`Failed to process files for commit: ${error.message}`);
+  }
+  /* eslint-enable no-continue */
+};
+
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {
+  checkBranchExists,
+  checkRepoExists,
+  commitFiles,
+  createBranch,
   createGithubPullRequest,
+  createRepo,
   fetchRepoContentsRecursive,
   listBranches,
   listCommitHistory,
   listDirectoryContents,
   listGitHubActions,
   listPublicRepos,
+  switchBranch,
 };
 </code></pre>
         </article>
@@ -634,13 +1090,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu May 01 2025 13:03:56 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun May 04 2025 14:18:44 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
