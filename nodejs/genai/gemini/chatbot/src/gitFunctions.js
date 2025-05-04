@@ -597,6 +597,7 @@ const DEFAULT_DESCRIPTION = 'Repository created by chatapp';
  *
  * @async
  * @param {string} repoName - The name of the repository to be created.
+ * @param {string} username - The name of the user owning the repo.
  * @param {string} [orgName='user'] - The organization or user username under
  * which the repository will be created. Defaults to 'user'.
  * @param {string} [description=DEFAULT_DESCRIPTION] - A brief description
@@ -606,8 +607,8 @@ const DEFAULT_DESCRIPTION = 'Repository created by chatapp';
  * the success or failure of the operation.
  * @throws {Error} - Throws an error if the API request fails.
  */
-async function createRepo(repoName, orgName = 'user', description = DEFAULT_DESCRIPTION, isPrivate = false) {
-  const url = (orgName !== 'user')
+async function createRepo(repoName, username, orgName = 'user', description = DEFAULT_DESCRIPTION, isPrivate = false) {
+  const url = (orgName !== 'user' && !username)
     ? `https://api.github.com/orgs/${orgName}/repos` : 'https://api.github.com/user/repos';
 
   // Validate parameters
@@ -731,6 +732,48 @@ async function checkBranchExists(username, repoName, branchName) {
 }
 
 /**
+ * Switches the default branch of a GitHub repository.
+ *
+ * This function updates the specified GitHub repository to change its default branch
+ * to the provided branch name. It uses the GitHub API to perform the update.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the default branch will be changed.
+ * @param {string} branchName - The name of the branch to set as the new default branch.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ *                              the success of the operation,
+ *                              with a message confirming the change.
+ * @throws {Error} - Throws an error if the API request fails or if
+ * there is an issue processing the request.
+ */
+const switchBranch = async (username, repoName, branchName) => {
+  try {
+    // Update the repository to change the default branch
+    const response = await superagent
+      .patch(`https://api.github.com/repos/${username}/${repoName}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .send({
+        default_branch: branchName,
+      });
+
+    if ([200, 201].includes(response.status)) {
+      return {
+        success: true,
+        message: `Default branch changed to "${branchName}" in repository "${username}/${repoName}".`,
+      };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    logger.error(`Error processing switch branch (exception): ${username}/${repoName} - ${error.message}`);
+    throw new Error(`Error processing switch branch: ${error.message}`);
+  }
+};
+
+/**
  * Creates a GitHub branch.
  *
  * This function creates a new branch in the specified repository based on an existing reference.
@@ -784,7 +827,7 @@ async function createBranch(username, repoName, branchName, baseBranch = 'main')
     const baseBranchSha = baseBranchResponse.body.object.sha;
 
     // Create the new branch
-    const response = await superagent
+    let response = await superagent
       .post(url)
       .set('Authorization', `token ${githubToken}`)
       .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
@@ -796,7 +839,11 @@ async function createBranch(username, repoName, branchName, baseBranch = 'main')
       });
 
     if (response.status === 201) {
-      return { success: true, message: 'Branch created' };
+      response = await switchBranch(username, repoName, branchName);
+      if (response.success) {
+        return { success: true, message: 'Branch created' };
+      }
+      return { success: false, message: 'Branch created, but could not switch context' };
     }
     return { success: false, status: response.status, message: response.body.message };
   } catch (error) {
@@ -985,48 +1032,6 @@ const commitFiles = async (username, repoName, directoryPath) => {
     throw new Error(`Failed to process files for commit: ${error.message}`);
   }
   /* eslint-enable no-continue */
-};
-
-/**
- * Switches the default branch of a GitHub repository.
- *
- * This function updates the specified GitHub repository to change its default branch
- * to the provided branch name. It uses the GitHub API to perform the update.
- *
- * @async
- * @param {string} username - The username of the repository owner.
- * @param {string} repoName - The name of the repository where the default branch will be changed.
- * @param {string} branchName - The name of the branch to set as the new default branch.
- * @returns {Promise<Object>} - A promise that resolves to an object indicating
- *                              the success of the operation,
- *                              with a message confirming the change.
- * @throws {Error} - Throws an error if the API request fails or if
- * there is an issue processing the request.
- */
-const switchBranch = async (username, repoName, branchName) => {
-  try {
-    // Update the repository to change the default branch
-    const response = await superagent
-      .patch(`https://api.github.com/repos/${username}/${repoName}`)
-      .set('Authorization', `token ${githubToken}`)
-      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-      .set('User-Agent', USER_AGENT)
-      .set('Accept', 'application/vnd.github+json')
-      .send({
-        default_branch: branchName,
-      });
-
-    if ([200, 201].includes(response.status)) {
-      return {
-        success: true,
-        message: `Default branch changed to "${branchName}" in repository "${username}/${repoName}".`,
-      };
-    }
-    return { success: false, status: response.status, message: response.body.message };
-  } catch (error) {
-    logger.error(`Error processing switch branch (exception): ${username}/${repoName} - ${error.message}`);
-    throw new Error(`Error processing switch branch: ${error.message}`);
-  }
 };
 
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */

@@ -196,11 +196,11 @@ async function loadGitHub(sessionId) {
     sessionId,
     'create_repo',
     createRepo,
-    ['repoName', 'orgName', 'description', 'isPrivate'],
+    ['repoName', 'username', 'orgName', 'description', 'isPrivate'],
     'Create a GitHub repository under an organisation or user',
     {
       repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
-      orgName: { type: 'string', description: 'The GitHub organisation to use (optional). Defaults to user repository.' },
+      username: { type: 'string', description: 'The username of the repository owner.' },
       description: { type: 'string', description: 'The description of the repository name (optional). Defaults if not provided' },
       isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
     },
