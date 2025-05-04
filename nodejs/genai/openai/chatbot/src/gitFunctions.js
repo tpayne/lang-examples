@@ -635,7 +635,8 @@ async function createRepo(repoName, username, orgName = 'user', description = DE
     }
     return { success: false, status: response.status, message: response.body.message };
   } catch (error) {
-    logger.error('Error creating repo (exception):', orgName, repoName, error);
+    const message = error.message || 'Repository creation failed';
+    logger.error(`Error creating repo (exception): ${orgName}, ${repoName} - ${message}`);
     throw new Error(`Failed to create repository: ${error.message}`);
   }
 }
