@@ -20,31 +20,167 @@
                you can decide to hide it or keep it on the main page */
         }
 
-        /* Style for the new content section */
-        .generative-ai-info {
+        /* --- Carousel Container and Styling --- */
+        .carousel-container {
             margin: 20px;
-            padding: 20px;
+            margin-right: 280px; /* Add right margin to prevent overlap with closed chat window */
+            padding: 0; /* Remove padding from container itself */
             border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
             background-color: #ffffff;
             line-height: 1.6; /* Improve readability */
-            margin-right: 280px; /* Add right margin to prevent overlap with closed chat window */
+            overflow: hidden; /* Hide panes that are not visible */
+            position: relative; /* Needed for absolute positioning of arrows and indicators */
+            max-width: calc(100% - 300px); /* Adjust based on desired width and chat margin */
+            box-sizing: border-box; /* Include padding/border in element's total width */
         }
 
-        .generative-ai-info h2 {
+        .carousel-inner {
+            display: flex;
+            transition: transform 0.5s ease-in-out; /* Smooth sliding animation */
+        }
+
+        .carousel-pane {
+            min-width: 100%; /* Each pane takes the full width of the container */
+            box-sizing: border-box; /* Include padding in the element's total width */
+            padding: 20px; /* Add padding inside each pane */
+            overflow-y: auto; /* Add scrollbar if content is too long */
+            height: auto; /* Adjust height based on content */
+            max-height: 400px; /* Optional: limit height and enable scrolling */
+        }
+
+        .carousel-pane h2 {
             color: #3b82f6; /* Match header color */
             margin-top: 0;
             margin-bottom: 15px;
         }
 
-         .generative-ai-info ul {
+         .carousel-pane h3 {
+            color: #4f46e5; /* Slightly different color for subheadings */
+            margin-top: 15px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
+         }
+
+
+        .carousel-pane ul {
             list-style: disc inside; /* Use bullet points */
             padding-left: 20px; /* Indent the list */
             margin-top: 15px;
         }
 
-         .generative-ai-info li {
+        .carousel-pane li {
             margin-bottom: 8px;
+        }
+
+         .carousel-pane pre {
+             background-color: #f4f4f4;
+             padding: 10px;
+             border-radius: 5px;
+             overflow-x: auto; /* Scroll for code blocks */
+             margin-bottom: 10px; /* Space after code blocks */
+         }
+
+         /* --- Code block with Copy Button --- */
+         .code-block-container {
+             position: relative; /* Allows absolute positioning of the button */
+             margin-bottom: 10px; /* Space below the entire block */
+         }
+
+         .code-block-container pre {
+             margin-bottom: 0; /* Remove default margin from pre */
+         }
+
+         .copy-button {
+             position: absolute;
+             top: 5px; /* Adjust vertical position */
+             right: 5px; /* Adjust horizontal position */
+             background-color: rgba(0, 0, 0, 0.6); /* Dark semi-transparent background */
+             color: white;
+             border: none;
+             border-radius: 3px;
+             padding: 3px 6px;
+             cursor: pointer;
+             font-size: 14px;
+             line-height: 1;
+             z-index: 1; /* Ensure it's above the pre content */
+             opacity: 0; /* Initially hidden */
+             transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out;
+         }
+
+         .code-block-container:hover .copy-button,
+         .copy-button:focus {
+             opacity: 1; /* Show on hover or focus */
+         }
+
+         .copy-button:active {
+             background-color: rgba(0, 0, 0, 0.8); /* Darker on click */
+         }
+
+         .copy-button.copied {
+             background-color: #10b981; /* Green color when copied */
+         }
+
+
+        /* --- Carousel Navigation Arrows --- */
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 10; /* Ensure arrows are above panes */
+            font-size: 24px;
+            line-height: 1; /* Center the text vertically */
+            opacity: 0.7;
+            transition: opacity 0.2s ease-in-out;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .carousel-arrow:hover {
+            opacity: 1;
+        }
+
+        .arrow-left {
+            left: 10px;
+        }
+
+        .arrow-right {
+            right: 10px;
+        }
+
+        /* --- Carousel Indicators --- */
+        .carousel-indicators {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 8px; /* Space between dots */
+            z-index: 10; /* Ensure indicators are above panes */
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .indicator-dot.active {
+            background-color: #3b82f6; /* Active dot color */
         }
 
 
@@ -63,11 +199,11 @@
             background-color: #3b82f6; /* Blue background */
             color: white;    /* Icon color */
             border-radius: 50%; /* Make it circular */
-            display: flex;    /* Center content */
+            display: flex;   /* Center content */
             justify-content: center;
             align-items: center;
-            font-size: 24px;  /* Icon size (adjust if using image/svg) */
-            cursor: pointer;  /* Indicate clickable */
+            font-size: 24px; /* Icon size (adjust if using image/svg) */
+            cursor: pointer; /* Indicate clickable */
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Add shadow */
             transition: transform 0.2s ease-in-out; /* Add hover effect */
         }
@@ -97,21 +233,21 @@
             display: flex; /* Show the chat window when container has 'chat-open' class */
         }
 
-         /* Styles for when the icon is hidden */
+        /* Styles for when the icon is hidden */
         #chatbot-widget-container.chat-open #chat-icon {
             display: none; /* Hide the icon when chat is open */
         }
 
         /* --- Chat Header (for close button) --- */
         #chat-header {
-             padding: 0.5rem 1rem;
-             background-color: #3b82f6; /* Header background */
-             color: white;
-             display: flex;
-             justify-content: space-between;
-             align-items: center;
-             font-size: 1.1rem;
-             font-weight: 600;
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6; /* Header background */
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         #chat-header h3 {
@@ -164,11 +300,11 @@
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         }
 
-         #user_input:focus {
-             outline: none;
-             border-color: #3b82f6;
-             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-         }
+        #user_input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
 
 
         #send_button {
@@ -183,147 +319,148 @@
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
         }
 
-         #send_button:hover {
-             background-color: #2563eb;
-         }
+        #send_button:hover {
+            background-color: #2563eb;
+        }
 
-         #send_button:focus {
-             outline: none;
-             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-         }
+        #send_button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
 
 
         .message {
-             margin-bottom: 1rem;
-             display: flex;
-             flex-direction: column;
-             width: 100%; /* Ensure each message takes full width initially */
-         }
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            width: 100%; /* Ensure each message takes full width initially */
+        }
 
-         .sender {
-             font-weight: 600;
-             margin-right: 0.5rem;
-         }
+        .sender {
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
 
-         .user {
-             align-items: flex-end;
-         }
+        .user {
+            align-items: flex-end;
+        }
 
-         .agent {
-             align-items: flex-start;
-         }
+        .agent {
+            align-items: flex-start;
+        }
 
-         .message-content {
-             padding: 0.75rem 1rem;
-             border-radius: 0.5rem;
-             max-width: 80%;
-             white-space: pre-wrap; /* Allow wrapping of long text */
-             overflow-x: auto; /* Enable horizontal scroll for content */
-         }
+        .message-content {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            max-width: 80%;
+            white-space: pre-wrap; /* Allow wrapping of long text */
+            overflow-x: auto; /* Enable horizontal scroll for content */
+        }
 
-         .user .message-content {
-             background-color: #dcf8c6;
-             color: #15803d;
-             margin-left: auto;
-         }
+        .user .message-content {
+            background-color: #dcf8c6;
+            color: #15803d;
+            margin-left: auto;
+        }
 
-         .agent .message-content,
-         .message.bot .message-content {
-             background-color: #e0f2fe;
-             color: #4b5563;
-             margin-right: auto;
-         }
+        .agent .message-content,
+        .message.bot .message-content {
+            background-color: #e0f2fe;
+            color: #4b5563;
+            margin-right: auto;
+        }
 
-         .typing-indicator {
-             display: inline-flex;
-             margin-left: 0.5rem;
-         }
+        .typing-indicator {
+            display: inline-flex;
+            margin-left: 0.5rem;
+        }
 
-         .typing-indicator span {
-             width: 0.5rem;
-             height: 0.5rem;
-             border-radius: 50%;
-             background-color: #a0aec0;
-             margin: 0 0.25rem;
-             animation: pulse 1.5s infinite;
-         }
+        .typing-indicator span {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: #a0aec0;
+            margin: 0 0.25rem;
+            animation: pulse 1.5s infinite;
+        }
 
-         .typing-indicator span:nth-child(2) {
-             animation-delay: 0.5s;
-         }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.5s;
+        }
 
-         .typing-indicator span:nth-child(3) {
-             animation-delay: 1s;
-         }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 1s;
+        }
 
-         @keyframes pulse {
-             0% {
-                 opacity: 0.2;
-             }
-             50% {
-                 opacity: 1;
-             }
-             100% {
-                 opacity: 0.2;
-             }
-         }
-
-        /* --- Responsive Adjustments --- */
-        @media (max-width: 640px) {
-             /* Make the chat window fill more of the screen on small devices */
-            #chat-window {
-                 bottom: 0;
-                 right: 0;
-                 width: 100%; /* Full width on small screens */
-                 height: 100%; /* Full height on small screens */
-                 border-radius: 0; /* No rounded corners when full screen */
-             }
-
-             /* Adjust padding for full screen on mobile */
-            #chat_container {
-                 padding: 0.5rem;
-             }
-
-            #input_container {
-                 padding: 0.5rem;
-             }
-
-             /* Keep icon size the same */
-            #chat-icon {
-                 width: 50px;
-                 height: 50px;
-                 font-size: 20px;
-                 bottom: 10px;
-                 right: 10px;
-             }
-
-            /* Adjust margins for main content on mobile */
-            .intro_text,
-            .generative-ai-info {
-                margin-left: 10px;
-                margin-right: 10px; /* Reduce margin when chat is full screen */
-                padding: 10px; /* Reduce padding */
+        @keyframes pulse {
+            0% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.2;
             }
         }
 
-         /* Adjust margins for main content when chat is open */
-         @media (min-width: 641px) { /* Apply only on larger screens */
-            #chatbot-widget-container.chat-open ~ .intro_text,
-            #chatbot-widget-container.chat-open ~ .generative-ai-info {
-                /* You might want to adjust content margins when the chat window is open
-                   to prevent it from being obscured, though fixed positioning means
-                   it overlays, it's good practice for larger content areas.
-                   The current fixed positioning and size make this less critical,
-                   but it's something to consider for layout harmony.
-                   A simpler approach is often to just ensure the main content
-                   doesn't get hidden, which fixed positioning helps with,
-                   but margins on the main content prevent overlap issues
-                   with the *closed* icon/widget area.
-                */
-                /* Example: add some padding to the bottom or right of content */
-                 /* padding-right: calc(400px + 40px); /* Adjust based on new chat window width (400px) + margin (20px*2) */
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 640px) {
+            /* Make the chat window fill more of the screen on small devices */
+            #chat-window {
+                bottom: 0;
+                right: 0;
+                width: 100%; /* Full width on small screens */
+                height: 100%; /* Full height on small screens */
+                border-radius: 0; /* No rounded corners when full screen */
             }
-         }
+
+            /* Adjust padding for full screen on mobile */
+            #chat_container {
+                padding: 0.5rem;
+            }
+
+            #input_container {
+                padding: 0.5rem;
+            }
+
+            /* Keep icon size the same */
+            #chat-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                bottom: 10px;
+                right: 10px;
+            }
+
+            /* Adjust margins for main content on mobile */
+            .intro_text,
+            .carousel-container { /* Apply to the carousel container */
+                margin-left: 10px;
+                margin-right: 10px; /* Reduce margin when chat is full screen */
+                padding: 10px; /* Reduce padding */
+                max-width: calc(100% - 20px); /* Adjust max-width */
+            }
+             .carousel-pane {
+                 padding: 15px; /* Smaller padding on mobile */
+             }
+             .copy-button {
+                 top: 8px; /* Adjust position for smaller padding */
+                 right: 8px;
+             }
+        }
+
+        /* Adjust margins for main content when chat is open */
+        @media (min-width: 641px) { /* Apply only on larger screens */
+            #chatbot-widget-container.chat-open ~ .intro_text,
+            #chatbot-widget-container.chat-open ~ .carousel-container { /* Apply to the carousel container */
+                 /* The fixed chat window overlays, so adjusting margins on the content
+                    is less about preventing overlap *while open* and more about
+                    ensuring content isn't hidden by the *closed* icon/widget area,
+                    which is handled by the margin-right. If the chat window were larger,
+                    more significant adjustments might be needed here. */
+            }
+        }
 
 
     </style>
@@ -341,51 +478,221 @@
         </p>
     </div>
 
-    <div class="generative-ai-info">
-        <h2>About This Chatbot Demo</h2>
-        <p>
-            This demo showcases a simple chatbot powered by a Generative AI model, utilizing the ChatGPT API. It's designed to illustrate how AI can be used for conversational interfaces and integrating with external data sources and APIs.
-        </p>
-        <br>
-        <h2>Key Capabilities</h2>
-        <p>This chatbot demo includes the following functionalities:</p>
-        <ul>
-            <li>Contextual Responses: It can answer questions based on specific topics by loading different knowledge contexts (e.g., information about TVR cars, Marcos cars, DevOps, CloudOps).</li>
-            <li>GitHub Integration: It can interact with the GitHub API to perform tasks such as:
+    <div class="carousel-container">
+        <div class="carousel-inner">
+            <div class="carousel-pane generative-ai-info">
+                <h2>About This Chatbot Demo</h2>
+                <p>
+                    This demo showcases a simple chatbot powered by an AI model, utilizing the OpenAI API. It's designed to illustrate how AI can be used for conversational interfaces and integrating with external data sources and APIs.
+                </p>
+                <br>
+                <h3>Key Capabilities</h3>
+                <p>This chatbot demo includes the following functionalities:</p>
                 <ul>
-                    <li>Listing repositories, branches, and files.</li>
-                    <li>Fetching files.</li>
-                    <li>Creating pull requests.</li>
-                    <li>Listing build jobs and commit history.</li>
-                    <li>Downloading repository content.</li>
+                    <li>Contextual Responses: It can answer questions based on specific topics by loading different knowledge contexts (e.g., information about TVR cars, Marcos cars, DevOps, CloudOps).</li>
+                    <li>GitHub Integration: It can interact with the GitHub API to perform tasks such as:
+                        <ul>
+                            <li>Listing repositories, branches, and files.</li>
+                            <li>Fetching files.</li>
+                            <li>Creating pull requests.</li>
+                            <li>Listing build jobs and commit history.</li>
+                            <li>Downloading repository content.</li>
+                        </ul>
+                    </li>
+                    <li>Automated Code Review: Leverages AI to perform code reviews from GitHub repositories, offering suggestions for general improvements, security, efficiency, formatting, and documentation.</li>
+                    <li>DOSA API Interaction: Can query the DOSA MOT history database to provide information like MOT history and defect details for specific cars.</li>
                 </ul>
-            </li>
-            <li>Automated Code Review: Leverages AI to perform code reviews from GitHub repositories, offering suggestions for general improvements, security, efficiency, formatting, and documentation.</li>
-            <li>DOSA API Interaction: Can query the DOSA MOT history database to provide information like MOT history and defect details for specific cars.</li>
-        </ul>
-        <p>
-            Explore these capabilities by interacting with the chatbot! Remember that while powerful, AI responses should always be reviewed, especially for critical information or actions.
-        </p>
+                <p>
+                    Explore these capabilities by interacting with the chatbot! Remember that while powerful, AI responses should always be reviewed, especially for critical information or actions.
+                </p>
+            </div>
+
+            <div class="carousel-pane example-usage-info">
+                <h2>Example Usage</h2>
+                <p>Here are some examples of messages you can send to the chatbot or commands to run the demo.</p>
+
+                <h3>Running the Example with Basic Ops</h3>
+                <p>To run the server, you will need Docker installed and your API keys set as environment variables (<code>OPENAI_API_KEY</code> and <code>GITHUB_TOKEN</code>).</p>
+                <div class="code-block-container">
+                    <pre>
+docker build . --tag chatbot:1.0 &amp;&amp; \
+  docker run --rm -p 8080:5000 \
+    -e OPENAI_API_KEY=&lt;YourKey&gt; \
+    -e GITHUB_TOKEN=&lt;YourKey&gt; \
+    chatbot:1.0
+                    </pre>
+                    <button class="copy-button" aria-label="Copy code block">📄</button>
+                </div>
+                <p>Once running, you can open the chatbot web interface at <code>localhost:8080</code>.</p>
+
+                <h3>Loading Contexts &amp; Sample Conversation</h3>
+                <p>You can load different knowledge contexts to focus the bot's responses. Available contexts include <code>tvr-cars.txt</code>, <code>marcos-cars.txt</code>, <code>devops.txt</code>, and <code>cloudops.txt</code>. Send a message like:</p>
+                <div class="code-block-container">
+                    <pre>
+bot-context load tvr-cars.txt
+                    </pre>
+                     <button class="copy-button" aria-label="Copy message">📄</button>
+                 </div>
+                 <p>Then ask a question about the loaded context:</p>
+                 <div class="code-block-container">
+                     <pre>
+what is a tvr?
+                     </pre>
+                     <button class="copy-button" aria-label="Copy message">📄</button>
+                 </div>
+                 <p>See the README for a full sample conversation about Marcos cars.</p>
+
+                <h3>Adding Custom Contexts</h3>
+                <p>To add your own custom knowledge, create a new file in the <code>contexts</code> directory (e.g., copy an existing one):</p>
+                <div class="code-block-container">
+                    <pre>
+cd contexts
+cp tvr-cars.txt &lt;custom-context&gt;.txt
+                    </pre>
+                    <button class="copy-button" aria-label="Copy command">📄</button>
+                </div>
+                <p>Edit the new <code>&lt;custom-context&gt;.txt</code> file with your desired rules/information. Then load it using the command:</p>
+                <div class="code-block-container">
+                    <pre>
+bot-context load &lt;custom-context&gt;.txt
+                    </pre>
+                    <button class="copy-button" aria-label="Copy message">📄</button>
+                </div>
+
+                <h3>Interacting with GitHub</h3>
+                <p>The chatbot can interact with the GitHub API (requires <code>GITHUB_TOKEN</code> env var). Supported actions include listing repos, branches, files, build jobs, commit history, fetching files, creating pull requests, and downloading content.</p>
+                <p>Example messages for GitHub interaction:</p>
+                <ul>
+                    <li>List branches:</li>
+                    <div class="code-block-container">
+                        <pre>
+list all the branches in the github repo CloudFunctions that is owned by the user tpayne
+                        </pre>
+                         <button class="copy-button" aria-label="Copy message">📄</button>
+                    </div>
+                     <li>List files:</li>
+                     <div class="code-block-container">
+                         <pre>
+list all the files in the github repo CloudRun that is owned by the user tpayne
+                         </pre>
+                         <button class="copy-button" aria-label="Copy message">📄</button>
+                     </div>
+                </ul>
+
+                 <h3>Automated Code Reviews</h3>
+                 <p>Leverage AI for code reviews on GitHub repos. You can ask for general improvements, security reviews, efficiency, formatting, or documentation. Example messages:</p>
+                 <ul>
+                     <li>Review for efficiency:</li>
+                     <div class="code-block-container">
+                         <pre>
+please perform a detailed code review of the files under the directory samples/DemoApp/src/main/java/ in the github repo tpayne/CloudRun and tell me improvements for the content to make it more efficient
+                         </pre>
+                         <button class="copy-button" aria-label="Copy message">📄</button>
+                     </div>
+                     <li>Review for security:</li>
+                     <div class="code-block-container">
+                         <pre>
+please perform a security review of the terraform code in the github repo tpayne/terraform-examples under the directory samples/Azure/templates/modules and give me a security analysis of the content. Let me know if there are any security issues I should fix
+                         </pre>
+                         <button class="copy-button" aria-label="Copy message">📄</button>
+                     </div>
+                 </ul>
+                 <p><em>Note: Code reviews can take time for large amounts of code and may hit model limits.</em></p>
+
+                 <h3>DOSA Functionality</h3>
+                 <p>The chatbot can interact with the DOSA MOT history database (requires DOSA API keys). You need to be registered for the API and set environment variables: <code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, and <code>DOSA_AUTH_TENANT_ID</code>.</p>
+                 <p>Example messages for DOSA interaction:</p>
+                 <ul>
+                     <li>Get MOT history:</li>
+                     <div class="code-block-container">
+                         <pre>
+give me the mot history for the car ABC123
+                         </pre>
+                         <button class="copy-button" aria-label="Copy message">📄</button>
+                     </div>
+                      <li>List MOT defects:</li>
+                      <div class="code-block-container">
+                          <pre>
+tell me all the MOT defects for ABC123
+                          </pre>
+                          <button class="copy-button" aria-label="Copy message">📄</button>
+                      </div>
+                 </ul>
+            </div>
+
+            <div class="carousel-pane faq-info">
+                 <h2>Frequently Asked Questions (FAQs)</h2>
+                 <p>Based on the demo's capabilities and notes from the README:</p>
+
+                 <h3>What are the prerequisites for running this demo?</h3>
+                 <p>You need Docker installed and an OpenAI account with an <code>OPENAI_API_KEY</code>. For GitHub and DOSA integration, relevant API keys (<code>GITHUB_TOKEN</code>, <code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are required as environment variables.</p>
+
+                 <h3>How do I start the chatbot server?</h3>
+                 <p>Build and run the Docker image using the command provided in the "Running the Example with Basic Ops" section. Ensure your API keys are set as environment variables.</p>
+
+                 <h3>Can the bot's answers be incorrect?</h3>
+                 <p>Yes, the README explicitly notes that answers may not always be correct. AI responses should be reviewed, especially for critical information or actions.</p>
+
+                 <h3>What kind of API keys are needed?</h3>
+                 <p>An <code>OPENAI_API_KEY</code> for the OpenAI API is essential. Additionally, a <code>GITHUB_TOKEN</code> is needed for GitHub interactions, and specific keys (<code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are needed for DOSA API usage.</p>
+
+                 <h3>What happens if I ask about a topic outside the loaded context?</h3>
+                 <p>The bot's response quality depends on the loaded context. Without a relevant context loaded, it might not be able to provide specific information on that topic or may give a more general answer based on its training data.</p>
+
+                 <h3>Are there any known limitations or notes?</h3>
+                 <p>Yes, according to the README's notes:</p>
+                 <ul>
+                     <li>This code does not have any unit testing or SA analysis run as part of the process.</li>
+                     <li>Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context).</li>
+                     <li>Error handling could be improved, and not all error conditions have been tested.</li>
+                     <li>Processing large amounts of data, like extensive code reviews, may take time and potentially hit model limits.</li>
+                 </ul>
+
+
+                 <h3>How can I add my own custom knowledge contexts?</h3>
+                 <p>You can create custom context files in the <code>contexts</code> directory and load them using the <code>bot-context load &lt;filename&gt;</code> command in the chat.</p>
+
+                 <h3>How do I clean up the installation?</h3>
+                 <p>To remove the Docker image, run the command:</p>
+                 <div class="code-block-container">
+                    <pre>
+docker rmi chatbot:1.0
+                    </pre>
+                    <button class="copy-button" aria-label="Copy command">📄</button>
+                 </div>
+                 <p>This should remove the image created during the build process.</p>
+
+            </div>
+        </div>
+
+        <button class="carousel-arrow arrow-left" id="prevPane">&#10094;</button>
+        <button class="carousel-arrow arrow-right" id="nextPane">&#10095;</button>
+
+        <div class="carousel-indicators" id="carouselIndicators">
+            </div>
     </div>
+
+
     <div id="chatbot-widget-container" class="chat-closed">
         <div id="chat-icon">
             💬
         </div>
 
         <div id="chat-window">
-             <div id="chat-header">
-                 <h3>Chatbot</h3>
-                 <button id="chat-close-button">&times;</button> </div>
+            <div id="chat-header">
+                <h3>Chatbot</h3>
+                <button id="chat-close-button">&times;</button>
+            </div>
 
-             <div id="chat_container">
-                 </div>
+            <div id="chat_container">
+                </div>
 
-             <div id="input_container">
-                 <input type="text" id="user_input" placeholder="Type your message..."
-                     class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
-                 <button id="send_button"
-                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
-             </div>
+            <div id="input_container">
+                <input type="text" id="user_input" placeholder="Type your message..."
+                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
+                <button id="send_button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
+            </div>
         </div>
     </div>
 
@@ -400,12 +707,88 @@
         const chatCloseButton = document.getElementById('chat-close-button');
         const chatWindow = document.getElementById('chat-window');
 
+        // --- Carousel Elements ---
+        const carouselInner = document.querySelector('.carousel-inner');
+        const prevArrow = document.getElementById('prevPane');
+        const nextArrow = document.getElementById('nextPane');
+        const indicatorsContainer = document.getElementById('carouselIndicators');
+        const panes = document.querySelectorAll('.carousel-pane');
+        const totalPanes = panes.length;
+        let currentPaneIndex = 0;
+        let autoCycleInterval;
+
+        // --- Carousel Functions ---
+        function showPane(index) {
+            if (index < 0) {
+                index = totalPanes - 1; // Wrap around to the last pane
+            } else if (index >= totalPanes) {
+                index = 0; // Wrap around to the first pane
+            }
+
+            currentPaneIndex = index;
+            const offset = -index * 100; // Calculate the percentage to translate
+            carouselInner.style.transform = `translateX(${offset}%)`;
+
+            // Update indicators
+            updateIndicators();
+        }
+
+        function nextPane() {
+            showPane(currentPaneIndex + 1);
+        }
+
+        function prevPane() {
+            showPane(currentPaneIndex - 1);
+        }
+
+        function createIndicators() {
+            indicatorsContainer.innerHTML = ''; // Clear existing indicators
+            for (let i = 0; i < totalPanes; i++) {
+                const dot = document.createElement('div');
+                dot.classList.add('indicator-dot');
+                dot.addEventListener('click', () => {
+                    showPane(i);
+                    resetAutoCycle(); // Reset timer on manual interaction
+                });
+                indicatorsContainer.appendChild(dot);
+            }
+            updateIndicators();
+        }
+
+        function updateIndicators() {
+            const dots = indicatorsContainer.querySelectorAll('.indicator-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentPaneIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function startAutoCycle() {
+            // Clear any existing interval to prevent multiple intervals running
+             if (autoCycleInterval) {
+                 clearInterval(autoCycleInterval);
+             }
+            autoCycleInterval = setInterval(nextPane, 60000); // Cycle every 60 seconds
+        }
+
+         function resetAutoCycle() {
+             clearInterval(autoCycleInterval); // Stop the current interval
+             startAutoCycle(); // Start a new interval
+         }
+
+
+        // --- Chatbot Widget Functions ---
         // Function to open the chat window
         function openChat() {
             chatbotWidgetContainer.classList.remove('chat-closed');
             chatbotWidgetContainer.classList.add('chat-open');
-             // Optional: focus on the input field when opening
-             userInput.focus();
+            // Optional: focus on the input field when opening
+            userInput.focus();
+             // Show initial message if not already shown
+             showInitialMessageOnce();
         }
 
         // Function to close the chat window
@@ -429,22 +812,22 @@
             appendTypingIndicator();
             // getResponse is the function that talks to your backend
             getResponse(message).then(response => {
-                 removeTypingIndicator();
-                 // Ensure response is a string or handle other types if necessary
-                 const botMessage = (typeof response === 'object' && response !== null) ? JSON.stringify(response, null, 2) : String(response);
-                 appendMessage('Bot', botMessage);
-                 chatContainer.style.cursor = ""; // Reset cursor
-                 userInput.disabled = false;
-                 sendButton.disabled = false;
-                 userInput.focus(); // Keep focus on input after response
+                removeTypingIndicator();
+                // Ensure response is a string or handle other types if necessary
+                const botMessage = (typeof response === 'object' && response !== null) ? JSON.stringify(response, null, 2) : String(response);
+                appendMessage('Bot', botMessage);
+                chatContainer.style.cursor = ""; // Reset cursor
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus(); // Keep focus on input after response
             }).catch(error => {
-                 removeTypingIndicator();
-                 console.error("Error getting response:", error);
-                 appendMessage('Bot', "Sorry, there was an error getting a response.");
-                 chatContainer.style.cursor = "";
-                 userInput.disabled = false;
-                 sendButton.disabled = false;
-                 userInput.focus();
+                removeTypingIndicator();
+                console.error("Error getting response:", error);
+                appendMessage('Bot', "Sorry, there was an error getting a response.");
+                chatContainer.style.cursor = "";
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
             });
         }
 
@@ -463,15 +846,15 @@
 
             if (sender === 'Bot') {
                 // Ensure bot message is a string before passing to marked
-                 dataApp = String(message);
+                dataApp = String(message);
                 // Use marked for Markdown parsing
                 const mStr = marked.parse(dataApp);
                 // Remove potential leading/trailing empty lines from marked output
-                 messageContentDiv.innerHTML = mStr.replace(/(^\s*<p>\s*<\/p>\s*)|(\s*<p>\s*<\/p>\s*$)/g, "").trim();
+                messageContentDiv.innerHTML = mStr.replace(/(^\s*<p>\s*<\/p>\s*)|(\s*<p>\s*<\/p>\s*$)/g, "").trim();
 
             } else {
-                 // For user messages, just set text content to prevent XSS
-                 messageContentDiv.textContent = message;
+                // For user messages, just set text content to prevent XSS
+                messageContentDiv.textContent = message;
             }
 
             // For 'user' messages, the sender label is usually omitted or placed differently.
@@ -480,12 +863,12 @@
             // messageElement.appendChild(senderSpan); // Optional: keep sender label for user
             messageElement.appendChild(messageContentDiv);
 
-             // Adjust message bubble alignment based on sender
-             if (sender.toLowerCase() === 'user') {
-                 messageElement.style.alignSelf = 'flex-end';
-             } else { // Bot or Agent
-                 messageElement.style.alignSelf = 'flex-start';
-             }
+            // Adjust message bubble alignment based on sender
+            if (sender.toLowerCase() === 'user') {
+                messageElement.style.alignSelf = 'flex-end';
+            } else { // Bot or Agent
+                messageElement.style.alignSelf = 'flex-start';
+            }
 
 
             chatContainer.appendChild(messageElement);
@@ -493,24 +876,24 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-         function appendTypingIndicator() {
-             // Remove any existing typing indicator first
-             removeTypingIndicator();
+        function appendTypingIndicator() {
+            // Remove any existing typing indicator first
+            removeTypingIndicator();
 
-             const typingIndicator = document.createElement('div');
-             typingIndicator.classList.add('message', 'agent', 'typing-indicator-container'); // Add a class to easily find it
+            const typingIndicator = document.createElement('div');
+            typingIndicator.classList.add('message', 'agent', 'typing-indicator-container'); // Add a class to easily find it
 
-             const indicatorDiv = document.createElement('div');
-             indicatorDiv.classList.add('typing-indicator');
-             for (let i = 0; i < 3; i++) {
-                 const dotSpan = document.createElement('span');
-                 indicatorDiv.appendChild(dotSpan);
-             }
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.classList.add('typing-indicator');
+            for (let i = 0; i < 3; i++) {
+                const dotSpan = document.createElement('span');
+                indicatorDiv.appendChild(dotSpan);
+            }
 
-             typingIndicator.appendChild(indicatorDiv);
-             chatContainer.appendChild(typingIndicator);
-             chatContainer.scrollTop = chatContainer.scrollHeight;
-         }
+            typingIndicator.appendChild(indicatorDiv);
+            chatContainer.appendChild(typingIndicator);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
 
         function removeTypingIndicator() {
             const typingIndicator = chatContainer.querySelector('.typing-indicator-container'); // Use the specific class
@@ -534,8 +917,8 @@
 
                 if (!response.ok) {
                     // Log the error response body if available
-                     const errorBody = await response.text();
-                     console.error(`Server error: ${response.status}`, errorBody);
+                    const errorBody = await response.text();
+                    console.error(`Server error: ${response.status}`, errorBody);
                     throw new Error(`Server error: ${response.status}`);
                 }
 
@@ -573,8 +956,69 @@
                  initialMessageShown = true;
              }
         }
-        // Call this when the chat is opened
-        chatIcon.addEventListener('click', showInitialMessageOnce);
+        // Note: initial message is now triggered by openChat
+
+        // --- Carousel Initialization ---
+        // Add event listeners for arrows
+        prevArrow.addEventListener('click', () => {
+            prevPane();
+            resetAutoCycle(); // Reset timer on manual interaction
+        });
+        nextArrow.addEventListener('click', () => {
+            nextPane();
+            resetAutoCycle(); // Reset timer on manual interaction
+        });
+
+        // Create and set up indicators
+        createIndicators();
+
+        // Show the first pane initially
+        showPane(0);
+
+        // Start automatic cycling
+        startAutoCycle();
+
+        // --- Copy to Clipboard Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const copyButtons = document.querySelectorAll('.copy-button');
+
+            copyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Find the previous sibling <pre> element
+                    const codeBlock = button.previousElementSibling;
+
+                    if (codeBlock && codeBlock.tagName === 'PRE') {
+                        const textToCopy = codeBlock.textContent;
+
+                        // Use the modern clipboard API
+                        navigator.clipboard.writeText(textToCopy).then(() => {
+                            // Optional: Provide feedback to the user
+                            const originalText = button.textContent;
+                            button.textContent = 'Copied!';
+                            button.classList.add('copied');
+
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                button.classList.remove('copied');
+                            }, 2000); // Revert text after 2 seconds
+
+                        }).catch(err => {
+                            console.error('Failed to copy text: ', err);
+                            // Optional: Provide error feedback
+                            const originalText = button.textContent;
+                            button.textContent = 'Error!';
+                             button.classList.add('error'); // Add a specific error class if desired
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                 button.classList.remove('error');
+                            }, 2000);
+                        });
+                    } else {
+                         console.error('Could not find previous PRE element for copy button.');
+                    }
+                });
+            });
+        });
 
 
     </script>
