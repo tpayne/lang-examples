@@ -15,6 +15,7 @@ COPY .*lint* ./
 COPY src/ ./src/
 COPY contexts ./contexts
 COPY resources ./resources
+COPY public ./public
 COPY templates ./templates
 
 RUN npm install && npm test
@@ -31,6 +32,7 @@ COPY package.json package-lock.json* ./src/
 COPY contexts ./src/contexts
 COPY resources ./src/resources
 COPY templates ./src/templates
+COPY public ./src/public
 
 RUN npm install --omit=dev && \
     npm install -g pkg && \
@@ -55,6 +57,7 @@ COPY --from=imagebuilder /source/nodeexe ./
 COPY --from=imagebuilder /source/src/contexts ./contexts
 COPY --from=imagebuilder /source/src/resources ./resources
 COPY --from=imagebuilder /source/src/templates ./templates
+COPY --from=imagebuilder /source/src/public ./public
 RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
 
 # Supervisor configuration
