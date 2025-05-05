@@ -19,7 +19,9 @@
     "scripts": "src/*.js",
     "assets": [
       "resources/*.properties",
-      "templates/*.html"
+      "templates/*.html",
+      "public/*.css",
+      "public/*.js"
     ]
   },
   "repository": {

@@ -4,6 +4,8 @@ mkdir /tmp/$$
 cp -r ./src /tmp/$$/
 cp -r ./resources /tmp/$$/src/
 cp -r ./templates /tmp/$$/src/
+cp -r ./public /tmp/$$/src/
+
 cp package.json /tmp/$$/src/
 cp package.json /tmp/$$/
 

@@ -17,6 +17,8 @@ dotenv.config();
 
 const app = express();
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Rate limiting (as before)
 const limiter = RateLimit({
   windowMs: 15 * 60 * 1000,
@@ -433,13 +435,17 @@ app.post('/chat', async (req, res) => {
   }
 });
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 /**
  * Serves the index.html file for the root path.
  * @param {express.Request} req The Express request object.
  * @param {express.Response} res The Express response object.
  * @returns {void}
  */
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'templates/indexBot.html')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'templates', 'indexBot.html'));
+});
 
 /**
  * Returns the current version of the chatbot.
