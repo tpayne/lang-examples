@@ -142,8 +142,30 @@ async function downloadFile(sessionId, url, localFilePath, token = null) {
   }
 }
 
+// Define a set of common file extensions typically associated with binary or non-ASCII content.
+// This list is a heuristic and may need adjustment based on specific needs.
+const BINARY_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', // Images
+  '.svg', // Although text-based, often treated visually and can contain complex data
+  '.mp3', '.wav', '.aac', '.flac', '.ogg', // Audio
+  '.mp4', '.avi', '.mkv', '.mov', '.wmv', // Video
+  '.zip', '.tar', '.gz', '.bz2', '.rar', '.7z', // Archives
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', // Documents
+  '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.lib', '.a', // Executables/Libraries/Binary data
+  '.sqlite', '.db', // Databases
+  '.woff', '.woff2', '.ttf', '.otf', '.eot', // Fonts
+  '.ico', // Icons
+  '.swf', '.fla', // Flash
+  '.class', '.jar', // Java bytecode/archives
+  '.apk', // Android package
+  '.dmg', '.iso', // Disk images
+  '.obj', '.stl', '.3ds', // 3D models
+  // Add or remove extensions as needed
+]);
+
 /**
  * Recursively fetches files and directories from a GitHub repository for a specific session.
+ * Optionally skips potential binary files based on extension.
  *
  * @param {string} sessionId The unique identifier for the session.
  * @param {string} username - The owner of the repository.
@@ -151,6 +173,8 @@ async function downloadFile(sessionId, url, localFilePath, token = null) {
  * @param {string} repoPath - The starting path within the repository.
  * @param {string} localDestPath - The local directory path where content should be saved.
  * @param {boolean} [includeDotGithub=true] - Whether to include the .github directory.
+ * @param {boolean} [skipBinaryFiles=true] - Whether to skip downloading 
+ * files likely to be binary (based on extension). Defaults to true.
  * @param {number} [retryCount=0] - Internal retry counter.
  * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
  */
@@ -161,6 +185,7 @@ async function fetchRepoContentsRecursive(
   repoPath,
   localDestPath,
   includeDotGithub = true,
+  skipBinaryFiles = true, // New parameter with default true
   retryCount = 0,
   maxRetries = 3,
 ) {
@@ -200,6 +225,7 @@ async function fetchRepoContentsRecursive(
         repoPath,
         localDestPath,
         includeDotGithub,
+        skipBinaryFiles, // Pass the flag down
         retryCount + 1,
         maxRetries,
       );
@@ -214,34 +240,67 @@ async function fetchRepoContentsRecursive(
     /** @type {GitHubItem|GitHubItem[]} */
     const items = response.body;
 
+    // Handle the case where the API returns a single item instead of an array (e.g., requesting a specific file directly)
     if (!Array.isArray(items)) {
       logger.warn(`Expected an array of items from API for path "${repoPath}", but received: ${typeof items} [Session: ${sessionId}]`);
       if (items &amp;&amp; items.type === 'file' &amp;&amp; items.download_url) {
         const filePath = path.join(localDestPath, items.name);
+
+        // --- New Logic for single file start ---
+        if (skipBinaryFiles) {
+          const extension = path.extname(items.name).toLowerCase();
+          if (BINARY_EXTENSIONS.has(extension)) {
+            logger.info(`Skipping potential binary single file: "${items.name}" (Extension: ${extension}) [Session: ${sessionId}]`);
+            // Indicate success as the skip was intentional
+            return { success: true, message: `Skipped potential binary single file at path "${repoPath}"` };
+          }
+        }
+        // --- New Logic for single file end ---
+
         try {
           await downloadFile(sessionId, items.download_url, filePath, githubToken);
+          // Return success after successful download
+          return { success: true, message: `Processed single item at path "${repoPath}"` };
         } catch (error) {
           return { success: false, message: `Error downloading single file: ${error.message}` };
         }
       }
-      return { success: true, message: `Processed single item at path "${repoPath}"` };
+      // If it wasn't a downloadable single file (e.g., a directory from a single path request), just report completion.
+      return { success: true, message: `Processed non-file single item at path "${repoPath}"` };
     }
 
+    // Process multiple items (files and directories)
     for (const item of items) {
       const currentRepoPath = item.path;
       const currentLocalPath = path.join(localDestPath, item.name);
 
+      // Skip .github directory if includeDotGithub is false
       if (!includeDotGithub &amp;&amp; (item.name === '.github' || currentRepoPath.startsWith('.github/'))) {
         continue;
       }
 
       if (item.type === 'file') {
+        // --- New Logic for skipping binary files start ---
+        if (skipBinaryFiles) {
+          const extension = path.extname(item.name).toLowerCase();
+          if (BINARY_EXTENSIONS.has(extension)) {
+            logger.info(`Skipping potential binary file: "${item.name}" (Extension: ${extension}) [Session: ${sessionId}]`);
+            continue; // Skip this file and move to the next item in the loop
+          }
+        }
+        // --- New Logic for skipping binary files end ---
+
         if (item.download_url) {
           try {
             await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
           } catch (error) {
+            // Log the error and propagate the failure
+            logger.error(`Error downloading file "${item.name}" [Session: ${sessionId}]: ${error.message}`);
             return { success: false, message: `Error downloading file "${item.name}": ${error.message}` };
           }
+        } else {
+          // File item might not have download_url if it's an LFS pointer or similar, but not common via contents API
+          logger.warn(`File item "${item.name}" has no download_url [Session: ${sessionId}]`);
         }
       } else if (item.type === 'dir') {
         const result = await fetchRepoContentsRecursive(
@@ -251,11 +310,13 @@ async function fetchRepoContentsRecursive(
           item.path,
           currentLocalPath,
           includeDotGithub,
+          skipBinaryFiles, // Pass the flag down to recursive calls
           0, // Reset retry count for new recursive calls
           maxRetries,
         );
+        // Propagate failure from subdirectory processing
         if (!result.success) {
-          return result; // Propagate failure from subdirectory
+          return result;
         }
       } else if (item.type === 'symlink') {
         logger.warn(`Skipping symlink: ${item.name} (content not fetched) [Session: ${sessionId}]`);
@@ -265,6 +326,7 @@ async function fetchRepoContentsRecursive(
         logger.warn(`Unknown item type "${item.type}" for item: ${item.name} [Session: ${sessionId}]`);
       }
     }
+    // If the loop completes without returning a failure, the directory was processed successfully
     return {
       success: true,
       message:
@@ -279,12 +341,15 @@ async function fetchRepoContentsRecursive(
       if (error.response.status === 404) {
         throw new Error('Not Found: Check repo and directory names.');
       }
+      // Handle specific GitHub API error messages if available
       if (error.response.body &amp;&amp; error.response.body.errors
         &amp;&amp; error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
-      throw new Error(error.response.body.message || 'Failed to download repo');
+      // Fallback to generic error message from response body or status
+      throw new Error(error.response.body ? (error.response.body.message || JSON.stringify(error.response.body)) : `Failed to download repo contents. Status: ${error.response.status}`);
     } else {
+      // Rethrow non-response errors
       throw error;
     }
   }
@@ -1096,7 +1161,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 05 2025 22:48:26 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 06 2025 00:03:35 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
