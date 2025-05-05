@@ -7,6 +7,89 @@ const logger = require('./logger');
 const DEFAULT_DIR = '/tmp/nodeapp/';
 
 /**
+ * Recursively deletes a directory and all its contents (files and subdirectories).
+ *
+ * This function takes a directory path as input and deletes the directory along
+ * with all its files and subdirectories. If the directory does not exist, it
+ * will not throw an error. If an error occurs during the deletion process, it
+ * will log the error and re-throw it.
+ *
+ * @async
+ * @function deleteDirectoryRecursively
+ * @param {string} dirPath - The path to the directory to delete.
+ * @throws {Error} Throws an error if there is an issue deleting the directory.
+ *
+ */
+async function deleteDirectoryRecursively(dirPath) {
+  try {
+    // Check if the directory exists and is a directory
+    let stat;
+    try {
+      stat = await fs.stat(dirPath);
+    } catch (error) {
+      // Ignore the error if the stat fails (e.g., directory does not exist)
+      logger.warn(`Directory does not exist: ${dirPath}. Proceeding without deletion.`);
+      return { success: false, message: `Directory does not exist: ${dirPath}` };
+    }
+
+    if (!stat.isDirectory()) {
+      logger.warn(`${dirPath} is not a directory. Proceeding without deletion.`);
+      return { success: false, message: `${dirPath} is not a directory` };
+    }
+
+    // Read the contents of the directory
+    const files = await fs.readdir(dirPath);
+
+    // Recursively delete each file and subdirectory
+    await Promise.all(files.map(async (file) => {
+      const filePath = path.join(dirPath, file);
+      const fileStat = await fs.stat(filePath);
+      if (fileStat.isDirectory()) {
+        // If it's a directory, call the function recursively
+        await deleteDirectoryRecursively(filePath);
+      } else {
+        // If it's a file, delete it
+        await fs.unlink(filePath);
+      }
+    }));
+
+    // Remove the now-empty directory
+    await fs.rmdir(dirPath);
+    return { success: true, message: 'Directory is deleted' };
+  } catch (error) {
+    logger.error(`Error deleting directory: ${dirPath}`, error);
+    throw error; // Re-throw the error for handling by the caller
+  }
+}
+
+/**
+ * Creates a directory at the specified path, deleting it first if it already exists.
+ *
+ * This function attempts to remove the directory at `localDestPath` recursively
+ * if it exists, and then creates a new directory at that path. If the directory
+ * does not exist, it simply creates it. If an error occurs during the deletion
+ * process that is not related to the directory not existing, the error is re-thrown.
+ *
+ * @async
+ * @function mkdir
+ * @param {string} localDestPath - The path to the directory to create.
+ * @throws {Error} Throws an error if there is an issue deleting the directory
+ * that is not due to the directory not existing.
+ */
+async function mkdir(localDestPath) {
+  logger.debug(`mkdir ${localDestPath}`);
+  try {
+    await deleteDirectoryRecursively(localDestPath);
+    await fs.mkdir(localDestPath, { recursive: true });
+    await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
+    return { success: true, message: `Created directory ${localDestPath}` };
+  } catch (error) {
+    logger.error(`Failed to create directory ${localDestPath} - ${error.message}`);
+    throw error;
+  }
+}
+
+/**
  * Saves generated code to a local file.
  *
  * @async
@@ -29,7 +112,7 @@ async function saveCodeToFile(code, filename, directory) {
 
   try {
     // Ensure the directory exists
-    await fs.mkdir(lDir, { recursive: true });
+    await mkdir(lDir);
 
     // Create the full file path
     const filePath = path.join(lDir, filename);
@@ -42,73 +125,6 @@ async function saveCodeToFile(code, filename, directory) {
   } catch (error) {
     logger.error(`Error saving file: ${error.message}`);
     throw new Error(`Failed to save file: ${error.message}`);
-  }
-}
-
-/**
- * Creates a directory at the specified path, deleting it first if it already exists.
- *
- * This function attempts to remove the directory at `localDestPath` recursively
- * if it exists, and then creates a new directory at that path. If the directory
- * does not exist, it simply creates it. If an error occurs during the deletion
- * process that is not related to the directory not existing, the error is re-thrown.
- *
- * @async
- * @function mkdir
- * @param {string} localDestPath - The path to the directory to create.
- * @throws {Error} Throws an error if there is an issue deleting the directory
- * that is not due to the directory not existing.
- */
-async function mkdir(localDestPath) {
-  try {
-    // Recursively delete the directory if it exists
-    await fs.rm(localDestPath, { recursive: true, force: true });
-  } catch (error) {
-    // Handle the error if the directory does not exist
-    if (error.code !== 'ENOENT') {
-      throw error; // Rethrow the error if it's not a "not found" error
-    }
-  }
-  await fs.mkdir(localDestPath, { recursive: true });
-}
-
-/**
- * Recursively deletes a directory and all its contents (files and subdirectories).
- *
- * This function takes a directory path as input and deletes the directory along
- * with all its files and subdirectories. If the directory does not exist, it
- * will not throw an error. If an error occurs during the deletion process, it
- * will log the error and re-throw it.
- *
- * @async
- * @function deleteDirectoryRecursively
- * @param {string} dirPath - The path to the directory to delete.
- * @throws {Error} Throws an error if there is an issue deleting the directory.
- *
- */
-async function deleteDirectoryRecursively(dirPath) {
-  try {
-    // Read the contents of the directory
-    const files = await fs.readdir(dirPath);
-
-    // Recursively delete each file and subdirectory
-    await Promise.all(files.map(async (file) => {
-      const filePath = path.join(dirPath, file);
-      const stat = await fs.stat(filePath);
-      if (stat.isDirectory()) {
-        // If it's a directory, call the function recursively
-        await deleteDirectoryRecursively(filePath);
-      } else {
-        // If it's a file, delete it
-        await fs.unlink(filePath);
-      }
-    }));
-
-    // Remove the now-empty directory
-    await fs.rmdir(dirPath);
-  } catch (error) {
-    logger.error(`Error deleting directory: ${dirPath}`, error);
-    throw error; // Re-throw the error for handling by the caller
   }
 }
 
@@ -131,7 +147,7 @@ async function createUniqueTempDir() {
 
   try {
     // Create the directory with write permissions
-    await fs.mkdir(tempDirPath, { recursive: true });
+    await mkdir(tempDirPath);
 
     // Set write permissions (this is usually the default, but can be enforced)
     await fs.chmod(tempDirPath, 0o700); // Owner can read, write, and execute
