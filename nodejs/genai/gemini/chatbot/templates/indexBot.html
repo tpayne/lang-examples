@@ -10,7 +10,24 @@
             font-family: 'Inter', sans-serif;
             /* Add some padding or margin if needed so the floating icon doesn't cover content */
             padding-bottom: 80px; /* Example: make space for the icon */
+            /* Add padding to the top to prevent content from being hidden by the timer */
+            padding-top: 30px;
         }
+
+        /* --- Page Timer Style --- */
+        #page-timer {
+            position: fixed; /* Keep it in the same position relative to the viewport */
+            top: 10px;       /* 10px from the top */
+            right: 10px;     /* 10px from the right */
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent dark background */
+            color: white;    /* White text color */
+            padding: 5px 10px; /* Padding inside the box */
+            border-radius: 5px; /* Rounded corners */
+            font-size: 0.9em;  /* Slightly smaller font */
+            z-index: 1001;   /* Ensure it's above most other elements */
+            font-family: monospace; /* Use a monospace font for consistent digit width */
+        }
+
 
         .intro_text {
             margin-left: 10px; /* Re-introduced the left margin */
@@ -468,6 +485,8 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
+    <div id="page-timer">00:00:00:00</div>
+
     <div class="intro_text">
         <h2>Virtual Agent Chatbot</h2>
         <br>
@@ -706,6 +725,36 @@ docker rmi chatbot:1.0
         const chatIcon = document.getElementById('chat-icon');
         const chatCloseButton = document.getElementById('chat-close-button');
         const chatWindow = document.getElementById('chat-window');
+
+        // --- Page Timer Logic ---
+        const timerElement = document.getElementById('page-timer');
+        const startTime = new Date().getTime(); // Record the time when the script starts
+
+        function updateTimer() {
+            const currentTime = new Date().getTime();
+            const elapsedTime = currentTime - startTime; // Elapsed time in milliseconds
+
+            const seconds = Math.floor((elapsedTime / 1000) % 60);
+            const minutes = Math.floor((elapsedTime / (1000 * 60)) % 60);
+            const hours = Math.floor((elapsedTime / (1000 * 60 * 60)) % 24);
+            const days = Math.floor(elapsedTime / (1000 * 60 * 60 * 24));
+
+            // Format the time with leading zeros
+            const formattedTime =
+                `${String(days).padStart(2, '0')}:` +
+                `${String(hours).padStart(2, '0')}:` +
+                `${String(minutes).padStart(2, '0')}:` +
+                `${String(seconds).padStart(2, '0')}`;
+
+            timerElement.textContent = formattedTime;
+        }
+
+        // Update the timer every second
+        setInterval(updateTimer, 1000);
+
+        // Initial call to display 00:00:00:00 immediately
+        updateTimer();
+
 
         // --- Carousel Elements ---
         const carouselInner = document.querySelector('.carousel-inner');
