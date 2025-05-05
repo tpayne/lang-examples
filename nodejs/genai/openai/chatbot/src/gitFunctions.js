@@ -114,28 +114,26 @@ async function downloadFile(sessionId, url, localFilePath, token = null) {
   }
 }
 
-
 // Define a set of common file extensions typically associated with binary or non-ASCII content.
 // This list is a heuristic and may need adjustment based on specific needs.
 const BINARY_EXTENSIONS = new Set([
-    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', // Images
-    '.svg', // Although text-based, often treated visually and can contain complex data
-    '.mp3', '.wav', '.aac', '.flac', '.ogg', // Audio
-    '.mp4', '.avi', '.mkv', '.mov', '.wmv', // Video
-    '.zip', '.tar', '.gz', '.bz2', '.rar', '.7z', // Archives
-    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', // Documents
-    '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.lib', '.a', // Executables/Libraries/Binary data
-    '.sqlite', '.db', // Databases
-    '.woff', '.woff2', '.ttf', '.otf', '.eot', // Fonts
-    '.ico', // Icons
-    '.swf', '.fla', // Flash
-    '.class', '.jar', // Java bytecode/archives
-    '.apk', // Android package
-    '.dmg', '.iso', // Disk images
-    '.obj', '.stl', '.3ds', // 3D models
-    // Add or remove extensions as needed
+  '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', // Images
+  '.svg', // Although text-based, often treated visually and can contain complex data
+  '.mp3', '.wav', '.aac', '.flac', '.ogg', // Audio
+  '.mp4', '.avi', '.mkv', '.mov', '.wmv', // Video
+  '.zip', '.tar', '.gz', '.bz2', '.rar', '.7z', // Archives
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', // Documents
+  '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.lib', '.a', // Executables/Libraries/Binary data
+  '.sqlite', '.db', // Databases
+  '.woff', '.woff2', '.ttf', '.otf', '.eot', // Fonts
+  '.ico', // Icons
+  '.swf', '.fla', // Flash
+  '.class', '.jar', // Java bytecode/archives
+  '.apk', // Android package
+  '.dmg', '.iso', // Disk images
+  '.obj', '.stl', '.3ds', // 3D models
+  // Add or remove extensions as needed
 ]);
-
 
 /**
  * Recursively fetches files and directories from a GitHub repository for a specific session.
@@ -147,7 +145,8 @@ const BINARY_EXTENSIONS = new Set([
  * @param {string} repoPath - The starting path within the repository.
  * @param {string} localDestPath - The local directory path where content should be saved.
  * @param {boolean} [includeDotGithub=true] - Whether to include the .github directory.
- * @param {boolean} [skipBinaryFiles=true] - Whether to skip downloading files likely to be binary (based on extension). Defaults to true.
+ * @param {boolean} [skipBinaryFiles=true] - Whether to skip downloading
+ * files likely to be binary (based on extension). Defaults to true.
  * @param {number} [retryCount=0] - Internal retry counter.
  * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
  */
@@ -224,7 +223,7 @@ async function fetchRepoContentsRecursive(
           const extension = path.extname(items.name).toLowerCase();
           if (BINARY_EXTENSIONS.has(extension)) {
             logger.info(`Skipping potential binary single file: "${items.name}" (Extension: ${extension}) [Session: ${sessionId}]`);
-             // Indicate success as the skip was intentional
+            // Indicate success as the skip was intentional
             return { success: true, message: `Skipped potential binary single file at path "${repoPath}"` };
           }
         }
@@ -232,13 +231,13 @@ async function fetchRepoContentsRecursive(
 
         try {
           await downloadFile(sessionId, items.download_url, filePath, githubToken);
-           // Return success after successful download
+          // Return success after successful download
           return { success: true, message: `Processed single item at path "${repoPath}"` };
         } catch (error) {
           return { success: false, message: `Error downloading single file: ${error.message}` };
         }
       }
-       // If it wasn't a downloadable single file (e.g., a directory from a single path request), just report completion.
+      // If it wasn't a downloadable single file (e.g., a directory from a single path request), just report completion.
       return { success: true, message: `Processed non-file single item at path "${repoPath}"` };
     }
 
@@ -272,8 +271,8 @@ async function fetchRepoContentsRecursive(
             return { success: false, message: `Error downloading file "${item.name}": ${error.message}` };
           }
         } else {
-           // File item might not have download_url if it's an LFS pointer or similar, but not common via contents API
-           logger.warn(`File item "${item.name}" has no download_url [Session: ${sessionId}]`);
+          // File item might not have download_url if it's an LFS pointer or similar, but not common via contents API
+          logger.warn(`File item "${item.name}" has no download_url [Session: ${sessionId}]`);
         }
       } else if (item.type === 'dir') {
         const result = await fetchRepoContentsRecursive(
@@ -319,10 +318,10 @@ async function fetchRepoContentsRecursive(
         && error.response.body.errors.length > 0) {
         throw new Error(error.response.body.errors[0].message);
       }
-       // Fallback to generic error message from response body or status
+      // Fallback to generic error message from response body or status
       throw new Error(error.response.body ? (error.response.body.message || JSON.stringify(error.response.body)) : `Failed to download repo contents. Status: ${error.response.status}`);
     } else {
-       // Rethrow non-response errors
+      // Rethrow non-response errors
       throw error;
     }
   }
