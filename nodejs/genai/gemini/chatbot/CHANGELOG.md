@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-05	(15:53:44-UTC+0000)
+- **Other**: Add timer to track how long page has been active (in nodejs/genai/gemini/chatbot/templates/indexBot.html)
 ## 2025-05-05	(14:58:43-UTC+0000)
 - **Other**: Update page interaction (in nodejs/genai/gemini/chatbot/templates/indexBot.html)
 ## 2025-05-05	(09:48:16-UTC+0000)
