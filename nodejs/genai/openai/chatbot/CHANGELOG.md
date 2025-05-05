@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-05	(16:27:01-UTC+0000)
+- **Other**: OpenAI not Google (in nodejs/genai/openai/chatbot/templates/indexBot.html)
 ## 2025-05-05	(15:53:55-UTC+0000)
 - **Other**: Add timer to track how long page has been active (in nodejs/genai/openai/chatbot/templates/indexBot.html)
 ## 2025-05-05	(14:58:54-UTC+0000)
