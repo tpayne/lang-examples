@@ -417,19 +417,20 @@ body {
 .user .message-icon {
     background-color: #dcf8c6; /* User icon background */
     color: #15803d; /* User icon color */
-    margin-left: 8px; /* Space between user message and icon */
-    margin-right: 0; /* Ensure no right margin */
-    order: 2; /* Place icon after message content */
+    /* Corrected margins for user icon on the right */
+    margin-left: 8px; /* Space between user message content and icon */
+    margin-right: 0; /* Remove right margin */
+    order: 2; /* Place icon after message content in row-reverse */
 }
 
 .agent .message-icon,
 .message.bot .message-icon {
     background-color: #e0f2fe; /* Bot icon background */
     color: #4b5563; /* Bot icon color */
-    /* Ensure these are set for left alignment */
-    margin-right: 0; /* Remove right margin */
-    margin-left: 8px; /* Add left margin for spacing */
-    order: 1; /* Place icon as the first flex item */
+    /* Corrected margins for bot icon on the left */
+    margin-right: 8px; /* Space between icon and bot message content */
+    margin-left: 0; /* Remove left margin */
+    order: 1; /* Place icon before message content in row */
 }
 
 
@@ -461,6 +462,7 @@ body {
     /* Add a small margin to separate content from icon */
     margin-left: 0; /* Ensure no default margin */
     margin-right: 0; /* Ensure no default margin */
+    order: 1; /* Ensure content is ordered correctly relative to icon */
 }
 
 .user .message-content {
@@ -469,6 +471,7 @@ body {
     /* margin-left: auto; Removed, handled by flexbox justification */
     /* Add margin to separate content from icon when icon is on the right */
     margin-right: 8px;
+    margin-left: 0; /* Ensure no left margin */
 }
 
 .agent .message-content,
@@ -478,6 +481,7 @@ body {
     /* margin-right: auto; Removed, handled by flexbox justification */
      /* Add margin to separate content from icon when icon is on the left */
     margin-left: 8px;
+    margin-right: 0; /* Ensure no right margin */
 }
 
 .typing-indicator-container {
@@ -487,7 +491,7 @@ body {
     align-items: center;
     margin-bottom: 1rem; /* Match message spacing */
     /* Add margin-left to align with bot messages that have icons */
-    margin-left: 32px; /* Icon width (24px) + margin-left (8px) */
+    margin-left: 32px; /* Icon width (24px) + bot icon margin-right (8px) = 32px */
 }
 
 .typing-indicator {
