@@ -677,8 +677,13 @@ async function createRepo(repoName, username, orgName = 'user', description = DE
     ? `https://api.github.com/orgs/${orgName}/repos` : 'https://api.github.com/user/repos';
 
   // Validate parameters
-  if (!repoName || typeof repoName !== 'string') {
-    throw new Error('Invalid repository name');
+  if (!repoName || typeof repoName !== 'string' || repoName.length < 1 || repoName.length > 100) {
+    throw new Error('Invalid repository name: must be a non-empty string with a maximum length of 100 characters');
+  }
+
+  // Additional validation for description
+  if (description && typeof description !== 'string') {
+    throw new Error('Invalid description: must be a string');
   }
 
   try {
@@ -689,7 +694,7 @@ async function createRepo(repoName, username, orgName = 'user', description = DE
       .set('Accept', 'application/vnd.github+json')
       .set('User-Agent', USER_AGENT)
       .send({
-        name: `${repoName}`,
+        name: repoName,
         private: isPrivate,
         auto_init: true,
         description,
@@ -700,9 +705,13 @@ async function createRepo(repoName, username, orgName = 'user', description = DE
     }
     return { success: false, status: response.status, message: response.body.message };
   } catch (error) {
-    const message = error.message || 'Repository creation failed';
+    // Check if the error has a response and extract the message
+    const message = error.response && error.response.body && error.response.body.message
+      ? error.response.body.message
+      : error.message || 'Repository creation failed';
+
     logger.error(`Error creating repo (exception): ${orgName}, ${repoName} - ${message}`);
-    throw new Error(`Failed to create repository: ${error.message}`);
+    throw new Error(`Failed to create repository: ${message}`);
   }
 }
 
