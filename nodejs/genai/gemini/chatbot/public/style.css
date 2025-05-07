@@ -420,8 +420,8 @@ body {
     /* Corrected margins for user icon on the right */
     margin-left: 8px; /* Space between user message content and icon */
     margin-right: 0; /* Remove right margin */
-    /* Corrected order for user icon in row-reverse */
-    order: 2; /* Place icon after message content in row-reverse */
+    /* Corrected order for user icon in row */
+    order: 2; /* Place icon after message content in row */
 }
 
 .agent .message-icon,
@@ -443,8 +443,8 @@ body {
 }
 
 .user {
-    /* Use flex-direction row-reverse to put icon on the right visually */
-    flex-direction: row-reverse;
+    /* Use flex-direction row to put icon on the right visually */
+    flex-direction: row; /* Changed to row */
     justify-content: flex-end; /* Align message bubble to the right */
     /* Ensure align-items is set for vertical alignment within the flex container */
     align-items: flex-start;
@@ -475,12 +475,10 @@ body {
 .user .message-content {
     background-color: #dcf8c6;
     color: #15803d;
-    /* margin-left: auto; Removed, handled by flexbox justification */
+    /* Use margin-left: auto to push content to the right */
+    margin-left: auto; /* Push content to the right */
     /* Add margin to separate content from icon when icon is on the right */
     margin-right: 8px;
-    margin-left: 0; /* Ensure no left margin */
-    /* Corrected order for user message content in row-reverse */
-    order: 1; /* Place content before icon in row-reverse */
 }
 
 .agent .message-content,
