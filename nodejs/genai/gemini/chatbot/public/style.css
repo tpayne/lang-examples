@@ -345,7 +345,7 @@ body {
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     /* Align button to the bottom of the flex container */
     align-self: flex-end;
-    display: flex; /* Center content */
+    display: flex; /* Use flex to center content */
     align-items: center;
     justify-content: center;
     /* Removed margin-left as textarea now has margin-right */
@@ -370,7 +370,8 @@ body {
     color: white; /* Ensure icon color is white */
     line-height: 1; /* Ensure vertical centering */
     z-index: 1; /* Ensure it's above the button background */
-    display: block; /* Ensure it behaves as a block for centering */
+    display: inline-block; /* Use inline-block for better centering behavior */
+    font-family: 'Inter', sans-serif; /* Ensure it uses a font that supports the emoji */
 }
 
 
@@ -386,6 +387,7 @@ body {
 
 .message {
     margin-bottom: 1rem;
+    /* Explicitly set display: flex */
     display: flex;
     /* Removed flex-direction: column; handled by .user/agent */
     width: 100%; /* Ensure each message takes full width initially */
