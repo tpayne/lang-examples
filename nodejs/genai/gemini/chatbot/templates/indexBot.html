@@ -6,7 +6,7 @@
     <title>Virtual Agent Chatbot</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-</head>
+    </head>
 <body>
     <div id="page-timer">00:00:00:00</div>
 
@@ -35,7 +35,7 @@
                     <li>GitHub Integration: It can interact with the GitHub API to perform tasks such as:
                         <ul>
                             <li>Listing repositories, branches, and files.</li>
-                            <li>Fetching files.</li>
+                            <li>Fetching files.
                             <li>Creating pull requests.</li>
                             <li>Listing build jobs and commit history.
                             <li>Downloading repository content.
@@ -230,16 +230,18 @@ docker rmi chatbot:1.0
                 </div>
 
             <div id="input_container">
-                <input type="text" id="user_input" placeholder="Type your message..."
-                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
-                <button id="send_button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
+                <textarea id="user_input" placeholder="Type your message..."
+                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500"
+                    rows="1"></textarea> <button id="send_button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">
+                    ➤
+                    </button>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>

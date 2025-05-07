@@ -6,7 +6,7 @@
     <title>Virtual Agent Chatbot</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-</head>
+    </head>
 <body>
     <div id="page-timer">00:00:00:00</div>
 
@@ -35,7 +35,7 @@
                     <li>GitHub Integration: It can interact with the GitHub API to perform tasks such as:
                         <ul>
                             <li>Listing repositories, branches, and files.</li>
-                            <li>Fetching files.</li>
+                            <li>Fetching files.
                             <li>Creating pull requests.</li>
                             <li>Listing build jobs and commit history.
                             <li>Downloading repository content.
@@ -167,7 +167,7 @@ tell me all the MOT defects for ABC123
                  <p>Based on the demo's capabilities and notes from the README:</p>
 
                  <h3>What are the prerequisites for running this demo?</h3>
-                 <p>You need Docker installed and a OpenAI account with a <code>OPENAI_API_KEY</code>. For GitHub and DOSA integration, relevant API keys (<code>GITHUB_TOKEN</code>, <code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are required as environment variables.</p>
+                 <p>You need Docker installed and an OpenAI account with an <code>OPENAI_API_KEY</code>. For GitHub and DOSA integration, relevant API keys (<code>GITHUB_TOKEN</code>, <code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are required as environment variables.</p>
 
                  <h3>How do I start the chatbot server?</h3>
                  <p>Build and run the Docker image using the command provided in the "Running the Example with Basic Ops" section. Ensure your API keys are set as environment variables.</p>
@@ -176,7 +176,7 @@ tell me all the MOT defects for ABC123
                  <p>Yes, the README explicitly notes that answers may not always be correct. AI responses should be reviewed, especially for critical information or actions.</p>
 
                  <h3>What kind of API keys are needed?</h3>
-                 <p>A <code>OPENAI_API_KEY</code> for OpenAI is essential. Additionally, a <code>GITHUB_TOKEN</code> is needed for GitHub interactions, and specific keys (<code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are needed for DOSA API usage.</p>
+                 <p>An <code>OPENAI_API_KEY</code> for OpenAI is essential. Additionally, a <code>GITHUB_TOKEN</code> is needed for GitHub interactions, and specific keys (<code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are needed for DOSA API usage.</p>
 
                  <h3>What happens if I ask about a topic outside the loaded context?</h3>
                  <p>The bot's response quality depends on the loaded context. Without a relevant context loaded, it might not be able to provide specific information on that topic or may give a more general answer based on its training data.</p>
@@ -185,6 +185,7 @@ tell me all the MOT defects for ABC123
                  <p>Yes, according to the README's notes:</p>
                  <ul>
                      <li>The code currently lacks unit testing and Static Analysis (SA).</li>
+                     <li>The support for AI actions is noted as "experimental" and can be temperamental. Retrying operations with different phrasing is sometimes necessary.</li>
                      <li>Error handling could be improved, and not all error conditions have been tested.</li>
                      <li>Processing large amounts of data, like extensive code reviews, may take time and potentially hit model limits.</li>
                  </ul>
@@ -229,16 +230,18 @@ docker rmi chatbot:1.0
                 </div>
 
             <div id="input_container">
-                <input type="text" id="user_input" placeholder="Type your message..."
-                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
-                <button id="send_button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
+                <textarea id="user_input" placeholder="Type your message..."
+                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500"
+                    rows="1"></textarea> <button id="send_button" data-icon="➤"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">
+                    ➤
+                    </button>
             </div>
         </div>
     </div>
 
     <script src="script.js"></script>
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>

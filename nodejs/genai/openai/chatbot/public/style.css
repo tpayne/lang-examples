@@ -23,7 +23,8 @@ body {
 
 .intro_text {
     margin-left: 10px; /* Re-introduced the left margin */
-    margin-right: 280px; /* Add right margin to prevent overlap with closed chat window */
+    /* Adjust right margin based on new chat window width */
+    margin-right: 330px; /* Increased right margin */
     padding: 20px; /* Add some padding */
     /* This text might not be needed when the chat is an overlay,
        you can decide to hide it or keep it on the main page */
@@ -32,7 +33,8 @@ body {
 /* --- Carousel Container and Styling --- */
 .carousel-container {
     margin: 20px;
-    margin-right: 280px; /* Add right margin to prevent overlap with closed chat window */
+    /* Adjust right margin based on new chat window width */
+    margin-right: 330px; /* Increased right margin */
     padding: 0; /* Remove padding from container itself */
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
@@ -40,7 +42,8 @@ body {
     line-height: 1.6; /* Improve readability */
     overflow: hidden; /* Hide panes that are not visible */
     position: relative; /* Needed for absolute positioning of arrows and indicators */
-    max-width: calc(100% - 300px); /* Adjust based on desired width and chat margin */
+    /* Adjust max-width based on new chat window margin */
+    max-width: calc(100% - 350px); /* Adjust based on desired width and chat margin */
     box-sizing: border-box; /* Include padding/border in element's total width */
 }
 
@@ -227,7 +230,7 @@ body {
     position: fixed; /* Position relative to the viewport */
     bottom: 20px;
     right: 20px;
-    width: 400px; /* Increased width */
+    width: 450px; /* Increased width */
     height: 500px; /* Default height */
     background-color: #f7fafc; /* Match original background */
     border: 1px solid #e2e8f0;
@@ -293,20 +296,33 @@ body {
 
 #input_container {
     display: flex;
+    /* Changed align-items to center for vertical alignment */
+    align-items: center; /* Align items to the vertical center */
     padding: 1rem; /* Padding around the input */
     background-color: #ffffff; /* White background for input area */
     border-top: 1px solid #e2e8f0; /* Separator line */
     /* Removed: margin, max-width, justify-content: center */
 }
 
+/* Style for the new textarea */
 #user_input {
     flex: 1;
     padding: 0.75rem;
     border: 1px solid #e2e8f0;
-    border-radius: 0.5rem 0 0 0.5rem;
-    margin-right: 0;
+    border-radius: 0.5rem; /* Keep consistent radius */
+    /* Adjusted margin-right to give more space to the button */
+    margin-right: 8px; /* Space between textarea and button */
     font-size: 1rem;
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    resize: none; /* Prevent manual resizing by the user */
+    overflow-y: auto; /* Add scrollbar if content exceeds max height */
+    min-height: 38px; /* Approximate height of a single line input */
+    max-height: 150px; /* Limit maximum height to prevent it from taking up too much space */
+    line-height: 1.5; /* Improve readability */
+    white-space: pre-wrap; /* Ensure text wraps */
+    word-wrap: break-word; /* Break long words */
+    /* Ensure textarea aligns correctly within flex container */
+    align-self: center; /* Align self to center */
 }
 
 #user_input:focus {
@@ -316,17 +332,57 @@ body {
 }
 
 
+/* Style for the circular send button */
 #send_button {
-    padding: 0.75rem 1.5rem;
+    /* Removed padding and adjusted size for circular shape */
+    width: 38px; /* Set a fixed width */
+    height: 38px; /* Set a fixed height (match min-height of textarea) */
     background-color: #3b82f6;
     color: white;
     border: none;
-    border-radius: 0 0.5rem 0.5rem 0;
+    border-radius: 50%; /* Make it circular */
     cursor: pointer;
-    font-size: 1rem;
+    /* Set font size to 0 to ensure only the pseudo-element is visible */
+    font-size: 0;
     transition: background-color 0.3s ease;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    /* Align button to the bottom of the flex container */
+    /* Removed align-self: flex-end; as parent is now center aligned */
+    /* align-self: flex-end; */
+    display: flex; /* Use flex to center content */
+    align-items: center;
+    justify-content: center;
+    /* Removed margin-left as textarea now has margin-right */
+    margin-left: 0;
+    /* Remove default button text styling */
+    text-indent: -9999px; /* Hide text visually */
+    overflow: hidden; /* Hide overflow text */
+    position: relative; /* Needed for positioning the icon */
+    flex-shrink: 0; /* Prevent button from shrinking */
+    /* Ensure button aligns correctly within flex container */
+    align-self: center; /* Align self to center */
 }
+
+/* Style for the icon inside the button */
+#send_button::after {
+    /* Using Unicode code point directly */
+    content: "\27A4"; /* Right arrow emoji code point */
+    text-indent: 0; /* Reset text indent for the icon */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center the icon */
+    /* Ensure font size and color are set */
+    font-size: 1.5rem; /* Increased icon size */
+    color: white; /* Ensure icon color is white */
+    line-height: 1; /* Ensure vertical centering */
+    z-index: 1; /* Ensure it's above the button background */
+    display: inline-block; /* Use inline-block for better centering behavior */
+    font-family: 'Inter', sans-serif; /* Ensure it uses a font that supports the emoji */
+    /* Ensure pseudo-element doesn't interfere with clicks */
+    pointer-events: none;
+}
+
 
 #send_button:hover {
     background-color: #2563eb;
@@ -340,21 +396,73 @@ body {
 
 .message {
     margin-bottom: 1rem;
+    /* Explicitly set display: flex */
     display: flex;
-    flex-direction: column;
+    /* Removed flex-direction: column; handled by .user/agent */
     width: 100%; /* Ensure each message takes full width initially */
+    align-items: flex-start; /* Default alignment */
 }
+
+/* Styles for the icons */
+.message .message-icon {
+    /* Increased icon size */
+    width: 30px; /* Increased icon width */
+    height: 30px; /* Increased icon height */
+    border-radius: 50%; /* Make icons circular */
+    /* Ensure icon is a flex item */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem; /* Adjust font size for text icons */
+    margin-top: 8px; /* Align icon to the top of the message content */
+    flex-shrink: 0; /* Prevent icon from shrinking */
+    /* Adjusted flex-basis based on new size */
+    flex-basis: 30px; /* Give it a base width matching new size */
+    /* Ensure z-index is high enough */
+    z-index: 1;
+}
+
+.user .message-icon {
+    background-color: #dcf8c6; /* User icon background */
+    color: #15803d; /* User icon color */
+    /* Corrected margins for user icon on the right */
+    margin-left: 8px; /* Space between user message content and icon */
+    margin-right: 0; /* Remove right margin */
+    /* Corrected order for user icon in row */
+    order: 2; /* Place icon after message content in row */
+}
+
+.agent .message-icon,
+.message.bot .message-icon {
+    background-color: #e0f2fe; /* Bot icon background */
+    color: #4b5563; /* Bot icon color */
+    /* Corrected margins for bot icon on the left */
+    margin-right: 8px; /* Space between icon and bot message content */
+    margin-left: 0; /* Remove left margin */
+    /* Corrected order for bot icon in row */
+    order: 1; /* Place icon before message content in row */
+}
+
 
 .sender {
     font-weight: 600;
     margin-right: 0.5rem;
+    display: none; /* Hide the sender text label, using icons instead */
 }
 
 .user {
-    align-items: flex-end;
+    /* Use flex-direction row to put icon on the right visually */
+    flex-direction: row; /* Changed to row */
+    justify-content: flex-end; /* Align message bubble to the right */
+    /* Ensure align-items is set for vertical alignment within the flex container */
+    align-items: flex-start;
 }
 
 .agent {
+    /* Use flex-direction row to put icon on the left visually */
+    flex-direction: row;
+    justify-content: flex-start; /* Align message bubble to the left */
+    /* Ensure align-items is set for vertical alignment within the flex container */
     align-items: flex-start;
 }
 
@@ -364,24 +472,50 @@ body {
     max-width: 80%;
     white-space: pre-wrap; /* Allow wrapping of long text */
     overflow-x: auto; /* Enable horizontal scroll for content */
+    flex-grow: 1; /* Allow content to take available space */
+    /* Add a small margin to separate content from icon */
+    margin-left: 0; /* Ensure no default margin */
+    margin-right: 0; /* Ensure no default margin */
+    /* Corrected order for message content */
+    order: 1; /* Ensure content is ordered correctly relative to icon */
 }
 
 .user .message-content {
     background-color: #dcf8c6;
     color: #15803d;
-    margin-left: auto;
+    /* Use margin-left: auto to push content to the right */
+    margin-left: auto; /* Push content to the right */
+    /* Add margin to separate content from icon when icon is on the right */
+    margin-right: 8px;
 }
 
 .agent .message-content,
 .message.bot .message-content {
     background-color: #e0f2fe;
     color: #4b5563;
-    margin-right: auto;
+    /* margin-right: auto; Removed, handled by flexbox justification */
+     /* Add margin to separate content from icon when icon is on the left */
+    margin-left: 8px;
+    margin-right: 0; /* Ensure no right margin */
+    /* Corrected order for bot message content in row */
+    order: 2; /* Place content after icon in row */
+}
+
+.typing-indicator-container {
+    /* Ensure typing indicator aligns correctly */
+    align-self: flex-start; /* Align to the left like agent messages */
+    display: flex; /* Use flex to align dots */
+    align-items: center;
+    margin-bottom: 1rem; /* Match message spacing */
+    /* Add margin-left to align with bot messages that have icons */
+    margin-left: 38px; /* Icon width (30px) + bot icon margin-right (8px) = 38px */
 }
 
 .typing-indicator {
     display: inline-flex;
-    margin-left: 0.5rem;
+    /* Removed margin-left as container handles alignment */
+    margin-left: 0;
+    /* Removed specific margin-left from .typing-indicator span */
 }
 
 .typing-indicator span {
@@ -389,7 +523,7 @@ body {
     height: 0.5rem;
     border-radius: 50%;
     background-color: #a0aec0;
-    margin: 0 0.25rem;
+    margin: 0 0.25rem; /* Space between dots */
     animation: pulse 1.5s infinite;
 }
 
@@ -456,6 +590,17 @@ body {
      .copy-button {
          top: 8px; /* Adjust position for smaller padding */
          right: 8px;
+     }
+
+     /* Adjust message bubble max width on small screens */
+     .message-content {
+         max-width: 90%;
+     }
+
+     /* Adjust typing indicator alignment on small screens */
+     .typing-indicator-container {
+        /* Adjusted margin-left based on new icon size */
+        margin-left: 38px; /* Icon width (30px) + bot icon margin-right (8px) = 38px */
      }
 }
 
