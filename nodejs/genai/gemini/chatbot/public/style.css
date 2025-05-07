@@ -420,6 +420,7 @@ body {
     /* Corrected margins for user icon on the right */
     margin-left: 8px; /* Space between user message content and icon */
     margin-right: 0; /* Remove right margin */
+    /* Corrected order for user icon in row-reverse */
     order: 2; /* Place icon after message content in row-reverse */
 }
 
@@ -430,6 +431,7 @@ body {
     /* Corrected margins for bot icon on the left */
     margin-right: 8px; /* Space between icon and bot message content */
     margin-left: 0; /* Remove left margin */
+    /* Corrected order for bot icon in row */
     order: 1; /* Place icon before message content in row */
 }
 
@@ -466,6 +468,7 @@ body {
     /* Add a small margin to separate content from icon */
     margin-left: 0; /* Ensure no default margin */
     margin-right: 0; /* Ensure no default margin */
+    /* Corrected order for message content */
     order: 1; /* Ensure content is ordered correctly relative to icon */
 }
 
@@ -476,6 +479,8 @@ body {
     /* Add margin to separate content from icon when icon is on the right */
     margin-right: 8px;
     margin-left: 0; /* Ensure no left margin */
+    /* Corrected order for user message content in row-reverse */
+    order: 1; /* Place content before icon in row-reverse */
 }
 
 .agent .message-content,
@@ -486,6 +491,8 @@ body {
      /* Add margin to separate content from icon when icon is on the left */
     margin-left: 8px;
     margin-right: 0; /* Ensure no right margin */
+    /* Corrected order for bot message content in row */
+    order: 2; /* Place content after icon in row */
 }
 
 .typing-indicator-container {
