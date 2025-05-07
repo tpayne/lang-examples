@@ -399,17 +399,20 @@ body {
 
 /* Styles for the icons */
 .message .message-icon {
-    width: 24px; /* Icon size */
-    height: 24px;
+    /* Increased icon size */
+    width: 30px; /* Increased icon width */
+    height: 30px; /* Increased icon height */
     border-radius: 50%; /* Make icons circular */
     /* Ensure icon is a flex item */
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 0.8rem; /* Adjust font size for text icons */
+    /* Increased font size for text icons */
+    font-size: 1.2rem; /* Increased font size */
     margin-top: 8px; /* Align icon to the top of the message content */
     flex-shrink: 0; /* Prevent icon from shrinking */
-    flex-basis: 24px; /* Give it a base width */
+    /* Adjusted flex-basis based on new size */
+    flex-basis: 30px; /* Give it a base width matching new size */
     /* Ensure z-index is high enough */
     z-index: 1;
 }
@@ -500,7 +503,7 @@ body {
     align-items: center;
     margin-bottom: 1rem; /* Match message spacing */
     /* Add margin-left to align with bot messages that have icons */
-    margin-left: 32px; /* Icon width (24px) + bot icon margin-right (8px) = 32px */
+    margin-left: 38px; /* Icon width (30px) + bot icon margin-right (8px) = 38px */
 }
 
 .typing-indicator {
@@ -591,7 +594,8 @@ body {
 
      /* Adjust typing indicator alignment on small screens */
      .typing-indicator-container {
-        margin-left: 32px; /* Maintain alignment with bot icon */
+        /* Adjusted margin-left based on new icon size */
+        margin-left: 38px; /* Icon width (30px) + bot icon margin-right (8px) = 38px */
      }
 }
 
