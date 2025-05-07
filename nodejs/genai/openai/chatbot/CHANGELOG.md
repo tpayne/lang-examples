@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-07	(22:30:54-UTC+0000)
+- **Other**: Update README (in nodejs/genai/openai/chatbot/templates/indexBot.html)
 ## 2025-05-07	(20:41:27-UTC+0000)
 - **Other**: Update README with a few sample statements for Github (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-05-07	(18:49:07-UTC+0000)
