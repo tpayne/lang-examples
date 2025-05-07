@@ -354,6 +354,7 @@ body {
     text-indent: -9999px; /* Hide text visually */
     overflow: hidden; /* Hide overflow text */
     position: relative; /* Needed for positioning the icon */
+    flex-shrink: 0; /* Prevent button from shrinking */
 }
 
 /* Style for the icon inside the button */
@@ -372,6 +373,8 @@ body {
     z-index: 1; /* Ensure it's above the button background */
     display: inline-block; /* Use inline-block for better centering behavior */
     font-family: 'Inter', sans-serif; /* Ensure it uses a font that supports the emoji */
+    /* Ensure pseudo-element doesn't interfere with clicks */
+    pointer-events: none;
 }
 
 
@@ -399,18 +402,21 @@ body {
     width: 24px; /* Icon size */
     height: 24px;
     border-radius: 50%; /* Make icons circular */
+    /* Ensure icon is a flex item */
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 0.8rem; /* Adjust font size for text icons */
     margin-top: 8px; /* Align icon to the top of the message content */
     flex-shrink: 0; /* Prevent icon from shrinking */
+    flex-basis: 24px; /* Give it a base width */
 }
 
 .user .message-icon {
     background-color: #dcf8c6; /* User icon background */
     color: #15803d; /* User icon color */
     margin-left: 8px; /* Space between user message and icon */
+    margin-right: 0; /* Ensure no right margin */
     order: 2; /* Place icon after message content */
 }
 
@@ -432,10 +438,14 @@ body {
 }
 
 .user {
+    /* Use flex-direction row-reverse to put icon on the right visually */
+    flex-direction: row-reverse;
     justify-content: flex-end; /* Align message bubble to the right */
 }
 
 .agent {
+    /* Use flex-direction row to put icon on the left visually */
+    flex-direction: row;
     justify-content: flex-start; /* Align message bubble to the left */
 }
 
@@ -446,12 +456,17 @@ body {
     white-space: pre-wrap; /* Allow wrapping of long text */
     overflow-x: auto; /* Enable horizontal scroll for content */
     flex-grow: 1; /* Allow content to take available space */
+    /* Add a small margin to separate content from icon */
+    margin-left: 0; /* Ensure no default margin */
+    margin-right: 0; /* Ensure no default margin */
 }
 
 .user .message-content {
     background-color: #dcf8c6;
     color: #15803d;
     /* margin-left: auto; Removed, handled by flexbox justification */
+    /* Add margin to separate content from icon when icon is on the right */
+    margin-right: 8px;
 }
 
 .agent .message-content,
@@ -459,6 +474,8 @@ body {
     background-color: #e0f2fe;
     color: #4b5563;
     /* margin-right: auto; Removed, handled by flexbox justification */
+     /* Add margin to separate content from icon when icon is on the left */
+    margin-left: 8px;
 }
 
 .typing-indicator-container {
