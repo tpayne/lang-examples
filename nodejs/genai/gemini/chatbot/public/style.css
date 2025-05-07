@@ -339,7 +339,8 @@ body {
     border: none;
     border-radius: 50%; /* Make it circular */
     cursor: pointer;
-    font-size: 1.2rem; /* Adjust icon size */
+    /* Adjusted font-size for the button itself - might affect pseudo-element */
+    font-size: 0; /* Set font size to 0 to ensure only the pseudo-element is visible */
     transition: background-color 0.3s ease;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     /* Align button to the bottom of the flex container */
@@ -363,9 +364,11 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%); /* Center the icon */
-    font-size: 1.2rem; /* Ensure icon size is correct */
+    /* Increased font size for the icon */
+    font-size: 1.5rem; /* Increased icon size */
     color: white; /* Ensure icon color is white */
     line-height: 1; /* Ensure vertical centering */
+    z-index: 1; /* Ensure it's above the button background */
 }
 
 
