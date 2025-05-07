@@ -126,6 +126,11 @@ GitHub support is added for:
 * Listing repos owned by a user
 * Listing the files in a repo
 * Downloading a repo or part of a repo
+* Creating repos
+* Creating branches
+* Uploading code to repos
+
+This can be used to work with the bot to generate code and commit it to repos.
 
 Automated Code Reviews
 ----------------------
