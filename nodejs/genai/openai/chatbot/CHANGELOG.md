@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-07	(18:26:57-UTC+0000)
+- **Other**: Update README (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-05-05	(23:29:36-UTC+0000)
 - **Other**: Ignore bin files (in nodejs/genai/openai/chatbot/documentation/chatbot.js.html)
 - **Other**: Ignore bin files (in nodejs/genai/openai/chatbot/documentation/codeReviews.js.html)
