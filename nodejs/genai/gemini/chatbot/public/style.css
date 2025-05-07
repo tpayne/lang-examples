@@ -322,7 +322,7 @@ body {
     white-space: pre-wrap; /* Ensure text wraps */
     word-wrap: break-word; /* Break long words */
     /* Ensure textarea aligns correctly within flex container */
-    align-self: stretch; /* Allow textarea to stretch vertically if needed */
+    align-self: center; /* Align self to center */
 }
 
 #user_input:focus {
@@ -359,6 +359,8 @@ body {
     overflow: hidden; /* Hide overflow text */
     position: relative; /* Needed for positioning the icon */
     flex-shrink: 0; /* Prevent button from shrinking */
+    /* Ensure button aligns correctly within flex container */
+    align-self: center; /* Align self to center */
 }
 
 /* Style for the icon inside the button */
