@@ -444,12 +444,16 @@ body {
     /* Use flex-direction row-reverse to put icon on the right visually */
     flex-direction: row-reverse;
     justify-content: flex-end; /* Align message bubble to the right */
+    /* Ensure align-items is set for vertical alignment within the flex container */
+    align-items: flex-start;
 }
 
 .agent {
     /* Use flex-direction row to put icon on the left visually */
     flex-direction: row;
     justify-content: flex-start; /* Align message bubble to the left */
+    /* Ensure align-items is set for vertical alignment within the flex container */
+    align-items: flex-start;
 }
 
 .message-content {
