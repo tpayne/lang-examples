@@ -339,8 +339,8 @@ body {
     border: none;
     border-radius: 50%; /* Make it circular */
     cursor: pointer;
-    /* Adjusted font-size for the button itself - might affect pseudo-element */
-    font-size: 0; /* Set font size to 0 to ensure only the pseudo-element is visible */
+    /* Set font size to 0 to ensure only the pseudo-element is visible */
+    font-size: 0;
     transition: background-color 0.3s ease;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     /* Align button to the bottom of the flex container */
@@ -358,17 +358,19 @@ body {
 
 /* Style for the icon inside the button */
 #send_button::after {
-    content: attr(data-icon); /* Use data-icon attribute for content */
+    /* Using Unicode code point directly */
+    content: "\27A4"; /* Right arrow emoji code point */
     text-indent: 0; /* Reset text indent for the icon */
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%); /* Center the icon */
-    /* Increased font size for the icon */
+    /* Ensure font size and color are set */
     font-size: 1.5rem; /* Increased icon size */
     color: white; /* Ensure icon color is white */
     line-height: 1; /* Ensure vertical centering */
     z-index: 1; /* Ensure it's above the button background */
+    display: block; /* Ensure it behaves as a block for centering */
 }
 
 
@@ -414,10 +416,10 @@ body {
 .message.bot .message-icon {
     background-color: #e0f2fe; /* Bot icon background */
     color: #4b5563; /* Bot icon color */
-    /* Changed margin-right to margin-left to move icon to the left */
-    margin-right: 0;
-    margin-left: 8px; /* Space between icon and bot message content */
-    order: 1; /* Place icon before message content */
+    /* Ensure these are set for left alignment */
+    margin-right: 0; /* Remove right margin */
+    margin-left: 8px; /* Add left margin for spacing */
+    order: 1; /* Place icon as the first flex item */
 }
 
 
