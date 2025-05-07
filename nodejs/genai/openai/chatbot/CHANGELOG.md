@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-07	(20:41:27-UTC+0000)
+- **Other**: Update README with a few sample statements for Github (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-05-07	(18:49:07-UTC+0000)
 - **Other**: Update READMEs (in nodejs/genai/openai/chatbot/README.md)
 - **Other**: Update READMEs (in nodejs/genai/openai/chatbot/documentation/chatbot.js.html)
