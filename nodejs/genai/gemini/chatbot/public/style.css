@@ -410,6 +410,8 @@ body {
     margin-top: 8px; /* Align icon to the top of the message content */
     flex-shrink: 0; /* Prevent icon from shrinking */
     flex-basis: 24px; /* Give it a base width */
+    /* Ensure z-index is high enough */
+    z-index: 1;
 }
 
 .user .message-icon {
