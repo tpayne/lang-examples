@@ -293,20 +293,29 @@ body {
 
 #input_container {
     display: flex;
+    align-items: flex-end; /* Align items to the bottom */
     padding: 1rem; /* Padding around the input */
     background-color: #ffffff; /* White background for input area */
     border-top: 1px solid #e2e8f0; /* Separator line */
     /* Removed: margin, max-width, justify-content: center */
 }
 
+/* Style for the new textarea */
 #user_input {
     flex: 1;
     padding: 0.75rem;
     border: 1px solid #e2e8f0;
-    border-radius: 0.5rem 0 0 0.5rem;
+    border-radius: 0.5rem 0 0 0.5rem; /* Match send button border-radius */
     margin-right: 0;
     font-size: 1rem;
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    resize: none; /* Prevent manual resizing by the user */
+    overflow-y: auto; /* Add scrollbar if content exceeds max height */
+    min-height: 38px; /* Approximate height of a single line input */
+    max-height: 150px; /* Limit maximum height to prevent it from taking up too much space */
+    line-height: 1.5; /* Improve readability */
+    white-space: pre-wrap; /* Ensure text wraps */
+    word-wrap: break-word; /* Break long words */
 }
 
 #user_input:focus {
@@ -326,6 +335,13 @@ body {
     font-size: 1rem;
     transition: background-color 0.3s ease;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    /* Align button to the bottom of the flex container */
+    align-self: flex-end;
+    /* Ensure padding matches textarea height when it's small */
+    height: 38px; /* Match min-height of textarea */
+    display: flex; /* Center content */
+    align-items: center;
+    justify-content: center;
 }
 
 #send_button:hover {
@@ -341,21 +357,52 @@ body {
 .message {
     margin-bottom: 1rem;
     display: flex;
-    flex-direction: column;
+    /* Removed flex-direction: column; handled by .user/agent */
     width: 100%; /* Ensure each message takes full width initially */
+    align-items: flex-start; /* Default alignment */
 }
+
+/* Styles for the icons */
+.message .message-icon {
+    width: 24px; /* Icon size */
+    height: 24px;
+    border-radius: 50%; /* Make icons circular */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem; /* Adjust font size for text icons */
+    margin-top: 8px; /* Align icon to the top of the message content */
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.user .message-icon {
+    background-color: #dcf8c6; /* User icon background */
+    color: #15803d; /* User icon color */
+    margin-left: 8px; /* Space between user message and icon */
+    order: 2; /* Place icon after message content */
+}
+
+.agent .message-icon,
+.message.bot .message-icon {
+    background-color: #e0f2fe; /* Bot icon background */
+    color: #4b5563; /* Bot icon color */
+    margin-right: 8px; /* Space between icon and bot message */
+    order: 1; /* Place icon before message content */
+}
+
 
 .sender {
     font-weight: 600;
     margin-right: 0.5rem;
+    display: none; /* Hide the sender text label, using icons instead */
 }
 
 .user {
-    align-items: flex-end;
+    justify-content: flex-end; /* Align message bubble to the right */
 }
 
 .agent {
-    align-items: flex-start;
+    justify-content: flex-start; /* Align message bubble to the left */
 }
 
 .message-content {
@@ -364,24 +411,34 @@ body {
     max-width: 80%;
     white-space: pre-wrap; /* Allow wrapping of long text */
     overflow-x: auto; /* Enable horizontal scroll for content */
+    flex-grow: 1; /* Allow content to take available space */
 }
 
 .user .message-content {
     background-color: #dcf8c6;
     color: #15803d;
-    margin-left: auto;
+    /* margin-left: auto; Removed, handled by flexbox justification */
 }
 
 .agent .message-content,
 .message.bot .message-content {
     background-color: #e0f2fe;
     color: #4b5563;
-    margin-right: auto;
+    /* margin-right: auto; Removed, handled by flexbox justification */
+}
+
+.typing-indicator-container {
+    /* Ensure typing indicator aligns correctly */
+    align-self: flex-start; /* Align to the left like agent messages */
+    display: flex; /* Use flex to align dots */
+    align-items: center;
+    margin-bottom: 1rem; /* Match message spacing */
 }
 
 .typing-indicator {
     display: inline-flex;
-    margin-left: 0.5rem;
+    margin-left: 0.5rem; /* Space from the left edge */
+    /* Removed specific margin-left from .typing-indicator span */
 }
 
 .typing-indicator span {
@@ -389,7 +446,7 @@ body {
     height: 0.5rem;
     border-radius: 50%;
     background-color: #a0aec0;
-    margin: 0 0.25rem;
+    margin: 0 0.25rem; /* Space between dots */
     animation: pulse 1.5s infinite;
 }
 
@@ -456,6 +513,11 @@ body {
      .copy-button {
          top: 8px; /* Adjust position for smaller padding */
          right: 8px;
+     }
+
+     /* Adjust message bubble max width on small screens */
+     .message-content {
+         max-width: 90%;
      }
 }
 

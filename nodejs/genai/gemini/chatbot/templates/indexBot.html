@@ -35,7 +35,7 @@
                     <li>GitHub Integration: It can interact with the GitHub API to perform tasks such as:
                         <ul>
                             <li>Listing repositories, branches, and files.</li>
-                            <li>Fetching files.</li>
+                            <li>Fetching files.
                             <li>Creating pull requests.</li>
                             <li>Listing build jobs and commit history.
                             <li>Downloading repository content.
@@ -230,9 +230,9 @@ docker rmi chatbot:1.0
                 </div>
 
             <div id="input_container">
-                <input type="text" id="user_input" placeholder="Type your message..."
-                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500">
-                <button id="send_button"
+                <textarea id="user_input" placeholder="Type your message..."
+                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500"
+                    rows="1"></textarea> <button id="send_button"
                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">Send</button>
             </div>
         </div>

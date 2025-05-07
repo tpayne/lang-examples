@@ -1,4 +1,5 @@
 const chatContainer = document.getElementById('chat_container');
+// Changed to target textarea
 const userInput = document.getElementById('user_input');
 const sendButton = document.getElementById('send_button');
 
@@ -7,6 +8,10 @@ const chatbotWidgetContainer = document.getElementById('chatbot-widget-container
 const chatIcon = document.getElementById('chat-icon');
 const chatCloseButton = document.getElementById('chat-close-button');
 const chatWindow = document.getElementById('chat-window');
+
+// --- Message History Variables ---
+const messageHistory = [];
+let historyIndex = -1; // -1 means not currently navigating history
 
 // --- Page Timer Logic ---
 const timerElement = document.getElementById('page-timer');
@@ -134,8 +139,16 @@ function sendMessage() {
     if (message === '') {
         return;
     }
+
+    // Add message to history
+    messageHistory.push(message);
+    // Reset history index to the end
+    historyIndex = messageHistory.length;
+
     appendMessage('User', message);
     userInput.value = '';
+    // Reset textarea height after sending
+    userInput.style.height = 'auto';
     userInput.disabled = true;
     sendButton.disabled = true;
     chatContainer.style.cursor = "wait"; // Indicate processing
@@ -166,9 +179,16 @@ function appendMessage(sender, message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', sender.toLowerCase());
 
-    const senderSpan = document.createElement('span');
-    senderSpan.classList.add('sender', 'text-gray-600');
-    senderSpan.textContent = sender + ':';
+    // Create and append the icon element
+    const iconElement = document.createElement('div');
+    iconElement.classList.add('message-icon');
+    if (sender.toLowerCase() === 'user') {
+        iconElement.textContent = '👤'; // User icon (emoji)
+    } else { // Bot or Agent
+        iconElement.textContent = '🤖'; // Bot icon (emoji)
+    }
+    messageElement.appendChild(iconElement);
+
 
     const messageContentDiv = document.createElement('div');
     messageContentDiv.classList.add('message-content');
@@ -188,18 +208,15 @@ function appendMessage(sender, message) {
         messageContentDiv.textContent = message;
     }
 
-    // For 'user' messages, the sender label is usually omitted or placed differently.
-    // Based on current CSS alignment, appending senderSpan is fine, but you might
-    // want to adjust its display or order based on the sender class if needed.
-    // messageElement.appendChild(senderSpan); // Optional: keep sender label for user
     messageElement.appendChild(messageContentDiv);
 
     // Adjust message bubble alignment based on sender
-    if (sender.toLowerCase() === 'user') {
-        messageElement.style.alignSelf = 'flex-end';
-    } else { // Bot or Agent
-        messageElement.style.alignSelf = 'flex-start';
-    }
+    // This is now primarily handled by CSS flexbox justification and icon order
+    // if (sender.toLowerCase() === 'user') {
+    //     messageElement.style.alignSelf = 'flex-end';
+    // } else { // Bot or Agent
+    //     messageElement.style.alignSelf = 'flex-start';
+    // }
 
 
     chatContainer.appendChild(messageElement);
@@ -213,6 +230,13 @@ function appendTypingIndicator() {
 
     const typingIndicator = document.createElement('div');
     typingIndicator.classList.add('message', 'agent', 'typing-indicator-container'); // Add a class to easily find it
+
+    // Add a placeholder for the icon to maintain alignment
+    const iconPlaceholder = document.createElement('div');
+    iconPlaceholder.classList.add('message-icon'); // Use the icon class for spacing
+    // No text content for the typing indicator icon placeholder
+    typingIndicator.appendChild(iconPlaceholder);
+
 
     const indicatorDiv = document.createElement('div');
     indicatorDiv.classList.add('typing-indicator');
@@ -266,17 +290,61 @@ async function getResponse(userMessage) {
     }
 }
 
+// --- Textarea Auto-Grow Function ---
+function autoGrowTextarea(element) {
+    element.style.height = 'auto'; // Reset height to recalculate
+    // Set height to scrollHeight, limited by max-height in CSS
+    element.style.height = (element.scrollHeight > parseInt(getComputedStyle(element).maxHeight) ? parseInt(getComputedStyle(element).maxHeight) : element.scrollHeight) + 'px';
+}
+
+
 // Event Listeners for the widget toggle
 chatIcon.addEventListener('click', openChat);
 chatCloseButton.addEventListener('click', closeChat);
 
-// Event Listeners for the chat input
+// --- Event Listeners for the chat input (Textarea) ---
+userInput.addEventListener('input', () => {
+    // Auto-grow on input
+    autoGrowTextarea(userInput);
+});
+
 userInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent default form submission
+    // Handle Enter key for sending (without Shift)
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); // Prevent newline
         sendMessage();
     }
+    // Handle Shift+Enter for newline (default textarea behavior)
+    // Handle Up/Down arrow keys for history navigation
+    else if (event.key === 'ArrowUp') {
+        event.preventDefault(); // Prevent cursor movement
+        if (historyIndex > 0) {
+            historyIndex--;
+            userInput.value = messageHistory[historyIndex];
+            // Adjust height for retrieved message
+            autoGrowTextarea(userInput);
+             // Move cursor to the end of the text
+             userInput.selectionStart = userInput.selectionEnd = userInput.value.length;
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault(); // Prevent cursor movement
+        if (historyIndex < messageHistory.length - 1) {
+            historyIndex++;
+            userInput.value = messageHistory[historyIndex];
+            // Adjust height for retrieved message
+            autoGrowTextarea(userInput);
+             // Move cursor to the end of the text
+             userInput.selectionStart = userInput.selectionEnd = userInput.value.length;
+        } else if (historyIndex === messageHistory.length - 1) {
+            // If at the last message, pressing down clears the input
+            historyIndex++;
+            userInput.value = '';
+             // Reset height for empty input
+            autoGrowTextarea(userInput);
+        }
+    }
 });
+
 sendButton.addEventListener('click', sendMessage);
 
 // Add an initial message *after* the user opens the chat for the first time
@@ -350,3 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Initial auto-grow call in case there's default text or placeholder affects height
+autoGrowTextarea(userInput);
