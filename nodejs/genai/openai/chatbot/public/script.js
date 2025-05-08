@@ -11,6 +11,11 @@ const chatWindow = document.getElementById('chat-window');
 // New element for the toolbar
 const toolbar = document.getElementById('toolbar');
 
+// --- Input History Variables ---
+const messageHistory = []; // Array to store sent messages
+let historyIndex = 0; // Index to navigate messageHistory
+let currentInputDraft = ''; // To store the current input when navigating history
+
 
 // --- Page Timer Logic ---
 const timerElement = document.getElementById('page-timer');
@@ -131,12 +136,23 @@ async function sendMessage() {
     // Convert the rich text to plain ASCII text for the bot
     const plainText = htmlToPlainText(richText);
 
+    // Add the plain text message to history BEFORE clearing the input
+    // Only add if it's not the same as the last message in history
+    if (messageHistory.length === 0 || messageHistory[messageHistory.length - 1] !== plainText) {
+         messageHistory.push(plainText);
+    }
+    // Reset history index to the end (new message position)
+    historyIndex = messageHistory.length;
+    currentInputDraft = ''; // Clear the draft when a message is sent
+
+
     // Add the user's message (plain text version) to the chat display
     // You could choose to display the richText here instead if desired
     addMessage('user', plainText); // Display the plain text that was sent
 
     // Clear the input field
     userInput.innerHTML = ''; // Clear the contenteditable div
+
 
     // Add typing indicator
     const typingIndicatorElement = document.createElement('div');
@@ -189,15 +205,70 @@ async function sendMessage() {
 // Send message on button click
 sendButton.addEventListener('click', sendMessage);
 
-// Send message on Enter key press in the input field
-userInput.addEventListener('keypress', function(event) {
-    // Check if the key pressed was Enter (key code 13)
-    // Also check if the Shift key was NOT pressed (to allow Shift+Enter for new line)
+// Send message on Enter key press in the input field and handle arrow keys
+userInput.addEventListener('keydown', function(event) {
+    // Check if the key pressed was Enter (key code 13) without Shift
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault(); // Prevent the default Enter key action (new line)
         sendMessage(); // Call the send message function
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault(); // Prevent cursor movement in the input
+
+        if (historyIndex === messageHistory.length) {
+             // Store the current input draft before navigating history
+             currentInputDraft = userInput.innerHTML;
+        }
+
+        if (historyIndex > 0) {
+            historyIndex--;
+            // Load the previous message from history
+            userInput.innerHTML = messageHistory[historyIndex];
+            // Place cursor at the end of the loaded text (optional but good UX)
+            placeCaretAtEnd(userInput);
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault(); // Prevent cursor movement in the input
+
+        if (historyIndex < messageHistory.length) {
+            historyIndex++;
+            if (historyIndex === messageHistory.length) {
+                // If navigating back to the latest (or empty) state, restore draft
+                userInput.innerHTML = currentInputDraft;
+                currentInputDraft = ''; // Clear draft once returned
+            } else {
+                // Load the next message from history
+                userInput.innerHTML = messageHistory[historyIndex];
+            }
+            // Place cursor at the end (optional but good UX)
+             placeCaretAtEnd(userInput);
+        }
+    } else if (historyIndex < messageHistory.length) {
+        // If the user types anything other than Up/Down arrows while in history,
+        // reset history index and clear draft as they are starting a new message.
+        historyIndex = messageHistory.length;
+        currentInputDraft = '';
     }
 });
+
+// Helper function to place cursor at the end of contenteditable div
+function placeCaretAtEnd(el) {
+    el.focus();
+    if (typeof window.getSelection != "undefined"
+            && typeof document.createRange != "undefined") {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false); // Collapse to the end
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else if (typeof document.body.createTextRange != "undefined") {
+        // IE specific
+        const textRange = document.body.createTextRange();
+        textRange.moveToElementText(el);
+        textRange.collapse(false);
+        textRange.select();
+    }
+}
 
 
 // --- Toolbar Button Logic ---
