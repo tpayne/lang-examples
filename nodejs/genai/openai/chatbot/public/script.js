@@ -201,41 +201,8 @@ userInput.addEventListener('keypress', function(event) {
 
 
 // --- Toolbar Button Logic ---
-toolbar.addEventListener('click', function(event) {
-    const button = event.target.closest('.toolbar-button'); // Get the clicked button or its closest ancestor
-
-    if (!button) return; // If no button was clicked, do nothing
-
-    const command = button.dataset.command; // Get the command from the data-command attribute
-
-    // Ensure the contenteditable div is focused before executing command
-    userInput.focus();
-
-    if (command) {
-        // For commands like createLink, prompt the user for input
-        if (command === 'createLink') {
-             const url = prompt('Enter the URL:');
-             if (url) {
-                  document.execCommand('createLink', false, url);
-             } else {
-                 // If user cancels the prompt, unlink the current selection if any
-                 document.execCommand('unlink', false, null);
-             }
-        } else {
-            document.execCommand(command, false, null);
-        }
-
-        // Restore the selection range is often not needed with execCommand
-        // as the focus should remain on the contenteditable div.
-        // However, ensuring focus after a slight delay can help in some browsers.
-        setTimeout(() => {
-             userInput.focus();
-        }, 10); // Small delay
-
-    }
-});
-
 // Add event listener to keep track of the selection range
+// This needs to be outside the click handler so currentRange persists
 let currentRange = null;
 userInput.addEventListener('mouseup', () => {
     const selection = window.getSelection();
@@ -248,6 +215,64 @@ userInput.addEventListener('keyup', () => {
      if (selection.rangeCount > 0) {
          currentRange = selection.getRangeAt(0);
      }
+});
+
+
+toolbar.addEventListener('click', function(event) {
+    const button = event.target.closest('.toolbar-button'); // Get the clicked button or its closest ancestor
+
+    if (!button) return; // If no button was clicked, do nothing
+
+    const command = button.dataset.command; // Get the command from the data-command attribute
+
+    // Ensure the contenteditable div is focused before executing command
+    userInput.focus();
+
+    // Attempt to restore the selection range before executing the command
+    if (currentRange) {
+        const selection = window.getSelection();
+        // Check if the active element is still the userInput before removing ranges
+        // This prevents errors if focus has shifted unexpectedly
+        if (document.activeElement === userInput) {
+            selection.removeAllRanges();
+            selection.addRange(currentRange);
+        }
+    }
+
+    if (command) {
+        // For commands like createLink, prompt the user for input
+        if (command === 'createLink') {
+             const url = prompt('Enter the URL:');
+             // Ensure the input is focused again after the prompt, as it might lose focus
+             userInput.focus();
+             // Restore range again after focus, just in case
+             if (currentRange && document.activeElement === userInput) {
+                 const selection = window.getSelection();
+                 selection.removeAllRanges();
+                 selection.addRange(currentRange);
+             }
+             if (url) {
+                  document.execCommand('createLink', false, url);
+             } else {
+                 // If user cancels the prompt, unlink the current selection if any
+                 document.execCommand('unlink', false, null);
+             }
+        } else {
+            // Execute the command for bold, italic, underline, lists
+            document.execCommand(command, false, null);
+        }
+
+        // After execCommand, re-capture the selection range as it might have changed
+        // and ensure focus remains on the input.
+        setTimeout(() => { // Use a small timeout to allow DOM changes to settle
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                currentRange = selection.getRangeAt(0);
+            }
+             userInput.focus(); // Ensure focus remains
+        }, 10);
+
+    }
 });
 
 
@@ -295,4 +320,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-
