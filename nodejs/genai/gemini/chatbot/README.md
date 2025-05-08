@@ -76,7 +76,7 @@ Bot: The 1997 Marcos Mantis is a cool sports car known for its unique design and
 
 Some GUI samples are shown below...
 
-**Marcos Chat...**
+**Car Chat...**
 
 ![Sample run](images/Sample1.png)
 ![Sample run](images/Sample2.png)
