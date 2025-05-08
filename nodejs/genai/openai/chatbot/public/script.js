@@ -208,14 +208,12 @@ toolbar.addEventListener('click', function(event) {
 
     const command = button.dataset.command; // Get the command from the data-command attribute
 
-    if (command) {
-        // Ensure the contenteditable div is focused before executing command
-        userInput.focus();
+    // Ensure the contenteditable div is focused before executing command
+    userInput.focus();
 
-        // Execute the command on the contenteditable div
+    if (command) {
         // For commands like createLink, prompt the user for input
         if (command === 'createLink') {
-            // document.execCommand('createLink', false, null); // This will prompt the user
              const url = prompt('Enter the URL:');
              if (url) {
                   document.execCommand('createLink', false, url);
