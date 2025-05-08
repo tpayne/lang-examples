@@ -304,7 +304,7 @@ body {
     /* Removed: margin, max-width, justify-content: center */
 }
 
-/* Style for the new textarea */
+/* Style for the contenteditable div (WYSIWYG input) */
 #user_input {
     flex: 1;
     padding: 0.75rem;
@@ -314,16 +314,26 @@ body {
     margin-right: 8px; /* Space between textarea and button */
     font-size: 1rem;
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-    resize: none; /* Prevent manual resizing by the user */
+    resize: none; /* Prevent manual resizing by the user (not applicable to div, but good practice) */
     overflow-y: auto; /* Add scrollbar if content exceeds max height */
     min-height: 38px; /* Approximate height of a single line input */
     max-height: 150px; /* Limit maximum height to prevent it from taking up too much space */
     line-height: 1.5; /* Improve readability */
     white-space: pre-wrap; /* Ensure text wraps */
     word-wrap: break-word; /* Break long words */
-    /* Ensure textarea aligns correctly within flex container */
+    /* Ensure div aligns correctly within flex container */
     align-self: center; /* Align self to center */
+    /* Add a placeholder style for contenteditable */
+    /* Note: Placeholders for contenteditable require JavaScript or a CSS hack */
 }
+
+/* CSS hack for contenteditable placeholder */
+#user_input:empty::before {
+    content: attr(placeholder);
+    color: #a0aec0; /* Placeholder text color */
+    pointer-events: none; /* Allow clicks to go through */
+}
+
 
 #user_input:focus {
     outline: none;

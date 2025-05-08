@@ -35,11 +35,10 @@
                     <li>GitHub Integration: It can interact with the GitHub API to perform tasks such as:
                         <ul>
                             <li>Listing repositories, branches, and files.</li>
-                            <li>Fetching and committing files as required.</li>
+                            <li>Fetching files.
                             <li>Creating pull requests.</li>
-                            <li>Listing build jobs and commit history.</li>
-                            <li>Downloading repository content.</li>
-                            <li>Creating repos and/or branches as required.</li>
+                            <li>Listing build jobs and commit history.
+                            <li>Downloading repository content.
                         </ul>
                     </li>
                     <li>Automated Code Review: Leverages AI to perform code reviews from GitHub repositories, offering suggestions for general improvements, security, efficiency, formatting, and documentation.</li>
@@ -186,6 +185,7 @@ tell me all the MOT defects for ABC123
                  <p>Yes, according to the README's notes:</p>
                  <ul>
                      <li>The code currently lacks unit testing and Static Analysis (SA).</li>
+                     <li>The support for AI actions is noted as "experimental" and can be temperamental. Retrying operations with different phrasing is sometimes necessary.</li>
                      <li>Error handling could be improved, and not all error conditions have been tested.</li>
                      <li>Processing large amounts of data, like extensive code reviews, may take time and potentially hit model limits.</li>
                  </ul>
@@ -230,12 +230,11 @@ docker rmi chatbot:1.0
                 </div>
 
             <div id="input_container">
-                <textarea id="user_input" placeholder="Type your message..."
-                    class="flex-grow border rounded-md focus:ring-2 focus:ring-blue-500"
-                    rows="1"></textarea> <button id="send_button" data-icon="➤"
+                <div id="user_input" contenteditable="true" placeholder="Type your message..."></div>
+                <button id="send_button" data-icon="➤"
                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">
                     ➤
-                    </button>
+                </button>
             </div>
         </div>
     </div>
