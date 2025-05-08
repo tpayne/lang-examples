@@ -8,6 +8,10 @@ const chatIcon = document.getElementById('chat-icon');
 const chatCloseButton = document.getElementById('chat-close-button');
 const chatWindow = document.getElementById('chat-window');
 
+// New element for the toolbar
+const toolbar = document.getElementById('toolbar');
+
+
 // --- Page Timer Logic ---
 const timerElement = document.getElementById('page-timer');
 const startTime = new Date().getTime(); // Record the time when the script starts
@@ -100,8 +104,14 @@ function htmlToPlainText(html) {
     // Get the text content, which strips out HTML tags
     let text = tempDiv.textContent || tempDiv.innerText || "";
 
-    // Optional: Normalize whitespace
-    text = text.replace(/\s+/g, ' ').trim();
+    // Optional: Normalize whitespace and handle newlines
+    // Replace multiple whitespace characters with a single space
+    text = text.replace(/[ \t]+/g, ' ');
+    // Replace multiple newline characters with a single newline
+    text = text.replace(/\n\n+/g, '\n');
+    // Trim leading/trailing whitespace
+    text = text.trim();
+
 
     return text;
 }
@@ -112,7 +122,11 @@ async function sendMessage() {
     // Get the rich HTML content from the contenteditable div
     const richText = userInput.innerHTML.trim();
 
-    if (!richText) return; // Don't send empty messages
+    if (!richText || richText === '<br>') { // Also check for just a newline
+        userInput.innerHTML = ''; // Clear the input field if only <br>
+        return; // Don't send empty messages
+    }
+
 
     // Convert the rich text to plain ASCII text for the bot
     const plainText = htmlToPlainText(richText);
@@ -182,6 +196,47 @@ userInput.addEventListener('keypress', function(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault(); // Prevent the default Enter key action (new line)
         sendMessage(); // Call the send message function
+    }
+});
+
+
+// --- Toolbar Button Logic ---
+toolbar.addEventListener('click', function(event) {
+    const button = event.target.closest('.toolbar-button'); // Get the clicked button or its closest ancestor
+
+    if (!button) return; // If no button was clicked, do nothing
+
+    const command = button.dataset.command; // Get the command from the data-command attribute
+
+    if (command) {
+        // Keep track of the current selection range before executing command
+        const selection = window.getSelection();
+        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+        // Execute the command on the contenteditable div
+        // For commands like createLink, prompt the user for input
+        if (command === 'createLink') {
+            const url = prompt('Enter the URL:');
+            if (url) {
+                 document.execCommand(command, false, url);
+            }
+        } else {
+            document.execCommand(command, false, null);
+        }
+
+        // Restore the selection range after executing command
+        // This is important because execCommand can sometimes collapse the selection
+        if (range && selection.rangeCount === 0) {
+             selection.addRange(range);
+        }
+
+        // Ensure focus remains on the contenteditable div after executing command
+        // Use a small timeout to ensure the command has time to execute and the DOM updates
+        setTimeout(() => {
+             userInput.focus();
+        }, 10); // Small delay
+
+
     }
 });
 

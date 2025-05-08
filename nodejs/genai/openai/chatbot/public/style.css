@@ -294,18 +294,6 @@ body {
     /* Removed: height, max-width, margin, border, border-radius, box-shadow */
 }
 
-#input_container {
-    display: flex;
-    /* Changed align-items to center for vertical alignment */
-    align-items: center; /* Align items to the vertical center */
-    padding: 1rem; /* Padding around the input */
-    background-color: #ffffff; /* White background for input area */
-    border-top: 1px solid #e2e8f0; /* Separator line */
-    /* Removed: margin, max-width, justify-content: center */
-    flex-direction: column; /* Stack toolbar and input vertically */
-    align-items: stretch; /* Stretch items to fill container width */
-}
-
 /* Style for the toolbar */
 #toolbar {
     display: flex;
@@ -315,6 +303,9 @@ body {
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
     border-bottom: 1px solid #cbd5e0; /* Separator below toolbar */
+    /* Ensure toolbar is positioned correctly above the input */
+    width: 100%; /* Take full width */
+    box-sizing: border-box; /* Include padding and border in the element's total width */
 }
 
 .toolbar-button {
@@ -336,6 +327,18 @@ body {
 }
 
 
+#input_container {
+    display: flex;
+    align-items: center; /* Align items to the vertical center */
+    padding: 1rem; /* Padding around the input */
+    background-color: #ffffff; /* White background for input area */
+    border-top: 1px solid #e2e8f0; /* Separator line */
+    /* Removed: margin, max-width, justify-content: center */
+    /* Removed flex-direction: column and align-items: stretch */
+    /* position: relative; /* Needed for positioning the send button */
+}
+
+
 /* Style for the contenteditable div (WYSIWYG input) */
 #user_input {
     flex: 1;
@@ -343,9 +346,9 @@ body {
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem; /* Keep consistent radius */
     /* Adjusted margin-right to give more space to the button */
-    /* Removed margin-right as button is now separate */
-    margin-right: 0;
-    margin-top: 8px; /* Space between toolbar and input */
+    margin-right: 8px; /* Space between input and button */
+    /* Removed margin-top as toolbar is now separate */
+    margin-top: 0;
     font-size: 1rem;
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
     resize: none; /* Prevent manual resizing by the user (not applicable to div, but good practice) */
@@ -356,8 +359,9 @@ body {
     white-space: pre-wrap; /* Ensure text wraps */
     word-wrap: break-word; /* Break long words */
     /* Ensure div aligns correctly within flex container */
-    /* Removed align-self: center; as parent is now stretch */
-    /* align-self: center; */
+    align-self: center; /* Align self to center */
+    /* Add a placeholder style for contenteditable */
+    /* Note: Placeholders for contenteditable require JavaScript or a CSS hack */
 }
 
 /* CSS hack for contenteditable placeholder */
@@ -390,7 +394,7 @@ body {
     transition: background-color 0.3s ease;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     /* Align button to the bottom of the flex container */
-    /* Removed align-self: center; as button is now outside the main input flex */
+    /* Removed align-self: center; as button is now within the main input flex */
     /* align-self: center; */
     display: flex; /* Use flex to center content */
     align-items: center;
@@ -400,10 +404,11 @@ body {
     /* Remove default button text styling */
     text-indent: -9999px; /* Hide text visually */
     overflow: hidden; /* Hide overflow text */
-    position: absolute; /* Position absolutely within the input container */
-    bottom: 1rem; /* Align to the bottom of the input container */
-    right: 1rem; /* Align to the right of the input container */
+    /* Removed absolute positioning */
+    position: static; /* Position statically within the flex container */
     flex-shrink: 0; /* Prevent button from shrinking */
+    /* Ensure button aligns correctly within flex container */
+    align-self: center; /* Align self to center */
 }
 
 /* Style for the icon inside the button */
