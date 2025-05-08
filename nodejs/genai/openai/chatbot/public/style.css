@@ -302,7 +302,39 @@ body {
     background-color: #ffffff; /* White background for input area */
     border-top: 1px solid #e2e8f0; /* Separator line */
     /* Removed: margin, max-width, justify-content: center */
+    flex-direction: column; /* Stack toolbar and input vertically */
+    align-items: stretch; /* Stretch items to fill container width */
 }
+
+/* Style for the toolbar */
+#toolbar {
+    display: flex;
+    gap: 5px; /* Space between buttons */
+    padding: 5px;
+    background-color: #e2e8f0; /* Light gray background */
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border-bottom: 1px solid #cbd5e0; /* Separator below toolbar */
+}
+
+.toolbar-button {
+    padding: 5px 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    background-color: #f7fafc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.toolbar-button:hover {
+    background-color: #e2e8f0;
+}
+
+.toolbar-button:active {
+    background-color: #cbd5e0;
+}
+
 
 /* Style for the contenteditable div (WYSIWYG input) */
 #user_input {
@@ -311,7 +343,9 @@ body {
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem; /* Keep consistent radius */
     /* Adjusted margin-right to give more space to the button */
-    margin-right: 8px; /* Space between textarea and button */
+    /* Removed margin-right as button is now separate */
+    margin-right: 0;
+    margin-top: 8px; /* Space between toolbar and input */
     font-size: 1rem;
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
     resize: none; /* Prevent manual resizing by the user (not applicable to div, but good practice) */
@@ -322,9 +356,8 @@ body {
     white-space: pre-wrap; /* Ensure text wraps */
     word-wrap: break-word; /* Break long words */
     /* Ensure div aligns correctly within flex container */
-    align-self: center; /* Align self to center */
-    /* Add a placeholder style for contenteditable */
-    /* Note: Placeholders for contenteditable require JavaScript or a CSS hack */
+    /* Removed align-self: center; as parent is now stretch */
+    /* align-self: center; */
 }
 
 /* CSS hack for contenteditable placeholder */
@@ -357,8 +390,8 @@ body {
     transition: background-color 0.3s ease;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     /* Align button to the bottom of the flex container */
-    /* Removed align-self: flex-end; as parent is now center aligned */
-    /* align-self: flex-end; */
+    /* Removed align-self: center; as button is now outside the main input flex */
+    /* align-self: center; */
     display: flex; /* Use flex to center content */
     align-items: center;
     justify-content: center;
@@ -367,10 +400,10 @@ body {
     /* Remove default button text styling */
     text-indent: -9999px; /* Hide text visually */
     overflow: hidden; /* Hide overflow text */
-    position: relative; /* Needed for positioning the icon */
+    position: absolute; /* Position absolutely within the input container */
+    bottom: 1rem; /* Align to the bottom of the input container */
+    right: 1rem; /* Align to the right of the input container */
     flex-shrink: 0; /* Prevent button from shrinking */
-    /* Ensure button aligns correctly within flex container */
-    align-self: center; /* Align self to center */
 }
 
 /* Style for the icon inside the button */
@@ -575,7 +608,30 @@ body {
 
     #input_container {
         padding: 0.5rem;
+        /* Adjust flex direction for smaller screens if needed */
+        /* flex-direction: row; */
+        /* align-items: center; */
     }
+
+     #toolbar {
+         /* Adjust toolbar layout for mobile if needed */
+         /* flex-wrap: wrap; */
+     }
+
+     #user_input {
+         /* Adjust margin for mobile if needed */
+         /* margin-top: 0; */
+         /* margin-right: 8px; */
+     }
+
+     #send_button {
+         /* Adjust position for mobile if needed */
+         /* position: static; */
+         /* margin-left: 8px; */
+         /* bottom: auto; */
+         /* right: auto; */
+     }
+
 
     /* Keep icon size the same */
     #chat-icon {
