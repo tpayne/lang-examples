@@ -1,6 +1,5 @@
 const chatContainer = document.getElementById('chat_container');
-// Changed to target textarea
-const userInput = document.getElementById('user_input');
+const userInput = document.getElementById('user_input'); // Now a contenteditable div
 const sendButton = document.getElementById('send_button');
 
 // New elements for the floating widget
@@ -9,9 +8,14 @@ const chatIcon = document.getElementById('chat-icon');
 const chatCloseButton = document.getElementById('chat-close-button');
 const chatWindow = document.getElementById('chat-window');
 
-// --- Message History Variables ---
-const messageHistory = [];
-let historyIndex = -1; // -1 means not currently navigating history
+// New element for the toolbar
+const toolbar = document.getElementById('toolbar');
+
+// --- Input History Variables ---
+const messageHistory = []; // Array to store sent messages
+let historyIndex = 0; // Index to navigate messageHistory
+let currentInputDraft = ''; // To store the current input when navigating history
+
 
 // --- Page Timer Logic ---
 const timerElement = document.getElementById('page-timer');
@@ -39,348 +43,317 @@ function updateTimer() {
 // Update the timer every second
 setInterval(updateTimer, 1000);
 
-// Initial call to display 00:00:00:00 immediately
-updateTimer();
 
-
-// --- Carousel Elements ---
-const carouselInner = document.querySelector('.carousel-inner');
-const prevArrow = document.getElementById('prevPane');
-const nextArrow = document.getElementById('nextPane');
-const indicatorsContainer = document.getElementById('carouselIndicators');
-const panes = document.querySelectorAll('.carousel-pane');
-const totalPanes = panes.length;
-let currentPaneIndex = 0;
-let autoCycleInterval;
-
-// --- Carousel Functions ---
-function showPane(index) {
-    if (index < 0) {
-        index = totalPanes - 1; // Wrap around to the last pane
-    } else if (index >= totalPanes) {
-        index = 0; // Wrap around to the first pane
-    }
-
-    currentPaneIndex = index;
-    const offset = -index * 100; // Calculate the percentage to translate
-    carouselInner.style.transform = `translateX(${offset}%)`;
-
-    // Update indicators
-    updateIndicators();
-}
-
-function nextPane() {
-    showPane(currentPaneIndex + 1);
-}
-
-function prevPane() {
-    showPane(currentPaneIndex - 1);
-}
-
-function createIndicators() {
-    indicatorsContainer.innerHTML = ''; // Clear existing indicators
-    for (let i = 0; i < totalPanes; i++) {
-        const dot = document.createElement('div');
-        dot.classList.add('indicator-dot');
-        dot.addEventListener('click', () => {
-            showPane(i);
-            resetAutoCycle(); // Reset timer on manual interaction
-        });
-        indicatorsContainer.appendChild(dot);
-    }
-    updateIndicators();
-}
-
-function updateIndicators() {
-    const dots = indicatorsContainer.querySelectorAll('.indicator-dot');
-    dots.forEach((dot, index) => {
-        if (index === currentPaneIndex) {
-            dot.classList.add('active');
-        } else {
-            dot.classList.remove('active');
-        }
-    });
-}
-
-function startAutoCycle() {
-    // Clear any existing interval to prevent multiple intervals running
-     if (autoCycleInterval) {
-         clearInterval(autoCycleInterval);
-     }
-    autoCycleInterval = setInterval(nextPane, 60000); // Cycle every 60 seconds
-}
-
- function resetAutoCycle() {
-     clearInterval(autoCycleInterval); // Stop the current interval
-     startAutoCycle(); // Start a new interval
- }
-
-
-// --- Chatbot Widget Functions ---
-// Function to open the chat window
-function openChat() {
+// --- Chatbot Widget Toggle Logic ---
+chatIcon.addEventListener('click', () => {
     chatbotWidgetContainer.classList.remove('chat-closed');
     chatbotWidgetContainer.classList.add('chat-open');
-    // Optional: focus on the input field when opening
+    // Optional: Focus the input when chat opens
     userInput.focus();
-     // Show initial message if not already shown
-     showInitialMessageOnce();
-}
+});
 
-// Function to close the chat window
-function closeChat() {
+chatCloseButton.addEventListener('click', () => {
     chatbotWidgetContainer.classList.remove('chat-open');
     chatbotWidgetContainer.classList.add('chat-closed');
-}
+});
 
 
-function sendMessage() {
-    const message = userInput.value.trim();
-    if (message === '') {
-        return;
-    }
-
-    // Add message to history
-    messageHistory.push(message);
-    // Reset history index to the end
-    historyIndex = messageHistory.length;
-
-    appendMessage('User', message);
-    userInput.value = '';
-    // Reset textarea height after sending
-    userInput.style.height = 'auto';
-    userInput.disabled = true;
-    sendButton.disabled = true;
-    chatContainer.style.cursor = "wait"; // Indicate processing
-
-    appendTypingIndicator();
-    // getResponse is the function that talks to your backend
-    getResponse(message).then(response => {
-        removeTypingIndicator();
-        // Ensure response is a string or handle other types if necessary
-        const botMessage = (typeof response === 'object' && response !== null) ? JSON.stringify(response, null, 2) : String(response);
-        appendMessage('Bot', botMessage);
-        chatContainer.style.cursor = ""; // Reset cursor
-        userInput.disabled = false;
-        sendButton.disabled = false;
-        userInput.focus(); // Keep focus on input after response
-    }).catch(error => {
-        removeTypingIndicator();
-        console.error("Error getting response:", error);
-        appendMessage('Bot', "Sorry, there was an error getting a response.");
-        chatContainer.style.cursor = "";
-        userInput.disabled = false;
-        sendButton.disabled = false;
-        userInput.focus();
-    });
-}
-
-function appendMessage(sender, message) {
+// Function to add a message to the chat
+function addMessage(sender, message, isBot = false) {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message', sender.toLowerCase());
+    messageElement.classList.add('message', sender);
 
-    // Create and append the icon element
+    // Create icon element
     const iconElement = document.createElement('div');
     iconElement.classList.add('message-icon');
-    if (sender.toLowerCase() === 'user') {
-        iconElement.textContent = '👤'; // User icon (emoji)
-    } else { // Bot or Agent
-        iconElement.textContent = '🤖'; // Bot icon (emoji)
-    }
-    messageElement.appendChild(iconElement);
+    iconElement.textContent = sender === 'user' ? '👤' : '🤖'; // Use emojis for icons
 
+    // Create message content element
+    const contentElement = document.createElement('div');
+    contentElement.classList.add('message-content');
 
-    const messageContentDiv = document.createElement('div');
-    messageContentDiv.classList.add('message-content');
-
-    let dataApp = message;
-
-    if (sender === 'Bot') {
-        // Ensure bot message is a string before passing to marked
-        dataApp = String(message);
-        // Use marked for Markdown parsing
-        const mStr = marked.parse(dataApp);
-        // Remove potential leading/trailing empty lines from marked output
-        messageContentDiv.innerHTML = mStr.replace(/(^\s*<p>\s*<\/p>\s*)|(\s*<p>\s*<\/p>\s*$)/g, "").trim();
-
+    // Use marked.js to render Markdown for bot messages
+    if (isBot) {
+        contentElement.innerHTML = marked.parse(message);
     } else {
-        // For user messages, just set text content to prevent XSS
-        messageContentDiv.textContent = message;
+        // For user messages, display the plain text (or original rich text if preferred)
+        // We will display the plain text version that was sent to the bot
+         contentElement.textContent = message; // Display the plain text sent
+        // If you wanted to display the original rich text in the chat bubble:
+        // contentElement.innerHTML = message; // Display the original HTML content
     }
 
-    messageElement.appendChild(messageContentDiv);
 
-    // Adjust message bubble alignment based on sender
-    // This is now primarily handled by CSS flexbox justification and icon order
-    // if (sender.toLowerCase() === 'user') {
-    //     messageElement.style.alignSelf = 'flex-end';
-    // } else { // Bot or Agent
-    //     messageElement.style.alignSelf = 'flex-start';
-    // }
+    // Append icon and content based on sender
+    if (sender === 'user') {
+        messageElement.appendChild(contentElement);
+        messageElement.appendChild(iconElement);
+    } else { // agent or bot
+        messageElement.appendChild(iconElement);
+        messageElement.appendChild(contentElement);
+    }
 
 
     chatContainer.appendChild(messageElement);
-    // Scroll to the bottom after adding a message
+
+    // Scroll to the bottom
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function appendTypingIndicator() {
-    // Remove any existing typing indicator first
-    removeTypingIndicator();
+// Function to convert HTML content to plain text
+function htmlToPlainText(html) {
+    // Create a temporary div element
+    const tempDiv = document.createElement('div');
+    // Set the HTML content of the div
+    tempDiv.innerHTML = html;
+    // Get the text content, which strips out HTML tags
+    let text = tempDiv.textContent || tempDiv.innerText || "";
 
-    const typingIndicator = document.createElement('div');
-    typingIndicator.classList.add('message', 'agent', 'typing-indicator-container'); // Add a class to easily find it
+    // Optional: Normalize whitespace and handle newlines
+    // Replace multiple whitespace characters with a single space
+    text = text.replace(/[ \t]+/g, ' ');
+    // Replace multiple newline characters with a single newline
+    text = text.replace(/\n\n+/g, '\n');
+    // Trim leading/trailing whitespace
+    text = text.trim();
 
-    // Add a placeholder for the icon to maintain alignment
-    const iconPlaceholder = document.createElement('div');
-    iconPlaceholder.classList.add('message-icon'); // Use the icon class for spacing
-    // No text content for the typing indicator icon placeholder
-    typingIndicator.appendChild(iconPlaceholder);
+
+    return text;
+}
 
 
-    const indicatorDiv = document.createElement('div');
-    indicatorDiv.classList.add('typing-indicator');
-    for (let i = 0; i < 3; i++) {
-        const dotSpan = document.createElement('span');
-        indicatorDiv.appendChild(dotSpan);
+// Function to handle sending a message
+async function sendMessage() {
+    // Get the rich HTML content from the contenteditable div
+    const richText = userInput.innerHTML.trim();
+
+    if (!richText || richText === '<br>') { // Also check for just a newline
+        userInput.innerHTML = ''; // Clear the input field if only <br>
+        return; // Don't send empty messages
     }
 
-    typingIndicator.appendChild(indicatorDiv);
-    chatContainer.appendChild(typingIndicator);
+
+    // Convert the rich text to plain ASCII text for the bot
+    const plainText = htmlToPlainText(richText);
+
+    // Add the plain text message to history BEFORE clearing the input
+    // Only add if it's not the same as the last message in history
+    if (messageHistory.length === 0 || messageHistory[messageHistory.length - 1] !== plainText) {
+         messageHistory.push(plainText);
+    }
+    // Reset history index to the end (new message position)
+    historyIndex = messageHistory.length;
+    currentInputDraft = ''; // Clear the draft when a message is sent
+
+
+    // Add the user's message (plain text version) to the chat display
+    // You could choose to display the richText here instead if desired
+    addMessage('user', plainText); // Display the plain text that was sent
+
+    // Clear the input field
+    userInput.innerHTML = ''; // Clear the contenteditable div
+
+
+    // Add typing indicator
+    const typingIndicatorElement = document.createElement('div');
+    typingIndicatorElement.classList.add('message', 'agent', 'typing-indicator-container');
+     typingIndicatorElement.innerHTML = `
+         <div class="message-icon">🤖</div>
+         <div class="typing-indicator">
+             <span></span>
+             <span></span>
+             <span></span>
+         </div>
+     `;
+    chatContainer.appendChild(typingIndicatorElement);
     chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-function removeTypingIndicator() {
-    const typingIndicator = chatContainer.querySelector('.typing-indicator-container'); // Use the specific class
-    if (typingIndicator) {
-        typingIndicator.remove();
-    }
-}
 
 
-async function getResponse(userMessage) {
-    // This function makes the API call to your backend
     try {
-        const response = await fetch("/chat", {
-            method: "POST",
+        // Send the plain text message to the backend
+        const response = await fetch('/chat', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: userMessage }),
-            credentials: 'include' // Include cookies for session
+            body: JSON.stringify({ message: plainText }), // Send the plain text
         });
 
         if (!response.ok) {
-            // Log the error response body if available
-            const errorBody = await response.text();
-            console.error(`Server error: ${response.status}`, errorBody);
-            throw new Error(`Server error: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        if (data && data.response !== undefined) { // Check for undefined explicitly
-            return data.response;
-        } else {
-            console.error("Invalid response format:", data);
-            return "The server returned an invalid response."
+
+        // Remove typing indicator
+        chatContainer.removeChild(typingIndicatorElement);
+
+        // Add the bot's response to the chat display
+        addMessage('agent', data.response, true); // Pass true for isBot to render Markdown
+
+    } catch (error) {
+        console.error('Error sending message:', error);
+        // Remove typing indicator
+        if (chatContainer.contains(typingIndicatorElement)) {
+             chatContainer.removeChild(typingIndicatorElement);
         }
-    } catch (err) {
-        console.error("Fetch error:", err);
-        return "Could not connect to the server or an error occurred.";
+        // Display an error message in the chat
+        addMessage('agent', 'Sorry, something went wrong. Please try again.', true);
     }
 }
 
-// --- Textarea Auto-Grow Function ---
-function autoGrowTextarea(element) {
-    element.style.height = 'auto'; // Reset height to recalculate
-    // Set height to scrollHeight, limited by max-height in CSS
-    element.style.height = (element.scrollHeight > parseInt(getComputedStyle(element).maxHeight) ? parseInt(getComputedStyle(element).maxHeight) : element.scrollHeight) + 'px';
-}
-
-
-// Event Listeners for the widget toggle
-chatIcon.addEventListener('click', openChat);
-chatCloseButton.addEventListener('click', closeChat);
-
-// --- Event Listeners for the chat input (Textarea) ---
-userInput.addEventListener('input', () => {
-    // Auto-grow on input
-    autoGrowTextarea(userInput);
-});
-
-userInput.addEventListener('keydown', (event) => {
-    // Handle Enter key for sending (without Shift)
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault(); // Prevent newline
-        sendMessage();
-    }
-    // Handle Shift+Enter for newline (default textarea behavior)
-    // Handle Up/Down arrow keys for history navigation
-    else if (event.key === 'ArrowUp') {
-        event.preventDefault(); // Prevent cursor movement
-        if (historyIndex > 0) {
-            historyIndex--;
-            userInput.value = messageHistory[historyIndex];
-            // Adjust height for retrieved message
-            autoGrowTextarea(userInput);
-             // Move cursor to the end of the text
-             userInput.selectionStart = userInput.selectionEnd = userInput.value.length;
-        }
-    } else if (event.key === 'ArrowDown') {
-        event.preventDefault(); // Prevent cursor movement
-        if (historyIndex < messageHistory.length - 1) {
-            historyIndex++;
-            userInput.value = messageHistory[historyIndex];
-            // Adjust height for retrieved message
-            autoGrowTextarea(userInput);
-             // Move cursor to the end of the text
-             userInput.selectionStart = userInput.selectionEnd = userInput.value.length;
-        } else if (historyIndex === messageHistory.length - 1) {
-            // If at the last message, pressing down clears the input
-            historyIndex++;
-            userInput.value = '';
-             // Reset height for empty input
-            autoGrowTextarea(userInput);
-        }
-    }
-});
-
+// Send message on button click
 sendButton.addEventListener('click', sendMessage);
 
-// Add an initial message *after* the user opens the chat for the first time
-let initialMessageShown = false;
-function showInitialMessageOnce() {
-     if (!initialMessageShown) {
-         appendMessage('Bot', 'Hello! How can I help you today?');
-         initialMessageShown = true;
-     }
+// Send message on Enter key press in the input field and handle arrow keys
+userInput.addEventListener('keydown', function(event) {
+    // Check if the key pressed was Enter (key code 13) without Shift
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); // Prevent the default Enter key action (new line)
+        sendMessage(); // Call the send message function
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault(); // Prevent cursor movement in the input
+
+        if (historyIndex === messageHistory.length) {
+             // Store the current input draft before navigating history
+             currentInputDraft = userInput.innerHTML;
+        }
+
+        if (historyIndex > 0) {
+            historyIndex--;
+            // Load the previous message from history
+            userInput.innerHTML = messageHistory[historyIndex];
+            // Place cursor at the end of the loaded text (optional but good UX)
+            placeCaretAtEnd(userInput);
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault(); // Prevent cursor movement in the input
+
+        if (historyIndex < messageHistory.length) {
+            historyIndex++;
+            if (historyIndex === messageHistory.length) {
+                // If navigating back to the latest (or empty) state, restore draft
+                userInput.innerHTML = currentInputDraft;
+                currentInputDraft = ''; // Clear draft once returned
+            } else {
+                // Load the next message from history
+                userInput.innerHTML = messageHistory[historyIndex];
+            }
+            // Place cursor at the end (optional but good UX)
+             placeCaretAtEnd(userInput);
+        }
+    } else if (historyIndex < messageHistory.length) {
+        // If the user types anything other than Up/Down arrows while in history,
+        // reset history index and clear draft as they are starting a new message.
+        historyIndex = messageHistory.length;
+        currentInputDraft = '';
+    }
+});
+
+// Helper function to place cursor at the end of contenteditable div
+function placeCaretAtEnd(el) {
+    el.focus();
+    if (typeof window.getSelection != "undefined"
+            && typeof document.createRange != "undefined") {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false); // Collapse to the end
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else if (typeof document.body.createTextRange != "undefined") {
+        // IE specific
+        const textRange = document.body.createTextRange();
+        textRange.moveToElementText(el);
+        textRange.collapse(false);
+        textRange.select();
+    }
 }
-// Note: initial message is now triggered by openChat
 
-// --- Carousel Initialization ---
-// Add event listeners for arrows
-prevArrow.addEventListener('click', () => {
-    prevPane();
-    resetAutoCycle(); // Reset timer on manual interaction
+
+// --- Toolbar Button Logic ---
+// Add event listener to keep track of the selection range
+// This needs to be outside the click handler so currentRange persists
+let currentRange = null;
+userInput.addEventListener('mouseup', () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        currentRange = selection.getRangeAt(0);
+    }
 });
-nextArrow.addEventListener('click', () => {
-    nextPane();
-    resetAutoCycle(); // Reset timer on manual interaction
+userInput.addEventListener('keyup', () => {
+     const selection = window.getSelection();
+     if (selection.rangeCount > 0) {
+         currentRange = selection.getRangeAt(0);
+     }
 });
 
-// Create and set up indicators
-createIndicators();
 
-// Show the first pane initially
-showPane(0);
+toolbar.addEventListener('click', function(event) {
+    const button = event.target.closest('.toolbar-button'); // Get the clicked button or its closest ancestor
 
-// Start automatic cycling
-startAutoCycle();
+    if (!button) return; // If no button was clicked, do nothing
 
-// --- Copy to Clipboard Logic ---
+    const command = button.dataset.command; // Get the command from the data-command attribute
+
+    // Ensure the contenteditable div is focused before executing command
+    userInput.focus();
+
+    // Attempt to restore the selection range before executing the command
+    if (currentRange) {
+        const selection = window.getSelection();
+        // Check if the active element is still the userInput before removing ranges
+        // This prevents errors if focus has shifted unexpectedly
+        if (document.activeElement === userInput) {
+            selection.removeAllRanges();
+            selection.addRange(currentRange);
+        }
+    }
+
+    if (command) {
+        // For commands like createLink, prompt the user for input
+        if (command === 'createLink') {
+             const url = prompt('Enter the URL:');
+             // Ensure the input is focused again after the prompt, as it might lose focus
+             userInput.focus();
+             // Restore range again after focus, just in case
+             if (currentRange && document.activeElement === userInput) {
+                 const selection = window.getSelection();
+                 selection.removeAllRanges();
+                 selection.addRange(currentRange);
+             }
+             if (url) {
+                  document.execCommand('createLink', false, url);
+             } else {
+                 // If user cancels the prompt, unlink the current selection if any
+                 document.execCommand('unlink', false, null);
+             }
+        } else {
+            // Execute the command for bold, italic, underline, lists
+            document.execCommand(command, false, null);
+        }
+
+        // After execCommand, re-capture the selection range as it might have changed
+        // and ensure focus remains on the input.
+        setTimeout(() => { // Use a small timeout to allow DOM changes to settle
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                currentRange = selection.getRangeAt(0);
+            }
+             userInput.focus(); // Ensure focus remains
+        }, 10);
+
+    }
+});
+
+
+// --- Code Block Copy Button Logic ---
+// Wait for the DOM to be fully loaded before attaching event listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Select all copy buttons
     const copyButtons = document.querySelectorAll('.copy-button');
 
+    // Add a click event listener to each button
     copyButtons.forEach(button => {
         button.addEventListener('click', () => {
             // Find the previous sibling <pre> element
@@ -418,6 +391,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-
-// Initial auto-grow call in case there's default text or placeholder affects height
-autoGrowTextarea(userInput);

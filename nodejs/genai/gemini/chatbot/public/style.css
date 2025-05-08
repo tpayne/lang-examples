@@ -294,36 +294,83 @@ body {
     /* Removed: height, max-width, margin, border, border-radius, box-shadow */
 }
 
+/* Style for the toolbar */
+#toolbar {
+    display: flex;
+    gap: 5px; /* Space between buttons */
+    padding: 5px;
+    background-color: #e2e8f0; /* Light gray background */
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border-bottom: 1px solid #cbd5e0; /* Separator below toolbar */
+    /* Ensure toolbar is positioned correctly above the input */
+    width: 100%; /* Take full width */
+    box-sizing: border-box; /* Include padding and border in the element's total width */
+}
+
+.toolbar-button {
+    padding: 5px 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    background-color: #f7fafc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.toolbar-button:hover {
+    background-color: #e2e8f0;
+}
+
+.toolbar-button:active {
+    background-color: #cbd5e0;
+}
+
+
 #input_container {
     display: flex;
-    /* Changed align-items to center for vertical alignment */
     align-items: center; /* Align items to the vertical center */
     padding: 1rem; /* Padding around the input */
     background-color: #ffffff; /* White background for input area */
     border-top: 1px solid #e2e8f0; /* Separator line */
     /* Removed: margin, max-width, justify-content: center */
+    /* Removed flex-direction: column and align-items: stretch */
+    /* position: relative; /* Needed for positioning the send button */
 }
 
-/* Style for the new textarea */
+
+/* Style for the contenteditable div (WYSIWYG input) */
 #user_input {
     flex: 1;
     padding: 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem; /* Keep consistent radius */
     /* Adjusted margin-right to give more space to the button */
-    margin-right: 8px; /* Space between textarea and button */
+    margin-right: 8px; /* Space between input and button */
+    /* Removed margin-top as toolbar is now separate */
+    margin-top: 0;
     font-size: 1rem;
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-    resize: none; /* Prevent manual resizing by the user */
+    resize: none; /* Prevent manual resizing by the user (not applicable to div, but good practice) */
     overflow-y: auto; /* Add scrollbar if content exceeds max height */
     min-height: 38px; /* Approximate height of a single line input */
     max-height: 150px; /* Limit maximum height to prevent it from taking up too much space */
     line-height: 1.5; /* Improve readability */
     white-space: pre-wrap; /* Ensure text wraps */
     word-wrap: break-word; /* Break long words */
-    /* Ensure textarea aligns correctly within flex container */
+    /* Ensure div aligns correctly within flex container */
     align-self: center; /* Align self to center */
+    /* Add a placeholder style for contenteditable */
+    /* Note: Placeholders for contenteditable require JavaScript or a CSS hack */
 }
+
+/* CSS hack for contenteditable placeholder */
+#user_input:empty::before {
+    content: attr(placeholder);
+    color: #a0aec0; /* Placeholder text color */
+    pointer-events: none; /* Allow clicks to go through */
+}
+
 
 #user_input:focus {
     outline: none;
@@ -334,7 +381,6 @@ body {
 
 /* Style for the circular send button */
 #send_button {
-    /* Removed padding and adjusted size for circular shape */
     width: 38px; /* Set a fixed width */
     height: 38px; /* Set a fixed height (match min-height of textarea) */
     background-color: #3b82f6;
@@ -342,46 +388,26 @@ body {
     border: none;
     border-radius: 50%; /* Make it circular */
     cursor: pointer;
-    /* Set font size to 0 to ensure only the pseudo-element is visible */
-    font-size: 0;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-    /* Align button to the bottom of the flex container */
-    /* Removed align-self: flex-end; as parent is now center aligned */
-    /* align-self: flex-end; */
-    display: flex; /* Use flex to center content */
+    /* Use flexbox to center the content (the arrow character) */
+    display: flex;
     align-items: center;
     justify-content: center;
-    /* Removed margin-left as textarea now has margin-right */
-    margin-left: 0;
-    /* Remove default button text styling */
-    text-indent: -9999px; /* Hide text visually */
-    overflow: hidden; /* Hide overflow text */
-    position: relative; /* Needed for positioning the icon */
+    transition: background-color 0.3s ease;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     flex-shrink: 0; /* Prevent button from shrinking */
-    /* Ensure button aligns correctly within flex container */
-    align-self: center; /* Align self to center */
+    align-self: center; /* Align self to center within flex container */
+
+    /* Styles to ensure the arrow character in HTML is visible and centered */
+    font-size: 1.5rem; /* Set font size for the arrow */
+    line-height: 1; /* Ensure vertical centering */
+    text-indent: 0; /* Remove text indent if applied elsewhere */
+    overflow: visible; /* Ensure content is not hidden by overflow */
+    /* Try a common font that is likely to support the arrow character */
+    font-family: 'Arial', sans-serif;
 }
 
-/* Style for the icon inside the button */
-#send_button::after {
-    /* Using Unicode code point directly */
-    content: "\27A4"; /* Right arrow emoji code point */
-    text-indent: 0; /* Reset text indent for the icon */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center the icon */
-    /* Ensure font size and color are set */
-    font-size: 1.5rem; /* Increased icon size */
-    color: white; /* Ensure icon color is white */
-    line-height: 1; /* Ensure vertical centering */
-    z-index: 1; /* Ensure it's above the button background */
-    display: inline-block; /* Use inline-block for better centering behavior */
-    font-family: 'Inter', sans-serif; /* Ensure it uses a font that supports the emoji */
-    /* Ensure pseudo-element doesn't interfere with clicks */
-    pointer-events: none;
-}
+/* Remove the pseudo-element style as we are styling the button's content directly */
+/* #send_button::after { ... } */
 
 
 #send_button:hover {
@@ -434,8 +460,8 @@ body {
 
 .agent .message-icon,
 .message.bot .message-icon {
-    background-color: #e0f2fe; /* Bot icon background */
-    color: #4b5563; /* Bot icon color */
+    background-color: #e0f2fe;
+    color: #4b5563;
     /* Corrected margins for bot icon on the left */
     margin-right: 8px; /* Space between icon and bot message content */
     margin-left: 0; /* Remove left margin */
@@ -547,6 +573,35 @@ body {
     }
 }
 
+/* --- Styles specifically for elements inserted by execCommand in the editor --- */
+#user_input ul,
+#user_input ol {
+    /* Ensure default list margins/paddings are present if they were reset */
+    /* You might need to adjust these values based on desired indentation */
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    /* Default padding for indentation */
+    padding-left: 1.5em; /* Adjust as needed */
+}
+
+#user_input ul li {
+    /* Ensure bullets appear for unordered lists */
+    list-style-type: disc;
+}
+
+#user_input ol li {
+    /* Ensure numbers appear for ordered lists */
+    list-style-type: decimal;
+}
+
+#user_input a {
+    /* Ensure default browser link styling */
+    color: -webkit-link; /* Use default browser link color */
+    text-decoration: underline; /* Ensure underline */
+    cursor: pointer; /* Ensure pointer cursor */
+}
+
+
 /* --- Responsive Adjustments --- */
 @media (max-width: 640px) {
     /* Make the chat window fill more of the screen on small devices */
@@ -565,7 +620,30 @@ body {
 
     #input_container {
         padding: 0.5rem;
+        /* Adjust flex direction for smaller screens if needed */
+        /* flex-direction: row; */
+        /* align-items: center; */
     }
+
+     #toolbar {
+         /* Adjust toolbar layout for mobile if needed */
+         /* flex-wrap: wrap; */
+     }
+
+     #user_input {
+         /* Adjust margin for mobile if needed */
+         /* margin-top: 0; */
+         /* margin-right: 8px; */
+     }
+
+     #send_button {
+         /* Adjust position for mobile if needed */
+         /* position: static; */
+         /* margin-left: 8px; */
+         /* bottom: auto; */
+         /* right: auto; */
+     }
+
 
     /* Keep icon size the same */
     #chat-icon {
