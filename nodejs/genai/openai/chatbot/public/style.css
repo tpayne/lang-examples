@@ -381,7 +381,6 @@ body {
 
 /* Style for the circular send button */
 #send_button {
-    /* Removed padding and adjusted size for circular shape */
     width: 38px; /* Set a fixed width */
     height: 38px; /* Set a fixed height (match min-height of textarea) */
     background-color: #3b82f6;
@@ -389,47 +388,26 @@ body {
     border: none;
     border-radius: 50%; /* Make it circular */
     cursor: pointer;
-    /* Set font size to 0 to ensure only the pseudo-element is visible */
-    font-size: 0;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-    /* Align button to the bottom of the flex container */
-    /* Removed align-self: center; as button is now within the main input flex */
-    /* align-self: center; */
-    display: flex; /* Use flex to center content */
+    /* Use flexbox to center the content (the arrow character) */
+    display: flex;
     align-items: center;
     justify-content: center;
-    /* Removed margin-left as textarea now has margin-right */
-    margin-left: 0;
-    /* Remove default button text styling */
-    text-indent: -9999px; /* Hide text visually */
-    overflow: hidden; /* Hide overflow text */
-    /* Removed absolute positioning */
-    position: static; /* Position statically within the flex container */
+    transition: background-color 0.3s ease;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     flex-shrink: 0; /* Prevent button from shrinking */
-    /* Ensure button aligns correctly within flex container */
-    align-self: center; /* Align self to center */
+    align-self: center; /* Align self to center within flex container */
+
+    /* Styles to ensure the arrow character in HTML is visible and centered */
+    font-size: 1.5rem; /* Set font size for the arrow */
+    line-height: 1; /* Ensure vertical centering */
+    text-indent: 0; /* Remove text indent if applied elsewhere */
+    overflow: visible; /* Ensure content is not hidden by overflow */
+    /* Try a common font that is likely to support the arrow character */
+    font-family: 'Arial', sans-serif;
 }
 
-/* Style for the icon inside the button */
-#send_button::after {
-    /* Using Unicode code point directly */
-    content: "\27A4"; /* Right arrow emoji code point */
-    text-indent: 0; /* Reset text indent for the icon */
-    position: absolute; /* Position absolutely within the button */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center the icon */
-    /* Ensure font size and color are set */
-    font-size: 1.5rem; /* Increased icon size */
-    color: white; /* Ensure icon color is white */
-    line-height: 1; /* Ensure vertical centering */
-    z-index: 1; /* Ensure it's above the button background */
-    display: inline-block; /* Use inline-block for better centering behavior */
-    font-family: 'Inter', sans-serif; /* Ensure it uses a font that supports the emoji */
-    /* Ensure pseudo-element doesn't interfere with clicks */
-    pointer-events: none;
-}
+/* Remove the pseudo-element style as we are styling the button's content directly */
+/* #send_button::after { ... } */
 
 
 #send_button:hover {
@@ -482,8 +460,8 @@ body {
 
 .agent .message-icon,
 .message.bot .message-icon {
-    background-color: #e0f2fe; /* Bot icon background */
-    color: #4b5563; /* Bot icon color */
+    background-color: #e0f2fe;
+    color: #4b5563;
     /* Corrected margins for bot icon on the left */
     margin-right: 8px; /* Space between icon and bot message content */
     margin-left: 0; /* Remove left margin */
