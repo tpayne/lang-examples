@@ -573,6 +573,35 @@ body {
     }
 }
 
+/* --- Styles specifically for elements inserted by execCommand in the editor --- */
+#user_input ul,
+#user_input ol {
+    /* Ensure default list margins/paddings are present if they were reset */
+    /* You might need to adjust these values based on desired indentation */
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    /* Default padding for indentation */
+    padding-left: 1.5em; /* Adjust as needed */
+}
+
+#user_input ul li {
+    /* Ensure bullets appear for unordered lists */
+    list-style-type: disc;
+}
+
+#user_input ol li {
+    /* Ensure numbers appear for ordered lists */
+    list-style-type: decimal;
+}
+
+#user_input a {
+    /* Ensure default browser link styling */
+    color: -webkit-link; /* Use default browser link color */
+    text-decoration: underline; /* Ensure underline */
+    cursor: pointer; /* Ensure pointer cursor */
+}
+
+
 /* --- Responsive Adjustments --- */
 @media (max-width: 640px) {
     /* Make the chat window fill more of the screen on small devices */
