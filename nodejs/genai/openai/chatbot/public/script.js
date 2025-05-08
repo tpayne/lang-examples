@@ -209,35 +209,47 @@ toolbar.addEventListener('click', function(event) {
     const command = button.dataset.command; // Get the command from the data-command attribute
 
     if (command) {
-        // Keep track of the current selection range before executing command
-        const selection = window.getSelection();
-        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        // Ensure the contenteditable div is focused before executing command
+        userInput.focus();
 
         // Execute the command on the contenteditable div
         // For commands like createLink, prompt the user for input
         if (command === 'createLink') {
-            const url = prompt('Enter the URL:');
-            if (url) {
-                 document.execCommand(command, false, url);
-            }
+            // document.execCommand('createLink', false, null); // This will prompt the user
+             const url = prompt('Enter the URL:');
+             if (url) {
+                  document.execCommand('createLink', false, url);
+             } else {
+                 // If user cancels the prompt, unlink the current selection if any
+                 document.execCommand('unlink', false, null);
+             }
         } else {
             document.execCommand(command, false, null);
         }
 
-        // Restore the selection range after executing command
-        // This is important because execCommand can sometimes collapse the selection
-        if (range && selection.rangeCount === 0) {
-             selection.addRange(range);
-        }
-
-        // Ensure focus remains on the contenteditable div after executing command
-        // Use a small timeout to ensure the command has time to execute and the DOM updates
+        // Restore the selection range is often not needed with execCommand
+        // as the focus should remain on the contenteditable div.
+        // However, ensuring focus after a slight delay can help in some browsers.
         setTimeout(() => {
              userInput.focus();
         }, 10); // Small delay
 
-
     }
+});
+
+// Add event listener to keep track of the selection range
+let currentRange = null;
+userInput.addEventListener('mouseup', () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        currentRange = selection.getRangeAt(0);
+    }
+});
+userInput.addEventListener('keyup', () => {
+     const selection = window.getSelection();
+     if (selection.rangeCount > 0) {
+         currentRange = selection.getRangeAt(0);
+     }
 });
 
 

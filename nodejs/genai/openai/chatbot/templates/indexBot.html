@@ -230,18 +230,17 @@ docker rmi chatbot:1.0
                 </div>
 
             <div id="toolbar">
-                <button class="toolbar-button" data-command="bold"><b>B</b></button>
-                <button class="toolbar-button" data-command="italic"><i>I</i></button>
-                <button class="toolbar-button" data-command="underline"><u>U</u></button>
-                <button class="toolbar-button" data-command="createLink">🔗</button>
-                <button class="toolbar-button" data-command="insertUnorderedList">•</button>
-                <button class="toolbar-button" data-command="insertOrderedList">1.</button>
+                <button class="toolbar-button" data-command="bold" title="Bold"><b>B</b></button>
+                <button class="toolbar-button" data-command="italic" title="Italic"><i>I</i></button>
+                <button class="toolbar-button" data-command="underline" title="Underline"><u>U</u></button>
+                <button class="toolbar-button" data-command="createLink" title="Insert Link">🔗</button>
+                <button class="toolbar-button" data-command="insertUnorderedList" title="Bullet List">•</button>
+                <button class="toolbar-button" data-command="insertOrderedList" title="Numbered List">1.</button>
             </div>
 
             <div id="input_container">
                 <div id="user_input" contenteditable="true" placeholder="Type your message..."></div>
-                <button id="send_button" data-icon="➤"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-md focus:outline-none focus:shadow-outline">
+                <button id="send_button" data-icon="➤" title="Send Message">
                     ➤
                 </button>
             </div>

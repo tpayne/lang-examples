@@ -416,7 +416,7 @@ body {
     /* Using Unicode code point directly */
     content: "\27A4"; /* Right arrow emoji code point */
     text-indent: 0; /* Reset text indent for the icon */
-    position: absolute;
+    position: absolute; /* Position absolutely within the button */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%); /* Center the icon */
