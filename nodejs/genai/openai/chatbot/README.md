@@ -132,7 +132,7 @@ GitHub support is added for:
 
 This can be used to work with the bot to generate code and commit it to repos. 
 
-For example, you can do things like: -
+For example, you can do things like - using this verbage - into the tool: -
 
 * Create a private repo under user tpayne called demo and upload to that repo a terraform module for creating a azure sql postgres database in a secured network only acessible from an ip range inputed into the module
 * Create a branch called demo under the repo tpayne/demo and upload to it example terraform code for creating a compute instance in a network
