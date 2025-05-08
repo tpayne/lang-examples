@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-08	(18:11:01-UTC+0000)
+- **Other**: Update readme (in nodejs/genai/gemini/chatbot/README.md)
 ## 2025-05-08	(17:35:28-UTC+0000)
 - **Other**: Add WYSIGYG editor icons (in nodejs/genai/gemini/chatbot/README.md)
 - **Other**: Add WYSIGYG editor icons (in nodejs/genai/gemini/chatbot/documentation/chatbot.js.html)
