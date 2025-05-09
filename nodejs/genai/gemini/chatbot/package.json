@@ -21,7 +21,9 @@
       "resources/*.properties",
       "templates/*.html",
       "public/*.css",
-      "public/*.js"
+      "public/*.js",
+      "certs/*.key",
+      "certs/*.crt"
     ]
   },
   "repository": {
