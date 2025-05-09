@@ -5,7 +5,7 @@ ARG alpineVersion=3.18
 FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
 # Combined apk install and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    && apk -U upgrade
+     && apk -U upgrade
 
 WORKDIR /source
 
@@ -25,7 +25,7 @@ RUN npm install && npm test
 FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 # Combined apk install and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    && apk -U upgrade
+        && apk -U upgrade
 
 WORKDIR /source
 
@@ -39,15 +39,15 @@ COPY public ./src/public
 
 # Combined npm install, pkg install, and pkg build
 RUN npm install --omit=dev && \
-    npm install -g pkg && \
-    pkg -t node18 ./src/ -o nodeexe --no-sign
+     npm install -g pkg && \
+     pkg -t node18 ./src/ -o nodeexe --no-sign
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
 
 # Combined apk install and upgrade
 RUN apk add --no-cache memcached supervisor openssl && \
-    apk -U upgrade
+     apk -U upgrade
 
 EXPOSE 11211
 EXPOSE 8080
@@ -57,7 +57,7 @@ EXPOSE 8443
 ARG account=nodejs
 # Combined addgroup and adduser commands
 RUN addgroup --system ${account} && adduser ${account} --system &&\
-    adduser ${account} ${account}
+     adduser ${account} ${account}
 
 WORKDIR /app
 
