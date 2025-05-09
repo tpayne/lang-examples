@@ -30,8 +30,7 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/ma
 WORKDIR /source
 
 COPY src/ ./src/
-COPY package.json package-lock.json* ./
-COPY package.json package-lock.json* ./src/
+COPY package.json package-lock.json* ./\nCOPY package.json package-lock.json* ./src/ # Note: This line appears to be a duplicate copy to ./src/
 COPY contexts ./src/contexts
 COPY resources ./src/resources
 COPY templates ./src/templates
@@ -51,7 +50,8 @@ RUN apk add --no-cache memcached supervisor openssl && \
 
 EXPOSE 11211
 EXPOSE 8080
-EXPOSE 8443 # Expose the HTTPS port
+# Expose the HTTPS port
+EXPOSE 8443
 
 ARG account=nodejs
 # Combined addgroup and adduser commands
