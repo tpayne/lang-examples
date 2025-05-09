@@ -3,8 +3,9 @@ ARG nodeVersion=18
 ARG alpineVersion=3.18
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
+# Combined apk install and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    && apk -U upgrade
+     && apk -U upgrade
 
 WORKDIR /source
 
@@ -18,11 +19,13 @@ COPY resources ./resources
 COPY public ./public
 COPY templates ./templates
 
+# Combined npm install and test
 RUN npm install && npm test
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
+# Combined apk install and upgrade
 RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    && apk -U upgrade
+        && apk -U upgrade
 
 WORKDIR /source
 
@@ -34,22 +37,27 @@ COPY resources ./src/resources
 COPY templates ./src/templates
 COPY public ./src/public
 
+# Combined npm install, pkg install, and pkg build
 RUN npm install --omit=dev && \
-    npm install -g pkg && \
-    pkg -t node18 ./src/ -o nodeexe --no-sign
+     npm install -g pkg && \
+     pkg -t node18 ./src/ -o nodeexe --no-sign
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
 
-RUN apk add --no-cache memcached supervisor && \
-    apk -U upgrade
+# Combined apk install and upgrade
+RUN apk add --no-cache memcached supervisor openssl && \
+     apk -U upgrade
 
 EXPOSE 11211
 EXPOSE 8080
+# Expose the HTTPS port
+EXPOSE 8443
 
 ARG account=nodejs
+# Combined addgroup and adduser commands
 RUN addgroup --system ${account} && adduser ${account} --system &&\
-    adduser ${account} ${account}
+     adduser ${account} ${account}
 
 WORKDIR /app
 
@@ -58,11 +66,28 @@ COPY --from=imagebuilder /source/src/contexts ./contexts
 COPY --from=imagebuilder /source/src/resources ./resources
 COPY --from=imagebuilder /source/src/templates ./templates
 COPY --from=imagebuilder /source/src/public ./public
+
+# Combined certificate directory creation and conditional copying
+# Use a single sh -c with || true to prevent failure if files are missing
+RUN sh -c 'mkdir -p /app/certs && ([ -f server.key ] && cp server.key /app/certs/ || true) && ([ -f server.crt ] && cp server.crt /app/certs/ || true)'
+# If you have a CA certificate:
+# RUN sh -c '([ -f ca.crt ] && cp ca.crt /app/certs/ || true)'
+
+# Combined log directory creation and ownership change
 RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
+
 
 # Supervisor configuration
 COPY supervisord.conf /etc/supervisord.conf
 
 USER ${account}
+
+# Optional: Add HEALTHCHECK. Adjust the command and port based on your app's config
+# HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+#  CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/status"] # Example for HTTP status
+# OR for HTTPS (requires openssl in the runner stage, which you already have)
+# HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+#  CMD ["sh", "-c", "openssl s_client -connect localhost:8443 < /dev/null 2>/dev/null | grep -q 'Verify return code: 0'"] # Basic HTTPS check
+
 
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]
