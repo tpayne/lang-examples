@@ -82,4 +82,12 @@ COPY supervisord.conf /etc/supervisord.conf
 
 USER ${account}
 
+# Optional: Add HEALTHCHECK. Adjust the command and port based on your app's config
+# HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+#  CMD ["wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/status"] # Example for HTTP status
+# OR for HTTPS (requires openssl in the runner stage, which you already have)
+# HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+#  CMD ["sh", "-c", "openssl s_client -connect localhost:8443 < /dev/null 2>/dev/null | grep -q 'Verify return code: 0'"] # Basic HTTPS check
+
+
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]
