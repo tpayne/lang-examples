@@ -30,7 +30,8 @@ RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/ma
 WORKDIR /source
 
 COPY src/ ./src/
-COPY package.json package-lock.json* ./\nCOPY package.json package-lock.json* ./src/ # Note: This line appears to be a duplicate copy to ./src/
+COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* ./src/
 COPY contexts ./src/contexts
 COPY resources ./src/resources
 COPY templates ./src/templates
