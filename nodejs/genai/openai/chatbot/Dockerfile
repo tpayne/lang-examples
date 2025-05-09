@@ -68,11 +68,10 @@ COPY --from=imagebuilder /source/src/templates ./templates
 COPY --from=imagebuilder /source/src/public ./public
 
 # Combined certificate directory creation and conditional copying
-RUN mkdir -p /app/certs && \
-    sh -c '[ -f server.key ] && cp server.key /app/certs/' && \
-    sh -c '[ -f server.crt ] && cp server.crt /app/certs/'
+# Use a single sh -c with || true to prevent failure if files are missing
+RUN sh -c 'mkdir -p /app/certs && ([ -f server.key ] && cp server.key /app/certs/ || true) && ([ -f server.crt ] && cp server.crt /app/certs/ || true)'
 # If you have a CA certificate:
-# RUN sh -c '[ -f ca.crt ] && cp ca.crt /app/certs/'
+# RUN sh -c '([ -f ca.crt ] && cp ca.crt /app/certs/ || true)'
 
 # Combined log directory creation and ownership change
 RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
