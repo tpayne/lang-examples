@@ -1,6 +1,7 @@
 # Image builder...
 ARG nodeVersion=18
 ARG alpineVersion=3.18
+ARG testbuild=
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
 # Combined apk install and upgrade
@@ -67,11 +68,26 @@ COPY --from=imagebuilder /source/src/resources ./resources
 COPY --from=imagebuilder /source/src/templates ./templates
 COPY --from=imagebuilder /source/src/public ./public
 
-# Combined certificate directory creation and conditional copying
-# Use a single sh -c with || true to prevent failure if files are missing
-RUN sh -c 'mkdir -p /app/certs && ([ -f server.key ] && cp server.key /app/certs/ || true) && ([ -f server.crt ] && cp server.crt /app/certs/ || true)'
-# If you have a CA certificate:
-# RUN sh -c '([ -f ca.crt ] && cp ca.crt /app/certs/ || true)'
+# Create directory for certificates
+RUN mkdir -p /app/certs
+
+# --- Conditional Certificate Handling ---
+# If testbuild ARG is set, generate a test certificate.
+# Otherwise, conditionally copy certificates from the build context if they exist.
+ARG testbuild
+RUN if [ "$testbuild" = "true" ]; then \
+      echo "Generating test SSL certificates..."; \
+      openssl req -newkey rsa:2048 -nodes -keyout /app/certs/server.key \
+      -x509 -days 365 -out /app/certs/server.crt \
+      -subj "/CN=localhost"; \
+    else \
+      echo "Attempting to copy SSL certificates from build context..."; \
+      sh -c '[ -f server.key ] && cp server.key /app/certs/ || true'; \
+      sh -c '[ -f server.crt ] && cp server.crt /app/certs/ || true'; \
+      # If you have a CA certificate:
+      # sh -c '[ -f ca.crt ] && cp ca.crt /app/certs/ || true'; \
+    fi
+# --- End Conditional Certificate Handling ---
 
 # Combined log directory creation and ownership change
 RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
