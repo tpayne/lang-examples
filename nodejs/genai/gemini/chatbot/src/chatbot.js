@@ -64,19 +64,19 @@ app.use(session({
 
 // Function to update session cookie secure flag
 const setSessionSecure = (isSecure) => {
-    app.use(session({
-        secret: process.env.OPENAI_API_KEY,
-        resave: false,
-        saveUninitialized: true,
-        store: new MemcachedStore({
-            hosts: ['127.0.0.1:11211'],
-        }),
-        cookie: {
-            secure: isSecure, // Set based on whether HTTPS is running
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000,
-        },
-    }));
+  app.use(session({
+    secret: process.env.OPENAI_API_KEY,
+    resave: false,
+    saveUninitialized: true,
+    store: new MemcachedStore({
+      hosts: ['127.0.0.1:11211'],
+    }),
+    cookie: {
+      secure: isSecure, // Set based on whether HTTPS is running
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  }));
 };
 
 app.use(bodyParser.json());
@@ -166,31 +166,35 @@ const readContext = async (contextStr) => {
  * @returns {Promise<any>} The result of the function call.
  */
 const callFunctionByName = async (sessionId, name, args) => {
-  const functionCache = await getAvailableFunctions(sessionId);
+  const functionCache = await getAvailableFunctions(sessionId); // Assuming this loads functions
   const functionInfo = functionCache[name];
+  // logger.debug(`functionCache object is ${util.inspect(functionCache,
+  //  { depth: null })} [Session: ${sessionId}]`);
 
   if (functionInfo && functionInfo.func) {
-    const { func, params, needSession } = functionInfo;
-    // Ensure arguments match expected parameters
-    const argValues = params.map((paramName) => args[paramName]);
-    if (needSession) {
-      argValues.unshift(sessionId);
-    }
-
     try {
+      const { func, params, needSession } = functionInfo;
+
+      // Ensure arguments match expected parameters
+      const argValues = params.map((paramName) => args[paramName]);
+      if (needSession) {
+        argValues.unshift(sessionId);
+      }
+
       /* eslint-disable prefer-spread */
+      logger.info(`Calling Function '${name}' [Session: ${sessionId}]`);
       const result = await func.apply(null, argValues);
       /* eslint-enable prefer-spread */
-      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
+      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
       return result;
     } catch (error) {
-      logger.error(`Error executing function '${name}'`, { arguments: args, error: error.message });
-      // Return a structured error object for the model
-      return { error: 'Function execution failed', details: error.message };
+      logger.error(`Error executing function '${name}' [Session: ${sessionId}]`, { arguments: args, error: error.message });
+      // Return a stringified error for the model
+      return JSON.stringify({ error: 'Function execution failed', details: error.message });
     }
   }
-  // Return a structured error object for the model
-  return { error: `Function '${name}' not found` };
+  // Return a stringified error for the model
+  return JSON.stringify({ error: `Function '${name}' not found` });
 };
 
 /**
@@ -517,7 +521,8 @@ const startServer = () => {
   const host = getConfig().host || '0.0.0.0'; // Allow host to be configured
 
   // --- Attempt to start HTTPS Server ---
-  let privateKey, certificate, ca;
+  let privateKey = null;
+  let certificate = null;
   const certsPath = getConfig().certsPath || '/app/certs'; // Directory where certificates are copied in Docker
 
   try {
@@ -525,12 +530,12 @@ const startServer = () => {
     privateKey = fsSync.readFileSync(path.join(certsPath, 'server.key'), 'utf8');
     certificate = fsSync.readFileSync(path.join(certsPath, 'server.crt'), 'utf8');
     // Uncomment the line below if you have a CA certificate chain file
-    // ca = fsSync.readFileSync(path.join(certsPath, 'ca.crt'), 'utf8');
+    // const ca = fsSync.readFileSync(path.join(certsPath, 'ca.crt'), 'utf8');
 
     const credentials = {
-        key: privateKey,
-        cert: certificate,
-        // ca: ca // Uncomment if you have a CA certificate
+      key: privateKey,
+      cert: certificate,
+      // ca: ca // Uncomment if you have a CA certificate
     };
 
     // Create and start the HTTPS server
@@ -550,8 +555,6 @@ const startServer = () => {
     // httpServer.listen(httpPort, host, () => {
     //   logger.info(`HTTP Listening on ${host}:${httpPort}`);
     // });
-
-
   } catch (err) {
     // --- Fallback to HTTP Server ---
     logger.warn('Failed to load SSL certificates or start HTTPS server. Falling back to HTTP.', err);

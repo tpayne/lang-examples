@@ -27,6 +27,10 @@ const {
 } = require('./dosaFunctions');
 
 const {
+  planRoute,
+} = require('./mappingFunctions');
+
+const {
   saveCodeToFile,
 } = require('./utilities');
 
@@ -397,6 +401,78 @@ async function loadGitHub(sessionId) {
 }
 
 /**
+ * Registers the Google Maps Directions API function with the function registry.
+ * @param {string} sessionId The unique identifier for the session.
+ */
+async function loadMappingFunctions(sessionId) {
+  await registerFunction(
+    sessionId,
+    'plan_route', // Function name for the AI tool
+    planRoute, // The actual function to execute
+    ['params'], // Parameters the function expects (wrapped in a single 'params' object)
+    'Plans a route between multiple points using the Google Maps Directions API and returns the details in JSON format.', // Description for the AI
+    { // JSON schema for the 'params' object
+      params: {
+        type: 'object',
+        description: 'Parameters for the Google Maps Directions API request.',
+        properties: {
+          origin: { type: 'string', description: 'The starting point for the directions request.' },
+          destination: { type: 'string', description: 'The ending point for the directions request.' },
+          waypoints: {
+            type: 'array',
+            description: 'An array of intermediate locations to include in the route.',
+            items: { type: 'string' },
+            nullable: true, // Make waypoints optional
+          },
+          mode: {
+            type: 'string',
+            description: 'Specifies the mode of transport (e.g., "driving", "walking", "bicycling", "transit"). Defaults to "driving".',
+            nullable: true, // Make optional
+            enum: ['driving', 'walking', 'bicycling', 'transit'], // Add supported modes
+          },
+          language: { type: 'string', description: 'The language to use for the results.', nullable: true }, // Make optional
+          units: {
+            type: 'string',
+            description: 'Specifies the unit system to use (e.g., "metric", "imperial"). Defaults to "metric".',
+            nullable: true, // Make optional
+            enum: ['metric', 'imperial'], // Add supported units
+          },
+          alternatives: { type: 'boolean', description: 'If true, more than one route may be returned.', nullable: true }, // Make optional
+          avoid: {
+            type: 'string',
+            description: 'Indicates features to avoid (e.g., "tolls", "highways", "ferries", "indoor"). Can be a single value or multiple values separated by "|".',
+            nullable: true, // Make optional
+          },
+          transit_mode: {
+            type: 'string',
+            description: 'Specifies the desired modes of transit (e.g., "bus", "subway", "train", "tram", "rail"). Can be multiple values separated by "|".',
+            nullable: true, // Make optional
+          },
+          transit_routing_preference: {
+            type: 'string',
+            description: 'Specifies preferences for transit routes (e.g., "less_walking", "fewer_transfers").',
+            nullable: true, // Make optional
+            enum: ['less_walking', 'fewer_transfers'], // Add supported preferences
+          },
+          departure_time: { type: 'string', description: 'The desired time of departure. Can be a timestamp or "now".', nullable: true }, // Make optional
+          arrival_time: { type: 'string', description: 'The desired time of arrival (for transit). Can be a timestamp.', nullable: true }, // Make optional
+          traffic_model: {
+            type: 'string',
+            description: 'Specifies the assumptions to use when calculating time in traffic (e.g., "best_guess", "optimistic", "pessimistic").',
+            nullable: true, // Make optional
+            enum: ['best_guess', 'optimistic', 'pessimistic'], // Add supported models
+          },
+          optimizeWaypoints: { type: 'boolean', description: 'If true and waypoints are provided, the API will attempt to reorder the waypoints to minimize the total travel time.', nullable: true }, // Make optional
+        },
+        required: ['origin', 'destination'], // Only origin and destination are required
+      },
+    },
+    ['params'], // Required parameters for the function call (the 'params' object itself)
+    true, // needSession is true as the function signature includes sessionId
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -427,6 +503,11 @@ async function loadIntegrations(sessionId) {
         && process.env.DOSA_CLIENT_ID) {
     logger.info(`Loading DOSA/DLVA integration for session: ${sessionId}`);
     await loadDosa(sessionId);
+  }
+
+  if (process.env.GOOGLE_MAPS_API_KEY) {
+    logger.info(`Loading Google Maps integration for session: ${sessionId}`);
+    await loadMappingFunctions(sessionId);
   }
 }
 

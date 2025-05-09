@@ -69,7 +69,10 @@ COPY --from=imagebuilder /source/src/templates ./templates
 COPY --from=imagebuilder /source/src/public ./public
 
 # Create directory for certificates
-RUN mkdir -p /app/certs
+RUN mkdir -p /app/certs && \
+     chown -R ${account}:${account} /app/certs && \
+     mkdir -p /app/logs && \
+     chown -R ${account}:${account} /app/logs
 
 # --- Conditional Certificate Handling ---
 # If testbuild ARG is set, generate a test certificate.
@@ -89,9 +92,8 @@ RUN if [ "$testbuild" = "true" ]; then \
     fi
 # --- End Conditional Certificate Handling ---
 
-# Combined log directory creation and ownership change
-RUN mkdir -p /app/logs && chown -R ${account}:${account} /app/logs
-
+RUN chown -R ${account}:${account} /app/certs && \
+     chmod -R o+rwx /app/certs
 
 # Supervisor configuration
 COPY supervisord.conf /etc/supervisord.conf

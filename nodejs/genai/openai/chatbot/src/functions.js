@@ -14,7 +14,6 @@ const {
   listDirectoryContents,
   listGitHubActions,
   listPublicRepos,
-  planRoute,
   switchBranch,
 } = require('./gitFunctions');
 
@@ -26,6 +25,10 @@ const {
 const {
   getVehicleHistory,
 } = require('./dosaFunctions');
+
+const {
+  planRoute,
+} = require('./mappingFunctions');
 
 const {
   saveCodeToFile,
