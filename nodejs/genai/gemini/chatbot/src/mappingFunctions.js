@@ -5,6 +5,55 @@ const logger = require('./logger'); // Assuming you have a logger module
 dotenv.config(); // Load environment variables from .env file
 
 /**
+ * Generates an HTTP link to the Google Maps website for a given route.
+ * Note: This link is for displaying the route on the Google Maps website/app,
+ * not for embedding or using the Directions API result directly.
+ *
+ * @param {object} params - The original parameters used for the planRoute API call.
+ * @param {string} params.origin - The starting point.
+ * @param {string} params.destination - The ending point.
+ * @param {string[]} [params.waypoints] - Optional array of intermediate locations.
+ * @param {string} [params.mode] - Optional mode of transport (e.g., "driving", "walking").
+ * @returns {string} The constructed Google Maps URL.
+ */
+async function generateGoogleMapsLink(params) {
+  const baseUrl = 'https://www.google.com/maps/dir/?api=1';
+  const queryParts = [];
+
+  // Add origin and destination - URL encode them to handle spaces and special characters
+  if (params.origin) {
+    queryParts.push(`origin=${encodeURIComponent(params.origin)}`);
+  }
+  if (params.destination) {
+    queryParts.push(`destination=${encodeURIComponent(params.destination)}`);
+  }
+
+  // Add waypoints if they exist - URL encode each one
+  if (params.waypoints && params.waypoints.length > 0) {
+    const encodedWaypoints = params.waypoints.map(wp => encodeURIComponent(wp)).join('|');
+    queryParts.push(`waypoints=${encodedWaypoints}`);
+  }
+
+  // Add mode if specified (optional)
+  if (params.mode) {
+      // Google Maps URL uses different mode names sometimes,
+      // mapping Directions API modes to URL modes if necessary.
+      let mapMode = params.mode;
+      if (mapMode === 'bicycling') mapMode = 'bicycling'; // Same
+      if (mapMode === 'transit') mapMode = 'transit';     // Same
+      if (mapMode === 'walking') mapMode = 'walking';     // Same
+      // 'driving' is the default and doesn't usually need to be specified,
+      // but adding it doesn't hurt.
+      if (mapMode === 'driving') mapMode = 'driving';
+
+      queryParts.push(`travelmode=${mapMode}`);
+  }
+
+  // Join all parts with '&'
+  return `${baseUrl}&${queryParts.join('&')}`;
+}
+
+/**
  * @typedef {object} DirectionsParameters
  * @property {string} origin - The starting point for the directions request.
  * @property {string} destination - The ending point for the directions request.
@@ -115,5 +164,6 @@ async function planRoute(sessionId, params) {
 }
 
 module.exports = {
+  generateGoogleMapsLink,
   planRoute,
 };

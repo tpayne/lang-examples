@@ -27,6 +27,7 @@ const {
 } = require('./dosaFunctions');
 
 const {
+  generateGoogleMapsLink,
   planRoute,
 } = require('./mappingFunctions');
 
@@ -470,6 +471,42 @@ async function loadMappingFunctions(sessionId) {
     ['params'], // Required parameters for the function call (the 'params' object itself)
     true, // needSession is true as the function signature includes sessionId
   );
+
+  await registerFunction(
+    sessionId,
+    'generate_google_maps_link', // Function name for the AI tool
+    generateGoogleMapsLink, // The actual function to execute
+    ['params'], // Parameters the function expects (wrapped in a single 'params' object)
+    'Generates an HTTP link to view a planned route on the Google Maps website using the original route parameters.', // Description for the AI
+    { // JSON schema for the 'params' object for generating the link
+      params: {
+        type: 'object',
+        description: 'Parameters used for the original route planning request.',
+        properties: {
+          origin: { type: 'string', description: 'The starting point for the directions request.' },
+          destination: { type: 'string', description: 'The ending point for the directions request.' },
+          waypoints: {
+            type: 'array',
+            description: 'An array of intermediate locations included in the route.',
+            items: { type: 'string' },
+            nullable: true, // Waypoints are optional for link generation
+          },
+          mode: {
+            type: 'string',
+            description: 'The mode of transport used for the route.',
+            nullable: true, // Mode is optional for link generation
+            enum: ['driving', 'walking', 'bicycling', 'transit'],
+          },
+          // Include other relevant parameters if you want the link to reflect them,
+          // but keep it simple for basic link generation.
+          // For this function, origin and destination are the most crucial.
+        },
+        required: ['origin', 'destination'], // Origin and destination are required to generate a meaningful link
+      }
+    },
+    ['params'], // Required parameters for the function call (the 'params' object itself)
+    false // needSession is false as the generateGoogleMapsLink function does not use sessionId
+  );  
 }
 
 /**
