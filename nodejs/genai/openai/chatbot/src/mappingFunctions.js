@@ -30,23 +30,23 @@ async function generateGoogleMapsLink(params) {
 
   // Add waypoints if they exist - URL encode each one
   if (params.waypoints && params.waypoints.length > 0) {
-    const encodedWaypoints = params.waypoints.map(wp => encodeURIComponent(wp)).join('|');
+    const encodedWaypoints = params.waypoints.map((wp) => encodeURIComponent(wp)).join('|');
     queryParts.push(`waypoints=${encodedWaypoints}`);
   }
 
   // Add mode if specified (optional)
   if (params.mode) {
-      // Google Maps URL uses different mode names sometimes,
-      // mapping Directions API modes to URL modes if necessary.
-      let mapMode = params.mode;
-      if (mapMode === 'bicycling') mapMode = 'bicycling'; // Same
-      if (mapMode === 'transit') mapMode = 'transit';     // Same
-      if (mapMode === 'walking') mapMode = 'walking';     // Same
-      // 'driving' is the default and doesn't usually need to be specified,
-      // but adding it doesn't hurt.
-      if (mapMode === 'driving') mapMode = 'driving';
+    // Google Maps URL uses different mode names sometimes,
+    // mapping Directions API modes to URL modes if necessary.
+    let mapMode = params.mode;
+    if (mapMode === 'bicycling') mapMode = 'bicycling'; // Same
+    if (mapMode === 'transit') mapMode = 'transit'; // Same
+    if (mapMode === 'walking') mapMode = 'walking'; // Same
+    // 'driving' is the default and doesn't usually need to be specified,
+    // but adding it doesn't hurt.
+    if (mapMode === 'driving') mapMode = 'driving';
 
-      queryParts.push(`travelmode=${mapMode}`);
+    queryParts.push(`travelmode=${mapMode}`);
   }
 
   // Join all parts with '&'

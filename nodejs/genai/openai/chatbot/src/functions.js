@@ -502,11 +502,11 @@ async function loadMappingFunctions(sessionId) {
           // For this function, origin and destination are the most crucial.
         },
         required: ['origin', 'destination'], // Origin and destination are required to generate a meaningful link
-      }
+      },
     },
     ['params'], // Required parameters for the function call (the 'params' object itself)
-    false // needSession is false as the generateGoogleMapsLink function does not use sessionId
-  );  
+    false, // needSession is false as the generateGoogleMapsLink function does not use sessionId
+  );
 }
 
 /**
