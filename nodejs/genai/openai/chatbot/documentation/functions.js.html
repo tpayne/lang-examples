@@ -42,6 +42,7 @@ const {
   listDirectoryContents,
   listGitHubActions,
   listPublicRepos,
+  planRoute,
   switchBranch,
 } = require('./gitFunctions');
 
@@ -425,6 +426,78 @@ async function loadGitHub(sessionId) {
 }
 
 /**
+ * Registers the Google Maps Directions API function with the function registry.
+ * @param {string} sessionId The unique identifier for the session.
+ */
+async function loadMappingFunctions(sessionId) {
+  await registerFunction(
+    sessionId,
+    'plan_route', // Function name for the AI tool
+    planRoute, // The actual function to execute
+    ['params'], // Parameters the function expects (wrapped in a single 'params' object)
+    'Plans a route between multiple points using the Google Maps Directions API and returns the details in JSON format.', // Description for the AI
+    { // JSON schema for the 'params' object
+      params: {
+        type: 'object',
+        description: 'Parameters for the Google Maps Directions API request.',
+        properties: {
+          origin: { type: 'string', description: 'The starting point for the directions request.' },
+          destination: { type: 'string', description: 'The ending point for the directions request.' },
+          waypoints: {
+            type: 'array',
+            description: 'An array of intermediate locations to include in the route.',
+            items: { type: 'string' },
+            nullable: true, // Make waypoints optional
+          },
+          mode: {
+            type: 'string',
+            description: 'Specifies the mode of transport (e.g., "driving", "walking", "bicycling", "transit"). Defaults to "driving".',
+            nullable: true, // Make optional
+            enum: ["driving", "walking", "bicycling", "transit"] // Add supported modes
+          },
+          language: { type: 'string', description: 'The language to use for the results.', nullable: true }, // Make optional
+          units: {
+            type: 'string',
+            description: 'Specifies the unit system to use (e.g., "metric", "imperial"). Defaults to "metric".',
+            nullable: true, // Make optional
+            enum: ["metric", "imperial"] // Add supported units
+          },
+          alternatives: { type: 'boolean', description: 'If true, more than one route may be returned.', nullable: true }, // Make optional
+          avoid: {
+            type: 'string',
+            description: 'Indicates features to avoid (e.g., "tolls", "highways", "ferries", "indoor"). Can be a single value or multiple values separated by "|".',
+            nullable: true // Make optional
+          },
+          transit_mode: {
+            type: 'string',
+            description: 'Specifies the desired modes of transit (e.g., "bus", "subway", "train", "tram", "rail"). Can be multiple values separated by "|".',
+            nullable: true // Make optional
+          },
+          transit_routing_preference: {
+            type: 'string',
+            description: 'Specifies preferences for transit routes (e.g., "less_walking", "fewer_transfers").',
+            nullable: true, // Make optional
+            enum: ["less_walking", "fewer_transfers"] // Add supported preferences
+          },
+          departure_time: { type: 'string', description: 'The desired time of departure. Can be a timestamp or "now".', nullable: true }, // Make optional
+          arrival_time: { type: 'string', description: 'The desired time of arrival (for transit). Can be a timestamp.', nullable: true }, // Make optional
+          traffic_model: {
+            type: 'string',
+            description: 'Specifies the assumptions to use when calculating time in traffic (e.g., "best_guess", "optimistic", "pessimistic").',
+            nullable: true, // Make optional
+            enum: ["best_guess", "optimistic", "pessimistic"] // Add supported models
+          },
+           optimizeWaypoints: { type: 'boolean', description: 'If true and waypoints are provided, the API will attempt to reorder the waypoints to minimize the total travel time.', nullable: true }, // Make optional
+        },
+        required: ['origin', 'destination'], // Only origin and destination are required
+      }
+    },
+    ['params'], // Required parameters for the function call (the 'params' object itself)
+    true // needSession is true as the function signature includes sessionId
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise&lt;FunctionMetadata[]>} An array of function metadata.
@@ -456,6 +529,11 @@ async function loadIntegrations(sessionId) {
     logger.info(`Loading DOSA/DLVA integration for session: ${sessionId}`);
     await loadDosa(sessionId);
   }
+
+  if (process.env.GOOGLE_MAPS_API_KEY) {
+    logger.info(`Loading Google Maps integration for session: ${sessionId}`);
+    await loadMappingFunctions(sessionId);
+  }
 }
 
 async function cleanupSession(sessionId) {
@@ -486,13 +564,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu May 08 2025 18:14:50 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri May 09 2025 20:32:55 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -55,7 +55,7 @@ async function planRoute(sessionId, params) {
     // Join waypoints with '|' for the API
     queryParams.waypoints = params.waypoints.join('|');
     if (params.optimizeWaypoints) {
-        queryParams.waypoints = `optimize:true|${queryParams.waypoints}`;
+      queryParams.waypoints = `optimize:true|${queryParams.waypoints}`;
     }
   }
   if (params.mode) queryParams.mode = params.mode;
@@ -68,7 +68,6 @@ async function planRoute(sessionId, params) {
   if (params.departure_time) queryParams.departure_time = params.departure_time;
   if (params.arrival_time) queryParams.arrival_time = params.arrival_time;
   if (params.traffic_model) queryParams.traffic_model = params.traffic_model;
-
 
   logger.debug(`Invoking Google Maps Directions API [Session: ${sessionId}] with params: ${JSON.stringify(queryParams)}`);
 
@@ -83,15 +82,13 @@ async function planRoute(sessionId, params) {
       const data = response.body;
       if (data.status === 'OK') {
         return data; // Return the full JSON response
-      } else {
-        logger.error(`Google Maps Directions API error [Session: ${sessionId}]: Status - ${data.status}, Error Message - ${data.error_message || 'No error message provided'}`);
-        // Return the error response from the API for the chatbot to handle
-        return data;
       }
-    } else {
-      logger.error(`Error querying Google Maps Directions API [Session: ${sessionId}]: Status - ${response.status}, Response - ${JSON.stringify(response.body)}`);
-      throw new Error(`Failed to query Google Maps Directions API: ${response.status}`);
+      logger.error(`Google Maps Directions API error [Session: ${sessionId}]: Status - ${data.status}, Error Message - ${data.error_message || 'No error message provided'}`);
+      // Return the error response from the API for the chatbot to handle
+      return data;
     }
+    logger.error(`Error querying Google Maps Directions API [Session: ${sessionId}]: Status - ${response.status}, Response - ${JSON.stringify(response.body)}`);
+    throw new Error(`Failed to query Google Maps Directions API: ${response.status}`);
   } catch (error) {
     logger.error(`Error during Google Maps Directions API query [Session: ${sessionId}]: ${error.message}`);
     throw error;
