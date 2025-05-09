@@ -2,16 +2,22 @@ const RateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const express = require('express');
-const fs = require('fs').promises;
+const fs = require('fs').promises; // Keep the async fs for other operations
+const fsSync = require('fs'); // Add sync fs for reading certs synchronously
 const path = require('path');
 const session = require('express-session');
 const util = require('util');
+// Add the 'https' module for creating an HTTPS server
+const https = require('https');
+// Add the 'http' module for creating an HTTP server (for fallback)
+const http = require('http');
+
 
 const { OpenAI } = require('openai');
 
 const MemcachedStore = require('connect-memcached')(session);
 const { getAvailableFunctions, getFunctionDefinitionsForTool, loadIntegrations } = require('./functions');
-const { getConfig, loadProperties } = require('./properties');
+const { getConfig, loadProperties } = require('./properties'); // Assuming getConfig is available here
 
 dotenv.config();
 
@@ -52,11 +58,31 @@ app.use(session({
     hosts: ['127.0.0.1:11211'],
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Enforce SSL in production
+    // Set secure to true only if running HTTPS, false for HTTP fallback
+    // This will be handled dynamically based on which server starts
+    secure: false, // Initially set to false, will be updated if HTTPS starts
     httpOnly: true, // Prevent client-side access to the cookie
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   },
 }));
+
+// Function to update session cookie secure flag
+const setSessionSecure = (isSecure) => {
+    app.use(session({
+        secret: process.env.OPENAI_API_KEY,
+        resave: false,
+        saveUninitialized: true,
+        store: new MemcachedStore({
+            hosts: ['127.0.0.1:11211'],
+        }),
+        cookie: {
+            secure: isSecure, // Set based on whether HTTPS is running
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000,
+        },
+    }));
+};
+
 
 app.use(bodyParser.json());
 app.use(morganMiddleware);
@@ -159,7 +185,7 @@ const callFunctionByName = async (sessionId, name, args) => {
     try {
       /* eslint-disable prefer-spread */
       const result = await func.apply(null, argValues);
-      /* eslint-enable prefer-spread */
+      /* eslint-enable prefer_spread */
       logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
       return result;
     } catch (error) {
@@ -399,7 +425,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     addResponse(sessionId, userInput, chatResponse);
     return chatResponse;
   } catch (err) {
-    logger.error(`OpenAI API error [Session: ${sessionId}]:`, err);
+    logger.error(`OpenAI API error [Session: ${sessionId}]`, err);
     // Provide a more informative error to the user
     return `Error processing your request: ${err.message}. Please try again or contact support.`;
   }
@@ -488,14 +514,64 @@ process.on('uncaughtException', (err) => {
 });
 
 const startServer = () => {
-  if (loadProperties('resources/app.properties')) {
-    const port = Number(getConfig().port) || 5000;
-    const host = getConfig().host || '0.0.0.0'; // Allow host to be configured
-    app.listen(port, host, () => logger.info(`Listening on ${host}:${port}`));
-  } else {
+  if (!loadProperties('resources/app.properties')) {
     logger.error('Failed to load application properties. Exiting.');
     process.exit(1);
   }
+
+  const host = getConfig().host || '0.0.0.0'; // Allow host to be configured
+
+  // --- Attempt to start HTTPS Server ---
+  let privateKey, certificate, ca;
+  const certsPath = getConfig().certsPath || '/app/certs'; // Directory where certificates are copied in Docker
+
+  try {
+    // Read certificate files synchronously
+    privateKey = fsSync.readFileSync(path.join(certsPath, 'server.key'), 'utf8');
+    certificate = fsSync.readFileSync(path.join(certsPath, 'server.crt'), 'utf8');
+    // Uncomment the line below if you have a CA certificate chain file
+    // ca = fsSync.readFileSync(path.join(certsPath, 'ca.crt'), 'utf8');
+
+    const credentials = {
+        key: privateKey,
+        cert: certificate,
+        // ca: ca // Uncomment if you have a CA certificate
+    };
+
+    // Create and start the HTTPS server
+    const httpsPort = Number(getConfig().httpsPort) || 8443;
+    const httpsServer = https.createServer(credentials, app);
+
+    httpsServer.listen(httpsPort, host, () => {
+      logger.info(`HTTPS Listening on ${host}:${httpsPort}`);
+      setSessionSecure(true); // Set session cookie to secure
+    });
+
+    logger.info('HTTPS server started successfully.');
+
+    // Optional: If you also want to listen on HTTP for redirection or fallback
+    // const httpPort = Number(getConfig().port) || 8080;
+    // const httpServer = http.createServer(app);
+    // httpServer.listen(httpPort, host, () => {
+    //   logger.info(`HTTP Listening on ${host}:${httpPort}`);
+    // });
+
+
+  } catch (err) {
+    // --- Fallback to HTTP Server ---
+    logger.warn('Failed to load SSL certificates or start HTTPS server. Falling back to HTTP.', err);
+
+    const httpPort = Number(getConfig().port) || 8080;
+    const httpServer = http.createServer(app); // Create an HTTP server
+
+    httpServer.listen(httpPort, host, () => {
+      logger.info(`HTTP Listening on ${host}:${httpPort}`);
+      setSessionSecure(false); // Ensure session cookie is not secure for HTTP
+    });
+
+    logger.info('HTTP server started as fallback.');
+  }
 };
 
+// Start the server (either HTTPS or HTTP)
 startServer();
