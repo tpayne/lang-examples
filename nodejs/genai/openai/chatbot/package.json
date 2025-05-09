@@ -22,14 +22,8 @@
       "templates/*.html",
       "public/*.css",
       "public/*.js",
-      "certs/*.key",  // i) Optionally include .key files from the certs directory
-      "certs/*.crt"   // i) Optionally include .crt files from the certs directory
-      // If you use a CA certificate file (e.g., ca.crt), you can add it like this:
-      // "certs/*.ca.crt"
-      // Note: Using glob patterns like "*.key" and "*.crt" means pkg will include these files
-      // if they exist in the specified directory (certs/). If they do not exist,
-      // the glob pattern will match zero files, and pkg will NOT fail the build.
-      // This addresses requirement ii).
+      "certs/*.key",
+      "certs/*.crt"
     ]
   },
   "repository": {
@@ -54,9 +48,6 @@
     "signal-exit": "4.1.0",
     "superagent": "^10.2.1",
     "winston": "^3.0.0"
-    // iii) No new external packages were needed for the SSL/HTTP fallback logic.
-    // The necessary modules (https, http, fs) are built into Node.js and don't
-    // need to be listed here.
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
