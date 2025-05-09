@@ -64,19 +64,19 @@ app.use(session({
 
 // Function to update session cookie secure flag
 const setSessionSecure = (isSecure) => {
-    app.use(session({
-        secret: process.env.OPENAI_API_KEY,
-        resave: false,
-        saveUninitialized: true,
-        store: new MemcachedStore({
-            hosts: ['127.0.0.1:11211'],
-        }),
-        cookie: {
-            secure: isSecure, // Set based on whether HTTPS is running
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000,
-        },
-    }));
+  app.use(session({
+    secret: process.env.OPENAI_API_KEY,
+    resave: false,
+    saveUninitialized: true,
+    store: new MemcachedStore({
+      hosts: ['127.0.0.1:11211'],
+    }),
+    cookie: {
+      secure: isSecure, // Set based on whether HTTPS is running
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  }));
 };
 
 app.use(bodyParser.json());
@@ -517,7 +517,8 @@ const startServer = () => {
   const host = getConfig().host || '0.0.0.0'; // Allow host to be configured
 
   // --- Attempt to start HTTPS Server ---
-  let privateKey, certificate, ca;
+  let privateKey = null;
+  let certificate = null;
   const certsPath = getConfig().certsPath || '/app/certs'; // Directory where certificates are copied in Docker
 
   try {
@@ -525,12 +526,12 @@ const startServer = () => {
     privateKey = fsSync.readFileSync(path.join(certsPath, 'server.key'), 'utf8');
     certificate = fsSync.readFileSync(path.join(certsPath, 'server.crt'), 'utf8');
     // Uncomment the line below if you have a CA certificate chain file
-    // ca = fsSync.readFileSync(path.join(certsPath, 'ca.crt'), 'utf8');
+    // const ca = fsSync.readFileSync(path.join(certsPath, 'ca.crt'), 'utf8');
 
     const credentials = {
-        key: privateKey,
-        cert: certificate,
-        // ca: ca // Uncomment if you have a CA certificate
+      key: privateKey,
+      cert: certificate,
+      // ca: ca // Uncomment if you have a CA certificate
     };
 
     // Create and start the HTTPS server
@@ -550,8 +551,6 @@ const startServer = () => {
     // httpServer.listen(httpPort, host, () => {
     //   logger.info(`HTTP Listening on ${host}:${httpPort}`);
     // });
-
-
   } catch (err) {
     // --- Fallback to HTTP Server ---
     logger.warn('Failed to load SSL certificates or start HTTPS server. Falling back to HTTP.', err);
