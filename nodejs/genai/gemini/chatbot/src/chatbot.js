@@ -166,31 +166,35 @@ const readContext = async (contextStr) => {
  * @returns {Promise<any>} The result of the function call.
  */
 const callFunctionByName = async (sessionId, name, args) => {
-  const functionCache = await getAvailableFunctions(sessionId);
+  const functionCache = await getAvailableFunctions(sessionId); // Assuming this loads functions
   const functionInfo = functionCache[name];
+  // logger.debug(`functionCache object is ${util.inspect(functionCache,
+  //  { depth: null })} [Session: ${sessionId}]`);
 
   if (functionInfo && functionInfo.func) {
-    const { func, params, needSession } = functionInfo;
-    // Ensure arguments match expected parameters
-    const argValues = params.map((paramName) => args[paramName]);
-    if (needSession) {
-      argValues.unshift(sessionId);
-    }
-
     try {
+      const { func, params, needSession } = functionInfo;
+
+      // Ensure arguments match expected parameters
+      const argValues = params.map((paramName) => args[paramName]);
+      if (needSession) {
+        argValues.unshift(sessionId);
+      }
+
       /* eslint-disable prefer-spread */
+      logger.info(`Calling Function '${name}' [Session: ${sessionId}]`);
       const result = await func.apply(null, argValues);
       /* eslint-enable prefer-spread */
-      logger.info(`Function '${name}' executed successfully`, { arguments: args, result }); // Suggestion 6
+      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
       return result;
     } catch (error) {
-      logger.error(`Error executing function '${name}'`, { arguments: args, error: error.message });
-      // Return a structured error object for the model
-      return { error: 'Function execution failed', details: error.message };
+      logger.error(`Error executing function '${name}' [Session: ${sessionId}]`, { arguments: args, error: error.message });
+      // Return a stringified error for the model
+      return JSON.stringify({ error: 'Function execution failed', details: error.message });
     }
   }
-  // Return a structured error object for the model
-  return { error: `Function '${name}' not found` };
+  // Return a stringified error for the model
+  return JSON.stringify({ error: `Function '${name}' not found` });
 };
 
 /**

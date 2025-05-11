@@ -171,17 +171,21 @@ const readContext = async (contextStr) => {
 const callFunctionByName = async (sessionId, name, args) => {
   const functionCache = await getAvailableFunctions(sessionId); // Assuming this loads functions
   const functionInfo = functionCache[name];
+  // logger.debug(`functionCache object is ${util.inspect(functionCache,
+  //  { depth: null })} [Session: ${sessionId}]`);
 
   if (functionInfo && functionInfo.func) {
-    const { func, params, needSession } = functionInfo;
-    // Ensure arguments match expected parameters
-    const argValues = params.map((paramName) => args[paramName]);
-    if (needSession) {
-      argValues.unshift(sessionId);
-    }
-
     try {
+      const { func, params, needSession } = functionInfo;
+
+      // Ensure arguments match expected parameters
+      const argValues = params.map((paramName) => args[paramName]);
+      if (needSession) {
+        argValues.unshift(sessionId);
+      }
+
       /* eslint-disable prefer-spread */
+      logger.info(`Calling Function '${name}' [Session: ${sessionId}]`);
       const result = await func.apply(null, argValues);
       /* eslint-enable prefer-spread */
       logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
