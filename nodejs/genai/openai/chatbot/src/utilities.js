@@ -1,32 +1,50 @@
+const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid'); // Import uuid for unique directory names
+const { Mutex } = require('async-mutex'); // Import Mutex
 const logger = require('./logger'); // Assuming you have a logger utility
 
+// Shared cache for temporary directories per session
+const sessionTempDirs = new Map();
+// Mutex map for protecting the cache per session
+const sessionMutexes = new Map();
+
 /**
- * Creates a unique temporary directory.
- * @returns {Promise<string>} A promise that resolves with the path to the
- * created temporary directory.
+ * Cleans up the temporary directory associated with a specific session and removes it from the cache.
+ * @async
+ * @param {string} sessionId The unique identifier for the session.
  */
-const createUniqueTempDir = async () => {
-  const tempDir = os.tmpdir();
-  const uniqueDirName = `genai-temp-${uuidv4()}`;
-  const newDirPath = path.join(tempDir, uniqueDirName);
+const cleanupSessionTempDir = async (sessionId) => {
+  // Acquire the mutex for this session's cleanup
+  const mutex = sessionMutexes.get(sessionId);
+  const release = mutex ? await mutex.acquire() : null;
 
   try {
-    await fs.mkdir(newDirPath, { recursive: true });
-    logger.debug(`Created unique temporary directory: ${newDirPath}`);
-    return newDirPath;
-  } catch (error) {
-    logger.error(
-      `Error creating unique temporary directory: ${error.message}`,
-    );
-    throw new Error(
-      `Failed to create unique temporary directory: ${error.message}`,
-    );
+    const tmpDir = sessionTempDirs.get(sessionId);
+    if (tmpDir) {
+      try {
+        await fs.rm(tmpDir, { recursive: true, force: true });
+        sessionTempDirs.delete(sessionId);
+        logger.info(`Cleaned up temporary directory for session: ${sessionId}`);
+      } catch (error) {
+        logger.error(`Error cleaning up temporary directory for session ${sessionId}: ${error.message || error}`);
+        // Decide if you want to re-throw the error or just log it.
+        // For cleanup, logging might be sufficient.
+      }
+    }
+    // Always delete the mutex after attempting cleanup, regardless of whether a directory was found.
+    if (sessionMutexes.has(sessionId)) {
+        sessionMutexes.delete(sessionId);
+    }
+  } finally {
+    if (release) {
+      release();
+    }
   }
 };
+
 
 /**
  * Recursively deletes a directory.
@@ -93,15 +111,45 @@ async function mkdir(localDestPath, deleteExisting = false) {
 
     // Create the directory (recursive: true will not throw if the directory already exists)
     await fs.mkdir(localDestPath, { recursive: true });
-  
+
     // Set permissions (this will apply even if the directory existed and wasn't deleted)
     await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
-  
+
     return { success: true, message: `Ensured directory ${localDestPath} exists with correct permissions` };
 
   } catch (error) {
     logger.error(`Failed to process directory ${localDestPath} - ${error.message}`);
     throw error;
+  }
+}
+
+/**
+ * Creates a unique temporary directory with write permissions.
+ *
+ * This function generates a unique directory name using a random string,
+ * creates the directory in the system's temporary folder, and grants
+ * write permissions to it. The path of the created directory is returned.
+ *
+ * @async
+ * @function createUniqueTempDir
+ * @returns {Promise<string>} The path to the created temporary directory.
+ * @throws {Error} Throws an error if the directory cannot be created.
+ * */
+async function createUniqueTempDir() {
+  // Generate a unique directory name
+  const uniqueDirName = crypto.randomBytes(16).toString('hex');
+  const tempDirPath = path.join(os.tmpdir(), uniqueDirName);
+
+  try {
+    // Create the directory with write permissions
+    await mkdir(tempDirPath);
+
+    // Set write permissions (this is usually the default, but can be enforced)
+    await fs.chmod(tempDirPath, 0o700); // Owner can read, write, and execute
+
+    return tempDirPath;
+  } catch (error) {
+    throw new Error(`Failed to create temporary directory: ${error.message}`);
   }
 }
 
@@ -148,7 +196,7 @@ const readFilesInDirectory = async (dir) => {
  * @param {string} code The code content to save.
  * @param {string} filename The desired filename, can include a relative path.
  * @param {string} [directory='/tmp/nodeapp/'] The base directory to save the file
- *  in if filename is relative.
+ * in if filename is relative.
  * @returns {Promise<string>} A promise that resolves with the full path to the
  * saved file.
  * @throws {Error} If saving the file fails.
@@ -185,10 +233,61 @@ const saveCodeToFile = async (code, filename, directory = '/tmp/nodeapp/') => {
   }
 };
 
+/**
+ * Gets or creates a unique temporary directory for a given session ID, using a cache.
+ * Ensures thread safety using a mutex per session.
+ * @async
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {Promise<string>} A promise that resolves with the path to the
+ * created or retrieved temporary directory for the session.
+ * @throws {Error} If creating the temporary directory fails.
+ */
+async function getOrCreateSessionTempDir(sessionId) {
+  // Get or create the mutex for this session
+  if (!sessionMutexes.has(sessionId)) {
+    sessionMutexes.set(sessionId, new Mutex());
+  }
+  const mutex = sessionMutexes.get(sessionId);
+
+  // Acquire the mutex to ensure only one process creates/accesses the directory at a time
+  const release = await mutex.acquire();
+
+  try {
+    // Check if the directory is already in the cache
+    if (sessionTempDirs.has(sessionId)) {
+      const existingDir = sessionTempDirs.get(sessionId);
+      logger.debug(`Using cached temporary directory for session ${sessionId}: ${existingDir}`);
+      return existingDir;
+    }
+
+    try {
+      const newDirPath = await createUniqueTempDir();
+      logger.debug(`Created unique temporary directory for session ${sessionId}: ${newDirPath}`);
+      // Store the new directory in the cache
+      sessionTempDirs.set(sessionId, newDirPath);
+      return newDirPath;
+    } catch (error) {
+      logger.error(
+        `Error creating unique temporary directory for session ${sessionId}: ${error.message}`,
+      );
+      // Clean up the mutex if directory creation failed
+       sessionMutexes.delete(sessionId);
+      throw new Error(
+        `Failed to create unique temporary directory for session ${sessionId}: ${error.message}`,
+      );
+    }
+  } finally {
+    // Release the mutex
+    release();
+  }
+};
+
 module.exports = {
-  createUniqueTempDir,
+  createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes
   deleteDirectoryRecursively,
   mkdir,
   readFilesInDirectory,
   saveCodeToFile,
+  getOrCreateSessionTempDir,
+  cleanupSessionTempDir,
 };

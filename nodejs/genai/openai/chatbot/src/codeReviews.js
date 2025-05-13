@@ -1,25 +1,6 @@
-const { Mutex } = require('async-mutex');
 const logger = require('./logger');
 const { fetchRepoContentsRecursive } = require('./gitFunctions');
-const { createUniqueTempDir, deleteDirectoryRecursively, readFilesInDirectory } = require('./utilities');
-
-// Import a thread-safe Map implementation (e.g., from 'async-mutex')
-
-// Create a map to store temporary directories and their associated mutexes per session
-const sessionTempDirs = new Map();
-const sessionMutexes = new Map();
-
-/**
- * Gets or creates a mutex for a given session ID.
- * @param {string} sessionId The unique identifier for the session.
- * @returns {Mutex} The mutex for the session.
- */
-function getSessionMutex(sessionId) {
-  if (!sessionMutexes.has(sessionId)) {
-    sessionMutexes.set(sessionId, new Mutex());
-  }
-  return sessionMutexes.get(sessionId);
-}
+const { readFilesInDirectory, getOrCreateSessionTempDir, cleanupSessionTempDir } = require('./utilities');
 
 /**
  * Lists the names of public repositories for a given GitHub username for a specific session.
@@ -37,15 +18,9 @@ function getSessionMutex(sessionId) {
  * @throws {Error} If API request fails or user is not found.
  */
 async function codeReviews(sessionId, username, repoName, repoPath) {
-  const mutex = getSessionMutex(sessionId);
-  const release = await mutex.acquire();
-  let tmpDir = sessionTempDirs.get(sessionId);
-
+  let tmpDir;
   try {
-    if (!tmpDir) {
-      tmpDir = await createUniqueTempDir();
-      sessionTempDirs.set(sessionId, tmpDir);
-    }
+    tmpDir = await getOrCreateSessionTempDir(sessionId);
 
     const response = await fetchRepoContentsRecursive(
       sessionId,
@@ -69,11 +44,6 @@ async function codeReviews(sessionId, username, repoName, repoPath) {
     logger.error(`Error getting files for review (exception) [Session: ${sessionId}]: ${error.message || error}`);
     throw error;
   } finally {
-    release();
-    // Consider when to clean up the temporary directory.
-    // For long-running sessions, you might want a separate cleanup mechanism
-    // or clean up when the session ends. For this example, we'll keep it
-    // for the session's lifetime.
   }
 }
 
@@ -83,17 +53,7 @@ async function codeReviews(sessionId, username, repoName, repoPath) {
  * @param {string} sessionId The unique identifier for the session.
  */
 async function cleanupSession(sessionId) {
-  const tmpDir = sessionTempDirs.get(sessionId);
-  if (tmpDir) {
-    try {
-      await deleteDirectoryRecursively(tmpDir);
-      sessionTempDirs.delete(sessionId);
-      sessionMutexes.delete(sessionId);
-      logger.info(`Cleaned up temporary directory for session: ${sessionId}`);
-    } catch (error) {
-      logger.error(`Error cleaning up temporary directory for session ${sessionId}: ${error.message || error}`);
-    }
-  }
+  await cleanupSessionTempDir(sessionId);
 }
 
 module.exports = {
