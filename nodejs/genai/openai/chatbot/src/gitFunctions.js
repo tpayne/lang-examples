@@ -661,14 +661,17 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null) {
         }
 
         // STEP 3: Upload/Update the file
-        const putResponse = await superagent
-          .put(apiUrl)
-          .set('Authorization', `token ${githubToken}`)
-          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-          .set('User-Agent', USER_AGENT)
-          .set('Accept', 'application/vnd.github+json')
-          .set('Content-Type', 'application/json') // Added in a previous fix
-          .send(JSON.stringify(putBody)); // Modified in a previous fix
+        const request = superagent.put(apiUrl); // Start the request chain
+
+        request.set('Authorization', `token ${githubToken}`);
+        request.set('X-GitHub-Api-Version', GITHUB_API_VERSION);
+        request.set('User-Agent', USER_AGENT);
+        request.set('Accept', 'application/vnd.github+json');
+        request.set('Content-Type', 'application/json'); // Set Content-Type
+
+        // Send the body as the final step before awaiting
+        const putResponse = await request.send(putBody);
+
 
         if ([200, 201].includes(putResponse.status)) {
           const action = existingFileSha ? 'updated' : 'uploaded';
