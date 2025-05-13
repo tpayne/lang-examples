@@ -165,7 +165,10 @@ async function registerFunction(
   const release = await registryMutex.acquire();
   try {
     if (sessionRegistry[name]) {
-      logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be reused.`);
+      logger.warn(
+        `Function with name '${name}' already registered for session '${sessionId}'`
+        + ' and will be reused.',
+      );
     } else {
       sessionRegistry[name] = { func, params, needSession };
 
@@ -194,7 +197,8 @@ async function loadCodeReviews(sessionId) {
   await registerFunction(
     sessionId,
     'file_review',
-    (sessionId, username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
+    // Removed sessionId from the anonymous function parameters
+    (username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
     ['username', 'repoName', 'repoPath'],
     'Review files in a given GitHub repository.',
     {
@@ -211,7 +215,8 @@ async function loadDosa(sessionId) {
   await registerFunction(
     sessionId,
     'get_mot_history',
-    (sessionId, registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
+    // Removed sessionId from the anonymous function parameters
+    (registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
     ['registrationNumber'],
     'Get the MOT History for a vehicle.',
     {
@@ -313,15 +318,17 @@ async function loadGitHub(sessionId) {
   await registerFunction(
     sessionId,
     'commit_files',
-    commitFiles,
-    ['username', 'repoName', 'directoryPath'],
-    'Upload, push, load or commit files in a directory to a specified GitHub repository.',
+    // Updated function call to pass sessionId and remove directoryPath
+    (username, repoName) => commitFiles(sessionId, username, repoName),
+    ['username', 'repoName'], // Removed directoryPath from params array
+    'Upload, push, load or commit files from the session temporary directory to a specified GitHub repository, maintaining directory structure.', // Updated description
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      directoryPath: { type: 'string', description: 'The local directory path that contains the files to upload/commit to the repository.' },
+      // Removed directoryPath from parametersSchema
     },
-    ['username', 'repoName', 'directoryPath'],
+    ['username', 'repoName'], // Removed directoryPath from required array
+    true, // Set needSession to true
   );
 
   await registerFunction(
@@ -344,20 +351,22 @@ async function loadGitHub(sessionId) {
   await registerFunction(
     sessionId,
     'fetch_repo_contents',
-    fetchRepoContentsRecursive,
-    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
-    'Fetch or download the contents of a GitHub repository.',
+    // Updated function call to pass sessionId and remove localDestPath from the AI's view
+    (username, repoName, repoPath, includeDotGithub, skipBinaryFiles, retryCount, maxRetries) => fetchRepoContentsRecursive(sessionId, username, repoName, repoPath, undefined, includeDotGithub, skipBinaryFiles, retryCount, maxRetries), // Pass undefined for localDestPath
+    ['username', 'repoName', 'repoPath', 'includeDotGithub', 'skipBinaryFiles', 'retryCount', 'maxRetries'], // Removed localDestPath
+    'Fetch or download the contents of a GitHub repository to a session temporary directory, optionally skipping binary files.', // Updated description
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
       repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-      localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
-      includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
-      retryCount: { type: 'number', description: 'The retry count to use.' },
-      maxRetries: { type: 'number', description: 'The maximum number of retries.' },
+      // Removed localDestPath from parametersSchema
+      includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not (optional). Defaults to true.' }, // Made optional
+      skipBinaryFiles: { type: 'boolean', description: 'A boolean to skip potential binary files based on extension (optional). Defaults to true.' }, // Added skipBinaryFiles
+      retryCount: { type: 'number', description: 'The retry count to use (internal, optional). Defaults to 0.' }, // Made optional, clarified internal
+      maxRetries: { type: 'number', description: 'The maximum number of retries (optional). Defaults to 3.' }, // Made optional
     },
-    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
-    true,
+    ['username', 'repoName', 'repoPath'], // Updated required array
+    true, // needSession is true
   );
 
   await registerFunction(
@@ -604,13 +613,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 10 2025 11:47:34 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 12 2025 01:14:27 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

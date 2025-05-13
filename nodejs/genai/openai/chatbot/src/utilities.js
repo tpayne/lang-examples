@@ -1,254 +1,189 @@
-const crypto = require('crypto');
 const fs = require('fs').promises;
-const os = require('os');
 const path = require('path');
-const logger = require('./logger');
-// Assuming you have a logger module
-const DEFAULT_DIR = '/tmp/nodeapp/';
+const os = require('os');
+const { v4: uuidv4 } = require('uuid'); // Import uuid for unique directory names
+const logger = require('./logger'); // Assuming you have a logger utility
 
 /**
- * Recursively deletes a directory and all its contents (files and subdirectories).
- *
- * This function takes a directory path as input and deletes the directory along
- * with all its files and subdirectories. If the directory does not exist, it
- * will not throw an error. If an error occurs during the deletion process, it
- * will log the error and re-throw it.
- *
- * @async
- * @function deleteDirectoryRecursively
- * @param {string} dirPath - The path to the directory to delete.
- * @throws {Error} Throws an error if there is an issue deleting the directory.
- *
+ * Creates a unique temporary directory.
+ * @returns {Promise<string>} A promise that resolves with the path to the
+ * created temporary directory.
  */
-async function deleteDirectoryRecursively(dirPath) {
+const createUniqueTempDir = async () => {
+  const tempDir = os.tmpdir();
+  const uniqueDirName = `genai-temp-${uuidv4()}`;
+  const newDirPath = path.join(tempDir, uniqueDirName);
+
   try {
-    // Check if the directory exists and is a directory
-    let stat;
-    try {
-      stat = await fs.stat(dirPath);
-    } catch (error) {
-      // Ignore the error if the stat fails (e.g., directory does not exist)
-      logger.warn(`Directory does not exist: ${dirPath}. Proceeding without deletion.`);
-      return { success: false, message: `Directory does not exist: ${dirPath}` };
-    }
-
-    if (!stat.isDirectory()) {
-      logger.warn(`${dirPath} is not a directory. Proceeding without deletion.`);
-      return { success: false, message: `${dirPath} is not a directory` };
-    }
-
-    // Read the contents of the directory
-    const files = await fs.readdir(dirPath);
-
-    // Recursively delete each file and subdirectory
-    await Promise.all(files.map(async (file) => {
-      const filePath = path.join(dirPath, file);
-      const fileStat = await fs.stat(filePath);
-      if (fileStat.isDirectory()) {
-        // If it's a directory, call the function recursively
-        await deleteDirectoryRecursively(filePath);
-      } else {
-        // If it's a file, delete it
-        await fs.unlink(filePath);
-      }
-    }));
-
-    // Remove the now-empty directory
-    await fs.rmdir(dirPath);
-    return { success: true, message: 'Directory is deleted' };
+    await fs.mkdir(newDirPath, { recursive: true });
+    logger.debug(`Created unique temporary directory: ${newDirPath}`);
+    return newDirPath;
   } catch (error) {
-    logger.error(`Error deleting directory: ${dirPath}`, error);
-    throw error; // Re-throw the error for handling by the caller
+    logger.error(
+      `Error creating unique temporary directory: ${error.message}`,
+    );
+    throw new Error(
+      `Failed to create unique temporary directory: ${error.message}`,
+    );
   }
-}
+};
 
 /**
- * Creates a directory at the specified path, deleting it first if it already exists.
+ * Recursively deletes a directory.
+ * @param {string} dirPath The path to the directory to delete.
+ * @returns {Promise<void>} A promise that resolves when the directory is deleted.
+ */
+const deleteDirectoryRecursively = async (dirPath) => {
+  try {
+    await fs.rm(dirPath, { recursive: true, force: true });
+    logger.debug(`Deleted directory recursively: ${dirPath}`);
+  } catch (error) {
+    logger.error(
+      `Error deleting directory recursively ${dirPath}: ${error.message}`,
+    );
+    // Depending on requirements, you might want to throw here or just log
+    // For temporary directories, logging might be sufficient as cleanup is best effort.
+  }
+};
+
+/**
+ * Creates a directory at the specified path, optionally deleting it first if it already exists.
  *
- * This function attempts to remove the directory at `localDestPath` recursively
- * if it exists, and then creates a new directory at that path. If the directory
- * does not exist, it simply creates it. If an error occurs during the deletion
- * process that is not related to the directory not existing, the error is re-thrown.
+ * This function first checks if the directory exists. If `deleteExisting` is true and
+ * the directory exists, it attempts to remove it recursively. Then, it creates a new
+ * directory at the specified path. If the directory does not exist initially and
+ * `deleteExisting` is false, it simply creates the directory.
  *
  * @async
  * @function mkdir
  * @param {string} localDestPath - The path to the directory to create.
- * @throws {Error} Throws an error if there is an issue deleting the directory
- * that is not due to the directory not existing.
+ * @param {boolean} [deleteExisting=false] - If true, deletes the directory
+ * if it exists before creating it.
+ * @throws {Error} Throws an error if there is an issue checking for directory existence,
+ * deleting the directory (that is not due to the directory not existing when deleteExisting is true),
+ * or creating the directory.
  */
-async function mkdir(localDestPath) {
-  logger.debug(`mkdir ${localDestPath}`);
+async function mkdir(localDestPath, deleteExisting = false) {
+  if (!localDestPath) {
+    logger.error('mkdir called with undefined localDestPath');
+    throw new Error('localDestPath is undefined');
+  }
+
   try {
-    await deleteDirectoryRecursively(localDestPath);
+    // Check if the directory exists
+
+    try {
+      const stats = await fs.stat(localDestPath);
+
+      if (stats.isDirectory()) {
+        await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
+        return { success: true, message: `Directory already exists, no action needed` };
+      }
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error; // Re-throw if it's not a "directory does not exist" error
+      }
+      // Ignore ENOENT as the directory is expected not to exist
+    }
+
+    if (deleteExisting) {
+      logger.debug(`Directory ${localDestPath} exists, deleting it recursively.`);
+      await deleteDirectoryRecursively(localDestPath);
+    }
+
+    // Create the directory (recursive: true will not throw if the directory already exists)
     await fs.mkdir(localDestPath, { recursive: true });
+  
+    // Set permissions (this will apply even if the directory existed and wasn't deleted)
     await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
-    return { success: true, message: `Created directory ${localDestPath}` };
+  
+    return { success: true, message: `Ensured directory ${localDestPath} exists with correct permissions` };
+
   } catch (error) {
-    logger.error(`Failed to create directory ${localDestPath} - ${error.message}`);
+    logger.error(`Failed to process directory ${localDestPath} - ${error.message}`);
     throw error;
   }
 }
 
 /**
- * Saves generated code to a local file.
- *
+ * Reads all files in a directory and its subdirectories.
  * @async
- * @param {string} code - The generated code to save.
- * @param {string} filename - The name of the file to save the code in.
- * @param {string} [directory] - The directory where the file will be saved.
- * Defaults to DEFAULT_DIR if not specified.
- * @returns {Promise<string>} - A promise that resolves to the path of the saved file.
- * @throws {Error} - Throws an error if the file cannot be saved.
+ * @param {string} dir The directory to start reading from.
+ * @returns {Promise<Map<string, string>>} A promise that resolves to a Map where keys are
+ * relative file paths and values are file contents.
  */
-async function saveCodeToFile(code, filename, directory) {
-  // Use /tmp if no directory is specified
-  let lDir = directory;
-  if (!lDir) {
-    lDir = DEFAULT_DIR;
-  } else if (!lDir.startsWith('/')) {
-    // Append /tmp to the start of the incoming directory if it does not start with '/'
-    lDir = path.join(DEFAULT_DIR, lDir);
-  }
-
+/* eslint-disable no-restricted-syntax, no-await-in-loop */
+const readFilesInDirectory = async (dir) => {
+  const files = new Map();
   try {
-    // Ensure the directory exists
-    await mkdir(lDir);
-
-    // Create the full file path
-    const filePath = path.join(lDir, filename);
-
-    // Write the code to the file
-    await fs.writeFile(filePath, code, { encoding: 'utf8' });
-
-    // Return the path of the saved file
-    return filePath;
-  } catch (error) {
-    logger.error(`Error saving file: ${error.message}`);
-    throw new Error(`Failed to save file: ${error.message}`);
-  }
-}
-
-/**
- * Creates a unique temporary directory with write permissions.
- *
- * This function generates a unique directory name using a random string,
- * creates the directory in the system's temporary folder, and grants
- * write permissions to it. The path of the created directory is returned.
- *
- * @async
- * @function createUniqueTempDir
- * @returns {Promise<string>} The path to the created temporary directory.
- * @throws {Error} Throws an error if the directory cannot be created.
- * */
-async function createUniqueTempDir() {
-  // Generate a unique directory name
-  const uniqueDirName = crypto.randomBytes(16).toString('hex');
-  const tempDirPath = path.join(os.tmpdir(), uniqueDirName);
-
-  try {
-    // Create the directory with write permissions
-    await mkdir(tempDirPath);
-
-    // Set write permissions (this is usually the default, but can be enforced)
-    await fs.chmod(tempDirPath, 0o700); // Owner can read, write, and execute
-
-    return tempDirPath;
-  } catch (error) {
-    throw new Error(`Failed to create temporary directory: ${error.message}`);
-  }
-}
-
-/**
- * Reads the content of a file.
- *
- * @param {string} filePath The path to the file to read.
- * @returns {Promise<string|null>} A promise that resolves with the file content as a string,
- * or null if an error occurred while reading the file.
- */
-async function readFileContent(filePath) {
-  try {
-    const content = await fs.readFile(filePath, 'utf8');
-    return content;
-  } catch (error) {
-    logger.error(`Error reading file: ${filePath}`, error);
-    // Don't re-throw here. readFileContent might be called
-    // in a loop, and we want to continue processing other files.
-    // A return null will signal to the caller that *this* file
-    // had a problem.
-    return null; // Return null on error
-  }
-}
-
-/* eslint-disable no-continue, no-restricted-syntax, no-await-in-loop,  */
-
-/**
- * Recursively reads all files in a directory and its subdirectories.
- *
- * @param {string} dirPath The path to the directory to read.
- * @returns {Promise<string[]>} A promise that resolves with an array of absolute file paths.
- * @throws {Error} Throws an error if the initial directory cannot be read.
- */
-async function readFilesRecursively(dirPath) {
-  const files = [];
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dir, { withFileTypes: true });
 
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name);
+      const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        const subFiles = await readFilesRecursively(fullPath);
-        files.push(...subFiles);
-      } else {
-        files.push(fullPath);
+        // Recursively read subdirectories
+        const subDirFiles = await readFilesInDirectory(fullPath);
+        // Merge maps
+        for (const [relativePath, content] of subDirFiles.entries()) {
+          files.set(path.join(entry.name, relativePath), content);
+        }
+      } else if (entry.isFile()) {
+        // Read file content
+        const content = await fs.readFile(fullPath, 'utf8');
+        files.set(entry.name, content); // Store with just the filename for now
       }
     }
   } catch (error) {
-    // Handle the error, and then re-throw. This is important,
-    // because if the *initial* directory doesn't exist, we want
-    // the caller to know. (E.g., the user provided a bad path.)
-    logger.error(`Error reading directory: ${dirPath}`, error);
-    throw error; // Re-throw the error.
+    logger.error(`Error reading directory ${dir}: ${error.message}`);
+    throw new Error(`Failed to read directory contents: ${error.message}`);
   }
   return files;
-}
+};
+/* eslint-enable no-restricted-syntax, no-await-in-loop */
 
 /**
- * Reads all files in a specified directory and returns a Map of file paths and their contents.
- *
- * This function recursively retrieves all file paths in the given directory,
- * reads the content of each file, and stores the file path and content in a Map.
- * If a file cannot be read, it logs a warning and skips that file. If an error
- * occurs while reading the directory, it logs the error and re-throws it.
- *
+ * Saves code content to a local file, creating directories if needed.
+ * Handles cases where filename includes a path.
  * @async
- * @function readFilesInDirectory
- * @param {string} directoryPath - The path to the directory from which to read files.
- * @returns {Promise<Map<string, string>>} A promise that resolves to a Map where the
- * keys are absolute file paths
- * and the values are the contents of the files.
- * @throws {Error} Throws an error if there is an issue reading the directory.
+ * @param {string} code The code content to save.
+ * @param {string} filename The desired filename, can include a relative path.
+ * @param {string} [directory='/tmp/nodeapp/'] The base directory to save the file
+ *  in if filename is relative.
+ * @returns {Promise<string>} A promise that resolves with the full path to the
+ * saved file.
+ * @throws {Error} If saving the file fails.
  */
-async function readFilesInDirectory(directoryPath) {
-  const filesMap = new Map(); // Create a Map to store file paths and their contents
-
-  try {
-    const filePaths = await readFilesRecursively(directoryPath);
-    for (const filePath of filePaths) {
-      const fileContent = await readFileContent(filePath);
-      if (fileContent === null) {
-        logger.warn(`Skipping file: ${filePath} due to read error.`);
-        continue; // Skip to the next file
-      }
-      filesMap.set(filePath, fileContent); // Store the file path and content in the Map
-    }
-  } catch (error) {
-    logger.error(`Error reading directory: ${directoryPath}`, error);
-    throw error; // Re-throw the error.
+const saveCodeToFile = async (code, filename, directory = '/tmp/nodeapp/') => {
+  // Determine the full file path
+  let fullPath;
+  if (path.isAbsolute(filename) || filename.includes(path.sep)) {
+    // If filename is already an absolute path or contains path separators, use it directly
+    fullPath = filename;
+  } else {
+    // Otherwise, join the directory and filename
+    fullPath = path.join(directory, filename);
   }
-  return filesMap; // Return the Map of file paths and contents
-}
 
-/* eslint-enable no-continue, no-restricted-syntax, no-await-in-loop,  */
+  // Ensure the directory exists
+  const dirPath = path.dirname(fullPath);
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+    logger.debug(`Ensured directory exists: ${dirPath}`);
+  } catch (error) {
+    logger.error(`Error creating directory ${dirPath}: ${error.message}`);
+    throw new Error(`Failed to create directory for file: ${error.message}`);
+  }
+
+  // Save the file
+  try {
+    await fs.writeFile(fullPath, code, 'utf8');
+    logger.info(`Code saved successfully to: ${fullPath}`);
+    return fullPath;
+  } catch (error) {
+    logger.error(`Error saving file ${fullPath}: ${error.message}`);
+    throw new Error(`Failed to save file: ${error.message}`);
+  }
+};
 
 module.exports = {
   createUniqueTempDir,

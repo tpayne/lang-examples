@@ -47,7 +47,8 @@
     "redis": "^5.0.1",
     "signal-exit": "4.1.0",
     "superagent": "^10.2.1",
-    "winston": "^3.0.0"
+    "winston": "^3.0.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
