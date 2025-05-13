@@ -290,12 +290,13 @@ async function loadGitHub(sessionId) {
     sessionId,
     'commit_files',
     commitFiles,
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'repoPath', 'branchName'],
     'Upload, push, load or commit files from the session temporary directory to a specified GitHub repository, maintaining directory structure.', // Updated description
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
       repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      branchName: { type: 'string', description: 'The name of the branch to use.' },
     },
     ['username', 'repoName', 'repoPath'],
     true,
