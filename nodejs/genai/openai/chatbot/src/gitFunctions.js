@@ -298,15 +298,15 @@ async function fetchRepoContentsRecursive(
         // --- New Logic for single file end ---
 
         try {
-           const parentDir = path.dirname(filePath);
-           // Only create the parent directory if it's not the base temporary directory itself
-           if (parentDir !== baseLocalDestPath) {
-             await mkdir(parentDir);
-           } else {
-             logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
-           }
+          const parentDir = path.dirname(filePath);
+          // Only create the parent directory if it's not the base temporary directory itself
+          if (parentDir !== baseLocalDestPath) {
+            await mkdir(parentDir);
+          } else {
+            logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
+          }
 
-           await downloadFile(sessionId, items.download_url, filePath, githubToken);
+          await downloadFile(sessionId, items.download_url, filePath, githubToken);
           // Return success after successful download
           return { success: true, message: `Processed single item at path "${repoPath}"` };
         } catch (error) {
@@ -359,10 +359,10 @@ async function fetchRepoContentsRecursive(
 
         if (item.download_url) {
           try {
-             // Ensure parent directory exists before downloading using recursive mkdir
-             const parentDir = path.dirname(currentLocalPath);
-             await mkdir(parentDir); // mkdir call is correct here for nested files/dirs
-             await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
+            // Ensure parent directory exists before downloading using recursive mkdir
+            const parentDir = path.dirname(currentLocalPath);
+            await mkdir(parentDir); // mkdir call is correct here for nested files/dirs
+            await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
           } catch (error) {
             // Log the error and propagate the failure with more details
             const errorMessage = error.message || error;
@@ -422,7 +422,7 @@ async function fetchRepoContentsRecursive(
     //  `Error object is ${util.inspect(error, { depth: null })} [Session: ${sessionId}]`
     //);
     logger.error(
-      `Error in fetchRepoContentsRecursive (exception): `+
+      `Error in fetchRepoContentsRecursive (exception): ` +
       `${repoPath} [Session: ${sessionId}]: ${errorMessage}`
     );
     if (error.response) {
@@ -506,248 +506,6 @@ async function listBranches(username, repoName) {
     logger.error('Error listing branches (exception):', username, repoName, error);
     handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
   }
-}
-
-/* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
-/**
- * Commits files to a GitHub repository, including files in subdirectories.
- * It checks for existing files to include their SHAs for updates.
- *
- * Files are read from a specified session's temporary directory.
- * If `commitDirectory` is provided, files from the session's temporary directory
- * are committed into that directory within the repository. Otherwise,
- * they are committed to the root of the repository and its subdirectories.
- *
- * @async
- * @function commitFiles
- * @param {string} sessionId - The unique identifier for the session.
- * @param {string} username - The username of the repository owner.
- * @param {string} repoName - The name of the repository where files will be
- * committed.
- * @param {string} [commitDirectory=null] - The name of the directory in the repository
- * where files will be committed. If provided, local files will be placed
- * relative to this directory in the repo.
- * @returns {Promise<Object>} - A promise that resolves to an object indicating
- * the success or failure of the operation, with results for each file processed.
- * @throws {Error} - Throws an error if initial validation or directory reading fails.
- */
-async function commitFiles(sessionId, username, repoName, commitDirectory = null) {
-  // Validate parameters
-  if (!sessionId || typeof sessionId !== 'string') {
-    logger.error('commitFiles called with invalid session ID');
-    throw new Error('Invalid session ID');
-  }
-  if (!username || typeof username !== 'string') {
-    logger.error('commitFiles called with invalid username');
-    throw new Error('Invalid username');
-  }
-  if (!repoName || typeof repoName !== 'string') {
-    logger.error('commitFiles called with invalid repository name');
-    throw new Error('Invalid repository name');
-  }
-  // commitDirectory is optional, no validation needed beyond type check if provided
-  if (commitDirectory !== undefined && typeof commitDirectory !== 'string') {
-     logger.error('commitFiles called with invalid commitDirectory type');
-     throw new Error('Invalid commitDirectory type');
-  }
-
-
-  // Retrieve the session's temporary directory using the shared utility function
-  // We expect the directory to *already* exist from a prior fetch or creation.
-  const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
-
-  if (!currentDirectoryPath) {
-       logger.error(`Temporary directory not found for session: ${sessionId} during commit.`);
-       throw new Error(
-           `Temporary directory not found for session: ${sessionId}. `
-           + 'Please ensure files were downloaded or a session directory was created first.'
-       );
-  }
-
-
-  /* eslint-disable no-continue */
-  try {
-    // Use walkDir to get all file paths, including those
-    // in subdirectories, relative to the start directory
-    const filesToProcess = await walkDir(currentDirectoryPath);
-    const results = [];
-
-    logger.debug(
-      `Found ${filesToProcess.length} potential files to process for ${username}/${repoName}`
-      + ` from ${currentDirectoryPath}`
-    );
-
-    if (filesToProcess.length === 0) {
-      return {
-        success: true,
-        message: 'No files found in the session temporary directory to upload',
-        status: 200,
-      };
-    }
-
-    // Process each file found in the temporary directory
-    for (const relativeFilePath of filesToProcess) {
-      const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
-
-      // Calculate the destination path in the GitHub repository
-      // If commitDirectory is specified, join it with the relative file path.
-      // Otherwise, the GitHub destination path is just the relative file path.
-      const githubDestPath = commitDirectory ? path.join(commitDirectory, relativeFilePath) : relativeFilePath;
-
-
-      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}`;
-      let existingFileSha = null;
-
-      logger.debug(`Processing file: ${relativeFilePath}`);
-      logger.debug(`  Full local path: ${fullLocalFilePath}`);
-      logger.debug(`  GitHub destination path: ${githubDestPath}`);
-      logger.debug(`  GitHub API URL for PUT: ${apiUrl}`);
-
-
-      try {
-        // STEP 1: Check if the file exists and get its SHA
-        const getResponse = await superagent
-          .get(apiUrl)
-          .set('Authorization', `token ${githubToken}`)
-          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-          .set('User-Agent', USER_AGENT)
-          .set('Accept', 'application/vnd.github+json');
-
-        if (getResponse.status === 200) {
-          // File exists, get its SHA
-          existingFileSha = getResponse.body.sha;
-          logger.debug(`File exists, retrieved SHA: ${existingFileSha} for ${githubDestPath}`);
-        } else {
-          // This case should theoretically not be reached if status is not 404
-          logger.warn(
-            `Unexpected status when checking file existence for ${githubDestPath}: `
-            + `${getResponse.status}`
-          );
-          results.push({
-            file: relativeFilePath, // Report the original relative path
-            success: false,
-            message: `Failed to check existence (Status: ${getResponse.status})`,
-          });
-          continue; // Skip to the next file
-        }
-      } catch (getError) {
-        // Handle error when checking for file existence
-        if (getError.response && getError.response.status === 404) {
-          // File does not exist, this is expected for new files
-          existingFileSha = null; // Explicitly set to null
-          logger.debug(`File does not exist: ${githubDestPath}`);
-        } else {
-          // Other errors during GET request
-          const status = (getError.response && getError.response.status) || 'N/A';
-          const errorMessage = (getError.response && getError.response.body
-            && getError.response.body.message) || getError.message;
-          logger.error(
-            `Error checking existence of file ${githubDestPath} [Status: ${status}]`,
-            getError
-          );
-          results.push({
-            file: relativeFilePath, // Report the original relative path
-            success: false,
-            message: `Failed to check existence: ${errorMessage}`,
-          });
-          continue; // Skip to the next file
-        }
-      }
-
-      // STEP 2: Read file content and prepare for PUT
-      try {
-        const content = await fs.readFile(fullLocalFilePath, { encoding: 'utf8' });
-        const base64Content = Buffer.from(content).toString('base64');
-
-        // Prepare the request body, including sha if the file exists
-        const putBody = {
-          message: existingFileSha ? `Update ${githubDestPath}` : `Add ${githubDestPath}`, // Adjust commit message
-          content: base64Content,
-        };
-
-        if (existingFileSha) {
-          putBody.sha = existingFileSha; // Include SHA for updates
-          logger.debug(`Preparing to update file: ${githubDestPath} with SHA ${existingFileSha}`);
-        } else {
-          logger.debug(`Preparing to create file: ${githubDestPath}`);
-        }
-
-        // STEP 3: Upload/Update the file
-        const request = superagent.put(apiUrl); // Start the request chain
-
-        request.set('Authorization', `token ${githubToken}`);
-        request.set('X-GitHub-Api-Version', GITHUB_API_VERSION);
-        request.set('User-Agent', USER_AGENT);
-        request.set('Accept', 'application/vnd.github+json');
-        request.set('Content-Type', 'application/json'); // Set Content-Type
-
-        // Send the body as the final step before awaiting
-        const putResponse = await request.send(putBody);
-
-
-        if ([200, 201].includes(putResponse.status)) {
-          const action = existingFileSha ? 'updated' : 'uploaded';
-          const newSha = (putResponse.body && putResponse.body.content
-            && putResponse.body.content.sha) || undefined; // Get the new SHA from the response
-          results.push({
-            file: relativeFilePath, // Report the original relative path
-            success: true,
-            message: `File ${action}`,
-            sha: newSha,
-            githubPath: githubDestPath // Add the GitHub path for clarity
-          });
-          logger.info(
-            `Successfully ${action} file: ${githubDestPath} [Status: `
-            + `${putResponse.status}, New SHA: ${newSha}]`
-          );
-        } else {
-          const errorMessage = (putResponse.body && putResponse.body.message) || 'Unknown error during PUT';
-          logger.warn(
-            `Failed to upload/update file: ${githubDestPath} [Status: `
-            + `${putResponse.status}, Message: ${errorMessage}]`
-          );
-          results.push({
-            file: relativeFilePath, // Report the original relative path
-            success: false,
-            status: putResponse.status,
-            message: errorMessage,
-          });
-        }
-      } catch (putError) {
-        // Error during PUT request (upload/update)
-        const status = (putError.response && putError.response.status) || 'N/A';
-        const errorMessage = (putError.response && putError.response.body
-          && putError.response.body.message) || putError.message;
-        logger.error(
-          `Error uploading/updating file: ${githubDestPath} [Status: ${status}]`,
-          putError
-        );
-        results.push({
-          file: relativeFilePath, // Report the original relative path
-          success: false,
-          message: `Failed to upload/update: ${errorMessage}`
-        });
-      }
-    }
-
-    // Check if all processed uploads were successful
-    const allSuccessful = results.every((result) => result.success);
-
-    return {
-      success: allSuccessful,
-      results,
-      message: allSuccessful ? 'All selected files processed successfully' : 'Some selected files failed to process',
-    };
-  } catch (error) {
-    logger.error(
-      `Error processing directory or committing files (exception): ${username}/${repoName} - `
-      + `${error.message}`,
-      error
-    );
-    // Re-throw a clearer error if the initial directory read or setup failed
-    throw new Error(`Failed to process files for commit: ${error.message}`);
-  }
-  /* eslint-enable no-continue */
 }
 
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
@@ -1322,6 +1080,7 @@ const walkDir = async (dir, rootDir = dir) => {
 /**
  * Commits files to a GitHub repository, including files in subdirectories.
  * It checks for existing files to include their SHAs for updates.
+ * Only commits files if their content is different from the existing file in the repo.
  *
  * Files are read from a specified session's temporary directory.
  * If `commitDirectory` is provided, files from the session's temporary directory
@@ -1358,28 +1117,26 @@ async function commitFiles(sessionId, username, repoName, commitDirectory = null
   }
   // commitDirectory is optional, no validation needed beyond type check if provided
   if (commitDirectory !== undefined && typeof commitDirectory !== 'string') {
-     logger.error('commitFiles called with invalid commitDirectory type');
-     throw new Error('Invalid commitDirectory type');
+    logger.error('commitFiles called with invalid commitDirectory type');
+    throw new Error('Invalid commitDirectory type');
   }
-   // Branch validation
+  // Branch validation
   if (!branch || typeof branch !== 'string') {
-      logger.error('commitFiles called with invalid branch name');
-      throw new Error('Invalid branch name');
+    logger.error('commitFiles called with invalid branch name');
+    throw new Error('Invalid branch name');
   }
-
 
   // Retrieve the session's temporary directory using the shared utility function
   // We expect the directory to *already* exist from a prior fetch or creation.
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
 
   if (!currentDirectoryPath) {
-       logger.error(`Temporary directory not found for session: ${sessionId} during commit.`);
-       throw new Error(
-           `Temporary directory not found for session: ${sessionId}. `
-           + 'Please ensure files were downloaded or a session directory was created first.'
-       );
+    logger.error(`Temporary directory not found for session: ${sessionId} during commit.`);
+    throw new Error(
+      `Temporary directory not found for session: ${sessionId}. `
+      + 'Please ensure files were downloaded or a session directory was created first.'
+    );
   }
-
 
   /* eslint-disable no-continue */
   try {
@@ -1414,6 +1171,7 @@ async function commitFiles(sessionId, username, repoName, commitDirectory = null
       const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(branch)}`;
 
       let existingFileSha = null;
+      let remoteFileBase64Content = null; // Variable to store remote content
 
       logger.debug(`Processing file: ${relativeFilePath}`);
       logger.debug(`  Full local path: ${fullLocalFilePath}`);
@@ -1422,7 +1180,7 @@ async function commitFiles(sessionId, username, repoName, commitDirectory = null
 
 
       try {
-        // STEP 1: Check if the file exists and get its SHA using superagent GET
+        // STEP 1: Check if the file exists and get its SHA and content using superagent GET
         const getResponse = await superagent
           .get(apiUrl) // Use the apiUrl including the branch ref
           .set('Authorization', `token ${githubToken}`)
@@ -1431,8 +1189,9 @@ async function commitFiles(sessionId, username, repoName, commitDirectory = null
           .set('Accept', 'application/vnd.github+json');
 
         if (getResponse.status === 200) {
-          // File exists, get its SHA
+          // File exists, get its SHA and content
           existingFileSha = getResponse.body.sha;
+          remoteFileBase64Content = getResponse.body.content; // Store remote content
           logger.debug(`File exists in repo, retrieved SHA: ${existingFileSha} for ${githubDestPath} on branch ${branch}`);
         } else {
           // This case should theoretically not be reached if status is not 404
@@ -1452,6 +1211,7 @@ async function commitFiles(sessionId, username, repoName, commitDirectory = null
         if (getError.response && getError.response.status === 404) {
           // File does not exist on this branch, this is expected for new files on this branch
           existingFileSha = null; // Explicitly set to null
+          remoteFileBase64Content = null; // No remote content for new files
           logger.debug(`File does not exist in repo: ${githubDestPath} on branch ${branch}`);
         } else {
           // Other errors during GET request
@@ -1471,76 +1231,118 @@ async function commitFiles(sessionId, username, repoName, commitDirectory = null
         }
       }
 
-      // STEP 2: Read file content and prepare for PUT
       try {
-        const content = await fs.readFile(fullLocalFilePath, { encoding: 'utf8' });
-        const base64Content = Buffer.from(content).toString('base64');
+        const localContent = await fs.promises.readFile(fullLocalFilePath, { encoding: 'utf8' });
+        const localBase64Content = Buffer.from(localContent).toString('base64');
+
+        // --- Content Comparison Logic ---
+        // Only attempt comparison if the file exists remotely (existingFileSha is not null)
+        if (existingFileSha !== null) {
+            // If remote content was successfully retrieved and matches local content, skip commit
+            // Note: GitHub API response 'content' field might be null for large files.
+            // This basic comparison assumes content is in the response.
+            if (remoteFileBase64Content !== null && localBase64Content === remoteFileBase64Content) {
+                logger.info(`Content of file "${githubDestPath}" is identical to repo version on branch "${branch}". Skipping commit.`);
+                results.push({
+                    file: relativeFilePath,
+                    success: true,
+                    message: 'Content identical, skipped commit.',
+                    githubPath: githubDestPath
+                });
+                continue; // Skip to the next file if content is the same
+            } else if (remoteFileBase64Content === null) {
+               // Handle case where remote content is null (e.g., large files) - cannot compare content directly
+               // In this scenario, we might proceed to commit assuming changes, or require a different comparison method.
+               // For now, log a warning and proceed to commit as it's safer than skipping potential changes.
+               logger.warn(`Remote content for "${githubDestPath}" on branch "${branch}" not available in GET response. Cannot compare content directly. Proceeding with commit.`);
+               // Proceed to commit logic below
+            }
+        }
+        // --- End Content Comparison Logic ---
+
 
         // Prepare the request body, including sha if the file exists
         const putBody = {
           message: existingFileSha ? `Update ${githubDestPath}` : `Add ${githubDestPath}`, // Adjust commit message
-          content: base64Content,
-          branch: branch, // Include the branch in the PUT body
+          content: localBase64Content, // Use localBase64Content
         };
 
         if (existingFileSha) {
           putBody.sha = existingFileSha; // Include SHA for updates
-          logger.debug(`Preparing to update file: ${githubDestPath} with SHA ${existingFileSha} on branch ${branch}`);
+          logger.debug(`Preparing to update file: ${githubDestPath} with SHA ${existingFileSha}`);
         } else {
-          logger.debug(`Preparing to create file: ${githubDestPath} on branch ${branch}`);
+          logger.debug(`Preparing to create file: ${githubDestPath}`);
         }
 
-        // STEP 3: Upload/Update the file using superagent PUT
-         const putResponse = await superagent
-          .put(apiUrl) // Use the apiUrl including the branch ref
-          .set('Authorization', `token ${githubToken}`)
-          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-          .set('User-Agent', USER_AGENT)
-          .set('Accept', 'application/vnd.github+json')
-          .set('Content-Type', 'application/json') // Set Content-Type
-          .send(putBody); // Pass the object directly
-
-        if ([200, 201].includes(putResponse.status)) {
-          const action = existingFileSha ? 'updated' : 'uploaded';
-          const newSha = (putResponse.body && putResponse.body.content
-            && putResponse.body.content.sha) || undefined; // Get the new SHA from the response
-          results.push({
-            file: relativeFilePath, // Report the original relative path
-            success: true,
-            message: `File ${action}`,
-            sha: newSha,
-            githubPath: githubDestPath // Add the GitHub path for clarity
+        try {
+          // STEP 3: Upload/Update the file using superagent PUT with .end() callback
+          const putResponse = await new Promise((resolve, reject) => {
+            superagent
+              .put(apiUrl)
+              .set('Authorization', `token ${githubToken}`)
+              .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+              .set('User-Agent', USER_AGENT)
+              .set('Accept', 'application/vnd.github+json')
+              .send(putBody)
+              .end((err, res) => {
+                if (err) {
+                  return reject(err);
+                }
+                resolve(res);
+              });
           });
-          logger.info(
-            `Successfully ${action} file: ${githubDestPath} on branch ${branch} [Status: `
-            + `${putResponse.status}, New SHA: ${newSha}]`
-          );
-        } else {
-          const errorMessage = (putResponse.body && putResponse.body.message) || 'Unknown error during PUT';
-          logger.warn(
-            `Failed to upload/update file: ${githubDestPath} on branch ${branch} [Status: `
-            + `${putResponse.status}, Message: ${errorMessage}]`
+
+          if ([200, 201].includes(putResponse.status)) {
+            const action = existingFileSha ? 'updated' : 'uploaded';
+            const newSha = (putResponse.body && putResponse.body.content
+              && putResponse.body.content.sha) || undefined; // Get the new SHA from the response
+            results.push({
+              file: relativeFilePath, // Report the original relative path
+              success: true,
+              message: `File ${action}`,
+              sha: newSha,
+              githubPath: githubDestPath // Add the GitHub path for clarity
+            });
+            logger.info(
+              `Successfully ${action} file: ${githubDestPath} on branch ${branch} [Status: `
+              + `${putResponse.status}, New SHA: ${newSha}]`
+            );
+          } else {
+            const errorMessage = (putResponse.body && putResponse.body.message) || 'Unknown error during PUT';
+            logger.warn(
+              `Failed to upload/update file: ${githubDestPath} [Status: `
+              + `${putResponse.status}, Message: ${errorMessage}]`
+            );
+            results.push({
+              file: relativeFilePath, // Report the original relative path
+              success: false,
+              status: putResponse.status,
+              message: errorMessage,
+            });
+          }
+        } catch (putError) {
+          // Error during PUT request (upload/update)
+          const status = (putError.response && putError.response.status) || 'N/A';
+          const errorMessage = (putError.response && putError.response.body
+            && putError.response.body.message) || putError.message;
+          logger.error(
+            `Error uploading/updating file(s): ${githubDestPath} [Status: ${status}]`,
+            putError
           );
           results.push({
             file: relativeFilePath, // Report the original relative path
             success: false,
-            status: putResponse.status,
-            message: errorMessage,
+            message: `Failed to upload/update: ${errorMessage}`
           });
         }
-      } catch (putError) {
-        // Error during PUT request (upload/update)
-        const status = (putError.response && putError.response.status) || 'N/A';
-        const errorMessage = (putError.response && putError.response.body
-          && putError.response.body.message) || putError.message;
-        logger.error(
-          `Error uploading/updating file: ${githubDestPath} on branch ${branch} [Status: ${status}]`,
-          putError
-        );
+      } catch (genError) {
+        const errorMessage = (genError.response && genError.response.body
+          && genError.response.body.message) || genError.message;
+        logger.error(`Error processing file ${relativeFilePath} (exception): ${errorMessage}`, genError);
         results.push({
           file: relativeFilePath, // Report the original relative path
           success: false,
-          message: `Failed to upload/update: ${errorMessage}`
+          message: `Failed to process file: ${errorMessage}`
         });
       }
     }

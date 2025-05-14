@@ -286,19 +286,19 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName'],
   );
 
-  await registerFunction(
+await registerFunction(
     sessionId,
     'commit_files',
     commitFiles,
-    ['username', 'repoName', 'repoPath', 'branchName'],
-    'Upload, push, load or commit files from the session temporary directory to a specified GitHub repository, maintaining directory structure.', // Updated description
+    ['username', 'repoName', 'commitDirectory', 'branchName'],
+    'Upload, push, load or commit files from the session temporary directory to a specified GitHub repository, maintaining directory structure.', // Updated description if needed
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-      branchName: { type: 'string', description: 'The name of the branch to use.' },
+      commitDirectory: { type: 'string', description: 'The base directory in the GitHub repository to commit files into.' }, // Changed name and description
+      branchName: { type: 'string', description: 'The name of the branch to commit to.' }, // Clarified description
     },
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'commitDirectory'], // Changed 'repoPath' to 'commitDirectory' in required params
     true,
   );
 
