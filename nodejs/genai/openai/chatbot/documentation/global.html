@@ -98,78 +98,6 @@
 
         
             
-<h4 class="name" id="availableFunctionsRegistry"><span class="type-signature">(constant) </span>availableFunctionsRegistry<span class="type-signature"> :Map.&lt;string, Record.&lt;string, <a href="global.html#RegisteredFunction">RegisteredFunction</a>>></span></h4>
-
-
-
-
-<div class="description">
-    Registry of available GitHub functions for AI, keyed by session ID.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Map.&lt;string, Record.&lt;string, <a href="global.html#RegisteredFunction">RegisteredFunction</a>>></span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line65">line 65</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
 <h4 class="name" id="downloadMutexes"><span class="type-signature">(constant) </span>downloadMutexes<span class="type-signature"> :Map.&lt;string, Map.&lt;string, Mutex>></span></h4>
 
 
@@ -225,151 +153,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line27">line 27</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id="funcsMetadata"><span class="type-signature">(constant) </span>funcsMetadata<span class="type-signature"> :Map.&lt;string, Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>>></span></h4>
-
-
-
-
-<div class="description">
-    Metadata for GitHub functions as AI tools, stored per session.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Map.&lt;string, Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>>></span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line71">line 71</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id="registryMutex"><span class="type-signature">(constant) </span>registryMutex<span class="type-signature"> :Mutex</span></h4>
-
-
-
-
-<div class="description">
-    Mutex to control access to the function registries.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Mutex</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line77">line 77</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line24">line 24</a>
     </li></ul></dd>
     
 
@@ -1250,7 +1034,7 @@ given user or organization and repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line919">line 919</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line970">line 970</a>
     </li></ul></dd>
     
 
@@ -1464,7 +1248,7 @@ This function checks if a specified repository exists under a given user or orga
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line874">line 874</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line925">line 925</a>
     </li></ul></dd>
     
 
@@ -1653,7 +1437,7 @@ the existence of the repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line85">line 85</a>
+        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line78">line 78</a>
     </li></ul></dd>
     
 
@@ -1689,7 +1473,144 @@ the existence of the repository.
     
 
     
-    <h4 class="name" id="codeReviews"><span class="type-signature">(async) </span>codeReviews<span class="signature">(sessionId, username, repoName, repoPath)</span><span class="type-signature"> &rarr; {Promise.&lt;(Array.&lt;string>|{success: boolean, message: string})>}</span></h4>
+    <h4 class="name" id="cleanupSessionTempDir"><span class="type-signature">(async) </span>cleanupSessionTempDir<span class="signature">(sessionId)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Cleans up the temporary directory associated with a specific session and removes it from the cache.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line19">line 19</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="codeReviews"><span class="type-signature">(async) </span>codeReviews<span class="signature">(sessionId, username, repoName, repoDirName)</span><span class="type-signature"></span></h4>
     
 
     
@@ -1805,7 +1726,7 @@ Uses a temporary directory and ensures thread safety per session.
 
         <tr>
             
-                <td class="name"><code>repoPath</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -1862,7 +1783,7 @@ Uses a temporary directory and ensures thread safety per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line39">line 39</a>
+        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line29">line 29</a>
     </li></ul></dd>
     
 
@@ -1919,23 +1840,7 @@ Uses a temporary directory and ensures thread safety per session.
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    Array of public file content or an error object.
-</div>
 
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;(Array.&lt;string>|{success: boolean, message: string})></span>
-
-
-    </dd>
-</dl>
 
     
 
@@ -1949,7 +1854,7 @@ Uses a temporary directory and ensures thread safety per session.
     
 
     
-    <h4 class="name" id="commitFiles"><span class="type-signature">(async) </span>commitFiles<span class="signature">(sessionId, username, repoName)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="commitFiles"><span class="type-signature">(async) </span>commitFiles<span class="signature">(sessionId, username, repoName, repoDirName<span class="signature-attributes">opt</span>, branch<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -1959,11 +1864,12 @@ Uses a temporary directory and ensures thread safety per session.
 <div class="description">
     Commits files to a GitHub repository, including files in subdirectories.
 It checks for existing files to include their SHAs for updates.
+Only commits files if their content is different from the existing file in the repo.
 
-This function reads all files from a specified directory and its subdirectories
-within the session's temporary directory and uploads/updates them to the
-specified GitHub repository, maintaining the directory structure. Each file is
-encoded in base64.
+Files are read from a specified session's temporary directory.
+If `repoDirName` is provided, files from the session's temporary directory
+are committed into that directory within the repository. Otherwise,
+they are committed to the root of the repository and its subdirectories.
 </div>
 
 
@@ -1987,7 +1893,11 @@ encoded in base64.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -2012,7 +1922,19 @@ encoded in base64.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The unique identifier for the session.</td>
@@ -2035,7 +1957,19 @@ encoded in base64.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The username of the repository owner.</td>
@@ -2058,11 +1992,103 @@ encoded in base64.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The name of the repository where files will be
 committed.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>repoDirName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The name of the directory in the repository
+where files will be committed. If provided, local files will be placed
+relative to this directory in the repo.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>branch</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'main'
+                
+                </td>
+            
+
+            <td class="description last">The branch to commit to. Defaults to 'main'.</td>
         </tr>
 
     
@@ -2103,7 +2129,7 @@ committed.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1120">line 1120</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1152">line 1152</a>
     </li></ul></dd>
     
 
@@ -2133,8 +2159,7 @@ committed.</td>
 <dl>
     <dt>
         <div class="param-desc">
-        - Throws an error if the session's temporary directory is not
-found or if initial validation or directory reading fails.
+        - Throws an error if initial validation or directory reading fails.
         </div>
     </dt>
     <dd></dd>
@@ -2163,7 +2188,7 @@ found or if initial validation or directory reading fails.
         
 <div class="param-desc">
     - A promise that resolves to an object indicating
-the success or failure of the operation, with results for each file.
+the success or failure of the operation, with results for each file processed.
 </div>
 
 
@@ -2385,7 +2410,7 @@ branch on (e.g., 'main').</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1010">line 1010</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1061">line 1061</a>
     </li></ul></dd>
     
 
@@ -2771,7 +2796,7 @@ Handles API errors, including specific GitHub errors.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line681">line 681</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line732">line 732</a>
     </li></ul></dd>
     
 
@@ -3129,7 +3154,7 @@ of the repository. Defaults to 'Repository created by app'.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line819">line 819</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line870">line 870</a>
     </li></ul></dd>
     
 
@@ -3225,7 +3250,11 @@ the success or failure of the operation.
 
 
 <div class="description">
-    Creates a unique temporary directory.
+    Creates a unique temporary directory with write permissions.
+
+This function generates a unique directory name using a random string,
+creates the directory in the system's temporary folder, and grants
+write permissions to it. The path of the created directory is returned.
 </div>
 
 
@@ -3269,7 +3298,7 @@ the success or failure of the operation.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line12">line 12</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -3292,14 +3321,42 @@ the success or failure of the operation.
 
 
 
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        Throws an error if the directory cannot be created.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
 
 
 <h5>Returns:</h5>
 
         
 <div class="param-desc">
-    A promise that resolves with the path to the 
-created temporary directory.
+    The path to the created temporary directory.
 </div>
 
 
@@ -3429,7 +3486,7 @@ created temporary directory.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line36">line 36</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line54">line 54</a>
     </li></ul></dd>
     
 
@@ -3716,7 +3773,7 @@ created temporary directory.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line92">line 92</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -3752,7 +3809,7 @@ created temporary directory.
     
 
     
-    <h4 class="name" id="fetchRepoContentsRecursive"><span class="type-signature">(async) </span>fetchRepoContentsRecursive<span class="signature">(sessionId, username, repoName, repoPath, localDestPath<span class="signature-attributes">opt</span>, includeDotGithub<span class="signature-attributes">opt</span>, skipBinaryFiles<span class="signature-attributes">opt</span>, retryCount<span class="signature-attributes">opt</span>, maxRetries<span class="signature-attributes">opt</span>, tempDir<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="fetchRepoContentsRecursive"><span class="type-signature">(async) </span>fetchRepoContentsRecursive<span class="signature">(sessionId, username, repoName, repoDirName, initialrepoDirName, localDestPath<span class="signature-attributes">opt</span>, includeDotGithub<span class="signature-attributes">opt</span>, skipBinaryFiles<span class="signature-attributes">opt</span>, retryCount<span class="signature-attributes">opt</span>, maxRetries<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -3906,7 +3963,7 @@ Optionally skips potential binary files based on extension.
 
         <tr>
             
-                <td class="name"><code>repoPath</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -3934,7 +3991,42 @@ Optionally skips potential binary files based on extension.
                 </td>
             
 
-            <td class="description last">The starting path within the repository.</td>
+            <td class="description last">The current path being fetched within the repository.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>initialrepoDirName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The original path from the first call to this function.</td>
         </tr>
 
     
@@ -3968,11 +4060,12 @@ Optionally skips potential binary files based on extension.
             
                 <td class="default">
                 
+                    null
+                
                 </td>
             
 
-            <td class="description last">The local directory path where content should be saved. If not
-provided, a temporary directory will be used.</td>
+            <td class="description last">Optional local destination path.</td>
         </tr>
 
     
@@ -4133,46 +4226,6 @@ files likely to be binary (based on extension). Defaults to true.</td>
         </tr>
 
     
-
-        <tr>
-            
-                <td class="name"><code>tempDir</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    null
-                
-                </td>
-            
-
-            <td class="description last">Internal parameter to pass down the temporary directory path
-in recursive calls.</td>
-        </tr>
-
-    
     </tbody>
 </table>
 
@@ -4210,7 +4263,7 @@ in recursive calls.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line195">line 195</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line190">line 190</a>
     </li></ul></dd>
     
 
@@ -4870,165 +4923,6 @@ authentication endpoint using the client credentials grant type.
     
 
     
-    <h4 class="name" id="getAvailableFunctions"><span class="type-signature">(async) </span>getAvailableFunctions<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;Record.&lt;string, <a href="global.html#RegisteredFunction">RegisteredFunction</a>>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Returns the registry of available functions for a specific session.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line535">line 535</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    An object mapping function names to their implementations.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Record.&lt;string, <a href="global.html#RegisteredFunction">RegisteredFunction</a>>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
     <h4 class="name" id="getChatResponse"><span class="type-signature">(async) </span>getChatResponse<span class="signature">(sessionId, userInput, forceJson<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;(string|object)>}</span></h4>
     
 
@@ -5404,7 +5298,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line74">line 74</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line71">line 71</a>
     </li></ul></dd>
     
 
@@ -5445,165 +5339,6 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     <dd>
         
 <span class="param-type">Mutex</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getFunctionDefinitionsForTool"><span class="type-signature">(async) </span>getFunctionDefinitionsForTool<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Returns the function definitions for the AI tool for a specific session.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line526">line 526</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    An array of function metadata.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>>></span>
 
 
     </dd>
@@ -5763,6 +5498,196 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     <dd>
         
 <span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getOrCreateSessionTempDir"><span class="type-signature">(async) </span>getOrCreateSessionTempDir<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Gets or creates a unique temporary directory for a given session ID, using a cache.
+Ensures thread safety using a mutex per session.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line279">line 279</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If creating the temporary directory fails.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise that resolves with the path to the
+created or retrieved temporary directory for the session.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;string></span>
 
 
     </dd>
@@ -5945,483 +5870,6 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     <dd>
         
 <span class="param-type">string</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getSessionFuncsMetadata"><span class="type-signature">(async) </span>getSessionFuncsMetadata<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Gets or creates the function metadata array for a given session ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line101">line 101</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The function metadata array for the session.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getSessionFunctionRegistry"><span class="type-signature">(async) </span>getSessionFunctionRegistry<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Record.&lt;string, <a href="global.html#RegisteredFunction">RegisteredFunction</a>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Gets or creates the function registry for a given session ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line84">line 84</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The function registry for the session.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Record.&lt;string, <a href="global.html#RegisteredFunction">RegisteredFunction</a>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getSessionMutex"><span class="type-signature"></span>getSessionMutex<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Mutex}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Gets or creates a mutex for a given session ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line17">line 17</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The mutex for the session.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Mutex</span>
 
 
     </dd>
@@ -6970,7 +6418,7 @@ indicate an error status. Includes status, text, and body message.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line54">line 54</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line51">line 51</a>
     </li></ul></dd>
     
 
@@ -7194,7 +6642,7 @@ Otherwise, it re-throws the original error.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line38">line 38</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line35">line 35</a>
     </li></ul></dd>
     
 
@@ -7385,7 +6833,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line513">line 513</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line494">line 494</a>
     </li></ul></dd>
     
 
@@ -7472,7 +6920,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listCommitHistory"><span class="type-signature">(async) </span>listCommitHistory<span class="signature">(username, repoName, dirName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{sha: string, message: string, author: string, date: string}>>}</span></h4>
+    <h4 class="name" id="listCommitHistory"><span class="type-signature">(async) </span>listCommitHistory<span class="signature">(username, repoName, repoDirName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{sha: string, message: string, author: string, date: string}>>}</span></h4>
     
 
     
@@ -7568,7 +7016,7 @@ Handles API errors and "Not Found" exceptions.
 
         <tr>
             
-                <td class="name"><code>dirName</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -7625,7 +7073,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line550">line 550</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line531">line 531</a>
     </li></ul></dd>
     
 
@@ -7712,7 +7160,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, repoDirName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
+    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, repoDirName<span class="signature-attributes">opt</span>, branchName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
     
 
     
@@ -7723,6 +7171,7 @@ Handles API errors and "Not Found" exceptions.
     Lists the contents of a directory (or root if no path) in a GitHub repo.
 Fetches content data and extracts name, type ('file'/'dir'), and path.
 Handles API errors and "Not Found" exceptions.
+Recursively lists contents if specified.
 </div>
 
 
@@ -7864,7 +7313,46 @@ Handles API errors and "Not Found" exceptions.
                 </td>
             
 
-            <td class="description last">Optional path to the directory.</td>
+            <td class="description last">Optional path to the directory within the repo.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>branchName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'main'
+                
+                </td>
+            
+
+            <td class="description last">Optional branch name. Defaults to 'main'.</td>
         </tr>
 
     
@@ -7903,7 +7391,7 @@ Handles API errors and "Not Found" exceptions.
                 </td>
             
 
-            <td class="description last">Optional recursive scan.</td>
+            <td class="description last">Optional recursive scan. Defaults to true.</td>
         </tr>
 
     
@@ -7944,7 +7432,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line607">line 607</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line591">line 591</a>
     </li></ul></dd>
     
 
@@ -7974,7 +7462,7 @@ Handles API errors and "Not Found" exceptions.
 <dl>
     <dt>
         <div class="param-desc">
-        If API request fails or repository/path not found.
+        If API request fails (e.g., repo/path not found, authentication, rate limit).
         </div>
     </dt>
     <dd></dd>
@@ -8002,7 +7490,8 @@ Handles API errors and "Not Found" exceptions.
 
         
 <div class="param-desc">
-    Array of directory content objects.
+    A promise that resolves to an array of directory content objects. Returns an
+empty array if the directory is empty.
 </div>
 
 
@@ -8224,7 +7713,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line739">line 739</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line790">line 790</a>
     </li></ul></dd>
     
 
@@ -8414,7 +7903,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line484">line 484</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line465">line 465</a>
     </li></ul></dd>
     
 
@@ -8501,7 +7990,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="loadMappingFunctions"><span class="type-signature">(async) </span>loadMappingFunctions<span class="signature">(sessionId)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="mkdir"><span class="type-signature">(async) </span>mkdir<span class="signature">(localDestPath, deleteExisting<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -8509,7 +7998,12 @@ Handles API errors and "Not Found" exceptions.
 
 
 <div class="description">
-    Registers the Google Maps Directions API function with the function registry.
+    Creates a directory at the specified path, optionally deleting it first if it already exists.
+
+This function first checks if the directory exists. If `deleteExisting` is true and
+the directory exists, it attempts to remove it recursively. Then, it creates a new
+directory at the specified path. If the directory does not exist initially and
+`deleteExisting` is false, it simply creates the directory.
 </div>
 
 
@@ -8533,7 +8027,11 @@ Handles API errors and "Not Found" exceptions.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -8545,7 +8043,7 @@ Handles API errors and "Not Found" exceptions.
 
         <tr>
             
-                <td class="name"><code>sessionId</code></td>
+                <td class="name"><code>localDestPath</code></td>
             
 
             <td class="type">
@@ -8558,10 +8056,62 @@ Handles API errors and "Not Found" exceptions.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
             
 
-            <td class="description last">The unique identifier for the session.</td>
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The path to the directory to create.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>deleteExisting</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">If true, deletes the directory
+if it exists before creating it.</td>
         </tr>
 
     
@@ -8602,7 +8152,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line417">line 417</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line67">line 67</a>
     </li></ul></dd>
     
 
@@ -8625,6 +8175,37 @@ Handles API errors and "Not Found" exceptions.
 
 
 
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        Throws an error if there is an issue checking for directory existence,
+deleting the directory (that is not due to the directory not existing when deleteExisting is true),
+or creating the directory.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
 
 
 
@@ -9013,7 +8594,7 @@ or null if the route cannot be planned.
     
 
     
-    <h4 class="name" id="registerFunction"><span class="type-signature">(async) </span>registerFunction<span class="signature">(sessionId, name, func, params, description, parametersSchema, required, needSession)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="saveCodeToFile"><span class="type-signature">(async) </span>saveCodeToFile<span class="signature">(sessionId, code, filename, repoDirName<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
     
 
     
@@ -9021,342 +8602,9 @@ or null if the route cannot be planned.
 
 
 <div class="description">
-    Registers a new function for AI for a specific session.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-        <th>Default</th>
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The unique name of the function (used as the key).</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>func</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The JavaScript function to execute.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>params</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;string></span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">An array of parameter names the function expects.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>description</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">A description of what the function does.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>parametersSchema</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">The JSON schema for the function's parameters.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>required</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;string></span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">An array of required parameter names.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>needSession</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-                <td class="default">
-                
-                    false
-                
-                </td>
-            
-
-            <td class="description last">Session needed</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line124">line 124</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="saveCodeToFile"><span class="type-signature">(async) </span>saveCodeToFile<span class="signature">(code, filename, directory<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Saves code content to a local file, creating directories if needed.
-Handles cases where filename includes a path.
+    Saves code content to a local file within the session's temporary directory,
+placing it within a subdirectory structure matching the provided repository directory.
+Creates necessary subdirectories.
 </div>
 
 
@@ -9392,6 +8640,41 @@ Handles cases where filename includes a path.
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
     
 
         <tr>
@@ -9459,14 +8742,14 @@ Handles cases where filename includes a path.
                 </td>
             
 
-            <td class="description last">The desired filename, can include a relative path.</td>
+            <td class="description last">The base filename (e.g., 'improvements.py').</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>directory</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -9493,13 +8776,14 @@ Handles cases where filename includes a path.
             
                 <td class="default">
                 
-                    '/tmp/nodeapp/'
+                    null
                 
                 </td>
             
 
-            <td class="description last">The base directory to save the file
- in if filename is relative.</td>
+            <td class="description last">The repository directory path where the file
+should be conceptually located (e.g., 'demo/python/chatbot'). This path will
+be mirrored within the session's temporary directory.</td>
         </tr>
 
     
@@ -9540,7 +8824,7 @@ Handles cases where filename includes a path.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line97">line 97</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line212">line 212</a>
     </li></ul></dd>
     
 
@@ -9598,8 +8882,8 @@ Handles cases where filename includes a path.
 
         
 <div class="param-desc">
-    A promise that resolves with the full path to the 
-saved file.
+    A promise that resolves with the full absolute path
+to the saved file within the temporary directory.
 </div>
 
 
@@ -9778,7 +9062,7 @@ to the provided branch name. It uses the GitHub API to perform the update.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line969">line 969</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1020">line 1020</a>
     </li></ul></dd>
     
 
@@ -10024,7 +9308,7 @@ with a message confirming the change.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1083">line 1083</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1134">line 1134</a>
     </li></ul></dd>
     
 
@@ -10622,574 +9906,6 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 
 
             
-                
-<h4 class="name" id="FunctionMetadata">FunctionMetadata</h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>type</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The type of the tool, typically 'function'.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>function</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The function definition.
-                <h6>Properties</h6>
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The name of the function.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>description</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">A description of what the function does.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>parameters</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The parameters the function accepts.
-                <h6>Properties</h6>
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>type</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The type of the parameters object ('object').</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>properties</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The individual parameters.
-                <h6>Properties</h6>
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>[parameterName</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Metadata for a specific parameter.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>[parameterName].type</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The type of the parameter (e.g., 'string', 'number', 'boolean').</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>[parameterName].description</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">A description of the parameter.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>required</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;string></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">An array of required parameter names.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line40">line 40</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-            
-                
-<h4 class="name" id="RegisteredFunction">RegisteredFunction</h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>func</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The actual JavaScript function to execute.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>params</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;string></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">An array of parameter names the function expects.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line55">line 55</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-            
     
 
     
@@ -11203,13 +9919,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 12 2025 01:14:27 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 14 2025 22:56:38 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

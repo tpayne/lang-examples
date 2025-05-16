@@ -170,14 +170,14 @@ async function loadCodeReviews(sessionId) {
     sessionId,
     'file_review',
     codeReviews,
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'repoDirName'],
     'Review files in a given GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
     },
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'repoDirName'],
     true,
   );
 }
@@ -234,14 +234,15 @@ async function loadGitHub(sessionId) {
     sessionId,
     'save_code_to_file',
     saveCodeToFile,
-    ['code', 'filename', 'directory'],
-    'Save generated code to a local file',
+    ['code', 'filename', 'repoDirName'],
+    'Save generated code or changes made by the bot to a local file',
     {
-      code: { type: 'string', description: 'The generated code to save.' },
-      filename: { type: 'string', description: 'The local filename to save the generated code to.' },
-      directory: { type: 'string', description: 'The directory name that is used (optional). Defaults to /tmp/nodeapp/ if not provided' },
+      code: { type: 'string', description: 'The generated code or changes to save.' },
+      filename: { type: 'string', description: 'The local filename to save the changes to.' },
+      repoDirName: { type: 'string', description: 'The directory name that is used (optional).' },
     },
     ['code', 'filename'],
+    true,
   );
 
   await registerFunction(
@@ -290,15 +291,15 @@ await registerFunction(
     sessionId,
     'commit_files',
     commitFiles,
-    ['username', 'repoName', 'commitDirectory', 'branchName'],
+    ['username', 'repoName', 'repoDirName', 'branchName'],
     'Upload, push, load or commit files from the session temporary directory to a specified GitHub repository, maintaining directory structure.', // Updated description if needed
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      commitDirectory: { type: 'string', description: 'The base directory in the GitHub repository to commit files into.' }, // Changed name and description
+      repoDirName: { type: 'string', description: 'The base directory in the GitHub repository to commit files into.' }, // Changed name and description
       branchName: { type: 'string', description: 'The name of the branch to commit to.' }, // Clarified description
     },
-    ['username', 'repoName', 'commitDirectory'], // Changed 'repoPath' to 'commitDirectory' in required params
+    ['username', 'repoName', 'repoDirName'], // Changed 'repoDirName' to 'repoDirName' in required params
     true,
   );
 
@@ -323,14 +324,14 @@ await registerFunction(
     sessionId,
     'fetch_repo_contents',
     fetchRepoContentsRecursive,
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'repoDirName'],
     'Fetch or download the contents of a GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
     },
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'repoDirName'],
     true,
   );
 
@@ -377,29 +378,30 @@ await registerFunction(
     sessionId,
     'list_commit_history',
     listCommitHistory,
-    ['username', 'repoName', 'dirName'],
+    ['username', 'repoName', 'repoDirName'],
     'Lists commit history for a file in a GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      dirName: { type: 'string', description: 'The file or directory path.' },
+      repoDirName: { type: 'string', description: 'The file or directory path.' },
     },
-    ['username', 'repoName', 'dirName'],
+    ['username', 'repoName', 'repoDirName'],
   );
 
   await registerFunction(
     sessionId,
-    'list_directory_contents',
-    listDirectoryContents,
-    ['username', 'repoName', 'repoDirName', 'recursive'],
-    'Lists the contents of a directory in a GitHub repository.',
-    {
+    'list_directory_contents', // Tool name
+    listDirectoryContents,    // Function implementation
+    ['username', 'repoName', 'repoDirName', 'branchName', 'recursive'],
+    'Lists the contents of a directory in a GitHub repository on a specific branch. Defaults to the root and recursive scan.', // Updated description
+    { // Parameter types and descriptions for the tool
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
-      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to false if not provided' },
+      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' }, // Clarified description
+      branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to "main" if not provided.' }, // Added branch parameter definition
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' }, // Clarified description
     },
-    ['username', 'repoName'],
+    ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
   );
 }
 

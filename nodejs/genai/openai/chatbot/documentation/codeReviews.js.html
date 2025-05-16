@@ -26,23 +26,14 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>const { Mutex } = require('async-mutex');
-const logger = require('./logger');
+            <pre class="prettyprint source linenums"><code>const logger = require('./logger');
 const { fetchRepoContentsRecursive } = require('./gitFunctions');
-const { createUniqueTempDir, deleteDirectoryRecursively, readFilesInDirectory } = require('./utilities');
+const { readFilesInDirectory, getOrCreateSessionTempDir, cleanupSessionTempDir } = require('./utilities');
+const { Mutex } = require('async-mutex'); // Ensure Mutex is imported
 
-// Import a thread-safe Map implementation (e.g., from 'async-mutex')
+const sessionMutexes = new Map(); // **This map needs to be defined**
 
-// Create a map to store temporary directories and their associated mutexes per session
-const sessionTempDirs = new Map();
-const sessionMutexes = new Map();
-
-/**
- * Gets or creates a mutex for a given session ID.
- * @param {string} sessionId The unique identifier for the session.
- * @returns {Mutex} The mutex for the session.
- */
-function getSessionMutex(sessionId) {
+function getSessionMutex(sessionId) { // **This function needs to be defined**
   if (!sessionMutexes.has(sessionId)) {
     sessionMutexes.set(sessionId, new Mutex());
   }
@@ -58,30 +49,33 @@ function getSessionMutex(sessionId) {
  * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The GitHub repo name.
- * @param {string} repoPath The GitHub path name.
- * @returns {Promise&lt;string[]|{ success: boolean,
- * message: string }>}
+ * @param {string} repoDirName The GitHub path name.
+ * @returns {Promise&lt;string[]|{ success: boolean,\n * message: string }>}\n
  * Array of public file content or an error object.
  * @throws {Error} If API request fails or user is not found.
  */
-async function codeReviews(sessionId, username, repoName, repoPath) {
-  const mutex = getSessionMutex(sessionId);
-  const release = await mutex.acquire();
-  let tmpDir = sessionTempDirs.get(sessionId);
-
+async function codeReviews(sessionId, username, repoName, repoDirName) { // Reverted function signature
+  let tmpDir;
+  const sessionMutex = getSessionMutex(sessionId); // Acquire mutex
+  const release = await sessionMutex.acquire();
   try {
-    if (!tmpDir) {
-      tmpDir = await createUniqueTempDir();
-      sessionTempDirs.set(sessionId, tmpDir);
-    }
+    tmpDir = await getOrCreateSessionTempDir(sessionId);
 
+    // Call fetchRepoContentsRecursive, passing repoDirName as both repoDirName and initialrepoDirName.
+    // Since codeReviews doesn't have a branch parameter, fetchRepoContentsRecursive
+    // will use its default branch (likely 'main').
     const response = await fetchRepoContentsRecursive(
       sessionId,
       username,
       repoName,
-      repoPath,
+      repoDirName, // Current path for the first fetch
+      repoDirName, // **Initial path for relative path calculation**
       tmpDir,
-      false,
+      false, // includeDotGithub
+      true, // skipBinaryFiles
+      0, // retryCount
+      3 // maxRetries
+      // Branch parameter is omitted here, fetchRepoContentsRecursive will use its default
     );
 
     if (!response.success) {
@@ -91,17 +85,16 @@ async function codeReviews(sessionId, username, repoName, repoPath) {
       };
     }
 
+    // readFilesInDirectory will now return file paths relative to the temporary directory root,
+    // which should mirror the structure relative to the original repoDirName.
     const files = await readFilesInDirectory(tmpDir);
     return Array.from(files);
   } catch (error) {
     logger.error(`Error getting files for review (exception) [Session: ${sessionId}]: ${error.message || error}`);
     throw error;
   } finally {
-    release();
-    // Consider when to clean up the temporary directory.
-    // For long-running sessions, you might want a separate cleanup mechanism
-    // or clean up when the session ends. For this example, we'll keep it
-    // for the session's lifetime.
+    release(); // Release the mutex
+    // Cleanup logic remains the same, handled by cleanupSession or similar
   }
 }
 
@@ -111,24 +104,13 @@ async function codeReviews(sessionId, username, repoName, repoPath) {
  * @param {string} sessionId The unique identifier for the session.
  */
 async function cleanupSession(sessionId) {
-  const tmpDir = sessionTempDirs.get(sessionId);
-  if (tmpDir) {
-    try {
-      await deleteDirectoryRecursively(tmpDir);
-      sessionTempDirs.delete(sessionId);
-      sessionMutexes.delete(sessionId);
-      logger.info(`Cleaned up temporary directory for session: ${sessionId}`);
-    } catch (error) {
-      logger.error(`Error cleaning up temporary directory for session ${sessionId}: ${error.message || error}`);
-    }
-  }
+  await cleanupSessionTempDir(sessionId);
 }
 
 module.exports = {
   codeReviews,
   cleanupSession,
-};
-</code></pre>
+};</code></pre>
         </article>
     </section>
 
@@ -138,13 +120,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 12 2025 01:14:27 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 14 2025 22:56:38 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

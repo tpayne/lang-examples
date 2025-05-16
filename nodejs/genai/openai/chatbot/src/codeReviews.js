@@ -21,27 +21,27 @@ function getSessionMutex(sessionId) { // **This function needs to be defined**
  * @param {string} sessionId The unique identifier for the session.
  * @param {string} username The GitHub username.
  * @param {string} repoName The GitHub repo name.
- * @param {string} repoPath The GitHub path name.
+ * @param {string} repoDirName The GitHub path name.
  * @returns {Promise<string[]|{ success: boolean,\n * message: string }>}\n
  * Array of public file content or an error object.
  * @throws {Error} If API request fails or user is not found.
  */
-async function codeReviews(sessionId, username, repoName, repoPath) { // Reverted function signature
+async function codeReviews(sessionId, username, repoName, repoDirName) { // Reverted function signature
   let tmpDir;
   const sessionMutex = getSessionMutex(sessionId); // Acquire mutex
   const release = await sessionMutex.acquire();
   try {
     tmpDir = await getOrCreateSessionTempDir(sessionId);
 
-    // Call fetchRepoContentsRecursive, passing repoPath as both repoPath and initialRepoPath.
+    // Call fetchRepoContentsRecursive, passing repoDirName as both repoDirName and initialrepoDirName.
     // Since codeReviews doesn't have a branch parameter, fetchRepoContentsRecursive
     // will use its default branch (likely 'main').
     const response = await fetchRepoContentsRecursive(
       sessionId,
       username,
       repoName,
-      repoPath, // Current path for the first fetch
-      repoPath, // **Initial path for relative path calculation**
+      repoDirName, // Current path for the first fetch
+      repoDirName, // **Initial path for relative path calculation**
       tmpDir,
       false, // includeDotGithub
       true, // skipBinaryFiles
@@ -58,7 +58,7 @@ async function codeReviews(sessionId, username, repoName, repoPath) { // Reverte
     }
 
     // readFilesInDirectory will now return file paths relative to the temporary directory root,
-    // which should mirror the structure relative to the original repoPath.
+    // which should mirror the structure relative to the original repoDirName.
     const files = await readFilesInDirectory(tmpDir);
     return Array.from(files);
   } catch (error) {
