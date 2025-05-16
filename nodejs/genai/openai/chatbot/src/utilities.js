@@ -244,6 +244,9 @@ async function getOrCreateSessionTempDir(sessionId) {
  * placing it within a subdirectory structure matching the provided repository directory.
  * Creates necessary subdirectories.
  *
+ * This version includes a fix to ensure that literal '\n' sequences in the input
+ * code string are converted to actual newline characters before writing to the file.
+ *
  * @async
  * @param {string} sessionId The unique identifier for the session.
  * @param {string} code The code content to save.
@@ -303,9 +306,18 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
     throw new Error(`Failed to create directory for saving file: ${error.message}`);
   }
 
+  // --- FIX: Replace literal '\n' with actual newline characters ---
+  // This addresses the issue where the input string might contain '\\n' instead of '\n'.
+  //const codeToWrite = code.replace(/\\n/g, '\n');
+  // You might also consider replacing '\\r\\n' with '\r\n' for Windows compatibility
+  // if that is a potential issue, though the user only reported '\n'.
+  const codeToWrite = code.replace(/\\r\\n/g, '\r\n').replace(/\\n/g, '\n');
+  // ---------------------------------------------------------------
+
   // Save the file
   try {
-    await fs.writeFile(fullPath, code, 'utf8');
+    // Use the potentially modified code string
+    await fs.writeFile(fullPath, codeToWrite, 'utf8');
     logger.info(`Code saved successfully to: ${fullPath} for session ${sessionId}`);
     return fullPath;
   } catch (error) {
@@ -313,6 +325,7 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
     throw new Error(`Failed to save file: ${error.message}`);
   }
 }
+
 
 module.exports = {
   createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes
