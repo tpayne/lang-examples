@@ -36,7 +36,7 @@ const cleanupSessionTempDir = async (sessionId) => {
     }
     // Always delete the mutex after attempting cleanup, regardless of whether a directory was found.
     if (sessionMutexes.has(sessionId)) {
-        sessionMutexes.delete(sessionId);
+      sessionMutexes.delete(sessionId);
     }
   } finally {
     if (release) {
@@ -44,7 +44,6 @@ const cleanupSessionTempDir = async (sessionId) => {
     }
   }
 };
-
 
 /**
  * Recursively deletes a directory.
@@ -88,7 +87,7 @@ async function mkdir(localDestPath, deleteExisting = false) {
   }
 
   if (localDestPath === os.tmpdir()) {
-    return { success: true, message: `System directory. No action taken` };
+    return { success: true, message: 'System directory. No action taken' };
   }
 
   try {
@@ -99,7 +98,7 @@ async function mkdir(localDestPath, deleteExisting = false) {
 
       if (stats.isDirectory()) {
         await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
-        return { success: true, message: `Directory already exists, no action needed` };
+        return { success: true, message: 'Directory already exists, no action needed' };
       }
     } catch (error) {
       if (error.code !== 'ENOENT') {
@@ -120,7 +119,6 @@ async function mkdir(localDestPath, deleteExisting = false) {
     await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
 
     return { success: true, message: `Ensured directory ${localDestPath} exists with correct permissions` };
-
   } catch (error) {
     logger.error(`Failed to process directory ${localDestPath} - ${error.message}`);
     throw error;
@@ -216,29 +214,29 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
     throw new Error('Invalid session ID');
   }
   if (typeof code !== 'string') {
-      logger.error('saveCodeToFile called with invalid code type');
-      throw new Error('Invalid code content');
+    logger.error('saveCodeToFile called with invalid code type');
+    throw new Error('Invalid code content');
   }
-   if (!filename || typeof filename !== 'string') {
-      logger.error('saveCodeToFile called with invalid filename');
-      throw new Error('Invalid filename provided');
+  if (!filename || typeof filename !== 'string') {
+    logger.error('saveCodeToFile called with invalid filename');
+    throw new Error('Invalid filename provided');
   }
   // repoDirName is optional, no validation needed beyond type check if provided
   if (repoDirName !== undefined && repoDirName !== null && typeof repoDirName !== 'string') {
     logger.error('saveCodeToFile called with invalid repoDirName type');
     throw new Error('Invalid repoDirName type');
   }
-   // Handle potential empty string for repoDirName
+  // Handle potential empty string for repoDirName
   if (repoDirName === '') {
-      repoDirName = null;
+    repoDirName = null;
   }
 
   // Get the base temporary directory for this session
   const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
 
   if (!sessionTempDir) {
-       logger.error(`Temporary directory not found or created for session: ${sessionId} during saveCodeToFile.`);
-       throw new Error(`Temporary directory not available for session: ${sessionId}.`);
+    logger.error(`Temporary directory not found or created for session: ${sessionId} during saveCodeToFile.`);
+    throw new Error(`Temporary directory not available for session: ${sessionId}.`);
   }
 
   // Construct the full local path by joining the session temp dir, the repoDirName, and the filename.
@@ -265,7 +263,7 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
     logger.error(`Error saving file ${fullPath} for session ${sessionId}: ${error.message}`);
     throw new Error(`Failed to save file: ${error.message}`);
   }
-};
+}
 
 /**
  * Gets or creates a unique temporary directory for a given session ID, using a cache.
@@ -305,7 +303,7 @@ async function getOrCreateSessionTempDir(sessionId) {
         `Error creating unique temporary directory for session ${sessionId}: ${error.message}`,
       );
       // Clean up the mutex if directory creation failed
-       sessionMutexes.delete(sessionId);
+      sessionMutexes.delete(sessionId);
       throw new Error(
         `Failed to create unique temporary directory for session ${sessionId}: ${error.message}`,
       );
@@ -314,7 +312,7 @@ async function getOrCreateSessionTempDir(sessionId) {
     // Release the mutex
     release();
   }
-};
+}
 
 module.exports = {
   createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes

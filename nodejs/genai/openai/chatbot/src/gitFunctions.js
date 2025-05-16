@@ -1134,9 +1134,10 @@ const walkDir = async (dir, rootDir = dir) => {
  * Only commits files if their content is different from the existing file in the repo.
  *
  * Files are read from a specified session's temporary directory.
- * If `repoDirName` is provided, files from the session's temporary directory
- * are committed into that directory within the repository. Otherwise,
- * they are committed to the root of the repository and its subdirectories.
+ * If `repoDirName` is provided, only files located within the corresponding
+ * subdirectory in the temporary workspace will be considered and committed
+ * into that directory within the repository. Otherwise, all files in the
+ * temporary directory are considered and committed to the root and its subdirectories.
  *
  * @async
  * @function commitFiles
@@ -1145,14 +1146,18 @@ const walkDir = async (dir, rootDir = dir) => {
  * @param {string} repoName - The name of the repository where files will be
  * committed.
  * @param {string} [repoDirName=null] - The name of the directory in the repository
- * where files will be committed. If provided, local files will be placed
- * relative to this directory in the repo.
+ * where files will be committed. If provided, only files within this scope
+ * in the temporary directory are committed here.
  * @param {string} [branch='main'] - The branch to commit to. Defaults to 'main'.
  * @returns {Promise<Object>} - A promise that resolves to an object indicating
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitFiles(sessionId, username, repoName, repoDirName = null, branch = 'main') { // Added branch parameter
+async function commitFiles(sessionId, username, repoName, repoDirName = null, branch = 'main') { // Using repoDirName as per your latest
+  // --- Added Logging ---
+  logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, repoDirName=${repoDirName}, branch=${branch}`);
+  // --- End Added Logging ---
+
   // Validate parameters
   if (!sessionId || typeof sessionId !== 'string') {
     logger.error('commitFiles called with invalid session ID');
@@ -1167,15 +1172,24 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
     throw new Error('Invalid repository name');
   }
   // repoDirName is optional, no validation needed beyond type check if provided
-  if (repoDirName !== undefined && typeof repoDirName !== 'string') {
+  if (repoDirName !== undefined && repoDirName !== null && typeof repoDirName !== 'string') { // Allow null, validate if not null/undefined
     logger.error('commitFiles called with invalid repoDirName type');
     throw new Error('Invalid repoDirName type');
+  }
+  // Handle potential empty string for repoDirName, treat as null (repo root)
+  if (repoDirName === '') {
+    repoDirName = null;
   }
   // Branch validation
   if (!branch || typeof branch !== 'string') {
     logger.error('commitFiles called with invalid branch name');
     throw new Error('Invalid branch name');
   }
+
+  // Trim leading/trailing slash from repoDirName for consistent comparison/joining, unless it's the root ('/')
+  // Treat '/' and '' as null for root
+  const cleanRepoDirName = (repoDirName && repoDirName !== '/') ? repoDirName.replace(/^\/|\/$/g, '') : null; // Trim leading/trailing
+  logger.debug(`Cleaned repoDirName: ${cleanRepoDirName}`);
 
   // Retrieve the session's temporary directory using the shared utility function
   // We expect the directory to *already* exist from a prior fetch or creation.
@@ -1192,8 +1206,8 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
   /* eslint-disable no-continue */
   try {
     // Use walkDir to get all file paths, including those
-    // in subdirectories, relative to the start directory
-    const filesToProcess = await walkDir(currentDirectoryPath);
+    // in subdirectories, relative to the start directory (session temp dir)
+    const filesToProcess = await walkDir(currentDirectoryPath); // relativeFilePath is relative to currentDirectoryPath
     const results = [];
 
     logger.debug(
@@ -1202,6 +1216,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
     );
 
     if (filesToProcess.length === 0) {
+      logger.info('No files found in the session temporary directory to upload.');
       return {
         success: true,
         message: 'No files found in the session temporary directory to upload',
@@ -1210,13 +1225,78 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
     }
 
     // Process each file found in the temporary directory
-    for (const relativeFilePath of filesToProcess) {
-      const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
+    for (const relativeFilePath of filesToProcess) { // relativeFilePath is like 'demo/python/chatbot/app.py' or 'app.py'
+      const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath); // e.g., /tmp/session_id/demo/python/chatbot/app.py
 
-      // Calculate the destination path in the GitHub repository
-      // If repoDirName is specified, join it with the relative file path.
-      // Otherwise, the GitHub destination path is just the relative file path.
-      const githubDestPath = repoDirName ? path.join(repoDirName, relativeFilePath) : relativeFilePath;
+      // --- Refined GitHub Destination Path Calculation and Filtering ---
+      let githubDestPath;
+      let shouldProcessFile = true; // Flag to decide if we commit this file
+
+      if (cleanRepoDirName) {
+        // If a repoDirName is provided, we only want to commit files that are
+        // within the corresponding subdirectory structure in the temporary workspace.
+
+        // Check if the relativeFilePath starts with the cleanRepoDirName
+        const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/'); // Normalize for comparison
+        const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/'); // Normalize for comparison
+
+        if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || relativeFilePathNormalized === cleanRepoDirNameNormalized) {
+          // The file is within the intended repoDirName scope in the temporary directory.
+          // Calculate the path relative to the repoDirName *within the temporary structure*.
+          // This handles cases where temp dir mirrors full repo (relativeFilePath includes repoDirName prefix)
+          // and cases where temp dir root *is* the repo directory (relativeFilePath is path relative to it).
+          const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName); // e.g., /tmp/session_id/demo/python/chatbot/
+          const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath); // e.g., 'app.py'
+
+          // Join the repoDirName with the path relative to it *within the temp dir*.
+          // Handle edge case where pathRelativeToRepoDirInTemp might be '' for files directly in the commit dir root
+          githubDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
+        } else {
+          // The file is outside the intended repoDirName scope in the temporary directory.
+          // Skip this file for this commit operation.
+          shouldProcessFile = false;
+          logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified repoDirName "${cleanRepoDirName}" scope in the temporary directory.`);
+        }
+      } else {
+        // If no repoDirName (committing to repo root), process all files in the temporary directory.
+        // The GitHub destination path is the relative file path as walked from the temporary directory's root.
+        githubDestPath = relativeFilePath;
+      }
+
+      // If the file should not be processed based on repoDirName scope, continue to the next file
+      if (!shouldProcessFile) {
+        results.push({
+          file: relativeFilePath,
+          success: true, // Skipping is a successful handling for this file in this context
+          message: `Skipped: Outside repoDirName "${cleanRepoDirName}" scope.`,
+          githubPath: null, // No GitHub path as it was skipped
+        });
+        continue;
+      }
+
+      // Normalize the path separators for GitHub (always '/')
+      githubDestPath = githubDestPath.replace(/\\/g, '/');
+      // Remove leading slash if present (shouldn't be with path.join but as a safeguard)
+      if (githubDestPath.startsWith('/')) {
+        githubDestPath = githubDestPath.substring(1);
+      }
+
+      // Ensure we are not trying to commit the temporary directory itself if repoDirName was null/empty
+      // Or the root of the temporary directory itself if walkDir yields '.' or '' for a file (unlikely for files)
+      if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') { // Added '/' for root
+        logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
+        results.push({
+          file: relativeFilePath,
+          success: true,
+          message: 'Skipped commit for root or empty path.',
+          githubPath: githubDestPath,
+        });
+        continue;
+      }
+
+      // ... (Rest of the commit logic: GET, Content Comparison, PUT) ...
+      // The logic below here remains the same as the previous version I provided.
+      // It uses githubDestPath, fullLocalFilePath, existingFileSha, remoteFileBase64Content, etc.
 
       // Include the branch in the API URL for both GET and PUT
       const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(branch)}`;
@@ -1226,7 +1306,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
 
       logger.debug(`Processing file: ${relativeFilePath}`);
       logger.debug(`  Full local path: ${fullLocalFilePath}`);
-      logger.debug(`  GitHub destination path: ${githubDestPath}`);
+      logger.debug(`  GitHub destination path: ${githubDestPath}`); // Log the calculated destination path
       logger.debug(`  GitHub API URL for requests: ${apiUrl}`); // Log the full URL with ref
 
       try {
@@ -1253,6 +1333,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
             file: relativeFilePath, // Report the original relative path
             success: false,
             message: `Failed to check existence (Status: ${getResponse.status})`,
+            githubPath: githubDestPath, // Add the GitHub path for clarity
           });
           continue; // Skip to the next file
         }
@@ -1276,6 +1357,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
             file: relativeFilePath, // Report the original relative path
             success: false,
             message: `Failed to check existence: ${errorMessage}`,
+            githubPath: githubDestPath, // Add the GitHub path for clarity
           });
           continue; // Skip to the next file
         }
@@ -1315,6 +1397,11 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           message: existingFileSha ? `Update ${githubDestPath}` : `Add ${githubDestPath}`, // Adjust commit message
           content: localBase64Content, // Use localBase64Content
         };
+
+        // Include branch in the message for clarity if it's not the default 'main'
+        if (branch !== 'main') {
+          putBody.message += ` on branch ${branch}`;
+        }
 
         if (existingFileSha) {
           putBody.sha = existingFileSha; // Include SHA for updates
@@ -1367,6 +1454,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
               success: false,
               status: putResponse.status,
               message: errorMessage,
+              githubPath: githubDestPath, // Add the GitHub path for clarity
             });
           }
         } catch (putError) {
@@ -1382,6 +1470,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
             file: relativeFilePath, // Report the original relative path
             success: false,
             message: `Failed to upload/update: ${errorMessage}`,
+            githubPath: githubDestPath, // Add the GitHub path for clarity
           });
         }
       } catch (genError) {
@@ -1392,12 +1481,20 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           file: relativeFilePath, // Report the original relative path
           success: false,
           message: `Failed to process file: ${errorMessage}`,
+          githubPath: githubDestPath, // Add the GitHub path for clarity
         });
       }
     }
 
     // Check if all processed uploads were successful
     const allSuccessful = results.every((result) => result.success);
+
+    // Log overall result
+    if (allSuccessful) {
+      logger.info(`Commit process completed successfully for session ${sessionId}.`);
+    } else {
+      logger.warn(`Commit process completed with failures for session ${sessionId}.`);
+    }
 
     return {
       success: allSuccessful,
@@ -1415,7 +1512,6 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
   }
   /* eslint-enable no-continue */
 }
-
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 module.exports = {

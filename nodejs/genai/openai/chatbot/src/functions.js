@@ -241,7 +241,7 @@ async function loadGitHub(sessionId) {
       filename: { type: 'string', description: 'The local filename to save the changes to.' },
       repoDirName: { type: 'string', description: 'The directory name that is used (optional).' },
     },
-    ['code', 'filename'],
+    ['code', 'filename', 'repoDirName'],
     true,
   );
 
@@ -287,7 +287,7 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName'],
   );
 
-await registerFunction(
+  await registerFunction(
     sessionId,
     'commit_files',
     commitFiles,
@@ -391,7 +391,7 @@ await registerFunction(
   await registerFunction(
     sessionId,
     'list_directory_contents', // Tool name
-    listDirectoryContents,    // Function implementation
+    listDirectoryContents, // Function implementation
     ['username', 'repoName', 'repoDirName', 'branchName', 'recursive'],
     'Lists the contents of a directory in a GitHub repository on a specific branch. Defaults to the root and recursive scan.', // Updated description
     { // Parameter types and descriptions for the tool

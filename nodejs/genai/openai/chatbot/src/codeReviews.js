@@ -1,7 +1,7 @@
+const { Mutex } = require('async-mutex'); // Ensure Mutex is imported
 const logger = require('./logger');
 const { fetchRepoContentsRecursive } = require('./gitFunctions');
 const { readFilesInDirectory, getOrCreateSessionTempDir, cleanupSessionTempDir } = require('./utilities');
-const { Mutex } = require('async-mutex'); // Ensure Mutex is imported
 
 const sessionMutexes = new Map(); // **This map needs to be defined**
 
@@ -22,8 +22,7 @@ function getSessionMutex(sessionId) { // **This function needs to be defined**
  * @param {string} username The GitHub username.
  * @param {string} repoName The GitHub repo name.
  * @param {string} repoDirName The GitHub path name.
- * @returns {Promise<string[]|{ success: boolean,\n * message: string }>}\n
- * Array of public file content or an error object.
+ * @returns {Promise<string[] | { success: boolean, message: string }>} Array of public repository names or an error object.
  * @throws {Error} If API request fails or user is not found.
  */
 async function codeReviews(sessionId, username, repoName, repoDirName) { // Reverted function signature
@@ -46,7 +45,7 @@ async function codeReviews(sessionId, username, repoName, repoDirName) { // Reve
       false, // includeDotGithub
       true, // skipBinaryFiles
       0, // retryCount
-      3 // maxRetries
+      3, // maxRetries
       // Branch parameter is omitted here, fetchRepoContentsRecursive will use its default
     );
 
