@@ -30,7 +30,6 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
-const { v4: uuidv4 } = require('uuid'); // Import uuid for unique directory names
 const { Mutex } = require('async-mutex'); // Import Mutex
 const logger = require('./logger'); // Assuming you have a logger utility
 
@@ -38,6 +37,24 @@ const logger = require('./logger'); // Assuming you have a logger utility
 const sessionTempDirs = new Map();
 // Mutex map for protecting the cache per session
 const sessionMutexes = new Map();
+
+/**
+ * Recursively deletes a directory.
+ * @param {string} dirPath The path to the directory to delete.
+ * @returns {Promise&lt;void>} A promise that resolves when the directory is deleted.
+ */
+const deleteDirectoryRecursively = async (dirPath) => {
+  try {
+    await fs.rm(dirPath, { recursive: true, force: true });
+    logger.debug(`Deleted directory recursively: ${dirPath}`);
+  } catch (error) {
+    logger.error(
+      `Error deleting directory recursively ${dirPath}: ${error.message}`,
+    );
+    // Depending on requirements, you might want to throw here or just log
+    // For temporary directories, logging might be sufficient as cleanup is best effort.
+  }
+};
 
 /**
  * Cleans up the temporary directory associated with a specific session and removes it from the cache.
@@ -70,24 +87,6 @@ const cleanupSessionTempDir = async (sessionId) => {
     if (release) {
       release();
     }
-  }
-};
-
-/**
- * Recursively deletes a directory.
- * @param {string} dirPath The path to the directory to delete.
- * @returns {Promise&lt;void>} A promise that resolves when the directory is deleted.
- */
-const deleteDirectoryRecursively = async (dirPath) => {
-  try {
-    await fs.rm(dirPath, { recursive: true, force: true });
-    logger.debug(`Deleted directory recursively: ${dirPath}`);
-  } catch (error) {
-    logger.error(
-      `Error deleting directory recursively ${dirPath}: ${error.message}`,
-    );
-    // Depending on requirements, you might want to throw here or just log
-    // For temporary directories, logging might be sufficient as cleanup is best effort.
   }
 };
 
@@ -220,80 +219,6 @@ const readFilesInDirectory = async (dir) => {
 /* eslint-enable no-restricted-syntax, no-await-in-loop */
 
 /**
- * Saves code content to a local file within the session's temporary directory,
- * placing it within a subdirectory structure matching the provided repository directory.
- * Creates necessary subdirectories.
- *
- * @async
- * @param {string} sessionId The unique identifier for the session.
- * @param {string} code The code content to save.
- * @param {string} filename The base filename (e.g., 'improvements.py').
- * @param {string} [repoDirName=null] The repository directory path where the file
- * should be conceptually located (e.g., 'demo/python/chatbot'). This path will
- * be mirrored within the session's temporary directory.
- * @returns {Promise&lt;string>} A promise that resolves with the full absolute path
- * to the saved file within the temporary directory.
- * @throws {Error} If saving the file fails.
- */
-async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
-  // Validate parameters
-  if (!sessionId || typeof sessionId !== 'string') {
-    logger.error('saveCodeToFile called with invalid session ID');
-    throw new Error('Invalid session ID');
-  }
-  if (typeof code !== 'string') {
-    logger.error('saveCodeToFile called with invalid code type');
-    throw new Error('Invalid code content');
-  }
-  if (!filename || typeof filename !== 'string') {
-    logger.error('saveCodeToFile called with invalid filename');
-    throw new Error('Invalid filename provided');
-  }
-  // repoDirName is optional, no validation needed beyond type check if provided
-  if (repoDirName !== undefined &amp;&amp; repoDirName !== null &amp;&amp; typeof repoDirName !== 'string') {
-    logger.error('saveCodeToFile called with invalid repoDirName type');
-    throw new Error('Invalid repoDirName type');
-  }
-  // Handle potential empty string for repoDirName
-  if (repoDirName === '') {
-    repoDirName = null;
-  }
-
-  // Get the base temporary directory for this session
-  const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
-
-  if (!sessionTempDir) {
-    logger.error(`Temporary directory not found or created for session: ${sessionId} during saveCodeToFile.`);
-    throw new Error(`Temporary directory not available for session: ${sessionId}.`);
-  }
-
-  // Construct the full local path by joining the session temp dir, the repoDirName, and the filename.
-  // path.join correctly handles null/empty repoDirName (treats it as the root of sessionTempDir)
-  const fullPath = path.join(sessionTempDir, repoDirName || '', filename);
-
-  // Ensure the parent directory exists
-  const dirPath = path.dirname(fullPath);
-  try {
-    // Use recursive option to create parent directories as needed
-    await mkdir(dirPath);
-    logger.debug(`Ensured directory exists for saving: ${dirPath} for session ${sessionId}`);
-  } catch (error) {
-    logger.error(`Error creating directory ${dirPath} for session ${sessionId}: ${error.message}`);
-    throw new Error(`Failed to create directory for saving file: ${error.message}`);
-  }
-
-  // Save the file
-  try {
-    await fs.writeFile(fullPath, code, 'utf8');
-    logger.info(`Code saved successfully to: ${fullPath} for session ${sessionId}`);
-    return fullPath;
-  } catch (error) {
-    logger.error(`Error saving file ${fullPath} for session ${sessionId}: ${error.message}`);
-    throw new Error(`Failed to save file: ${error.message}`);
-  }
-}
-
-/**
  * Gets or creates a unique temporary directory for a given session ID, using a cache.
  * Ensures thread safety using a mutex per session.
  * @async
@@ -342,6 +267,81 @@ async function getOrCreateSessionTempDir(sessionId) {
   }
 }
 
+/**
+ * Saves code content to a local file within the session's temporary directory,
+ * placing it within a subdirectory structure matching the provided repository directory.
+ * Creates necessary subdirectories.
+ *
+ * @async
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} code The code content to save.
+ * @param {string} filename The base filename (e.g., 'improvements.py').
+ * @param {string} [repoDirName=null] The repository directory path where the file
+ * should be conceptually located (e.g., 'demo/python/chatbot'). This path will
+ * be mirrored within the session's temporary directory.
+ * @returns {Promise&lt;string>} A promise that resolves with the full absolute path
+ * to the saved file within the temporary directory.
+ * @throws {Error} If saving the file fails.
+ */
+async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
+  let rDirName = repoDirName;
+  // Validate parameters
+  if (!sessionId || typeof sessionId !== 'string') {
+    logger.error('saveCodeToFile called with invalid session ID');
+    throw new Error('Invalid session ID');
+  }
+  if (typeof code !== 'string') {
+    logger.error('saveCodeToFile called with invalid code type');
+    throw new Error('Invalid code content');
+  }
+  if (!filename || typeof filename !== 'string') {
+    logger.error('saveCodeToFile called with invalid filename');
+    throw new Error('Invalid filename provided');
+  }
+  // rDirName is optional, no validation needed beyond type check if provided
+  if (rDirName !== undefined &amp;&amp; rDirName !== null &amp;&amp; typeof rDirName !== 'string') {
+    logger.error('saveCodeToFile called with invalid rDirName type');
+    throw new Error('Invalid rDirName type');
+  }
+  // Handle potential empty string for rDirName
+  if (rDirName === '') {
+    rDirName = null;
+  }
+
+  // Get the base temporary directory for this session
+  const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
+
+  if (!sessionTempDir) {
+    logger.error(`Temporary directory not found or created for session: ${sessionId} during saveCodeToFile.`);
+    throw new Error(`Temporary directory not available for session: ${sessionId}.`);
+  }
+
+  // Construct the full local path by joining the session temp dir, the rDirName, and the filename.
+  // path.join correctly handles null/empty rDirName (treats it as the root of sessionTempDir)
+  const fullPath = path.join(sessionTempDir, rDirName || '', filename);
+
+  // Ensure the parent directory exists
+  const dirPath = path.dirname(fullPath);
+  try {
+    // Use recursive option to create parent directories as needed
+    await mkdir(dirPath);
+    logger.debug(`Ensured directory exists for saving: ${dirPath} for session ${sessionId}`);
+  } catch (error) {
+    logger.error(`Error creating directory ${dirPath} for session ${sessionId}: ${error.message}`);
+    throw new Error(`Failed to create directory for saving file: ${error.message}`);
+  }
+
+  // Save the file
+  try {
+    await fs.writeFile(fullPath, code, 'utf8');
+    logger.info(`Code saved successfully to: ${fullPath} for session ${sessionId}`);
+    return fullPath;
+  } catch (error) {
+    logger.error(`Error saving file ${fullPath} for session ${sessionId}: ${error.message}`);
+    throw new Error(`Failed to save file: ${error.message}`);
+  }
+}
+
 module.exports = {
   createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes
   deleteDirectoryRecursively,
@@ -367,7 +367,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri May 16 2025 02:14:54 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri May 16 2025 02:26:52 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

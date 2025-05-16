@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const util = require('util');
 const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 
 const GITHUB_API_VERSION = '2022-11-28';
@@ -1154,8 +1153,9 @@ const walkDir = async (dir, rootDir = dir) => {
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
 async function commitFiles(sessionId, username, repoName, repoDirName = null, branch = 'main') { // Using repoDirName as per your latest
+  let rDirName = repoDirName; // Use the parameter name for clarity
   // --- Added Logging ---
-  logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, repoDirName=${repoDirName}, branch=${branch}`);
+  logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, rDirName=${rDirName}, branch=${branch}`);
   // --- End Added Logging ---
 
   // Validate parameters
@@ -1171,14 +1171,14 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
     logger.error('commitFiles called with invalid repository name');
     throw new Error('Invalid repository name');
   }
-  // repoDirName is optional, no validation needed beyond type check if provided
-  if (repoDirName !== undefined && repoDirName !== null && typeof repoDirName !== 'string') { // Allow null, validate if not null/undefined
-    logger.error('commitFiles called with invalid repoDirName type');
-    throw new Error('Invalid repoDirName type');
+  // rDirName is optional, no validation needed beyond type check if provided
+  if (rDirName !== undefined && rDirName !== null && typeof rDirName !== 'string') { // Allow null, validate if not null/undefined
+    logger.error('commitFiles called with invalid rDirName type');
+    throw new Error('Invalid rDirName type');
   }
-  // Handle potential empty string for repoDirName, treat as null (repo root)
-  if (repoDirName === '') {
-    repoDirName = null;
+  // Handle potential empty string for rDirName, treat as null (repo root)
+  if (rDirName === '') {
+    rDirName = null;
   }
   // Branch validation
   if (!branch || typeof branch !== 'string') {
@@ -1186,10 +1186,10 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
     throw new Error('Invalid branch name');
   }
 
-  // Trim leading/trailing slash from repoDirName for consistent comparison/joining, unless it's the root ('/')
+  // Trim leading/trailing slash from rDirName for consistent comparison/joining, unless it's the root ('/')
   // Treat '/' and '' as null for root
-  const cleanRepoDirName = (repoDirName && repoDirName !== '/') ? repoDirName.replace(/^\/|\/$/g, '') : null; // Trim leading/trailing
-  logger.debug(`Cleaned repoDirName: ${cleanRepoDirName}`);
+  const cleanRepoDirName = (rDirName && rDirName !== '/') ? rDirName.replace(/^\/|\/$/g, '') : null; // Trim leading/trailing
+  logger.debug(`Cleaned rDirName: ${cleanRepoDirName}`);
 
   // Retrieve the session's temporary directory using the shared utility function
   // We expect the directory to *already* exist from a prior fetch or creation.
@@ -1233,7 +1233,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
       let shouldProcessFile = true; // Flag to decide if we commit this file
 
       if (cleanRepoDirName) {
-        // If a repoDirName is provided, we only want to commit files that are
+        // If a rDirName is provided, we only want to commit files that are
         // within the corresponding subdirectory structure in the temporary workspace.
 
         // Check if the relativeFilePath starts with the cleanRepoDirName
@@ -1241,34 +1241,34 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
         const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/'); // Normalize for comparison
 
         if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || relativeFilePathNormalized === cleanRepoDirNameNormalized) {
-          // The file is within the intended repoDirName scope in the temporary directory.
-          // Calculate the path relative to the repoDirName *within the temporary structure*.
-          // This handles cases where temp dir mirrors full repo (relativeFilePath includes repoDirName prefix)
+          // The file is within the intended rDirName scope in the temporary directory.
+          // Calculate the path relative to the rDirName *within the temporary structure*.
+          // This handles cases where temp dir mirrors full repo (relativeFilePath includes rDirName prefix)
           // and cases where temp dir root *is* the repo directory (relativeFilePath is path relative to it).
           const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName); // e.g., /tmp/session_id/demo/python/chatbot/
           const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath); // e.g., 'app.py'
 
-          // Join the repoDirName with the path relative to it *within the temp dir*.
+          // Join the rDirName with the path relative to it *within the temp dir*.
           // Handle edge case where pathRelativeToRepoDirInTemp might be '' for files directly in the commit dir root
           githubDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
         } else {
-          // The file is outside the intended repoDirName scope in the temporary directory.
+          // The file is outside the intended rDirName scope in the temporary directory.
           // Skip this file for this commit operation.
           shouldProcessFile = false;
-          logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified repoDirName "${cleanRepoDirName}" scope in the temporary directory.`);
+          logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified rDirName "${cleanRepoDirName}" scope in the temporary directory.`);
         }
       } else {
-        // If no repoDirName (committing to repo root), process all files in the temporary directory.
+        // If no rDirName (committing to repo root), process all files in the temporary directory.
         // The GitHub destination path is the relative file path as walked from the temporary directory's root.
         githubDestPath = relativeFilePath;
       }
 
-      // If the file should not be processed based on repoDirName scope, continue to the next file
+      // If the file should not be processed based on rDirName scope, continue to the next file
       if (!shouldProcessFile) {
         results.push({
           file: relativeFilePath,
           success: true, // Skipping is a successful handling for this file in this context
-          message: `Skipped: Outside repoDirName "${cleanRepoDirName}" scope.`,
+          message: `Skipped: Outside rDirName "${cleanRepoDirName}" scope.`,
           githubPath: null, // No GitHub path as it was skipped
         });
         continue;
@@ -1281,7 +1281,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
         githubDestPath = githubDestPath.substring(1);
       }
 
-      // Ensure we are not trying to commit the temporary directory itself if repoDirName was null/empty
+      // Ensure we are not trying to commit the temporary directory itself if rDirName was null/empty
       // Or the root of the temporary directory itself if walkDir yields '.' or '' for a file (unlikely for files)
       if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') { // Added '/' for root
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
