@@ -299,25 +299,34 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
   const dirPath = path.dirname(fullPath);
   try {
     // Use recursive option to create parent directories as needed
-    await mkdir(dirPath);
+    await mkdir(dirPath, { recursive: true }); // Added recursive: true for robustness
     logger.debug(`Ensured directory exists for saving: ${dirPath} for session ${sessionId}`);
   } catch (error) {
     logger.error(`Error creating directory ${dirPath} for session ${sessionId}: ${error.message}`);
     throw new Error(`Failed to create directory for saving file: ${error.message}`);
   }
 
-  // --- FIX: Replace literal '\n' with actual newline characters ---
-  // This addresses the issue where the input string might contain '\\n' instead of '\n'.
-  //const codeToWrite = code.replace(/\\n/g, '\n');
-  // You might also consider replacing '\\r\\n' with '\r\n' for Windows compatibility
-  // if that is a potential issue, though the user only reported '\n'.
-  const codeToWrite = code.replace(/\\r\\n/g, '\r\n').replace(/\\n/g, '\n');
-  // ---------------------------------------------------------------
+  // This snippet aims to correctly interpret escaped newline characters
+  // and standardize line endings to prevent corruption of formats like
+  // markdown and JSON, while also handling specific "silly code" patterns.
+
+  // Start with the original code string.
+  let finalCode = code;
+  try {
+    finalCode = JSON.parse(`"${code}"`);
+  } catch (e) {
+    // If parsing fails, it's not valid JSON, so we keep the original code string.
+    let processedCode = code.replace(/\\+n\s*/g, '\n');
+    processedCode = processedCode.replace(/\\r\\n/g, '\r\n');
+    processedCode = processedCode.replace(/\\n/g, '\n');
+    processedCode = processedCode.replace(/\\\\/g, '\\');
+    finalCode = processedCode.replace(/\r\n/g, '\n');
+  }
 
   // Save the file
   try {
     // Use the potentially modified code string
-    await fs.writeFile(fullPath, codeToWrite, 'utf8');
+    await fs.writeFile(fullPath, finalCode, 'utf8');
     logger.info(`Code saved successfully to: ${fullPath} for session ${sessionId}`);
     return fullPath;
   } catch (error) {
@@ -325,8 +334,15 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
     throw new Error(`Failed to save file: ${error.message}`);
   }
 }
-
-
+/**
+ * Exports utility functions for managing temporary directories and file operations.
+ * These functions are designed to be used in a session-based context, ensuring
+ * thread safety and proper cleanup of resources.
+ *
+ * @module utilities
+ */
+// This module provides functions for creating, managing, and cleaning up
+// temporary directories and files, specifically for session-based operations.
 module.exports = {
   createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes
   deleteDirectoryRecursively,

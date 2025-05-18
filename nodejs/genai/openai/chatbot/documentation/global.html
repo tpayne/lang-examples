@@ -661,7 +661,7 @@ History is now in OpenAI's messages format.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line47">line 47</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line48">line 48</a>
     </li></ul></dd>
     
 
@@ -837,7 +837,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line103">line 103</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line104">line 104</a>
     </li></ul></dd>
     
 
@@ -1042,7 +1042,7 @@ Limits the cache size per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line171">line 171</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line172">line 172</a>
     </li></ul></dd>
     
 
@@ -1250,7 +1250,7 @@ given user or organization and repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line948">line 948</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line975">line 975</a>
     </li></ul></dd>
     
 
@@ -1464,7 +1464,7 @@ This function checks if a specified repository exists under a given user or orga
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line903">line 903</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line930">line 930</a>
     </li></ul></dd>
     
 
@@ -2086,7 +2086,7 @@ Uses a temporary directory and ensures thread safety per session.
     
 
     
-    <h4 class="name" id="commitFiles"><span class="type-signature">(async) </span>commitFiles<span class="signature">(sessionId, username, repoName, repoDirName<span class="signature-attributes">opt</span>, branch<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="commitFiles"><span class="type-signature">(async) </span>commitFiles<span class="signature">(sessionId, username, repoName, repoDirName<span class="signature-attributes">opt</span>, branch<span class="signature-attributes">opt</span>, maxPutRetries<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -2097,6 +2097,7 @@ Uses a temporary directory and ensures thread safety per session.
     Commits files to a GitHub repository, including files in subdirectories.
 It checks for existing files to include their SHAs for updates.
 Only commits files if their content is different from the existing file in the repo.
+Includes a retry mechanism for 409 Conflict errors during file updates.
 
 Files are read from a specified session's temporary directory.
 If `repoDirName` is provided, only files located within the corresponding
@@ -2325,6 +2326,45 @@ in the temporary directory are committed here.</td>
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>maxPutRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    3
+                
+                </td>
+            
+
+            <td class="description last">Maximum number of retries for PUT requests on 409 conflict.</td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -2362,7 +2402,7 @@ in the temporary directory are committed here.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1130">line 1130</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1174">line 1174</a>
     </li></ul></dd>
     
 
@@ -2643,7 +2683,7 @@ branch on (e.g., 'main').</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1039">line 1039</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1066">line 1066</a>
     </li></ul></dd>
     
 
@@ -3029,7 +3069,7 @@ Handles API errors, including specific GitHub errors.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line710">line 710</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line737">line 737</a>
     </li></ul></dd>
     
 
@@ -3387,7 +3427,7 @@ of the repository. Defaults to 'Repository created by app'.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line848">line 848</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line875">line 875</a>
     </li></ul></dd>
     
 
@@ -3601,6 +3641,165 @@ write permissions to it. The path of the created directory is returned.
     <dd>
         
 <span class="param-type">Promise.&lt;string></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="delay"><span class="type-signature"></span>delay<span class="signature">(ms)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Helper function to introduce a delay.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ms</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The number of milliseconds to wait.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1171">line 1171</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise that resolves after the delay.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
 
 
     </dd>
@@ -4496,7 +4695,7 @@ files likely to be binary (based on extension). Defaults to true.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line188">line 188</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line194">line 194</a>
     </li></ul></dd>
     
 
@@ -5508,7 +5707,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line213">line 213</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line232">line 232</a>
     </li></ul></dd>
     
 
@@ -6008,7 +6207,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line93">line 93</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line94">line 94</a>
     </li></ul></dd>
     
 
@@ -6380,7 +6579,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line127">line 127</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line128">line 128</a>
     </li></ul></dd>
     
 
@@ -7702,7 +7901,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line490">line 490</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line517">line 517</a>
     </li></ul></dd>
     
 
@@ -7942,7 +8141,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line527">line 527</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line554">line 554</a>
     </li></ul></dd>
     
 
@@ -8029,7 +8228,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, repoDirName<span class="signature-attributes">opt</span>, branchName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
+    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, branchName<span class="signature-attributes">opt</span>, repoDirName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
     
 
     
@@ -8150,45 +8349,6 @@ Recursively lists contents if specified.
 
         <tr>
             
-                <td class="name"><code>repoDirName</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    ''
-                
-                </td>
-            
-
-            <td class="description last">Optional path to the directory within the repo.</td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>branchName</code></td>
             
 
@@ -8222,6 +8382,45 @@ Recursively lists contents if specified.
             
 
             <td class="description last">Optional branch name. Defaults to 'main'.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>repoDirName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    ''
+                
+                </td>
+            
+
+            <td class="description last">Optional path to the directory within the repo.</td>
         </tr>
 
     
@@ -8301,7 +8500,7 @@ Recursively lists contents if specified.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line587">line 587</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line614">line 614</a>
     </li></ul></dd>
     
 
@@ -8582,7 +8781,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line768">line 768</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line795">line 795</a>
     </li></ul></dd>
     
 
@@ -8772,7 +8971,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line461">line 461</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line488">line 488</a>
     </li></ul></dd>
     
 
@@ -9542,7 +9741,7 @@ or null if the route cannot be planned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line141">line 141</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -9945,6 +10144,9 @@ or null if the route cannot be planned.
     Saves code content to a local file within the session's temporary directory,
 placing it within a subdirectory structure matching the provided repository directory.
 Creates necessary subdirectories.
+
+This version includes a fix to ensure that literal '\n' sequences in the input
+code string are converted to actual newline characters before writing to the file.
 </div>
 
 
@@ -10164,7 +10366,7 @@ be mirrored within the session's temporary directory.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line258">line 258</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line261">line 261</a>
     </li></ul></dd>
     
 
@@ -10402,7 +10604,7 @@ to the provided branch name. It uses the GitHub API to perform the update.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line998">line 998</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1025">line 1025</a>
     </li></ul></dd>
     
 
@@ -10648,7 +10850,7 @@ with a message confirming the change.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1112">line 1112</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1147">line 1147</a>
     </li></ul></dd>
     
 
@@ -11827,13 +12029,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri May 16 2025 02:26:52 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun May 18 2025 01:47:24 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

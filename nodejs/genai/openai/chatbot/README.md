@@ -222,6 +222,7 @@ Notes
 -----
 * This code does not have any unit testing or SA analysis run as part of the process
 * Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context)
+* The OpenAI can and will sometimes produce corrupt results that screw up certain operations. Unfortunately, this is beyond my control, so just beware of it
 
 References
 ----------

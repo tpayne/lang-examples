@@ -114,7 +114,13 @@ async function downloadFile(sessionId, url, localFilePath, token = null) {
     }
 
     if (Buffer.isBuffer(response.body)) {
-      await fs.promises.writeFile(localFilePath, response.body); // Use fs.promises.writeFile
+      logger.debug(`Downloading file: ${url} to ${localFilePath} [Session: ${sessionId}]`);
+      const stats = await fs.promises.stat(localFilePath).catch(() => null); // Check if path exists and get stats
+      if (stats && stats.isDirectory()) {
+        logger.warn(`Skipping download: ${localFilePath} is a directory.`);
+      } else {
+        await fs.promises.writeFile(localFilePath, response.body); // Use fs.promises.writeFile
+      }
     } else {
       const errorMsg = `Expected Buffer, received ${typeof response.body}`;
       logger.error(
@@ -278,7 +284,9 @@ async function fetchRepoContentsRecursive(
       if (items && items.type === 'file' && items.download_url) {
         // Calculate local file path relative to the initialrepoDirName
         // This preserves the subdirectory structure within baseLocalDestPath
-        const filePath = path.join(baseLocalDestPath, path.relative(initialrepoDirName, items.path)); // Use initialrepoDirName
+        // OLD: const filePath = path.join(baseLocalDestPath, path.relative(initialrepoDirName, items.path)); // Use initialrepoDirName
+        // NEW: Use the full item.path relative to the repo root to preserve structure
+        const filePath = path.join(baseLocalDestPath, items.path); // Use items.path
 
         // --- New Logic for single file start ---
         if (skipBinaryFiles) {
@@ -297,9 +305,17 @@ async function fetchRepoContentsRecursive(
         try {
           const parentDir = path.dirname(filePath);
           // Only create the parent directory if it's not the base temporary directory itself
+          // and if it's not the system's temporary directory.
           if (parentDir !== baseLocalDestPath && parentDir !== os.tmpdir()) {
-            logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
-            await mkdir(parentDir);
+            // Check if parentDir is a subdirectory of baseLocalDestPath before creating
+            if (parentDir.startsWith(baseLocalDestPath)) {
+              logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
+              await mkdir(parentDir);
+            } else {
+              logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
+              // Decide how to handle this - throwing an error might be appropriate
+              throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
+            }
           } else {
             logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
           }
@@ -314,9 +330,9 @@ async function fetchRepoContentsRecursive(
             ? `Status: ${error.response.status}, Text: ${error.response.text}`
             : 'No response details';
           logger.error(
-            `Error downloading single file "${items.name}" "${filePath}" `
-            + `} [Session: ${sessionId}]: `
+            `Error downloading single file "${items.name}" "${filePath}" [Session: ${sessionId}]: `
             + `${errorMessage} - ${errorDetails}`,
+            error, // Pass the error object for better logging
           );
           return {
             success: false,
@@ -334,7 +350,9 @@ async function fetchRepoContentsRecursive(
       const currentrepoDirName = item.path;
       // Calculate local file path relative to the initialrepoDirName
       // This preserves the subdirectory structure within baseLocalDestPath
-      const currentLocalPath = path.join(baseLocalDestPath, path.relative(initialrepoDirName, item.path)); // Use initialrepoDirName
+      // OLD: const currentLocalPath = path.join(baseLocalDestPath, path.relative(initialrepoDirName, item.path)); // Use initialrepoDirName
+      // NEW: Use the full item.path relative to the repo root to preserve structure
+      const currentLocalPath = path.join(baseLocalDestPath, item.path); // Use item.path
 
       // Skip .github directory if includeDotGithub is false
       if (!includeDotGithub && (item.name === '.github' || currentrepoDirName.startsWith('.github/'))) {
@@ -359,7 +377,14 @@ async function fetchRepoContentsRecursive(
           try {
             // Ensure parent directory exists before downloading using recursive mkdir
             const parentDir = path.dirname(currentLocalPath);
-            await mkdir(parentDir); // mkdir call is correct here for nested files/dirs
+            // Check if parentDir is a subdirectory of baseLocalDestPath before creating
+            if (parentDir.startsWith(baseLocalDestPath)) {
+              await mkdir(parentDir); // mkdir call is correct here for nested files/dirs
+            } else {
+              logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
+              // Decide how to handle this - throwing an error might be appropriate
+              throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
+            }
             await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
           } catch (error) {
             // Log the error and propagate the failure with more details
@@ -370,6 +395,7 @@ async function fetchRepoContentsRecursive(
             logger.error(
               `Error downloading file "${item.name}" [Session: ${sessionId}]: `
               + `${errorMessage} - ${errorDetails}`,
+              error, // Pass the error object for better logging
             );
             return {
               success: false,
@@ -389,7 +415,7 @@ async function fetchRepoContentsRecursive(
           repoName,
           item.path, // Pass the subdirectory path for the next level's fetch
           initialrepoDirName, // Pass the original initialrepoDirName down
-          baseLocalDestPath,
+          baseLocalDestPath, // Continue using the same baseLocalDestPath
           includeDotGithub,
           skipBinaryFiles, // Pass the flag down to recursive calls
           0, // Reset retry count for new recursive calls
@@ -422,6 +448,7 @@ async function fetchRepoContentsRecursive(
     logger.error(
       'Error in fetchRepoContentsRecursive (exception): '
       + `${repoDirName} [Session: ${sessionId}]: ${errorMessage}`,
+      error, // Pass the error object for better logging
     );
     if (error.response) {
       logger.error(
@@ -442,7 +469,7 @@ async function fetchRepoContentsRecursive(
           : `Failed to download repo contents. Status: ${error.response.status}`,
       );
     } else {
-      // Rethrow non-response errors
+      // Re-throw non-response errors
       throw error;
     }
   }
@@ -575,8 +602,8 @@ async function listCommitHistory(username, repoName, repoDirName) {
  * @async
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} [repoDirName=''] Optional path to the directory within the repo.
  * @param {string} [branchName='main'] Optional branch name. Defaults to 'main'.
+ * @param {string} [repoDirName=''] Optional path to the directory within the repo.
  * @param {boolean} [recursive=true] Optional recursive scan. Defaults to true.
  *
  * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
@@ -587,8 +614,8 @@ async function listCommitHistory(username, repoName, repoDirName) {
 async function listDirectoryContents(
   username,
   repoName,
-  repoDirName = '',
   branchName = 'main',
+  repoDirName = '',
   recursive = true,
 ) {
   // Ensure repoDirName is correctly formatted for the URL (remove leading/trailing slashes unless it's the root)
@@ -645,8 +672,8 @@ async function listDirectoryContents(
           const subDirContents = await listDirectoryContents(
             username,
             repoName,
-            item.path, // Pass the full path of the subdirectory
             branchName, // Pass branch down
+            item.path, // Pass the full path of the subdirectory
             recursive, // Pass recursive flag down
           );
           // Concatenate the recursive results
@@ -668,7 +695,7 @@ async function listDirectoryContents(
     const errorMessage = (error.response && error.response.body && error.response.body.message) || error.message || error;
     logger.error(
       `Error listing directory contents for "${username}/${repoName}/${repoDirName}" on branch "${branchName}" [Status: ${status}]: ${errorMessage}`,
-      error,
+      error, // Pass the error object for better logging
     );
 
     // Handle specific HTTP errors
@@ -1075,16 +1102,24 @@ async function createBranch(username, repoName, branchName, baseBranch = 'main')
     const baseBranchSha = baseBranchResponse.body.object.sha;
 
     // Create the new branch
-    let response = await superagent
-      .post(url)
-      .set('Authorization', `token ${githubToken}`)
-      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-      .set('Accept', 'application/vnd.github+json')
-      .set('User-Agent', USER_AGENT)
-      .send({
-        ref: `refs/heads/${branchName}`,
-        sha: baseBranchSha,
-      });
+    let response = await new Promise((resolve, reject) => {
+      superagent
+        .post(url)
+        .set('Authorization', `token ${githubToken}`)
+        .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+        .set('Accept', 'application/vnd.github+json')
+        .set('User-Agent', USER_AGENT)
+        .send({
+          ref: `refs/heads/${branchName}`,
+          sha: baseBranchSha,
+        })
+        .end((err, res) => {
+          if (err) {
+            reject(err); // Removed void
+          }
+          resolve(res); // Removed void
+        });
+    });
 
     if (response.status === 201) {
       response = await switchBranch(username, repoName, branchName);
@@ -1127,10 +1162,20 @@ const walkDir = async (dir, rootDir = dir) => {
   return files;
 };
 
+/* eslint-disable no-promise-executor-return */
+/**
+ * Helper function to introduce a delay.
+ * @param {number} ms - The number of milliseconds to wait.
+ * @returns {Promise<void>} A promise that resolves after the delay.
+ */
+const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms)); // Removed void with resolve
+/* eslint-enable no-promise-executor-return */
+
 /**
  * Commits files to a GitHub repository, including files in subdirectories.
  * It checks for existing files to include their SHAs for updates.
  * Only commits files if their content is different from the existing file in the repo.
+ * Includes a retry mechanism for 409 Conflict errors during file updates.
  *
  * Files are read from a specified session's temporary directory.
  * If `repoDirName` is provided, only files located within the corresponding
@@ -1148,11 +1193,12 @@ const walkDir = async (dir, rootDir = dir) => {
  * where files will be committed. If provided, only files within this scope
  * in the temporary directory are committed here.
  * @param {string} [branch='main'] - The branch to commit to. Defaults to 'main'.
+ * @param {number} [maxPutRetries=3] - Maximum number of retries for PUT requests on 409 conflict.
  * @returns {Promise<Object>} - A promise that resolves to an object indicating
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitFiles(sessionId, username, repoName, repoDirName = null, branch = 'main') { // Using repoDirName as per your latest
+async function commitFiles(sessionId, username, repoName, repoDirName = null, branch = 'main', maxPutRetries = 3) { // Using repoDirName as per your latest
   let rDirName = repoDirName; // Use the parameter name for clarity
   // --- Added Logging ---
   logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, rDirName=${rDirName}, branch=${branch}`);
@@ -1248,7 +1294,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName); // e.g., /tmp/session_id/demo/python/chatbot/
           const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath); // e.g., 'app.py'
 
-          // Join the rDirName with the path relative to it *within the temp dir*.
+          // Join the rDirName with the path relative to it *within the temp dir'.
           // Handle edge case where pathRelativeToRepoDirInTemp might be '' for files directly in the commit dir root
           githubDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
         } else {
@@ -1286,7 +1332,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
       if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') { // Added '/' for root
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
         results.push({
-          file: relativeFilePath,
+          file: relativeFilePath, // Report the original relative path
           success: true,
           message: 'Skipped commit for root or empty path.',
           githubPath: githubDestPath,
@@ -1393,7 +1439,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
         // --- End Content Comparison Logic ---
 
         // Prepare the request body, including sha if the file exists
-        const putBody = {
+        const putBody = { // Use const as it's reassigned in the retry loop if needed
           message: existingFileSha ? `Update ${githubDestPath}` : `Add ${githubDestPath}`, // Adjust commit message
           content: localBase64Content, // Use localBase64Content
         };
@@ -1410,67 +1456,148 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           logger.debug(`Preparing to create file: ${githubDestPath}`);
         }
 
-        try {
-          // STEP 3: Upload/Update the file using superagent PUT with .end() callback
-          const putResponse = await new Promise((resolve, reject) => {
-            superagent
-              .put(apiUrl)
-              .set('Authorization', `token ${githubToken}`)
-              .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-              .set('User-Agent', USER_AGENT)
-              .set('Accept', 'application/vnd.github+json')
-              .send(putBody)
-              .end((err, res) => {
-                if (err) {
-                  return reject(err);
-                }
-                resolve(res);
-              });
-          });
+        let putSuccess = false;
+        let currentPutRetry = 0;
+        let lastPutError = null;
 
-          if ([200, 201].includes(putResponse.status)) {
-            const action = existingFileSha ? 'updated' : 'uploaded';
-            const newSha = (putResponse.body && putResponse.body.content
-              && putResponse.body.content.sha) || undefined; // Get the new SHA from the response
-            results.push({
-              file: relativeFilePath, // Report the original relative path
-              success: true,
-              message: `File ${action}`,
-              sha: newSha,
-              githubPath: githubDestPath, // Add the GitHub path for clarity
+        // --- Retry loop for PUT requests on 409 Conflict ---
+        while (currentPutRetry <= maxPutRetries && !putSuccess) {
+          try {
+            if (currentPutRetry > 0) {
+              logger.info(`Retrying PUT for ${githubDestPath} on branch ${branch} (Attempt ${currentPutRetry}/${maxPutRetries})`);
+              // Use the delay helper function
+              await delay(1000 * currentPutRetry); // Exponential backoff simple
+            }
+
+            // STEP 3: Upload/Update the file using superagent PUT with .end() callback
+            const putResponse = await new Promise((resolve, reject) => {
+              superagent
+                .put(apiUrl)
+                .set('Authorization', `token ${githubToken}`)
+                .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+                .set('User-Agent', USER_AGENT)
+                .set('Accept', 'application/vnd.github+json')
+                .send(putBody)
+                .end((err, res) => {
+                  if (err) {
+                    reject(err); // Removed void
+                  }
+                  resolve(res); // Removed void
+                });
             });
-            logger.info(
-              `Successfully ${action} file: ${githubDestPath} on branch ${branch} [Status: `
-              + `${putResponse.status}, New SHA: ${newSha}]`,
-            );
-          } else {
-            const errorMessage = (putResponse.body && putResponse.body.message) || 'Unknown error during PUT';
-            logger.warn(
-              `Failed to upload/update file: ${githubDestPath} [Status: `
-              + `${putResponse.status}, Message: ${errorMessage}]`,
-            );
-            results.push({
-              file: relativeFilePath, // Report the original relative path
-              success: false,
-              status: putResponse.status,
-              message: errorMessage,
-              githubPath: githubDestPath, // Add the GitHub path for clarity
-            });
+
+            if ([200, 201].includes(putResponse.status)) {
+              const action = existingFileSha ? 'updated' : 'uploaded';
+              const newSha = (putResponse.body && putResponse.body.content
+                && putResponse.body.content.sha) || undefined; // Get the new SHA from the response
+              results.push({
+                file: relativeFilePath, // Report the original relative path
+                success: true,
+                message: `File ${action}`,
+                sha: newSha,
+                githubPath: githubDestPath, // Add the GitHub path for clarity
+              });
+              logger.info(
+                `Successfully ${action} file: ${githubDestPath} on branch ${branch} [Status: `
+                + `${putResponse.status}, New SHA: ${newSha}]`,
+              );
+              putSuccess = true; // Mark success to exit the retry loop
+            } else if (putResponse.status === 409) {
+              // Conflict occurred, need to re-fetch and retry
+              logger.warn(`Conflict (409) when uploading/updating file: ${githubDestPath} on branch ${branch}. Re-fetching...`);
+              lastPutError = new Error(`Conflict (409): ${putResponse.body.message || 'Unknown conflict'}`);
+
+              // Re-fetch the file's current state
+              try {
+                const reFetchResponse = await superagent
+                  .get(apiUrl)
+                  .set('Authorization', `token ${githubToken}`)
+                  .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+                  .set('User-Agent', USER_AGENT)
+                  .set('Accept', 'application/vnd.github+json');
+
+                if (reFetchResponse.status === 200) {
+                  const newExistingFileSha = reFetchResponse.body.sha;
+                  const newRemoteFileBase64Content = reFetchResponse.body.content;
+
+                  // Compare local content with the newly fetched remote content
+                  if (newRemoteFileBase64Content !== null && localBase64Content === newRemoteFileBase64Content) {
+                    logger.info(`Content of file "${githubDestPath}" now matches repo version on branch "${branch}" after re-fetch. Skipping commit.`);
+                    results.push({
+                      file: relativeFilePath,
+                      success: true,
+                      message: 'Content now identical after re-fetch, skipped commit.',
+                      githubPath: githubDestPath,
+                    });
+                    putSuccess = true; // Mark success as no commit is needed
+                  } else {
+                    // Content is still different, update SHA for retry
+                    putBody.sha = newExistingFileSha;
+                    logger.debug(`Re-fetched new SHA: ${newExistingFileSha} for ${githubDestPath}. Retrying PUT.`);
+                    // Loop will continue for another retry
+                  }
+                } else {
+                  // Failed to re-fetch the file after conflict
+                  const reFetchErrorMessage = (reFetchResponse.body && reFetchResponse.body.message) || 'Failed to re-fetch after conflict';
+                  logger.error(`Failed to re-fetch file after 409 conflict: ${githubDestPath} [Status: ${reFetchResponse.status}, Message: ${reFetchErrorMessage}]`);
+                  lastPutError = new Error(`Failed to re-fetch file after 409 conflict: ${reFetchErrorMessage}`);
+                  break; // Exit retry loop if re-fetch fails
+                }
+              } catch (reFetchError) {
+                const reFetchErrorMessage = (reFetchError.response && reFetchError.response.body && reFetchError.response.body.message) || reFetchError.message;
+                logger.error(`Exception during re-fetch after 409 conflict: ${githubDestPath} [Message: ${reFetchErrorMessage}]`, reFetchError);
+                lastPutError = new Error(`Exception during re-fetch after 409 conflict: ${reFetchErrorMessage}`);
+                break; // Exit retry loop on re-fetch exception
+              }
+            } else {
+              // Handle other non-409 errors during PUT
+              const errorMessage = (putResponse.body && putResponse.body.message) || 'Unknown error during PUT';
+              logger.warn(
+                `Failed to upload/update file: ${githubDestPath} [Status: `
+                + `${putResponse.status}, Message: ${errorMessage}]`,
+              );
+              lastPutError = new Error(`Failed to upload/update: ${errorMessage}`);
+              break; // Exit retry loop for non-409 errors
+            }
+          } catch (putError) {
+            // Error during PUT request (upload/update)
+            const status = (putError.response && putError.response.status) || 'N/A';
+            const errorMessage = (putError.response && putError.response.body
+              && putError.response.body.message) || putError.message;
+
+            if (putError.response && putError.response.status === 409) {
+              // This case is handled by the specific 409 block above, but keeping
+              // this here as a fallback or for clarity if the structure changes.
+              logger.warn(`Conflict (409) caught in general PUT catch for ${githubDestPath}. Re-fetching...`);
+              lastPutError = new Error(`Conflict (409) caught: ${errorMessage}`);
+              // The retry logic is primarily handled in the `else if (putResponse.status === 409)` block.
+              // If an exception *before* getting a response with status 409 occurs,
+              // this catch will hit. We should ideally re-attempt the PUT directly here
+              // after a delay, without re-fetching the SHA unless it's a 409.
+              // Given the structure, the primary 409 handling is within the `then` block.
+              // For exceptions *leading* to a 409 response, the logic below is sufficient
+              // to log and potentially retry if structured differently.
+              // For now, let's ensure `lastPutError` is set and the loop continues if retries remain.
+            } else {
+              logger.error(
+                `Error uploading/updating file(s): ${githubDestPath} [Status: ${status}]`,
+                putError,
+              );
+              lastPutError = new Error(`Failed to upload/update: ${errorMessage}`);
+              break; // Exit retry loop for non-409 errors/exceptions
+            }
           }
-        } catch (putError) {
-          // Error during PUT request (upload/update)
-          const status = (putError.response && putError.response.status) || 'N/A';
-          const errorMessage = (putError.response && putError.response.body
-            && putError.response.body.message) || putError.message;
-          logger.error(
-            `Error uploading/updating file(s): ${githubDestPath} [Status: ${status}]`,
-            putError,
-          );
+          currentPutRetry += 1; // Fixed no-plusplus
+        }
+        // --- End Retry loop ---
+
+        // If after all retries the PUT was not successful, add a failure result
+        if (!putSuccess) {
           results.push({
-            file: relativeFilePath, // Report the original relative path
+            file: relativeFilePath,
             success: false,
-            message: `Failed to upload/update: ${errorMessage}`,
-            githubPath: githubDestPath, // Add the GitHub path for clarity
+            message: `Failed to upload/update after ${maxPutRetries} retries: ${lastPutError ? lastPutError.message : 'Unknown error'}`,
+            githubPath: githubDestPath,
           });
         }
       } catch (genError) {

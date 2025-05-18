@@ -392,13 +392,13 @@ async function loadGitHub(sessionId) {
     sessionId,
     'list_directory_contents', // Tool name
     listDirectoryContents, // Function implementation
-    ['username', 'repoName', 'repoDirName', 'branchName', 'recursive'],
+    ['username', 'repoName', 'branchName', 'repoDirName', 'recursive'],
     'Lists the contents of a directory in a GitHub repository on a specific branch. Defaults to the root and recursive scan.', // Updated description
     { // Parameter types and descriptions for the tool
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' }, // Clarified description
       branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to "main" if not provided.' }, // Added branch parameter definition
+      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' }, // Clarified description
       recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' }, // Clarified description
     },
     ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
