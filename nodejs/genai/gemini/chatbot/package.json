@@ -31,7 +31,7 @@
     "url": "git+https://github.com/tpayne/lang-examples.git"
   },
   "dependencies": {
-    "@google/genai": "^0.13.0",
+    "@google/genai": "^0.15.0",
     "async-mutex": "0.5.0",
     "body-parser": "2.2.0",
     "connect-memcached": "^2.0.0",
