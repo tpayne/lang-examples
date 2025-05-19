@@ -190,30 +190,53 @@ const readContext = async (contextStr) => {
  * @async
  * @param {string} sessionId The ID of the client session.
  * @param {string} name The name of the function.
- * @param {object} args The arguments for the function.
+ * @param {object} args The arguments for the function (already parsed from JSON string).
  * @returns {Promise&lt;any>} The result of the function call.
  */
 const callFunctionByName = async (sessionId, name, args) => {
-  const functionCache = await getAvailableFunctions(sessionId); // Assuming this loads functions
+  const functionCache = await getAvailableFunctions(sessionId);
   const functionInfo = functionCache[name];
-  // logger.debug(`functionCache object is ${util.inspect(functionCache,
-  //  { depth: null })} [Session: ${sessionId}]`);
 
   if (functionInfo &amp;&amp; functionInfo.func) {
     try {
-      const { func, params, needSession } = functionInfo;
+      // Destructure 'required' from functionInfo - this assumes 'required' is stored in the registry
+      const {
+        func, params, needSession, required,
+      } = functionInfo;
+      const functionArgs = { ...args }; // Clone args to avoid mutation
 
-      // Ensure arguments match expected parameters
-      const argValues = params.map((paramName) => args[paramName]);
+      // Check if functionInfo.required exists before filtering
+      const missingParams = (required || []).filter((paramName) => functionArgs[paramName] === undefined);
+
+      if (missingParams.length > 0) {
+        logger.error(`Missing required arguments for function '${name}': ${missingParams.join(', ')} [Session: ${sessionId}]`);
+        return JSON.stringify({ error: `Missing required arguments for function '${name}'`, details: `Missing: ${missingParams.join(', ')}` });
+      }
+
+      // As the genai parser (often) generates rubbish, we need to check if the args are valid
+      // Specifically check for the 'code' parameter for save_code_to_file if needed
+      if (name === 'save_code_to_file' &amp;&amp; typeof functionArgs.code !== 'string') {
+        logger.error(`Invalid or missing 'code' argument for save_code_to_file [Session: ${sessionId}]`);
+        return JSON.stringify({
+          error: 'Invalid or missing \'code\' argument for save_code_to_file',
+          details: '\'code\' must be a string.',
+        });
+      }
+
+      const argValues = params.map((paramName) => functionArgs[paramName]);
       if (needSession) {
         argValues.unshift(sessionId);
       }
-
       /* eslint-disable prefer-spread */
       logger.info(`Calling Function '${name}' [Session: ${sessionId}]`);
       const result = await func.apply(null, argValues);
+      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: functionArgs, result });
       /* eslint-enable prefer-spread */
-      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
+
+      // Ensure result is stringified if it's an object/array before returning to model
+      if (typeof result !== 'string') {
+        return JSON.stringify(result);
+      }
       return result;
     } catch (error) {
       logger.error(`Error executing function '${name}' [Session: ${sessionId}]`, { arguments: args, error: error.message });
@@ -387,9 +410,25 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       }
 
       const candidate = response.candidates[0];
+      const finishReason = candidate.finishReason;
+      const content = candidate.content;
 
-      if (candidate.content &amp;&amp; candidate.content.parts &amp;&amp; candidate.content.parts.length > 0) {
-        const part = candidate.content.parts[0];
+      // --- New Check for problematic response pattern (Gemini) ---
+      // Check for empty content {} and finish_reason: 'MALFORMED_FUNCTION_CALL'
+      const isMalformedFunctionCall = typeof content === 'object' &amp;&amp; content !== null &amp;&amp; Object.keys(content).length === 0 &amp;&amp; finishReason === 'MALFORMED_FUNCTION_CALL';
+
+      if (isMalformedFunctionCall) {
+          logger.error(`Gemini API: Detected problematic response pattern (finish_reason: '${finishReason}', content: ${util.inspect(content)}). Likely malformed tool call. [Session: ${sessionId}]`);
+          chatResponse = "I received a malformed response from the AI. It seems like it was trying to call a tool but encountered an issue. "+
+                         "Please try rephrasing your request. This may also be related to the number of max number of tokens in the request.";
+          // Do NOT add this problematic message to history, as it's incomplete/corrupted
+          break; // Exit loop
+      }
+      // --- End New Check ---
+
+
+      if (content &amp;&amp; content.parts &amp;&amp; content.parts.length > 0) {
+        const part = content.parts[0];
 
         // Check for function calls first
         if (part.functionCall) {
@@ -432,7 +471,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
           break;
         }
       } else {
-        logger.warn(`Gemini API: Candidate content is empty or malformed [Session: ${sessionId}]`);
+        // This else block is for cases where content is null, undefined, or has no parts
+        // The new check above specifically handles the malformed function call case.
+        // This block will catch other cases like empty content with different finish reasons.
+        logger.warn(`Gemini API: Candidate content is empty or malformed (no parts) [Session: ${sessionId}]`);
         chatResponse = 'Could not get valid content from the model response.';
         break;
       }
@@ -611,13 +653,13 @@ startServer();
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 10 2025 11:47:52 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 19 2025 23:48:00 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

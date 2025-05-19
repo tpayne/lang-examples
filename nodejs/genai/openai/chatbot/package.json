@@ -40,17 +40,18 @@
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.0",
     "morgan": "^1.10.0",
-    "openai": "^4.97.0",
+    "openai": "^4.100.0",
     "path": "^0.12.7",
     "pkg": "^5.8.1",
     "properties-reader": "2.3.0",
     "redis": "^5.0.1",
     "signal-exit": "4.1.0",
     "superagent": "^10.2.1",
-    "winston": "^3.0.0"
+    "winston": "^3.0.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.26.0",
+    "@eslint/js": "^9.27.0",
     "@linthtml/linthtml": "^0.10.1",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
@@ -62,8 +63,8 @@
     "husky": "^9.1.7",
     "jsdoc": "^4.0.4",
     "nodemon": "^3.1.10",
-    "npm-run-all2": "8.0.1",
-    "typescript-eslint": "^8.32.0",
+    "npm-run-all2": "8.0.2",
+    "typescript-eslint": "^8.32.1",
     "yaml-lint": "1.7.0"
   },
   "keywords": [

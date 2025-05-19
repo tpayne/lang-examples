@@ -28,131 +28,127 @@
         <article>
             <pre class="prettyprint source linenums"><code>const crypto = require('crypto');
 const fs = require('fs').promises;
-const os = require('os');
 const path = require('path');
-const logger = require('./logger');
-// Assuming you have a logger module
-const DEFAULT_DIR = '/tmp/nodeapp/';
+const os = require('os');
+const { Mutex } = require('async-mutex'); // Import Mutex
+const logger = require('./logger'); // Assuming you have a logger utility
+
+// Shared cache for temporary directories per session
+const sessionTempDirs = new Map();
+// Mutex map for protecting the cache per session
+const sessionMutexes = new Map();
 
 /**
- * Recursively deletes a directory and all its contents (files and subdirectories).
- *
- * This function takes a directory path as input and deletes the directory along
- * with all its files and subdirectories. If the directory does not exist, it
- * will not throw an error. If an error occurs during the deletion process, it
- * will log the error and re-throw it.
- *
- * @async
- * @function deleteDirectoryRecursively
- * @param {string} dirPath - The path to the directory to delete.
- * @throws {Error} Throws an error if there is an issue deleting the directory.
- *
+ * Recursively deletes a directory.
+ * @param {string} dirPath The path to the directory to delete.
+ * @returns {Promise&lt;void>} A promise that resolves when the directory is deleted.
  */
-async function deleteDirectoryRecursively(dirPath) {
+const deleteDirectoryRecursively = async (dirPath) => {
   try {
-    // Check if the directory exists and is a directory
-    let stat;
-    try {
-      stat = await fs.stat(dirPath);
-    } catch (error) {
-      // Ignore the error if the stat fails (e.g., directory does not exist)
-      logger.warn(`Directory does not exist: ${dirPath}. Proceeding without deletion.`);
-      return { success: false, message: `Directory does not exist: ${dirPath}` };
-    }
-
-    if (!stat.isDirectory()) {
-      logger.warn(`${dirPath} is not a directory. Proceeding without deletion.`);
-      return { success: false, message: `${dirPath} is not a directory` };
-    }
-
-    // Read the contents of the directory
-    const files = await fs.readdir(dirPath);
-
-    // Recursively delete each file and subdirectory
-    await Promise.all(files.map(async (file) => {
-      const filePath = path.join(dirPath, file);
-      const fileStat = await fs.stat(filePath);
-      if (fileStat.isDirectory()) {
-        // If it's a directory, call the function recursively
-        await deleteDirectoryRecursively(filePath);
-      } else {
-        // If it's a file, delete it
-        await fs.unlink(filePath);
-      }
-    }));
-
-    // Remove the now-empty directory
-    await fs.rmdir(dirPath);
-    return { success: true, message: 'Directory is deleted' };
+    await fs.rm(dirPath, { recursive: true, force: true });
+    logger.debug(`Deleted directory recursively: ${dirPath}`);
   } catch (error) {
-    logger.error(`Error deleting directory: ${dirPath}`, error);
-    throw error; // Re-throw the error for handling by the caller
+    logger.error(
+      `Error deleting directory recursively ${dirPath}: ${error.message}`,
+    );
+    // Depending on requirements, you might want to throw here or just log
+    // For temporary directories, logging might be sufficient as cleanup is best effort.
   }
-}
+};
 
 /**
- * Creates a directory at the specified path, deleting it first if it already exists.
+ * Cleans up the temporary directory associated with a specific session and removes it from the cache.
+ * @async
+ * @param {string} sessionId The unique identifier for the session.
+ */
+const cleanupSessionTempDir = async (sessionId) => {
+  // Acquire the mutex for this session's cleanup
+  const mutex = sessionMutexes.get(sessionId);
+  const release = mutex ? await mutex.acquire() : null;
+
+  try {
+    const tmpDir = sessionTempDirs.get(sessionId);
+    if (tmpDir) {
+      try {
+        await deleteDirectoryRecursively(tmpDir);
+        sessionTempDirs.delete(sessionId);
+        logger.info(`Cleaned up temporary directory for session: ${sessionId}`);
+      } catch (error) {
+        logger.error(`Error cleaning up temporary directory for session ${sessionId}: ${error.message || error}`);
+        // Decide if you want to re-throw the error or just log it.
+        // For cleanup, logging might be sufficient.
+      }
+    }
+    // Always delete the mutex after attempting cleanup, regardless of whether a directory was found.
+    if (sessionMutexes.has(sessionId)) {
+      sessionMutexes.delete(sessionId);
+    }
+  } finally {
+    if (release) {
+      release();
+    }
+  }
+};
+
+/**
+ * Creates a directory at the specified path, optionally deleting it first if it already exists.
  *
- * This function attempts to remove the directory at `localDestPath` recursively
- * if it exists, and then creates a new directory at that path. If the directory
- * does not exist, it simply creates it. If an error occurs during the deletion
- * process that is not related to the directory not existing, the error is re-thrown.
+ * This function first checks if the directory exists. If `deleteExisting` is true and
+ * the directory exists, it attempts to remove it recursively. Then, it creates a new
+ * directory at the specified path. If the directory does not exist initially and
+ * `deleteExisting` is false, it simply creates the directory.
  *
  * @async
  * @function mkdir
  * @param {string} localDestPath - The path to the directory to create.
- * @throws {Error} Throws an error if there is an issue deleting the directory
- * that is not due to the directory not existing.
+ * @param {boolean} [deleteExisting=false] - If true, deletes the directory
+ * if it exists before creating it.
+ * @throws {Error} Throws an error if there is an issue checking for directory existence,
+ * deleting the directory (that is not due to the directory not existing when deleteExisting is true),
+ * or creating the directory.
  */
-async function mkdir(localDestPath) {
-  logger.debug(`mkdir ${localDestPath}`);
+async function mkdir(localDestPath, deleteExisting = false) {
+  if (!localDestPath) {
+    logger.error('mkdir called with undefined localDestPath');
+    throw new Error('localDestPath is undefined');
+  }
+
+  if (localDestPath === os.tmpdir()) {
+    return { success: true, message: 'System directory. No action taken' };
+  }
+
   try {
-    await deleteDirectoryRecursively(localDestPath);
+    // Check if the directory exists
+
+    try {
+      const stats = await fs.stat(localDestPath);
+
+      if (stats.isDirectory()) {
+        await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
+        return { success: true, message: 'Directory already exists, no action needed' };
+      }
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error; // Re-throw if it's not a "directory does not exist" error
+      }
+      // Ignore ENOENT as the directory is expected not to exist
+    }
+
+    if (deleteExisting) {
+      logger.debug(`Directory ${localDestPath} exists, deleting it recursively.`);
+      await deleteDirectoryRecursively(localDestPath);
+    }
+
+    // Create the directory (recursive: true will not throw if the directory already exists)
     await fs.mkdir(localDestPath, { recursive: true });
+
+    // Set permissions (this will apply even if the directory existed and wasn't deleted)
     await fs.chmod(localDestPath, 0o700); // Owner can read, write, and execute
-    return { success: true, message: `Created directory ${localDestPath}` };
+
+    return { success: true, message: `Ensured directory ${localDestPath} exists with correct permissions` };
   } catch (error) {
-    logger.error(`Failed to create directory ${localDestPath} - ${error.message}`);
+    logger.error(`Failed to process directory ${localDestPath} - ${error.message}`);
     throw error;
-  }
-}
-
-/**
- * Saves generated code to a local file.
- *
- * @async
- * @param {string} code - The generated code to save.
- * @param {string} filename - The name of the file to save the code in.
- * @param {string} [directory] - The directory where the file will be saved.
- * Defaults to DEFAULT_DIR if not specified.
- * @returns {Promise&lt;string>} - A promise that resolves to the path of the saved file.
- * @throws {Error} - Throws an error if the file cannot be saved.
- */
-async function saveCodeToFile(code, filename, directory) {
-  // Use /tmp if no directory is specified
-  let lDir = directory;
-  if (!lDir) {
-    lDir = DEFAULT_DIR;
-  } else if (!lDir.startsWith('/')) {
-    // Append /tmp to the start of the incoming directory if it does not start with '/'
-    lDir = path.join(DEFAULT_DIR, lDir);
-  }
-
-  try {
-    // Ensure the directory exists
-    await mkdir(lDir);
-
-    // Create the full file path
-    const filePath = path.join(lDir, filename);
-
-    // Write the code to the file
-    await fs.writeFile(filePath, code, { encoding: 'utf8' });
-
-    // Return the path of the saved file
-    return filePath;
-  } catch (error) {
-    logger.error(`Error saving file: ${error.message}`);
-    throw new Error(`Failed to save file: ${error.message}`);
   }
 }
 
@@ -187,103 +183,202 @@ async function createUniqueTempDir() {
 }
 
 /**
- * Reads the content of a file.
- *
- * @param {string} filePath The path to the file to read.
- * @returns {Promise&lt;string|null>} A promise that resolves with the file content as a string,
- * or null if an error occurred while reading the file.
+ * Reads all files in a directory and its subdirectories.
+ * @async
+ * @param {string} dir The directory to start reading from.
+ * @returns {Promise&lt;Map&lt;string, string>>} A promise that resolves to a Map where keys are
+ * relative file paths and values are file contents.
  */
-async function readFileContent(filePath) {
+/* eslint-disable no-restricted-syntax, no-await-in-loop */
+const readFilesInDirectory = async (dir) => {
+  const files = new Map();
   try {
-    const content = await fs.readFile(filePath, 'utf8');
-    return content;
-  } catch (error) {
-    logger.error(`Error reading file: ${filePath}`, error);
-    // Don't re-throw here. readFileContent might be called
-    // in a loop, and we want to continue processing other files.
-    // A return null will signal to the caller that *this* file
-    // had a problem.
-    return null; // Return null on error
-  }
-}
-
-/* eslint-disable no-continue, no-restricted-syntax, no-await-in-loop,  */
-
-/**
- * Recursively reads all files in a directory and its subdirectories.
- *
- * @param {string} dirPath The path to the directory to read.
- * @returns {Promise&lt;string[]>} A promise that resolves with an array of absolute file paths.
- * @throws {Error} Throws an error if the initial directory cannot be read.
- */
-async function readFilesRecursively(dirPath) {
-  const files = [];
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dir, { withFileTypes: true });
 
     for (const entry of entries) {
-      const fullPath = path.join(dirPath, entry.name);
+      const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        const subFiles = await readFilesRecursively(fullPath);
-        files.push(...subFiles);
-      } else {
-        files.push(fullPath);
+        // Recursively read subdirectories
+        const subDirFiles = await readFilesInDirectory(fullPath);
+        // Merge maps
+        for (const [relativePath, content] of subDirFiles.entries()) {
+          files.set(path.join(entry.name, relativePath), content);
+        }
+      } else if (entry.isFile()) {
+        // Read file content
+        const content = await fs.readFile(fullPath, 'utf8');
+        files.set(entry.name, content); // Store with just the filename for now
       }
     }
   } catch (error) {
-    // Handle the error, and then re-throw. This is important,
-    // because if the *initial* directory doesn't exist, we want
-    // the caller to know. (E.g., the user provided a bad path.)
-    logger.error(`Error reading directory: ${dirPath}`, error);
-    throw error; // Re-throw the error.
+    logger.error(`Error reading directory ${dir}: ${error.message}`);
+    throw new Error(`Failed to read directory contents: ${error.message}`);
   }
   return files;
+};
+/* eslint-enable no-restricted-syntax, no-await-in-loop */
+
+/**
+ * Gets or creates a unique temporary directory for a given session ID, using a cache.
+ * Ensures thread safety using a mutex per session.
+ * @async
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {Promise&lt;string>} A promise that resolves with the path to the
+ * created or retrieved temporary directory for the session.
+ * @throws {Error} If creating the temporary directory fails.
+ */
+async function getOrCreateSessionTempDir(sessionId) {
+  // Get or create the mutex for this session
+  if (!sessionMutexes.has(sessionId)) {
+    sessionMutexes.set(sessionId, new Mutex());
+  }
+  const mutex = sessionMutexes.get(sessionId);
+
+  // Acquire the mutex to ensure only one process creates/accesses the directory at a time
+  const release = await mutex.acquire();
+
+  try {
+    // Check if the directory is already in the cache
+    if (sessionTempDirs.has(sessionId)) {
+      const existingDir = sessionTempDirs.get(sessionId);
+      logger.debug(`Using cached temporary directory for session ${sessionId}: ${existingDir}`);
+      return existingDir;
+    }
+
+    try {
+      const newDirPath = await createUniqueTempDir();
+      logger.debug(`Created unique temporary directory for session ${sessionId}: ${newDirPath}`);
+      // Store the new directory in the cache
+      sessionTempDirs.set(sessionId, newDirPath);
+      return newDirPath;
+    } catch (error) {
+      logger.error(
+        `Error creating unique temporary directory for session ${sessionId}: ${error.message}`,
+      );
+      // Clean up the mutex if directory creation failed
+      sessionMutexes.delete(sessionId);
+      throw new Error(
+        `Failed to create unique temporary directory for session ${sessionId}: ${error.message}`,
+      );
+    }
+  } finally {
+    // Release the mutex
+    release();
+  }
 }
 
 /**
- * Reads all files in a specified directory and returns a Map of file paths and their contents.
+ * Saves code content to a local file within the session's temporary directory,
+ * placing it within a subdirectory structure matching the provided repository directory.
+ * Creates necessary subdirectories.
  *
- * This function recursively retrieves all file paths in the given directory,
- * reads the content of each file, and stores the file path and content in a Map.
- * If a file cannot be read, it logs a warning and skips that file. If an error
- * occurs while reading the directory, it logs the error and re-throws it.
+ * This version includes a fix to ensure that literal '\n' sequences in the input
+ * code string are converted to actual newline characters before writing to the file.
  *
  * @async
- * @function readFilesInDirectory
- * @param {string} directoryPath - The path to the directory from which to read files.
- * @returns {Promise&lt;Map&lt;string, string>>} A promise that resolves to a Map where the
- * keys are absolute file paths
- * and the values are the contents of the files.
- * @throws {Error} Throws an error if there is an issue reading the directory.
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} code The code content to save.
+ * @param {string} filename The base filename (e.g., 'improvements.py').
+ * @param {string} [repoDirName=null] The repository directory path where the file
+ * should be conceptually located (e.g., 'demo/python/chatbot'). This path will
+ * be mirrored within the session's temporary directory.
+ * @returns {Promise&lt;string>} A promise that resolves with the full absolute path
+ * to the saved file within the temporary directory.
+ * @throws {Error} If saving the file fails.
  */
-async function readFilesInDirectory(directoryPath) {
-  const filesMap = new Map(); // Create a Map to store file paths and their contents
-
-  try {
-    const filePaths = await readFilesRecursively(directoryPath);
-    for (const filePath of filePaths) {
-      const fileContent = await readFileContent(filePath);
-      if (fileContent === null) {
-        logger.warn(`Skipping file: ${filePath} due to read error.`);
-        continue; // Skip to the next file
-      }
-      filesMap.set(filePath, fileContent); // Store the file path and content in the Map
-    }
-  } catch (error) {
-    logger.error(`Error reading directory: ${directoryPath}`, error);
-    throw error; // Re-throw the error.
+async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
+  let rDirName = repoDirName;
+  // Validate parameters
+  if (!sessionId || typeof sessionId !== 'string') {
+    logger.error('saveCodeToFile called with invalid session ID');
+    throw new Error('Invalid session ID');
   }
-  return filesMap; // Return the Map of file paths and contents
+  if (typeof code !== 'string') {
+    logger.error('saveCodeToFile called with invalid code type');
+    throw new Error('Invalid code content');
+  }
+  if (!filename || typeof filename !== 'string') {
+    logger.error('saveCodeToFile called with invalid filename');
+    throw new Error('Invalid filename provided');
+  }
+  // rDirName is optional, no validation needed beyond type check if provided
+  if (rDirName !== undefined &amp;&amp; rDirName !== null &amp;&amp; typeof rDirName !== 'string') {
+    logger.error('saveCodeToFile called with invalid rDirName type');
+    throw new Error('Invalid rDirName type');
+  }
+  // Handle potential empty string for rDirName
+  if (rDirName === '') {
+    rDirName = null;
+  }
+
+  // Get the base temporary directory for this session
+  const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
+
+  if (!sessionTempDir) {
+    logger.error(`Temporary directory not found or created for session: ${sessionId} during saveCodeToFile.`);
+    throw new Error(`Temporary directory not available for session: ${sessionId}.`);
+  }
+
+  // Construct the full local path by joining the session temp dir, the rDirName, and the filename.
+  // path.join correctly handles null/empty rDirName (treats it as the root of sessionTempDir)
+  const fullPath = path.join(sessionTempDir, rDirName || '', filename);
+
+  // Ensure the parent directory exists
+  const dirPath = path.dirname(fullPath);
+  try {
+    // Use recursive option to create parent directories as needed
+    await mkdir(dirPath, { recursive: true }); // Added recursive: true for robustness
+    logger.debug(`Ensured directory exists for saving: ${dirPath} for session ${sessionId}`);
+  } catch (error) {
+    logger.error(`Error creating directory ${dirPath} for session ${sessionId}: ${error.message}`);
+    throw new Error(`Failed to create directory for saving file: ${error.message}`);
+  }
+
+  // This snippet aims to correctly interpret escaped newline characters
+  // and standardize line endings to prevent corruption of formats like
+  // markdown and JSON, while also handling specific "silly code" patterns.
+
+  // Start with the original code string.
+  let finalCode = code;
+  try {
+    finalCode = JSON.parse(`"${code}"`);
+  } catch (e) {
+    // If parsing fails, it's not valid JSON, so we keep the original code string.
+    let processedCode = code.replace(/\\+n\s*/g, '\n');
+    processedCode = processedCode.replace(/\\r\\n/g, '\r\n');
+    processedCode = processedCode.replace(/\\n/g, '\n');
+    processedCode = processedCode.replace(/\\\\/g, '\\');
+    finalCode = processedCode.replace(/\r\n/g, '\n');
+  }
+
+  // Save the file
+  try {
+    // Use the potentially modified code string
+    await fs.writeFile(fullPath, finalCode, 'utf8');
+    logger.info(`Code saved successfully to: ${fullPath} for session ${sessionId}`);
+    return fullPath;
+  } catch (error) {
+    logger.error(`Error saving file ${fullPath} for session ${sessionId}: ${error.message}`);
+    throw new Error(`Failed to save file: ${error.message}`);
+  }
 }
-
-/* eslint-enable no-continue, no-restricted-syntax, no-await-in-loop,  */
-
+/**
+ * Exports utility functions for managing temporary directories and file operations.
+ * These functions are designed to be used in a session-based context, ensuring
+ * thread safety and proper cleanup of resources.
+ *
+ * @module utilities
+ */
+// This module provides functions for creating, managing, and cleaning up
+// temporary directories and files, specifically for session-based operations.
 module.exports = {
-  createUniqueTempDir,
+  createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes
   deleteDirectoryRecursively,
   mkdir,
   readFilesInDirectory,
   saveCodeToFile,
+  getOrCreateSessionTempDir,
+  cleanupSessionTempDir,
 };
 </code></pre>
         </article>
@@ -295,13 +390,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 10 2025 11:47:34 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 19 2025 23:47:46 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
