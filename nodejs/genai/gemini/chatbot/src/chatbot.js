@@ -162,30 +162,53 @@ const readContext = async (contextStr) => {
  * @async
  * @param {string} sessionId The ID of the client session.
  * @param {string} name The name of the function.
- * @param {object} args The arguments for the function.
+ * @param {object} args The arguments for the function (already parsed from JSON string).
  * @returns {Promise<any>} The result of the function call.
  */
 const callFunctionByName = async (sessionId, name, args) => {
-  const functionCache = await getAvailableFunctions(sessionId); // Assuming this loads functions
+  const functionCache = await getAvailableFunctions(sessionId);
   const functionInfo = functionCache[name];
-  // logger.debug(`functionCache object is ${util.inspect(functionCache,
-  //  { depth: null })} [Session: ${sessionId}]`);
 
   if (functionInfo && functionInfo.func) {
     try {
-      const { func, params, needSession } = functionInfo;
+      // Destructure 'required' from functionInfo - this assumes 'required' is stored in the registry
+      const {
+        func, params, needSession, required,
+      } = functionInfo;
+      const functionArgs = { ...args }; // Clone args to avoid mutation
 
-      // Ensure arguments match expected parameters
-      const argValues = params.map((paramName) => args[paramName]);
+      // Check if functionInfo.required exists before filtering
+      const missingParams = (required || []).filter((paramName) => functionArgs[paramName] === undefined);
+
+      if (missingParams.length > 0) {
+        logger.error(`Missing required arguments for function '${name}': ${missingParams.join(', ')} [Session: ${sessionId}]`);
+        return JSON.stringify({ error: `Missing required arguments for function '${name}'`, details: `Missing: ${missingParams.join(', ')}` });
+      }
+
+      // As the genai parser (often) generates rubbish, we need to check if the args are valid
+      // Specifically check for the 'code' parameter for save_code_to_file if needed
+      if (name === 'save_code_to_file' && typeof functionArgs.code !== 'string') {
+        logger.error(`Invalid or missing 'code' argument for save_code_to_file [Session: ${sessionId}]`);
+        return JSON.stringify({
+          error: 'Invalid or missing \'code\' argument for save_code_to_file',
+          details: '\'code\' must be a string.',
+        });
+      }
+
+      const argValues = params.map((paramName) => functionArgs[paramName]);
       if (needSession) {
         argValues.unshift(sessionId);
       }
-
       /* eslint-disable prefer-spread */
       logger.info(`Calling Function '${name}' [Session: ${sessionId}]`);
       const result = await func.apply(null, argValues);
+      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: functionArgs, result });
       /* eslint-enable prefer-spread */
-      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
+
+      // Ensure result is stringified if it's an object/array before returning to model
+      if (typeof result !== 'string') {
+        return JSON.stringify(result);
+      }
       return result;
     } catch (error) {
       logger.error(`Error executing function '${name}' [Session: ${sessionId}]`, { arguments: args, error: error.message });

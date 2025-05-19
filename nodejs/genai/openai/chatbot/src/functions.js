@@ -142,7 +142,9 @@ async function registerFunction(
         + ' and will be reused.',
       );
     } else {
-      sessionRegistry[name] = { func, params, needSession };
+      sessionRegistry[name] = {
+        func, params, needSession, required,
+      };
 
       const functionMetadata = {
         type: 'function',
@@ -170,12 +172,13 @@ async function loadCodeReviews(sessionId) {
     sessionId,
     'file_review',
     codeReviews,
-    ['username', 'repoName', 'repoDirName'],
+    ['username', 'repoName', 'repoDirName', 'branchName'],
     'Review files in a given GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
       repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      branchName: { type: 'string', description: 'The name of the branch to review.' },
     },
     ['username', 'repoName', 'repoDirName'],
     true,

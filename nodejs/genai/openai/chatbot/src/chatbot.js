@@ -175,10 +175,15 @@ const callFunctionByName = async (sessionId, name, args) => {
 
   if (functionInfo && functionInfo.func) {
     try {
-      const { func, params, needSession } = functionInfo;
+      // Destructure 'required' from functionInfo - this assumes 'required' is stored in the registry
+      const {
+        func, params, needSession, required,
+      } = functionInfo;
+      const functionArgs = { ...args }; // Clone args to avoid mutation
 
-      // Check if all required parameters are present in the parsed arguments object
-      const missingParams = params.filter((paramName) => args[paramName] === undefined);
+      // Check if functionInfo.required exists before filtering
+      const missingParams = (required || []).filter((paramName) => functionArgs[paramName] === undefined);
+
       if (missingParams.length > 0) {
         logger.error(`Missing required arguments for function '${name}': ${missingParams.join(', ')} [Session: ${sessionId}]`);
         return JSON.stringify({ error: `Missing required arguments for function '${name}'`, details: `Missing: ${missingParams.join(', ')}` });
@@ -186,7 +191,7 @@ const callFunctionByName = async (sessionId, name, args) => {
 
       // As the genai parser (often) generates rubbish, we need to check if the args are valid
       // Specifically check for the 'code' parameter for save_code_to_file if needed
-      if (name === 'save_code_to_file' && typeof args.code !== 'string') {
+      if (name === 'save_code_to_file' && typeof functionArgs.code !== 'string') {
         logger.error(`Invalid or missing 'code' argument for save_code_to_file [Session: ${sessionId}]`);
         return JSON.stringify({
           error: 'Invalid or missing \'code\' argument for save_code_to_file',
@@ -194,14 +199,14 @@ const callFunctionByName = async (sessionId, name, args) => {
         });
       }
 
-      const argValues = params.map((paramName) => args[paramName]);
+      const argValues = params.map((paramName) => functionArgs[paramName]);
       if (needSession) {
         argValues.unshift(sessionId);
       }
       /* eslint-disable prefer-spread */
       logger.info(`Calling Function '${name}' [Session: ${sessionId}]`);
       const result = await func.apply(null, argValues);
-      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: args, result });
+      logger.info(`Function '${name}' executed successfully [Session: ${sessionId}]`, { arguments: functionArgs, result });
       /* eslint-enable prefer-spread */
 
       // Ensure result is stringified if it's an object/array before returning to model
@@ -354,6 +359,19 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       logger.debug(`OpenAI API response [Session: ${sessionId}]: ${util.inspect(response, { depth: null })}`);
 
       const message = response.choices[0] ? response.choices[0].message : undefined;
+      const finishReason = response.choices[0] ? response.choices[0].finish_reason : undefined;
+
+      if (!message) {
+        logger.warn(`OpenAI API: No message in response choice [Session: ${sessionId}]`);
+        chatResponse = 'Could not get a valid message from the model.';
+        break;
+      }
+
+      if (message.content === null && message.tool_calls && message.tool_calls.length > 0 && finishReason === 'length') {
+        logger.error(`OpenAI API: Detected problematic response pattern (content: null, tool_calls present, finish_reason: 'length'). Likely cut off mid-tool call. [Session: ${sessionId}]`);
+        chatResponse = 'I received an incomplete response from the AI. It seems like it was trying to call a tool but got cut off. Please try rephrasing your request.';
+        break;
+      }
 
       if (!message) {
         logger.warn(`OpenAI API: No message in response choice [Session: ${sessionId}]`);

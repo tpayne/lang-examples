@@ -1,6 +1,6 @@
 const { Mutex } = require('async-mutex'); // Ensure Mutex is imported
 const logger = require('./logger');
-const { fetchRepoContentsRecursive } = require('./gitFunctions');
+const { fetchRepoContentsRecursive, switchBranch } = require('./gitFunctions');
 const { readFilesInDirectory, getOrCreateSessionTempDir, cleanupSessionTempDir } = require('./utilities');
 
 const sessionMutexes = new Map(); // **This map needs to be defined**
@@ -22,16 +22,28 @@ function getSessionMutex(sessionId) { // **This function needs to be defined**
  * @param {string} username The GitHub username.
  * @param {string} repoName The GitHub repo name.
  * @param {string} repoDirName The GitHub path name.
+ * @param {string} branchName The GitHub repo branch to use.
  * @returns {Promise<string[] | { success: boolean, message: string }>} Array of public repository names or an error object.
  * @throws {Error} If API request fails or user is not found.
  */
-async function codeReviews(sessionId, username, repoName, repoDirName) { // Reverted function signature
+async function codeReviews(sessionId, username, repoName, repoDirName, branchName) { // Reverted function signature
   let tmpDir;
   const sessionMutex = getSessionMutex(sessionId); // Acquire mutex
   const release = await sessionMutex.acquire();
   try {
     tmpDir = await getOrCreateSessionTempDir(sessionId);
 
+    // if the branchName is provided, switch to that branch
+    // before fetching the repo contents.
+    if (branchName) {
+      const resp = await switchBranch(username, repoName, branchName);
+      if (!resp.success) {
+        return {
+          success: false,
+          message: resp.message,
+        };
+      }
+    }
     // Call fetchRepoContentsRecursive, passing repoDirName as both repoDirName and initialrepoDirName.
     // Since codeReviews doesn't have a branch parameter, fetchRepoContentsRecursive
     // will use its default branch (likely 'main').

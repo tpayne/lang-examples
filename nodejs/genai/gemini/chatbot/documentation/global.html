@@ -176,7 +176,8 @@
 
 
 <div class="description">
-    Manages mutexes for download URLs per session to prevent concurrent downloads of the same file.
+    Manages mutexes for download URLs per session to prevent concurrent downloads
+of the same file.
 </div>
 
 
@@ -224,7 +225,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line20">line 20</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line22">line 22</a>
     </li></ul></dd>
     
 
@@ -999,7 +1000,7 @@ Limits the cache size per session.
 
             
 
-            <td class="description last">The arguments for the function.</td>
+            <td class="description last">The arguments for the function (already parsed from JSON string).</td>
         </tr>
 
     
@@ -1248,7 +1249,7 @@ given user or organization and repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line775">line 775</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line975">line 975</a>
     </li></ul></dd>
     
 
@@ -1462,7 +1463,7 @@ This function checks if a specified repository exists under a given user or orga
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line730">line 730</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line930">line 930</a>
     </li></ul></dd>
     
 
@@ -1651,7 +1652,7 @@ the existence of the repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line85">line 85</a>
+        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -1687,7 +1688,144 @@ the existence of the repository.
     
 
     
-    <h4 class="name" id="codeReviews"><span class="type-signature">(async) </span>codeReviews<span class="signature">(sessionId, username, repoName, repoPath)</span><span class="type-signature"> &rarr; {Promise.&lt;(Array.&lt;string>|{success: boolean, message: string})>}</span></h4>
+    <h4 class="name" id="cleanupSessionTempDir"><span class="type-signature">(async) </span>cleanupSessionTempDir<span class="signature">(sessionId)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Cleans up the temporary directory associated with a specific session and removes it from the cache.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="codeReviews"><span class="type-signature">(async) </span>codeReviews<span class="signature">(sessionId, username, repoName, repoDirName, branchName)</span><span class="type-signature"> &rarr; {Promise.&lt;(Array.&lt;string>|{success: boolean, message: string})>}</span></h4>
     
 
     
@@ -1803,7 +1941,7 @@ Uses a temporary directory and ensures thread safety per session.
 
         <tr>
             
-                <td class="name"><code>repoPath</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -1820,6 +1958,29 @@ Uses a temporary directory and ensures thread safety per session.
             
 
             <td class="description last">The GitHub path name.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>branchName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The GitHub repo branch to use.</td>
         </tr>
 
     
@@ -1860,7 +2021,7 @@ Uses a temporary directory and ensures thread safety per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line39">line 39</a>
+        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line29">line 29</a>
     </li></ul></dd>
     
 
@@ -1918,7 +2079,7 @@ Uses a temporary directory and ensures thread safety per session.
 
         
 <div class="param-desc">
-    Array of public file content or an error object.
+    Array of public repository names or an error object.
 </div>
 
 
@@ -1947,7 +2108,7 @@ Uses a temporary directory and ensures thread safety per session.
     
 
     
-    <h4 class="name" id="commitFiles"><span class="type-signature">(async) </span>commitFiles<span class="signature">(username, repoName, directoryPath)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    <h4 class="name" id="commitFiles"><span class="type-signature">(async) </span>commitFiles<span class="signature">(sessionId, username, repoName, repoDirName<span class="signature-attributes">opt</span>, branch<span class="signature-attributes">opt</span>, maxPutRetries<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
     
@@ -1957,10 +2118,14 @@ Uses a temporary directory and ensures thread safety per session.
 <div class="description">
     Commits files to a GitHub repository, including files in subdirectories.
 It checks for existing files to include their SHAs for updates.
+Only commits files if their content is different from the existing file in the repo.
+Includes a retry mechanism for 409 Conflict errors during file updates.
 
-This function reads all files from a specified directory and its subdirectories
-and uploads/updates them to the specified GitHub repository, maintaining the
-directory structure. Each file is encoded in base64.
+Files are read from a specified session's temporary directory.
+If `repoDirName` is provided, only files located within the corresponding
+subdirectory in the temporary workspace will be considered and committed
+into that directory within the repository. Otherwise, all files in the
+temporary directory are considered and committed to the root and its subdirectories.
 </div>
 
 
@@ -1984,7 +2149,11 @@ directory structure. Each file is encoded in base64.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -1992,6 +2161,41 @@ directory structure. Each file is encoded in base64.
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
     
 
         <tr>
@@ -2009,7 +2213,19 @@ directory structure. Each file is encoded in base64.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The username of the repository owner.</td>
@@ -2032,7 +2248,19 @@ directory structure. Each file is encoded in base64.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The name of the repository where files will be
@@ -2043,7 +2271,7 @@ committed.</td>
 
         <tr>
             
-                <td class="name"><code>directoryPath</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -2056,11 +2284,106 @@ committed.</td>
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
 
+                
+
+                
+                </td>
             
 
-            <td class="description last">The path to the local directory containing files
-to upload.</td>
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last">The name of the directory in the repository
+where files will be committed. If provided, only files within this scope
+in the temporary directory are committed here.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>branch</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'main'
+                
+                </td>
+            
+
+            <td class="description last">The branch to commit to. Defaults to 'main'.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>maxPutRetries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    3
+                
+                </td>
+            
+
+            <td class="description last">Maximum number of retries for PUT requests on 409 conflict.</td>
         </tr>
 
     
@@ -2101,7 +2424,7 @@ to upload.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line974">line 974</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1174">line 1174</a>
     </li></ul></dd>
     
 
@@ -2160,7 +2483,7 @@ to upload.</td>
         
 <div class="param-desc">
     - A promise that resolves to an object indicating
-the success or failure of the operation, with results for each file.
+the success or failure of the operation, with results for each file processed.
 </div>
 
 
@@ -2382,7 +2705,7 @@ branch on (e.g., 'main').</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line866">line 866</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1066">line 1066</a>
     </li></ul></dd>
     
 
@@ -2768,7 +3091,7 @@ Handles API errors, including specific GitHub errors.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line537">line 537</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line737">line 737</a>
     </li></ul></dd>
     
 
@@ -3126,7 +3449,7 @@ of the repository. Defaults to 'Repository created by app'.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line675">line 675</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line875">line 875</a>
     </li></ul></dd>
     
 
@@ -3270,7 +3593,7 @@ write permissions to it. The path of the created directory is returned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line131">line 131</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line127">line 127</a>
     </li></ul></dd>
     
 
@@ -3357,7 +3680,7 @@ write permissions to it. The path of the created directory is returned.
     
 
     
-    <h4 class="name" id="deleteDirectoryRecursively"><span class="type-signature">(async) </span>deleteDirectoryRecursively<span class="signature">(dirPath)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="delay"><span class="type-signature"></span>delay<span class="signature">(ms)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
     
 
     
@@ -3365,12 +3688,166 @@ write permissions to it. The path of the created directory is returned.
 
 
 <div class="description">
-    Recursively deletes a directory and all its contents (files and subdirectories).
+    Helper function to introduce a delay.
+</div>
 
-This function takes a directory path as input and deletes the directory along
-with all its files and subdirectories. If the directory does not exist, it
-will not throw an error. If an error occurs during the deletion process, it
-will log the error and re-throw it.
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ms</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The number of milliseconds to wait.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1171">line 1171</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise that resolves after the delay.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="deleteDirectoryRecursively"><span class="type-signature">(async) </span>deleteDirectoryRecursively<span class="signature">(dirPath)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Recursively deletes a directory.
 </div>
 
 
@@ -3463,7 +3940,7 @@ will log the error and re-throw it.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line9">line 9</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line18">line 18</a>
     </li></ul></dd>
     
 
@@ -3486,37 +3963,30 @@ will log the error and re-throw it.
 
 
 
-<h5>Throws:</h5>
+
+
+<h5>Returns:</h5>
 
         
+<div class="param-desc">
+    A promise that resolves when the directory is deleted.
+</div>
+
+
 
 <dl>
     <dt>
-        <div class="param-desc">
-        Throws an error if there is an issue deleting the directory.
-        </div>
+        Type
     </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type">Error</span>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
 
 
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
+    </dd>
 </dl>
 
-
     
-
-
 
 
 
@@ -3757,7 +4227,7 @@ will log the error and re-throw it.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line83">line 83</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -3793,7 +4263,7 @@ will log the error and re-throw it.
     
 
     
-    <h4 class="name" id="fetchRepoContentsRecursive"><span class="type-signature">(async) </span>fetchRepoContentsRecursive<span class="signature">(sessionId, username, repoName, repoPath, localDestPath, includeDotGithub<span class="signature-attributes">opt</span>, skipBinaryFiles<span class="signature-attributes">opt</span>, retryCount<span class="signature-attributes">opt</span>, maxRetries<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="fetchRepoContentsRecursive"><span class="type-signature">(async) </span>fetchRepoContentsRecursive<span class="signature">(sessionId, username, repoName, repoDirName, initialrepoDirName, localDestPath<span class="signature-attributes">opt</span>, includeDotGithub<span class="signature-attributes">opt</span>, skipBinaryFiles<span class="signature-attributes">opt</span>, retryCount<span class="signature-attributes">opt</span>, maxRetries<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -3947,7 +4417,7 @@ Optionally skips potential binary files based on extension.
 
         <tr>
             
-                <td class="name"><code>repoPath</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -3975,7 +4445,42 @@ Optionally skips potential binary files based on extension.
                 </td>
             
 
-            <td class="description last">The starting path within the repository.</td>
+            <td class="description last">The current path being fetched within the repository.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>initialrepoDirName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The original path from the first call to this function.</td>
         </tr>
 
     
@@ -3997,6 +4502,8 @@ Optionally skips potential binary files based on extension.
             
                 <td class="attributes">
                 
+                    &lt;optional><br>
+                
 
                 
 
@@ -4007,10 +4514,12 @@ Optionally skips potential binary files based on extension.
             
                 <td class="default">
                 
+                    null
+                
                 </td>
             
 
-            <td class="description last">The local directory path where content should be saved.</td>
+            <td class="description last">Optional local destination path.</td>
         </tr>
 
     
@@ -4208,7 +4717,7 @@ files likely to be binary (based on extension). Defaults to true.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line153">line 153</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line194">line 194</a>
     </li></ul></dd>
     
 
@@ -4969,7 +5478,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line526">line 526</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line533">line 533</a>
     </li></ul></dd>
     
 
@@ -5219,7 +5728,7 @@ Handles special commands, context, caching, and function calling.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line261">line 261</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line284">line 284</a>
     </li></ul></dd>
     
 
@@ -5402,7 +5911,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line222">line 222</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line245">line 245</a>
     </li></ul></dd>
     
 
@@ -5584,7 +6093,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line65">line 65</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line69">line 69</a>
     </li></ul></dd>
     
 
@@ -5743,7 +6252,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line517">line 517</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line524">line 524</a>
     </li></ul></dd>
     
 
@@ -5943,6 +6452,196 @@ and tools.
     <dd>
         
 <span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getOrCreateSessionTempDir"><span class="type-signature">(async) </span>getOrCreateSessionTempDir<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Gets or creates a unique temporary directory for a given session ID, using a cache.
+Ensures thread safety using a mutex per session.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line202">line 202</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If creating the temporary directory fails.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise that resolves with the path to the
+created or retrieved temporary directory for the session.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;string></span>
 
 
     </dd>
@@ -6460,165 +7159,6 @@ and tools.
     
 
     
-    <h4 class="name" id="getSessionMutex"><span class="type-signature"></span>getSessionMutex<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Mutex}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Gets or creates a mutex for a given session ID.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>sessionId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The unique identifier for the session.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="codeReviews.js.html">codeReviews.js</a>, <a href="codeReviews.js.html#line17">line 17</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    The mutex for the session.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Mutex</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
     <h4 class="name" id="getSessionTokenMutex"><span class="type-signature"></span>getSessionTokenMutex<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Mutex}</span></h4>
     
 
@@ -7117,7 +7657,7 @@ if found, or null if the vehicle is not found (404).
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line207">line 207</a>
+        <a href="chatbot.js.html">chatbot.js</a>, <a href="chatbot.js.html#line230">line 230</a>
     </li></ul></dd>
     
 
@@ -7332,7 +7872,7 @@ indicate an error status. Includes status, text, and body message.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line45">line 45</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line49">line 49</a>
     </li></ul></dd>
     
 
@@ -7556,7 +8096,7 @@ Otherwise, it re-throws the original error.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line31">line 31</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line33">line 33</a>
     </li></ul></dd>
     
 
@@ -7747,7 +8287,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line369">line 369</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line517">line 517</a>
     </li></ul></dd>
     
 
@@ -7834,7 +8374,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listCommitHistory"><span class="type-signature">(async) </span>listCommitHistory<span class="signature">(username, repoName, dirName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{sha: string, message: string, author: string, date: string}>>}</span></h4>
+    <h4 class="name" id="listCommitHistory"><span class="type-signature">(async) </span>listCommitHistory<span class="signature">(username, repoName, repoDirName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{sha: string, message: string, author: string, date: string}>>}</span></h4>
     
 
     
@@ -7930,7 +8470,7 @@ Handles API errors and "Not Found" exceptions.
 
         <tr>
             
-                <td class="name"><code>dirName</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -7987,7 +8527,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line406">line 406</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line554">line 554</a>
     </li></ul></dd>
     
 
@@ -8074,7 +8614,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, repoDirName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
+    <h4 class="name" id="listDirectoryContents"><span class="type-signature">(async) </span>listDirectoryContents<span class="signature">(username, repoName, branchName<span class="signature-attributes">opt</span>, repoDirName<span class="signature-attributes">opt</span>, recursive<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;{name: string, type: string, path: string}>>}</span></h4>
     
 
     
@@ -8085,6 +8625,7 @@ Handles API errors and "Not Found" exceptions.
     Lists the contents of a directory (or root if no path) in a GitHub repo.
 Fetches content data and extracts name, type ('file'/'dir'), and path.
 Handles API errors and "Not Found" exceptions.
+Recursively lists contents if specified.
 </div>
 
 
@@ -8194,6 +8735,45 @@ Handles API errors and "Not Found" exceptions.
 
         <tr>
             
+                <td class="name"><code>branchName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'main'
+                
+                </td>
+            
+
+            <td class="description last">Optional branch name. Defaults to 'main'.</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>repoDirName</code></td>
             
 
@@ -8226,7 +8806,7 @@ Handles API errors and "Not Found" exceptions.
                 </td>
             
 
-            <td class="description last">Optional path to the directory.</td>
+            <td class="description last">Optional path to the directory within the repo.</td>
         </tr>
 
     
@@ -8265,7 +8845,7 @@ Handles API errors and "Not Found" exceptions.
                 </td>
             
 
-            <td class="description last">Optional recursive scan.</td>
+            <td class="description last">Optional recursive scan. Defaults to true.</td>
         </tr>
 
     
@@ -8306,7 +8886,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line463">line 463</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line614">line 614</a>
     </li></ul></dd>
     
 
@@ -8336,7 +8916,7 @@ Handles API errors and "Not Found" exceptions.
 <dl>
     <dt>
         <div class="param-desc">
-        If API request fails or repository/path not found.
+        If API request fails (e.g., repo/path not found, authentication, rate limit).
         </div>
     </dt>
     <dd></dd>
@@ -8364,7 +8944,8 @@ Handles API errors and "Not Found" exceptions.
 
         
 <div class="param-desc">
-    Array of directory content objects.
+    A promise that resolves to an array of directory content objects. Returns an
+empty array if the directory is empty.
 </div>
 
 
@@ -8586,7 +9167,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line595">line 595</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line795">line 795</a>
     </li></ul></dd>
     
 
@@ -8776,7 +9357,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line340">line 340</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line488">line 488</a>
     </li></ul></dd>
     
 
@@ -8964,7 +9545,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line408">line 408</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line415">line 415</a>
     </li></ul></dd>
     
 
@@ -9000,7 +9581,7 @@ Handles API errors and "Not Found" exceptions.
     
 
     
-    <h4 class="name" id="mkdir"><span class="type-signature">(async) </span>mkdir<span class="signature">(localDestPath)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="mkdir"><span class="type-signature">(async) </span>mkdir<span class="signature">(localDestPath, deleteExisting<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -9008,12 +9589,12 @@ Handles API errors and "Not Found" exceptions.
 
 
 <div class="description">
-    Creates a directory at the specified path, deleting it first if it already exists.
+    Creates a directory at the specified path, optionally deleting it first if it already exists.
 
-This function attempts to remove the directory at `localDestPath` recursively
-if it exists, and then creates a new directory at that path. If the directory
-does not exist, it simply creates it. If an error occurs during the deletion
-process that is not related to the directory not existing, the error is re-thrown.
+This function first checks if the directory exists. If `deleteExisting` is true and
+the directory exists, it attempts to remove it recursively. Then, it creates a new
+directory at the specified path. If the directory does not exist initially and
+`deleteExisting` is false, it simply creates the directory.
 </div>
 
 
@@ -9037,7 +9618,11 @@ process that is not related to the directory not existing, the error is re-throw
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -9062,10 +9647,62 @@ process that is not related to the directory not existing, the error is re-throw
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The path to the directory to create.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>deleteExisting</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">If true, deletes the directory
+if it exists before creating it.</td>
         </tr>
 
     
@@ -9136,8 +9773,9 @@ process that is not related to the directory not existing, the error is re-throw
 <dl>
     <dt>
         <div class="param-desc">
-        Throws an error if there is an issue deleting the directory
-that is not due to the directory not existing.
+        Throws an error if there is an issue checking for directory existence,
+deleting the directory (that is not due to the directory not existing when deleteExisting is true),
+or creating the directory.
         </div>
     </dt>
     <dd></dd>
@@ -9547,549 +10185,6 @@ or null if the route cannot be planned.
     
 
     
-    <h4 class="name" id="readFileContent"><span class="type-signature">(async) </span>readFileContent<span class="signature">(filePath)</span><span class="type-signature"> &rarr; {Promise.&lt;(string|null)>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Reads the content of a file.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>filePath</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The path to the file to read.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line168">line 168</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    A promise that resolves with the file content as a string,
-or null if an error occurred while reading the file.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;(string|null)></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="readFilesInDirectory"><span class="type-signature">(async) </span>readFilesInDirectory<span class="signature">(directoryPath)</span><span class="type-signature"> &rarr; {Promise.&lt;Map.&lt;string, string>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Reads all files in a specified directory and returns a Map of file paths and their contents.
-
-This function recursively retrieves all file paths in the given directory,
-reads the content of each file, and stores the file path and content in a Map.
-If a file cannot be read, it logs a warning and skips that file. If an error
-occurs while reading the directory, it logs the error and re-throws it.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>directoryPath</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The path to the directory from which to read files.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line215">line 215</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-<dl>
-    <dt>
-        <div class="param-desc">
-        Throws an error if there is an issue reading the directory.
-        </div>
-    </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type">Error</span>
-
-
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
-</dl>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    A promise that resolves to a Map where the
-keys are absolute file paths
-and the values are the contents of the files.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Map.&lt;string, string>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="readFilesRecursively"><span class="type-signature">(async) </span>readFilesRecursively<span class="signature">(dirPath)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Recursively reads all files in a directory and its subdirectories.
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>dirPath</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">The path to the directory to read.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line191">line 191</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-<dl>
-    <dt>
-        <div class="param-desc">
-        Throws an error if the initial directory cannot be read.
-        </div>
-    </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type">Error</span>
-
-
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
-</dl>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    A promise that resolves with an array of absolute file paths.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;Array.&lt;string>></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
     <h4 class="name" id="registerFunction"><span class="type-signature">(async) </span>registerFunction<span class="signature">(sessionId, name, func, params, description, parametersSchema, required, needSession)</span><span class="type-signature"></span></h4>
     
 
@@ -10424,7 +10519,7 @@ and the values are the contents of the files.
     
 
     
-    <h4 class="name" id="saveCodeToFile"><span class="type-signature">(async) </span>saveCodeToFile<span class="signature">(code, filename, directory<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
+    <h4 class="name" id="saveCodeToFile"><span class="type-signature">(async) </span>saveCodeToFile<span class="signature">(sessionId, code, filename, repoDirName<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
     
 
     
@@ -10432,7 +10527,12 @@ and the values are the contents of the files.
 
 
 <div class="description">
-    Saves generated code to a local file.
+    Saves code content to a local file within the session's temporary directory,
+placing it within a subdirectory structure matching the provided repository directory.
+Creates necessary subdirectories.
+
+This version includes a fix to ensure that literal '\n' sequences in the input
+code string are converted to actual newline characters before writing to the file.
 </div>
 
 
@@ -10460,12 +10560,49 @@ and the values are the contents of the files.
         
 
         
+        <th>Default</th>
+        
 
         <th class="last">Description</th>
     </tr>
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
     
 
         <tr>
@@ -10493,8 +10630,12 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The generated code to save.</td>
+            <td class="description last">The code content to save.</td>
         </tr>
 
     
@@ -10524,15 +10665,19 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The name of the file to save the code in.</td>
+            <td class="description last">The base filename (e.g., 'improvements.py').</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>directory</code></td>
+                <td class="name"><code>repoDirName</code></td>
             
 
             <td class="type">
@@ -10557,9 +10702,16 @@ and the values are the contents of the files.
             
 
             
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
 
-            <td class="description last">The directory where the file will be saved.
-Defaults to DEFAULT_DIR if not specified.</td>
+            <td class="description last">The repository directory path where the file
+should be conceptually located (e.g., 'demo/python/chatbot'). This path will
+be mirrored within the session's temporary directory.</td>
         </tr>
 
     
@@ -10600,7 +10752,7 @@ Defaults to DEFAULT_DIR if not specified.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line103">line 103</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line261">line 261</a>
     </li></ul></dd>
     
 
@@ -10630,7 +10782,7 @@ Defaults to DEFAULT_DIR if not specified.</td>
 <dl>
     <dt>
         <div class="param-desc">
-        - Throws an error if the file cannot be saved.
+        If saving the file fails.
         </div>
     </dt>
     <dd></dd>
@@ -10658,7 +10810,8 @@ Defaults to DEFAULT_DIR if not specified.</td>
 
         
 <div class="param-desc">
-    - A promise that resolves to the path of the saved file.
+    A promise that resolves with the full absolute path
+to the saved file within the temporary directory.
 </div>
 
 
@@ -10837,7 +10990,7 @@ to the provided branch name. It uses the GitHub API to perform the update.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line825">line 825</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1025">line 1025</a>
     </li></ul></dd>
     
 
@@ -10897,8 +11050,8 @@ there is an issue processing the request.
         
 <div class="param-desc">
     - A promise that resolves to an object indicating
-                             the success of the operation,
-                             with a message confirming the change.
+the success of the operation,
+with a message confirming the change.
 </div>
 
 
@@ -11083,7 +11236,7 @@ there is an issue processing the request.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line938">line 938</a>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1147">line 1147</a>
     </li></ul></dd>
     
 
@@ -12262,13 +12415,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionMutex">getSessionMutex</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readFileContent">readFileContent</a></li><li><a href="global.html#readFilesInDirectory">readFilesInDirectory</a></li><li><a href="global.html#readFilesRecursively">readFilesRecursively</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 10 2025 11:47:52 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon May 19 2025 22:37:12 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

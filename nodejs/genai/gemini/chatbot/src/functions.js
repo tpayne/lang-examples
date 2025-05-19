@@ -137,9 +137,14 @@ async function registerFunction(
   const release = await registryMutex.acquire();
   try {
     if (sessionRegistry[name]) {
-      logger.warn(`Function with name '${name}' already registered for session '${sessionId}' and will be reused.`);
+      logger.warn(
+        `Function with name '${name}' already registered for session '${sessionId}'`
+        + ' and will be reused.',
+      );
     } else {
-      sessionRegistry[name] = { func, params, needSession };
+      sessionRegistry[name] = {
+        func, params, needSession, required,
+      };
 
       const functionMetadata = {
         type: 'function',
@@ -166,15 +171,16 @@ async function loadCodeReviews(sessionId) {
   await registerFunction(
     sessionId,
     'file_review',
-    (sessionId, username, repoName, repoPath) => codeReviews(sessionId, username, repoName, repoPath),
-    ['username', 'repoName', 'repoPath'],
+    codeReviews,
+    ['username', 'repoName', 'repoDirName', 'branchName'],
     'Review files in a given GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      branchName: { type: 'string', description: 'The name of the branch to review.' },
     },
-    ['username', 'repoName', 'repoPath'],
+    ['username', 'repoName', 'repoDirName'],
     true,
   );
 }
@@ -183,7 +189,8 @@ async function loadDosa(sessionId) {
   await registerFunction(
     sessionId,
     'get_mot_history',
-    (sessionId, registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
+    // Removed sessionId from the anonymous function parameters
+    (registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
     ['registrationNumber'],
     'Get the MOT History for a vehicle.',
     {
@@ -230,14 +237,15 @@ async function loadGitHub(sessionId) {
     sessionId,
     'save_code_to_file',
     saveCodeToFile,
-    ['code', 'filename', 'directory'],
-    'Save generated code to a local file',
+    ['code', 'filename', 'repoDirName'],
+    'Save generated code or changes made by the bot to a local file',
     {
-      code: { type: 'string', description: 'The generated code to save.' },
-      filename: { type: 'string', description: 'The local filename to save the generated code to.' },
-      directory: { type: 'string', description: 'The directory name that is used (optional). Defaults to /tmp/nodeapp/ if not provided' },
+      code: { type: 'string', description: 'The generated code or changes to save.' },
+      filename: { type: 'string', description: 'The local filename to save the changes to.' },
+      repoDirName: { type: 'string', description: 'The directory name that is used (optional).' },
     },
-    ['code', 'filename'],
+    ['code', 'filename', 'repoDirName'],
+    true,
   );
 
   await registerFunction(
@@ -286,14 +294,16 @@ async function loadGitHub(sessionId) {
     sessionId,
     'commit_files',
     commitFiles,
-    ['username', 'repoName', 'directoryPath'],
-    'Upload, push, load or commit files in a directory to a specified GitHub repository.',
+    ['username', 'repoName', 'repoDirName', 'branchName'],
+    'Upload, push, load or commit files from the session temporary directory to a specified GitHub repository, maintaining directory structure.', // Updated description if needed
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      directoryPath: { type: 'string', description: 'The local directory path that contains the files to upload/commit to the repository.' },
+      repoDirName: { type: 'string', description: 'The base directory in the GitHub repository to commit files into.' }, // Changed name and description
+      branchName: { type: 'string', description: 'The name of the branch to commit to.' }, // Clarified description
     },
-    ['username', 'repoName', 'directoryPath'],
+    ['username', 'repoName', 'repoDirName'], // Changed 'repoDirName' to 'repoDirName' in required params
+    true,
   );
 
   await registerFunction(
@@ -317,18 +327,14 @@ async function loadGitHub(sessionId) {
     sessionId,
     'fetch_repo_contents',
     fetchRepoContentsRecursive,
-    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    ['username', 'repoName', 'repoDirName'],
     'Fetch or download the contents of a GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoPath: { type: 'string', description: 'The GitHub repository path to start download at.' },
-      localDestPath: { type: 'string', description: 'The target local directory path to download to.' },
-      includeDotGithub: { type: 'boolean', description: 'A boolean to include .github metadata or not.' },
-      retryCount: { type: 'number', description: 'The retry count to use.' },
-      maxRetries: { type: 'number', description: 'The maximum number of retries.' },
+      repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
     },
-    ['username', 'repoName', 'repoPath', 'localDestPath', 'includeDotGithub', 'retryCount', 'maxRetries'],
+    ['username', 'repoName', 'repoDirName'],
     true,
   );
 
@@ -375,29 +381,30 @@ async function loadGitHub(sessionId) {
     sessionId,
     'list_commit_history',
     listCommitHistory,
-    ['username', 'repoName', 'dirName'],
+    ['username', 'repoName', 'repoDirName'],
     'Lists commit history for a file in a GitHub repository.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      dirName: { type: 'string', description: 'The file or directory path.' },
+      repoDirName: { type: 'string', description: 'The file or directory path.' },
     },
-    ['username', 'repoName', 'dirName'],
+    ['username', 'repoName', 'repoDirName'],
   );
 
   await registerFunction(
     sessionId,
-    'list_directory_contents',
-    listDirectoryContents,
-    ['username', 'repoName', 'repoDirName', 'recursive'],
-    'Lists the contents of a directory in a GitHub repository.',
-    {
+    'list_directory_contents', // Tool name
+    listDirectoryContents, // Function implementation
+    ['username', 'repoName', 'branchName', 'repoDirName', 'recursive'],
+    'Lists the contents of a directory in a GitHub repository on a specific branch. Defaults to the root and recursive scan.', // Updated description
+    { // Parameter types and descriptions for the tool
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The directory path (optional). Defaults to root if not provided' },
-      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to false if not provided' },
+      branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to "main" if not provided.' }, // Added branch parameter definition
+      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' }, // Clarified description
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' }, // Clarified description
     },
-    ['username', 'repoName'],
+    ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
   );
 }
 
