@@ -382,9 +382,24 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       }
 
       const candidate = response.candidates[0];
+      const { finishReason } = candidate;
+      const { content } = candidate;
 
-      if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-        const part = candidate.content.parts[0];
+      // --- New Check for problematic response pattern (Gemini) ---
+      // Check for empty content {} and finish_reason: 'MALFORMED_FUNCTION_CALL'
+      const isMalformedFunctionCall = typeof content === 'object' && content !== null && Object.keys(content).length === 0 && finishReason === 'MALFORMED_FUNCTION_CALL';
+
+      if (isMalformedFunctionCall) {
+        logger.error(`Gemini API: Detected problematic response pattern (finish_reason: '${finishReason}', content: ${util.inspect(content)}). Likely malformed tool call. [Session: ${sessionId}]`);
+        chatResponse = 'I received a malformed response from the AI. It seems like it was trying to call a tool but encountered an issue. '
+                         + 'Please try rephrasing your request. This may also be related to the number of max number of tokens in the request.';
+        // Do NOT add this problematic message to history, as it's incomplete/corrupted
+        break; // Exit loop
+      }
+      // --- End New Check ---
+
+      if (content && content.parts && content.parts.length > 0) {
+        const part = content.parts[0];
 
         // Check for function calls first
         if (part.functionCall) {
@@ -427,7 +442,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
           break;
         }
       } else {
-        logger.warn(`Gemini API: Candidate content is empty or malformed [Session: ${sessionId}]`);
+        // This else block is for cases where content is null, undefined, or has no parts
+        // The new check above specifically handles the malformed function call case.
+        // This block will catch other cases like empty content with different finish reasons.
+        logger.warn(`Gemini API: Candidate content is empty or malformed (no parts) [Session: ${sessionId}]`);
         chatResponse = 'Could not get valid content from the model response.';
         break;
       }
