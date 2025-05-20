@@ -338,11 +338,12 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         model: getConfig().aiModel, // e.g., 'gpt-4o', 'gpt-3.5-turbo'
         messages: xsession.history, // Send the full conversation history
         temperature: Number(getConfig().temperature),
-        max_tokens: Number(getConfig().maxTokens),
         top_p: Number(getConfig().top_p),
         frequency_penalty: Number(getConfig().frequency_penalty),
         presence_penalty: Number(getConfig().presence_penalty),
         stream: false, // We are not using streaming in this example
+        // Only include max_tokens if not "auto"
+        ...(getConfig().maxTokens !== 'auto' && { max_tokens: Number(getConfig().maxTokens) }),
         tools, // Pass the tools here
         // tool_choice: 'auto', // Let the model decide whether to call a tool or respond
       };

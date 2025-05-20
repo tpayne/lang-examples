@@ -257,7 +257,9 @@ const getChatSession = (sessionId, tools) => {
         tools: tools.length > 0 ? [{
           functionDeclarations: functionDefs,
         }] : [],
-        maxOutputTokens: Number(getConfig().maxTokens),
+        ...(getConfig().maxTokens !== 'auto' && {
+          maxOutputTokens: Number(getConfig().maxTokens),
+        }),
         temperature: Number(getConfig().temperature),
         topP: Number(getConfig().top_p),
       },
