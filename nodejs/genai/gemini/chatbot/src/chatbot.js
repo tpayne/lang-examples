@@ -22,6 +22,7 @@ const {
 const MemcachedStore = require('connect-memcached')(session);
 const { getAvailableFunctions, getFunctionDefinitionsForTool, loadIntegrations } = require('./functions');
 const { getConfig, loadProperties } = require('./properties');
+const { cleanupSessionTempDir } = require('./utilities');
 
 dotenv.config();
 
@@ -324,6 +325,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       case 'show':
         return xsession.context || 'Context is empty for this session';
       case 'reset':
+        cleanupSessionTempDir(sessionId); // Clean up any temporary files if needed
         xsession.context = '';
         xsession.chat = null; // Ensure a new chat session is created
         xsession.history = []; // Clear history

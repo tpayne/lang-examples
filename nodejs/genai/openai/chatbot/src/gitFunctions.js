@@ -1233,16 +1233,16 @@ const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms));
  * @param {string} [repoDirName=null] - The name of the directory in the repository
  * where files will be committed. If provided, only files within this scope
  * in the temporary directory are committed here.
- * @param {string} [branch='main'] - The branch to commit to. Defaults to 'main'.
+ * @param {string} [branchName=''] - The branch to commit to. Defaults to ''.
  * @param {number} [maxPutRetries=3] - Maximum number of retries for PUT requests on 409 conflict.
  * @returns {Promise<Object>} - A promise that resolves to an object indicating
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitFiles(sessionId, username, repoName, repoDirName = null, branch = 'main', maxPutRetries = 3) { // Using repoDirName as per your latest
+async function commitFiles(sessionId, username, repoName, repoDirName = null, branchName = '', maxPutRetries = 3) { // Using repoDirName as per your latest
   let rDirName = repoDirName; // Use the parameter name for clarity
   // --- Added Logging ---
-  logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, rDirName=${rDirName}, branch=${branch}`);
+  logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, rDirName=${rDirName}, branchName=${branchName}`);
   // --- End Added Logging ---
 
   // Validate parameters
@@ -1267,10 +1267,18 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
   if (rDirName === '') {
     rDirName = null;
   }
-  // Branch validation
-  if (!branch || typeof branch !== 'string') {
-    logger.error('commitFiles called with invalid branch name');
-    throw new Error('Invalid branch name');
+
+  let effectiveBranchName = branchName;
+
+  // If branchName is not provided, dynamically look up the default branch
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
   }
 
   // Trim leading/trailing slash from rDirName for consistent comparison/joining, unless it's the root ('/')
@@ -1299,7 +1307,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
 
     logger.debug(
       `Found ${filesToProcess.length} potential files to process for ${username}/${repoName}`
-      + ` from ${currentDirectoryPath} on branch ${branch}`,
+      + ` from ${currentDirectoryPath} on branch ${effectiveBranchName}`,
     );
 
     if (filesToProcess.length === 0) {
@@ -1386,7 +1394,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
       // It uses githubDestPath, fullLocalFilePath, existingFileSha, remoteFileBase64Content, etc.
 
       // Include the branch in the API URL for both GET and PUT
-      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(branch)}`;
+      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
 
       let existingFileSha = null;
       let remoteFileBase64Content = null; // Variable to store remote content
@@ -1409,11 +1417,11 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           // File exists, get its SHA and content
           existingFileSha = getResponse.body.sha;
           remoteFileBase64Content = getResponse.body.content; // Store remote content
-          logger.debug(`File exists in repo, retrieved SHA: ${existingFileSha} for ${githubDestPath} on branch ${branch}`);
+          logger.debug(`File exists in repo, retrieved SHA: ${existingFileSha} for ${githubDestPath} on branch ${effectiveBranchName}`);
         } else {
           // This case should theoretically not be reached if status is not 404
           logger.warn(
-            `Unexpected status when checking file existence for ${githubDestPath} on branch ${branch}: `
+            `Unexpected status when checking file existence for ${githubDestPath} on branch ${effectiveBranchName}: `
             + `${getResponse.status}`,
           );
           results.push({
@@ -1430,14 +1438,14 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           // File does not exist on this branch, this is expected for new files on this branch
           existingFileSha = null; // Explicitly set to null
           remoteFileBase64Content = null; // No remote content for new files
-          logger.debug(`File does not exist in repo: ${githubDestPath} on branch ${branch}`);
+          logger.debug(`File does not exist in repo: ${githubDestPath} on branch ${effectiveBranchName}`);
         } else {
           // Other errors during GET request
           const status = (getError.response && getError.response.status) || 'N/A';
           const errorMessage = (getError.response && getError.response.body
             && getError.response.body.message) || getError.message;
           logger.error(
-            `Error checking existence of file ${githubDestPath} on branch ${branch} [Status: ${status}]`,
+            `Error checking existence of file ${githubDestPath} on branch ${effectiveBranchName} [Status: ${status}]`,
             getError,
           );
           results.push({
@@ -1461,7 +1469,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
           // Note: GitHub API response 'content' field might be null for large files.
           // This basic comparison assumes content is in the response.
           if (remoteFileBase64Content !== null && localBase64Content === remoteFileBase64Content) {
-            logger.info(`Content of file "${githubDestPath}" is identical to repo version on branch "${branch}". Skipping commit.`);
+            logger.info(`Content of file "${githubDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
             results.push({
               file: relativeFilePath,
               success: true,
@@ -1473,7 +1481,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
             // Handle case where remote content is null (e.g., large files) - cannot compare content directly
             // In this scenario, we might proceed to commit assuming changes, or require a different comparison method.
             // For now, log a warning and proceed to commit as it's safer than skipping potential changes.
-            logger.warn(`Remote content for "${githubDestPath}" on branch "${branch}" not available in GET response. Cannot compare content directly. Proceeding with commit.`);
+            logger.warn(`Remote content for "${githubDestPath}" on branch "${effectiveBranchName}" not available in GET response. Cannot compare content directly. Proceeding with commit.`);
             // Proceed to commit logic below
           }
         }
@@ -1486,8 +1494,8 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
         };
 
         // Include branch in the message for clarity if it's not the default 'main'
-        if (branch !== 'main') {
-          putBody.message += ` on branch ${branch}`;
+        if (effectiveBranchName !== 'main') {
+          putBody.message += ` on branch ${effectiveBranchName}`;
         }
 
         if (existingFileSha) {
@@ -1505,7 +1513,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
         while (currentPutRetry <= maxPutRetries && !putSuccess) {
           try {
             if (currentPutRetry > 0) {
-              logger.info(`Retrying PUT for ${githubDestPath} on branch ${branch} (Attempt ${currentPutRetry}/${maxPutRetries})`);
+              logger.info(`Retrying PUT for ${githubDestPath} on branch ${effectiveBranchName} (Attempt ${currentPutRetry}/${maxPutRetries})`);
               // Use the delay helper function
               await delay(1000 * currentPutRetry); // Exponential backoff simple
             }
@@ -1539,13 +1547,13 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
                 githubPath: githubDestPath, // Add the GitHub path for clarity
               });
               logger.info(
-                `Successfully ${action} file: ${githubDestPath} on branch ${branch} [Status: `
+                `Successfully ${action} file: ${githubDestPath} on branch ${effectiveBranchName} [Status: `
                 + `${putResponse.status}, New SHA: ${newSha}]`,
               );
               putSuccess = true; // Mark success to exit the retry loop
             } else if (putResponse.status === 409) {
               // Conflict occurred, need to re-fetch and retry
-              logger.warn(`Conflict (409) when uploading/updating file: ${githubDestPath} on branch ${branch}. Re-fetching...`);
+              logger.warn(`Conflict (409) when uploading/updating file: ${githubDestPath} on branch ${effectiveBranchName}. Re-fetching...`);
               lastPutError = new Error(`Conflict (409): ${putResponse.body.message || 'Unknown conflict'}`);
 
               // Re-fetch the file's current state
@@ -1563,7 +1571,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
 
                   // Compare local content with the newly fetched remote content
                   if (newRemoteFileBase64Content !== null && localBase64Content === newRemoteFileBase64Content) {
-                    logger.info(`Content of file "${githubDestPath}" now matches repo version on branch "${branch}" after re-fetch. Skipping commit.`);
+                    logger.info(`Content of file "${githubDestPath}" now matches repo version on branch "${effectiveBranchName}" after re-fetch. Skipping commit.`);
                     results.push({
                       file: relativeFilePath,
                       success: true,

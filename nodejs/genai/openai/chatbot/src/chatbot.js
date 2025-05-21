@@ -286,6 +286,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       case 'show':
         return xsession.context || 'Context is empty for this session';
       case 'reset':
+        cleanupSessionTempDir(sessionId);
         xsession.context = '';
         xsession.history = []; // Clear history
         xsession.messageCache = new Map(); // Clear cache
