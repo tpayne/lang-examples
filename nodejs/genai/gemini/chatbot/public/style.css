@@ -237,7 +237,12 @@ body {
     border-radius: 0.5rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     flex-direction: column; /* Arrange content vertically */
-    overflow: hidden; /* Hide overflow */
+    overflow: auto; /* Add scrollbars if content overflows during resize */
+    resize: both; /* Enable resizing in both directions */
+    min-width: 300px; /* Minimum width */
+    min-height: 350px; /* Minimum height */
+    max-width: 90vw; /* Maximum width (e.g., 90% of viewport width) */
+    max-height: 90vh; /* Maximum height (e.g., 90% of viewport height) */
 }
 
 /* Styles for when the chat window is visible */

@@ -505,6 +505,34 @@ async function listPublicRepos(username) {
 }
 
 /**
+ * Retrieves the default branch name for a given GitHub repository.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise<string>} The name of the default branch.
+ * @throws {Error} If the API request fails or the repository is not found.
+ */
+async function getDefaultBranch(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200 && response.body.default_branch) {
+      logger.debug(`Default branch for ${username}/${repoName} is: ${response.body.default_branch}`);
+      return response.body.default_branch;
+    }
+    await handleGitHubApiError(response, `getting default branch for ${username}/${repoName}`);
+  } catch (error) {
+    logger.error('Error getting default branch (exception):', username, repoName, error);
+    handleNotFoundError(error, ` for repository ${username}/${repoName}`);
+  }
+}
+
+/**
  * Lists the names of branches for a given GitHub repository.
  * Fetches branch data and extracts the 'name' property.
  * Handles API errors and "Not Found" exceptions.
@@ -602,7 +630,7 @@ async function listCommitHistory(username, repoName, repoDirName) {
  * @async
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} [branchName='main'] Optional branch name. Defaults to 'main'.
+ * @param {string} [branchName=''] Optional branch name. If not specified, the default branch will be used.
  * @param {string} [repoDirName=''] Optional path to the directory within the repo.
  * @param {boolean} [recursive=true] Optional recursive scan. Defaults to true.
  *
@@ -614,13 +642,26 @@ async function listCommitHistory(username, repoName, repoDirName) {
 async function listDirectoryContents(
   username,
   repoName,
-  branchName = 'main',
+  branchName = '', // Changed default to empty string to indicate "not specified"
   repoDirName = '',
   recursive = true,
 ) {
+  let effectiveBranchName = branchName;
+
+  // If branchName is not provided, dynamically look up the default branch
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
+  }
+
   // Ensure repoDirName is correctly formatted for the URL (remove leading/trailing slashes unless it's the root)
   const cleanRepoDirName = repoDirName.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
-  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${cleanRepoDirName}?ref=${encodeURIComponent(branchName)}`; // Added branch to URL
+  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${cleanRepoDirName}?ref=${encodeURIComponent(effectiveBranchName)}`; // Use effectiveBranchName
 
   try {
     logger.debug(`Listing contents from API URL: ${url}`); // Added logging
@@ -634,11 +675,11 @@ async function listDirectoryContents(
 
     if (!Array.isArray(response.body)) {
       if (response.body && response.body.type === 'file') {
-        logger.warn(`Expected directory contents for "${repoDirName}" on branch "${branchName}", but received a single file: "${response.body.path}"`);
+        logger.warn(`Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`);
         return []; // Return empty array if a file was returned when directory was expected
       }
-      logger.warn(`Expected array of contents for "${repoDirName}" on branch "${branchName}", but received unexpected type: ${response.body ? response.body.type : typeof response.body}`);
-      throw new Error(`Unexpected response type for "${repoDirName}" on branch "${branchName}".`);
+      logger.warn(`Expected array of contents for "${repoDirName}" on branch "${effectiveBranchName}", but received unexpected type: ${response.body ? response.body.type : typeof response.body}`);
+      throw new Error(`Unexpected response type for "${repoDirName}" on branch "${effectiveBranchName}".`);
     }
 
     const contents = response.body;
@@ -646,7 +687,7 @@ async function listDirectoryContents(
 
     if (contents.length === 0) {
       // Directory exists but is empty. Return an empty array.
-      logger.debug(`Directory "${repoDirName}" on branch "${branchName}" is empty.`);
+      logger.debug(`Directory "${repoDirName}" on branch "${effectiveBranchName}" is empty.`);
       return [];
     }
 
@@ -672,7 +713,7 @@ async function listDirectoryContents(
           const subDirContents = await listDirectoryContents(
             username,
             repoName,
-            branchName, // Pass branch down
+            effectiveBranchName, // Pass effective branch down
             item.path, // Pass the full path of the subdirectory
             recursive, // Pass recursive flag down
           );
@@ -694,7 +735,7 @@ async function listDirectoryContents(
     const status = (error.response && error.response.status) || 'N/A';
     const errorMessage = (error.response && error.response.body && error.response.body.message) || error.message || error;
     logger.error(
-      `Error listing directory contents for "${username}/${repoName}/${repoDirName}" on branch "${branchName}" [Status: ${status}]: ${errorMessage}`,
+      `Error listing directory contents for "${username}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}" [Status: ${status}]: ${errorMessage}`,
       error, // Pass the error object for better logging
     );
 
@@ -704,13 +745,13 @@ async function listDirectoryContents(
         // Use handleNotFoundError for clarity for 404s
         handleNotFoundError(
           error.response,
-          ` for path "${repoDirName}" on branch "${branchName}" in "${username}/${repoName}"`,
+          ` for path "${repoDirName}" on branch "${effectiveBranchName}" in "${username}/${repoName}"`,
         );
       } else {
         // Use handleGitHubApiError for other HTTP errors
         handleGitHubApiError(
           error.response,
-          ` listing contents for "${username}/${repoName}/${repoDirName}" on branch "${branchName}"`,
+          ` listing contents for "${username}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}"`,
         );
       }
     } else {
@@ -1312,7 +1353,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
       // If the file should not be processed based on rDirName scope, continue to the next file
       if (!shouldProcessFile) {
         results.push({
-          file: relativeFilePath,
+          file: relativeFilePath, // Report the original relative path
           success: true, // Skipping is a successful handling for this file in this context
           message: `Skipped: Outside rDirName "${cleanRepoDirName}" scope.`,
           githubPath: null, // No GitHub path as it was skipped
@@ -1575,8 +1616,6 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
               // this catch will hit. We should ideally re-attempt the PUT directly here
               // after a delay, without re-fetching the SHA unless it's a 409.
               // Given the structure, the primary 409 handling is within the `then` block.
-              // For exceptions *leading* to a 409 response, the logic below is sufficient
-              // to log and potentially retry if structured differently.
               // For now, let's ensure `lastPutError` is set and the loop continues if retries remain.
             } else {
               logger.error(

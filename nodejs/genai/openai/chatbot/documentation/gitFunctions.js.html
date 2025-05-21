@@ -533,6 +533,34 @@ async function listPublicRepos(username) {
 }
 
 /**
+ * Retrieves the default branch name for a given GitHub repository.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise&lt;string>} The name of the default branch.
+ * @throws {Error} If the API request fails or the repository is not found.
+ */
+async function getDefaultBranch(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200 &amp;&amp; response.body.default_branch) {
+      logger.debug(`Default branch for ${username}/${repoName} is: ${response.body.default_branch}`);
+      return response.body.default_branch;
+    }
+    await handleGitHubApiError(response, `getting default branch for ${username}/${repoName}`);
+  } catch (error) {
+    logger.error('Error getting default branch (exception):', username, repoName, error);
+    handleNotFoundError(error, ` for repository ${username}/${repoName}`);
+  }
+}
+
+/**
  * Lists the names of branches for a given GitHub repository.
  * Fetches branch data and extracts the 'name' property.
  * Handles API errors and "Not Found" exceptions.
@@ -630,7 +658,7 @@ async function listCommitHistory(username, repoName, repoDirName) {
  * @async
  * @param {string} username The GitHub username.
  * @param {string} repoName The name of the repository.
- * @param {string} [branchName='main'] Optional branch name. Defaults to 'main'.
+ * @param {string} [branchName=''] Optional branch name. If not specified, the default branch will be used.
  * @param {string} [repoDirName=''] Optional path to the directory within the repo.
  * @param {boolean} [recursive=true] Optional recursive scan. Defaults to true.
  *
@@ -642,13 +670,26 @@ async function listCommitHistory(username, repoName, repoDirName) {
 async function listDirectoryContents(
   username,
   repoName,
-  branchName = 'main',
+  branchName = '', // Changed default to empty string to indicate "not specified"
   repoDirName = '',
   recursive = true,
 ) {
+  let effectiveBranchName = branchName;
+
+  // If branchName is not provided, dynamically look up the default branch
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
+  }
+
   // Ensure repoDirName is correctly formatted for the URL (remove leading/trailing slashes unless it's the root)
   const cleanRepoDirName = repoDirName.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
-  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${cleanRepoDirName}?ref=${encodeURIComponent(branchName)}`; // Added branch to URL
+  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${cleanRepoDirName}?ref=${encodeURIComponent(effectiveBranchName)}`; // Use effectiveBranchName
 
   try {
     logger.debug(`Listing contents from API URL: ${url}`); // Added logging
@@ -662,11 +703,11 @@ async function listDirectoryContents(
 
     if (!Array.isArray(response.body)) {
       if (response.body &amp;&amp; response.body.type === 'file') {
-        logger.warn(`Expected directory contents for "${repoDirName}" on branch "${branchName}", but received a single file: "${response.body.path}"`);
+        logger.warn(`Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`);
         return []; // Return empty array if a file was returned when directory was expected
       }
-      logger.warn(`Expected array of contents for "${repoDirName}" on branch "${branchName}", but received unexpected type: ${response.body ? response.body.type : typeof response.body}`);
-      throw new Error(`Unexpected response type for "${repoDirName}" on branch "${branchName}".`);
+      logger.warn(`Expected array of contents for "${repoDirName}" on branch "${effectiveBranchName}", but received unexpected type: ${response.body ? response.body.type : typeof response.body}`);
+      throw new Error(`Unexpected response type for "${repoDirName}" on branch "${effectiveBranchName}".`);
     }
 
     const contents = response.body;
@@ -674,7 +715,7 @@ async function listDirectoryContents(
 
     if (contents.length === 0) {
       // Directory exists but is empty. Return an empty array.
-      logger.debug(`Directory "${repoDirName}" on branch "${branchName}" is empty.`);
+      logger.debug(`Directory "${repoDirName}" on branch "${effectiveBranchName}" is empty.`);
       return [];
     }
 
@@ -700,7 +741,7 @@ async function listDirectoryContents(
           const subDirContents = await listDirectoryContents(
             username,
             repoName,
-            branchName, // Pass branch down
+            effectiveBranchName, // Pass effective branch down
             item.path, // Pass the full path of the subdirectory
             recursive, // Pass recursive flag down
           );
@@ -722,7 +763,7 @@ async function listDirectoryContents(
     const status = (error.response &amp;&amp; error.response.status) || 'N/A';
     const errorMessage = (error.response &amp;&amp; error.response.body &amp;&amp; error.response.body.message) || error.message || error;
     logger.error(
-      `Error listing directory contents for "${username}/${repoName}/${repoDirName}" on branch "${branchName}" [Status: ${status}]: ${errorMessage}`,
+      `Error listing directory contents for "${username}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}" [Status: ${status}]: ${errorMessage}`,
       error, // Pass the error object for better logging
     );
 
@@ -732,13 +773,13 @@ async function listDirectoryContents(
         // Use handleNotFoundError for clarity for 404s
         handleNotFoundError(
           error.response,
-          ` for path "${repoDirName}" on branch "${branchName}" in "${username}/${repoName}"`,
+          ` for path "${repoDirName}" on branch "${effectiveBranchName}" in "${username}/${repoName}"`,
         );
       } else {
         // Use handleGitHubApiError for other HTTP errors
         handleGitHubApiError(
           error.response,
-          ` listing contents for "${username}/${repoName}/${repoDirName}" on branch "${branchName}"`,
+          ` listing contents for "${username}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}"`,
         );
       }
     } else {
@@ -1340,7 +1381,7 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
       // If the file should not be processed based on rDirName scope, continue to the next file
       if (!shouldProcessFile) {
         results.push({
-          file: relativeFilePath,
+          file: relativeFilePath, // Report the original relative path
           success: true, // Skipping is a successful handling for this file in this context
           message: `Skipped: Outside rDirName "${cleanRepoDirName}" scope.`,
           githubPath: null, // No GitHub path as it was skipped
@@ -1603,8 +1644,6 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
               // this catch will hit. We should ideally re-attempt the PUT directly here
               // after a delay, without re-fetching the SHA unless it's a 409.
               // Given the structure, the primary 409 handling is within the `then` block.
-              // For exceptions *leading* to a 409 response, the logic below is sufficient
-              // to log and potentially retry if structured differently.
               // For now, let's ensure `lastPutError` is set and the loop continues if retries remain.
             } else {
               logger.error(
@@ -1694,13 +1733,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 20 2025 21:32:14 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 21 2025 01:07:51 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
