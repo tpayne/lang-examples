@@ -190,7 +190,7 @@ async function loadDosa(sessionId) {
     sessionId,
     'get_mot_history',
     // Removed sessionId from the anonymous function parameters
-    (registrationNumber) => getVehicleHistory(sessionId, registrationNumber),
+    getVehicleHistory,
     ['registrationNumber'],
     'Get the MOT History for a vehicle.',
     {

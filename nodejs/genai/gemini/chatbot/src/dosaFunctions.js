@@ -127,10 +127,11 @@ async function getVehicleHistory(sessionId, registrationNumber) {
   const regNo = registrationNumber.toUpperCase();
 
   logger.debug(`Invoking get MOT history for ${regNo} [Session: ${sessionId}]`);
+  let token = null;
 
   try {
     // Get a valid authentication token for the session
-    const token = await getAuthToken(
+    token = await getAuthToken(
       sessionId,
       tenantId,
       clientId,
@@ -138,32 +139,54 @@ async function getVehicleHistory(sessionId, registrationNumber) {
       'https://tapi.dvsa.gov.uk/.default',
       apiKey,
     );
+  } catch (error) {
+    logger.error(`Error obtaining auth token [Session: ${sessionId}]: ${error.message}`);
+    throw new Error('Failed to obtain auth token for vehicle history query.');
+  }
 
-    if (!token) {
-      throw new Error('Error: The authToken was not generated successfully');
-    }
+  if (!token) {
+    throw new Error('Error: The authToken was not generated successfully');
+  }
 
+  try {
     const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(regNo)}`;
 
-    // Make a GET request to the vehicle history endpoint
+    logger.debug(`Querying vehicle history for ${regNo} [Session: ${sessionId}]`);
     const response = await superagent
       .get(apiUrl)
       .set('Authorization', `Bearer ${token}`)
       .set('X-API-Key', apiKey)
       .set('Accept', 'application/json');
 
-    // Handle different response statuses
     if (response.status === 200) {
       return response.body;
-    } if (response.status === 404) {
+    }
+    if (response.status === 404) {
       logger.error(`Vehicle with registration '${registrationNumber}' not found [Session: ${sessionId}]`);
       return null;
     }
-    logger.error(`Error querying vehicle history [Session: ${sessionId}]: ${response.status} ${response.body}`);
-    throw new Error(`Failed to query vehicle history: ${response.status}`);
+    logger.error(`Error querying vehicle history [Session: ${sessionId}]: ${response.status} ${JSON.stringify(response.body)}`);
+    throw new Error(`Failed to query vehicle history: ${response.status} ${JSON.stringify(response.body)}`);
   } catch (error) {
-    logger.error(`Error during vehicle history query [Session: ${sessionId}]: ${error.message}`);
-    throw error;
+    if (error.response) {
+      const { status } = error.response;
+      const responseBody = JSON.stringify(error.response.body);
+      logger.error(
+        `Vehicle history query failed [Session: ${sessionId}]: ${status} ${responseBody}`,
+      );
+      if (status === 400) {
+        throw new Error(
+          `Vehicle history query failed: Bad Request. Please check if the registration number '${registrationNumber}' is valid and correctly formatted.`,
+        );
+      } else {
+        throw new Error(
+          `Vehicle history query failed: ${status} ${responseBody}`,
+        );
+      }
+    } else {
+      logger.error(`Error during vehicle history query exception [Session: ${sessionId}]: ${error.message}`);
+      throw error;
+    }
   }
 }
 
