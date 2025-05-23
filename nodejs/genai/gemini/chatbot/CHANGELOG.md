@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-23	(22:53:28-UTC+0000)
+- **Other**: Latest gemini sdk is broken with pkg - reverting (in nodejs/genai/gemini/chatbot/package.json)
 ## 2025-05-21	(22:42:03-UTC+0000)
 - **Other**: A few tidy up (in nodejs/genai/gemini/chatbot/documentation/chatbot.js.html)
 - **Other**: A few tidy up (in nodejs/genai/gemini/chatbot/documentation/codeReviews.js.html)
