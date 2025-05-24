@@ -1,6 +1,19 @@
 module.exports = {
-  extends: 'airbnb-base',
+  env: {
+    browser: true,
+    commonjs: true,
+    es2022: true, // Use a recent ECMAScript version (e.g., 2022 for dynamic import support)
+    node: true,
+  },
+  extends: [
+    'airbnb-base', // Assuming you are using airbnb-base config
+  ],
   ignorePatterns: ['resources/*'],
+  parserOptions: {
+    ecmaVersion: 2022, // Crucial: Set to 2020 or higher for dynamic import()
+    sourceType: 'script', // Keep as 'script' because the file uses 'require' (CommonJS)
+                          // and dynamic import is allowed in script mode.
+  },
   rules: {
     'linebreak-style': ['error', (process.platform === 'win32' ? 'windows' : 'unix')],
     'max-len': ['error', {

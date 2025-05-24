@@ -12,17 +12,11 @@ const https = require('https');
 // Add the 'http' module for creating an HTTP server (for fallback)
 const http = require('http');
 
-/* eslint-disable no-unused-vars */
-const {
-  FunctionCallingConfigMode,
-  GoogleGenAI,
-} = require('@google/genai');
-/* eslint-enable no-unused-vars */
-
 const MemcachedStore = require('connect-memcached')(session);
 const { getAvailableFunctions, getFunctionDefinitionsForTool, loadIntegrations } = require('./functions');
 const { getConfig, loadProperties } = require('./properties');
 const { cleanupSessionTempDir } = require('./utilities');
+const logger = require('./logger');
 
 dotenv.config();
 
@@ -36,8 +30,37 @@ const limiter = RateLimit({
 });
 app.use(limiter);
 
-// Updated initialization for @google/genai
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+// Declare 'ai' variable globally but initialize it asynchronously
+let ai;
+
+/**
+ * Dynamically import GoogleGenAI and initialize the 'ai' object.
+ * This function will be called once when the server starts.
+ */
+async function initializeGenAI() {
+  try {
+    const { GoogleGenAI } = await import('@google/genai');
+
+    const googleApiKey = process.env.GOOGLE_API_KEY;
+    // Trim the API key to remove any whitespace issues
+    const trimmedApiKey = googleApiKey ? googleApiKey.trim() : '';
+
+    if (!trimmedApiKey || typeof trimmedApiKey !== 'string') {
+      logger.error('GOOGLE_API_KEY is missing or invalid in environment variables. Please set it correctly.');
+      throw new Error('Google API Key is not configured or is empty.');
+    }
+
+    const maskedApiKey = `${trimmedApiKey.substring(0, 5)}...${trimmedApiKey.substring(trimmedApiKey.length - 5)}`;
+    logger.debug(`Attempting to initialize GoogleGenAI with API Key: ${maskedApiKey}`);
+
+    ai = new GoogleGenAI({ apiKey: trimmedApiKey }); // Use the trimmed API key
+    logger.info('GoogleGenAI initialized successfully.');
+  } catch (error) {
+    logger.error('Failed to initialize GoogleGenAI:', error);
+    throw new Error('Failed to load Google GenAI module.');
+  }
+}
+
 /**
  * Stores the conversation history and context for each client session.
  * The key is the client's session ID.
@@ -48,7 +71,6 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 const sessions = new Map();
 
 const morganMiddleware = require('./morganmw');
-const logger = require('./logger');
 
 app.use(session({
   secret: process.env.GOOGLE_API_KEY, // Should use a separate, strong secret
@@ -142,9 +164,10 @@ const readContext = async (contextStr) => {
     if (contextStr.includes('..') || contextStr.startsWith('/')) {
       throw new Error('Invalid characters in context path');
     }
-    const contextPath = path.resolve('contexts', contextStr);
+    const contextsDir = path.join('/app', 'public', 'contexts');
+    const contextPath = path.resolve(contextsDir, contextStr);
     const normalizedContextPath = path.normalize(contextPath);
-    const normalizedContextsPath = path.normalize(path.resolve('contexts'));
+    const normalizedContextsPath = path.normalize(contextsDir);
 
     // Ensure the resolved path is within the contexts directory
     if (!normalizedContextPath.startsWith(normalizedContextsPath)) {
@@ -505,7 +528,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join('/app', 'public')));
 
 /**
  * Serves the index.html file for the root path.
@@ -514,7 +537,7 @@ app.use(express.static(path.join(__dirname, 'public')));
  * @returns {void}
  */
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'templates', 'indexBot.html'));
+  res.sendFile(path.join('/app', 'public', 'templates', 'indexBot.html'));
 });
 
 /**
@@ -557,11 +580,14 @@ process.on('uncaughtException', (err) => {
   shutdown('UncaughtException'); // Exit after logging
 });
 
-const startServer = () => {
-  if (!loadProperties('resources/app.properties')) {
+const startServer = async () => {
+  if (!loadProperties('/app/public/resources/app.properties')) {
     logger.error('Failed to load application properties. Exiting.');
     process.exit(1);
   }
+
+  // Initialize GenAI before starting the server
+  await initializeGenAI();
 
   const host = getConfig().host || '0.0.0.0'; // Allow host to be configured
 

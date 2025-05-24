@@ -23,26 +23,6 @@ COPY templates ./templates
 # Combined npm install and test
 RUN npm install && npm test
 
-FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
-# Combined apk install and upgrade
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-        && apk -U upgrade
-
-WORKDIR /source
-
-COPY src/ ./src/
-COPY package.json package-lock.json* ./
-COPY package.json package-lock.json* ./src/
-COPY contexts ./src/contexts
-COPY resources ./src/resources
-COPY templates ./src/templates
-COPY public ./src/public
-
-# Combined npm install, pkg install, and pkg build
-RUN npm install --omit=dev && \
-     npm install -g pkg && \
-     pkg -t node18 ./src/ -o nodeexe --no-sign
-
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
 
@@ -62,11 +42,15 @@ RUN addgroup --system ${account} && adduser ${account} --system &&\
 
 WORKDIR /app
 
-COPY --from=imagebuilder /source/nodeexe ./
-COPY --from=imagebuilder /source/src/contexts ./contexts
-COPY --from=imagebuilder /source/src/resources ./resources
-COPY --from=imagebuilder /source/src/templates ./templates
-COPY --from=imagebuilder /source/src/public ./public
+COPY package.json package-lock.json* ./
+COPY src ./src
+COPY public ./public
+COPY contexts ./public/contexts
+COPY resources ./public/resources
+COPY templates ./public/templates
+
+# Combined npm install
+RUN npm install --omit=dev
 
 # Create directory for certificates
 RUN mkdir -p /app/certs && \

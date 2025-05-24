@@ -5,9 +5,6 @@
   "main": "./chatbot.js",
   "bin": "./chatbot.js",
   "scripts": {
-    "dev": "nodemon ./chatbot.js",
-    "start": "node ./chatbot.js",
-    "build": "./npm-build.sh",
     "test": "run-s test:*",
     "test:gendoc": "npx jsdoc src -d documentation",
     "test:lint": "run-s test:lint:*",
@@ -15,23 +12,12 @@
     "test:lint:js": "npx eslint src/**/*.js --fix",
     "test:lint:yaml": "npx yamllint **/*.yml"
   },
-  "pkg": {
-    "scripts": "src/*.js",
-    "assets": [
-      "resources/*.properties",
-      "templates/*.html",
-      "public/*.css",
-      "public/*.js",
-      "certs/*.key",
-      "certs/*.crt"
-    ]
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tpayne/lang-examples.git"
   },
   "dependencies": {
-    "@google/genai": "^0.15",
+    "@google/genai": "^1.0.1",
     "async-mutex": "0.5.0",
     "body-parser": "2.2.0",
     "connect-memcached": "^2.0.0",
@@ -42,7 +28,6 @@
     "express-session": "^1.18.0",
     "morgan": "^1.10.0",
     "path": "^0.12.7",
-    "pkg": "^5.8.1",
     "properties-reader": "2.3.0",
     "redis": "^5.0.1",
     "signal-exit": "4.1.0",
