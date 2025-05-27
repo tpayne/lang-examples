@@ -35,6 +35,23 @@ const {
   saveCodeToFile,
 } = require('./utilities');
 
+const {
+  getKubernetesVersion,
+  listKubernetesNamespaces,
+  listKubernetesDeployments,
+  listKubernetesServices,
+  listKubernetesPods,
+  listKubernetesReplicaSets,
+  listKubernetesDaemonSets,
+  listKubernetesStatefulSets,
+  listKubernetesIngresses,
+  listKubernetesConfigMaps,
+  listKubernetesPersistentVolumes,
+  listKubernetesPersistentVolumeClaims,
+  listKubernetesJobs,
+  listKubernetesCronJobs,
+} = require('./k8s');
+
 /* eslint-disable max-len */
 
 /**
@@ -517,6 +534,167 @@ async function loadMappingFunctions(sessionId) {
 }
 
 /**
+ * Loads Kubernetes functions into the registry if KUBERNETES_API_ENDPOINT and KUBERNETES_BEARER_TOKEN are set.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadKubernetes(sessionId) {
+  // Directly register K8s functions without the helper
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_version',
+    getKubernetesVersion,
+    [], // No direct parameters
+    'List or get all the Kubernetes version information for the connected Kubernetes cluster.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_namespaces',
+    listKubernetesNamespaces,
+    [], // No direct parameters
+    'List or get all the Kubernetes namespaces in the cluster, returning their detailed status and metadata.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_deployments',
+    listKubernetesDeployments,
+    [], // No direct parameters
+    'List or get all the Kubernetes deployments across all namespaces, returning their detailed status, replicas, and associated metadata.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_services',
+    listKubernetesServices,
+    [], // No direct parameters
+    'List or get all the Kubernetes services across all namespaces, returning their detailed status, cluster IPs, ports, and selectors.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_pods',
+    listKubernetesPods,
+    [], // No direct parameters
+    'List or get all the Kubernetes pods across all namespaces, returning their detailed status, node assignments, and container information.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_replicasets',
+    listKubernetesReplicaSets,
+    [], // No direct parameters
+    'List or get all the Kubernetes ReplicaSets across all namespaces, returning their detailed status and replica counts.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_daemonsets',
+    listKubernetesDaemonSets,
+    [], // No direct parameters
+    'List or get all the Kubernetes DaemonSets across all namespaces, returning their detailed status.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_statefulsets',
+    listKubernetesStatefulSets,
+    [], // No direct parameters
+    'List or get all the Kubernetes StatefulSets across all namespaces, returning their detailed status and replica counts.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_ingresses',
+    listKubernetesIngresses,
+    [], // No direct parameters
+    'List or get all the Kubernetes Ingresses across all namespaces, returning their detailed rules and backend services.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_configmaps',
+    listKubernetesConfigMaps,
+    [], // No direct parameters
+    'List or get all the Kubernetes ConfigMaps across all namespaces, returning their detailed data.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_persistent_volumes',
+    listKubernetesPersistentVolumes,
+    [], // No direct parameters
+    'List or get all the Kubernetes PersistentVolumes, returning their detailed status, capacity, and access modes.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_persistent_volume_claims',
+    listKubernetesPersistentVolumeClaims,
+    [], // No direct parameters
+    'List or get all the Kubernetes PersistentVolumeClaims across all namespaces, returning their detailed status and volume bindings.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_jobs',
+    listKubernetesJobs,
+    [], // No direct parameters
+    'List or get all the Kubernetes Jobs across all namespaces, returning their detailed status and completion information.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_cronjobs',
+    listKubernetesCronJobs,
+    [], // No direct parameters
+    'List or get all the Kubernetes CronJobs across all namespaces, returning their detailed status and schedule.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -552,6 +730,13 @@ async function loadIntegrations(sessionId) {
   if (process.env.GOOGLE_MAPS_API_KEY) {
     logger.info(`Loading Google Maps integration for session: ${sessionId}`);
     await loadMappingFunctions(sessionId);
+  }
+
+  if (process.env.KUBERNETES_API_ENDPOINT && process.env.KUBERNETES_BEARER_TOKEN) {
+    logger.info(`Loading Kubernetes integration for session: ${sessionId}`);
+    await loadKubernetes(sessionId);
+  } else {
+    logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
   }
 }
 

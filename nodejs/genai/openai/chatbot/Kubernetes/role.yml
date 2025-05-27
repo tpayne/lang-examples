@@ -1,0 +1,47 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chatbot-viewer
+rules:
+- apiGroups: ["", "apps", "networking.k8s.io", "storage.k8s.io", "batch"] # "" refers to core API group
+  resources:
+  - namespaces
+  - deployments
+  - services
+  - pods
+  - replicasets
+  - daemonsets
+  - statefulsets
+  - ingresses
+  - configmaps
+  - persistentvolumes
+  - persistentvolumeclaims
+  - jobs
+  - cronjobs
+  verbs: ["get", "list"] # Granting list and get permissions
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chatbot-sa-viewer-binding
+subjects:
+- kind: ServiceAccount
+  name: chatbot-sa
+  namespace: chatbot-integration # Ensure this matches your service account namespace
+roleRef:
+  kind: ClusterRole
+  name: chatbot-viewer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: chatbot-sa-token
+  namespace: chatbot-integration
+  annotations:
+    kubernetes.io/service-account.name: chatbot-sa
+type: kubernetes.io/service-account-token
+
+# export KUBERNETES_BEARER_TOKEN=$(kubectl get secret chatbot-sa-token -n chatbot-integration -o jsonpath='{.data.token}' | base64 --decode)
+# export KUBERNETES_API_ENDPOINT=$(kubectl config view --minify --output 'jsonpath={.clusters[?(@.name==$(kubectl config view --minify --output "jsonpath={.contexts[?(@.name==$(kubectl config view --minify --output "jsonpath={.current-context}"))].context.cluster}"))].cluster.server}')
+# To find your cluster name: kubectl config view --minify --output 'jsonpath={.current-context}' | xargs -I {} kubectl config view --minify --output 'jsonpath={.contexts[?(@.name=="{}")].context.cluster}'
