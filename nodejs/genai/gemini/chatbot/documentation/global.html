@@ -1099,7 +1099,7 @@ Limits the cache size per session.
     
 
     
-    <h4 class="name" id="callKubernetesApi"><span class="type-signature">(async) </span>callKubernetesApi<span class="signature">(sessionId, path)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="callKubernetesApi"><span class="type-signature">(async) </span>callKubernetesApi<span class="signature">(sessionId, path, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -1132,6 +1132,8 @@ This function handles authentication and basic error reporting.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -1157,6 +1159,14 @@ This function handles authentication and basic error reporting.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -1180,10 +1190,51 @@ This function handles authentication and basic error reporting.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">The Kubernetes API path (e.g., '/api/v1/namespaces').</td>
+            <td class="description last">The base Kubernetes API path (e.g., '/api/v1/namespaces').</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to scope the request to.</td>
         </tr>
 
     
@@ -1224,7 +1275,7 @@ This function handles authentication and basic error reporting.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line14">line 14</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line15">line 15</a>
     </li></ul></dd>
     
 
@@ -5691,7 +5742,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line711">line 711</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line733">line 733</a>
     </li></ul></dd>
     
 
@@ -6676,7 +6727,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line702">line 702</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line724">line 724</a>
     </li></ul></dd>
     
 
@@ -6994,7 +7045,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line66">line 66</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -9926,7 +9977,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesConfigMaps"><span class="type-signature">(async) </span>listKubernetesConfigMaps<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesConfigMaps"><span class="type-signature">(async) </span>listKubernetesConfigMaps<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -9934,7 +9985,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all ConfigMaps across all namespaces in the Kubernetes cluster.
+    Lists all ConfigMaps across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -9957,6 +10008,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -9983,10 +10036,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -10027,7 +10121,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line147">line 147</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line176">line 176</a>
     </li></ul></dd>
     
 
@@ -10085,7 +10179,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesCronJobs"><span class="type-signature">(async) </span>listKubernetesCronJobs<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesCronJobs"><span class="type-signature">(async) </span>listKubernetesCronJobs<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -10093,7 +10187,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all CronJobs across all namespaces in the Kubernetes cluster.
+    Lists all CronJobs across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -10116,6 +10210,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -10142,10 +10238,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list CronJobs from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -10186,7 +10323,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line183">line 183</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line216">line 216</a>
     </li></ul></dd>
     
 
@@ -10244,7 +10381,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesDaemonSets"><span class="type-signature">(async) </span>listKubernetesDaemonSets<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesDaemonSets"><span class="type-signature">(async) </span>listKubernetesDaemonSets<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -10252,7 +10389,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all DaemonSets across all namespaces in the Kubernetes cluster.
+    Lists all DaemonSets across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -10275,6 +10412,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -10301,10 +10440,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -10345,7 +10525,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line120">line 120</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line146">line 146</a>
     </li></ul></dd>
     
 
@@ -10403,7 +10583,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesDeployments"><span class="type-signature">(async) </span>listKubernetesDeployments<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesDeployments"><span class="type-signature">(async) </span>listKubernetesDeployments<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -10411,7 +10591,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all deployments across all namespaces in the Kubernetes cluster.
+    Lists all deployments across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -10434,6 +10614,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -10460,10 +10642,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list deployments from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -10504,7 +10727,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line84">line 84</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line106">line 106</a>
     </li></ul></dd>
     
 
@@ -10562,7 +10785,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesIngresses"><span class="type-signature">(async) </span>listKubernetesIngresses<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesIngresses"><span class="type-signature">(async) </span>listKubernetesIngresses<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -10570,7 +10793,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all Ingresses across all namespaces in the Kubernetes cluster.
+    Lists all Ingresses across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -10593,6 +10816,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -10619,10 +10844,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list Ingresses from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -10663,7 +10929,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line138">line 138</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line166">line 166</a>
     </li></ul></dd>
     
 
@@ -10721,7 +10987,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesJobs"><span class="type-signature">(async) </span>listKubernetesJobs<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesJobs"><span class="type-signature">(async) </span>listKubernetesJobs<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -10729,7 +10995,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all Jobs across all namespaces in the Kubernetes cluster.
+    Lists all Jobs across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -10752,6 +11018,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -10778,10 +11046,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list Jobs from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -10822,7 +11131,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line174">line 174</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line206">line 206</a>
     </li></ul></dd>
     
 
@@ -10981,7 +11290,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line75">line 75</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line96">line 96</a>
     </li></ul></dd>
     
 
@@ -11039,7 +11348,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesPersistentVolumeClaims"><span class="type-signature">(async) </span>listKubernetesPersistentVolumeClaims<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesPersistentVolumeClaims"><span class="type-signature">(async) </span>listKubernetesPersistentVolumeClaims<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -11047,7 +11356,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all PersistentVolumeClaims across all namespaces in the Kubernetes cluster.
+    Lists all PersistentVolumeClaims across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -11070,6 +11379,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -11096,10 +11407,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list PersistentVolumeClaims from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -11140,7 +11492,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line165">line 165</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line196">line 196</a>
     </li></ul></dd>
     
 
@@ -11207,6 +11559,7 @@ Filters jobs by 'queued' or the provided status.
 
 <div class="description">
     Lists all PersistentVolumes in the Kubernetes cluster.
+PersistentVolumes are cluster-scoped, so they do not accept a namespace parameter.
 </div>
 
 
@@ -11299,7 +11652,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line156">line 156</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line186">line 186</a>
     </li></ul></dd>
     
 
@@ -11357,7 +11710,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesPods"><span class="type-signature">(async) </span>listKubernetesPods<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesPods"><span class="type-signature">(async) </span>listKubernetesPods<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -11365,7 +11718,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all pods across all namespaces in the Kubernetes cluster.
+    Lists all pods across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -11388,6 +11741,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -11414,10 +11769,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list pods from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -11458,7 +11854,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line102">line 102</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line126">line 126</a>
     </li></ul></dd>
     
 
@@ -11516,7 +11912,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesReplicaSets"><span class="type-signature">(async) </span>listKubernetesReplicaSets<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesReplicaSets"><span class="type-signature">(async) </span>listKubernetesReplicaSets<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -11524,7 +11920,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all ReplicaSets across all namespaces in the Kubernetes cluster.
+    Lists all ReplicaSets across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -11547,6 +11943,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -11573,10 +11971,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -11617,7 +12056,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line111">line 111</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line136">line 136</a>
     </li></ul></dd>
     
 
@@ -11675,7 +12114,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesServices"><span class="type-signature">(async) </span>listKubernetesServices<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesServices"><span class="type-signature">(async) </span>listKubernetesServices<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -11683,7 +12122,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all services across all namespaces in the Kubernetes cluster.
+    Lists all services across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -11706,6 +12145,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -11732,10 +12173,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list services from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -11776,7 +12258,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line93">line 93</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line116">line 116</a>
     </li></ul></dd>
     
 
@@ -11834,7 +12316,7 @@ Filters jobs by 'queued' or the provided status.
     
 
     
-    <h4 class="name" id="listKubernetesStatefulSets"><span class="type-signature">(async) </span>listKubernetesStatefulSets<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="listKubernetesStatefulSets"><span class="type-signature">(async) </span>listKubernetesStatefulSets<span class="signature">(sessionId, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -11842,7 +12324,7 @@ Filters jobs by 'queued' or the provided status.
 
 
 <div class="description">
-    Lists all StatefulSets across all namespaces in the Kubernetes cluster.
+    Lists all StatefulSets across all namespaces or within a specified namespace in the Kubernetes cluster.
 </div>
 
 
@@ -11865,6 +12347,8 @@ Filters jobs by 'queued' or the provided status.
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -11891,10 +12375,51 @@ Filters jobs by 'queued' or the provided status.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.</td>
         </tr>
 
     
@@ -11935,7 +12460,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line129">line 129</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line156">line 156</a>
     </li></ul></dd>
     
 
@@ -15297,7 +15822,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 27 2025 22:45:46 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 27 2025 23:48:30 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

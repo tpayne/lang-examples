@@ -565,10 +565,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_deployments',
     listKubernetesDeployments,
-    [], // No direct parameters
-    'List or get all the Kubernetes deployments across all namespaces, returning their detailed status, replicas, and associated metadata.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes deployments across all namespaces or within a specified namespace, returning their detailed status, replicas, and associated metadata.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list deployments from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -576,10 +578,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_services',
     listKubernetesServices,
-    [], // No direct parameters
-    'List or get all the Kubernetes services across all namespaces, returning their detailed status, cluster IPs, ports, and selectors.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes services across all namespaces or within a specified namespace, returning their detailed status, cluster IPs, ports, and selectors.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list services from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -587,10 +591,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_pods',
     listKubernetesPods,
-    [], // No direct parameters
-    'List or get all the Kubernetes pods across all namespaces, returning their detailed status, node assignments, and container information.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes pods across all namespaces or within a specified namespace, returning their detailed status, node assignments, and container information.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list pods from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -598,10 +604,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_replicasets',
     listKubernetesReplicaSets,
-    [], // No direct parameters
-    'List or get all the Kubernetes ReplicaSets across all namespaces, returning their detailed status and replica counts.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes ReplicaSets across all namespaces or within a specified namespace, returning their detailed status and replica counts.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -609,10 +617,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_daemonsets',
     listKubernetesDaemonSets,
-    [], // No direct parameters
-    'List or get all the Kubernetes DaemonSets across all namespaces, returning their detailed status.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes DaemonSets across all namespaces or within a specified namespace, returning their detailed status.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -620,10 +630,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_statefulsets',
     listKubernetesStatefulSets,
-    [], // No direct parameters
-    'List or get all the Kubernetes StatefulSets across all namespaces, returning their detailed status and replica counts.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes StatefulSets across all namespaces or within a specified namespace, returning their detailed status and replica counts.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -631,10 +643,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_ingresses',
     listKubernetesIngresses,
-    [], // No direct parameters
-    'List or get all the Kubernetes Ingresses across all namespaces, returning their detailed rules and backend services.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes Ingresses across all namespaces or within a specified namespace, returning their detailed rules and backend services.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list Ingresses from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -642,10 +656,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_configmaps',
     listKubernetesConfigMaps,
-    [], // No direct parameters
-    'List or get all the Kubernetes ConfigMaps across all namespaces, returning their detailed data.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes ConfigMaps across all namespaces or within a specified namespace, returning their detailed data.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -653,7 +669,7 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_persistent_volumes',
     listKubernetesPersistentVolumes,
-    [], // No direct parameters
+    [], // No direct parameters, PVs are cluster-scoped
     'List or get all the Kubernetes PersistentVolumes, returning their detailed status, capacity, and access modes.',
     {}, // Empty parameter schema
     [], // No required parameters
@@ -664,10 +680,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_persistent_volume_claims',
     listKubernetesPersistentVolumeClaims,
-    [], // No direct parameters
-    'List or get all the Kubernetes PersistentVolumeClaims across all namespaces, returning their detailed status and volume bindings.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes PersistentVolumeClaims across all namespaces or within a specified namespace, returning their detailed status and volume bindings.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list PersistentVolumeClaims from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -675,10 +693,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_jobs',
     listKubernetesJobs,
-    [], // No direct parameters
-    'List or get all the Kubernetes Jobs across all namespaces, returning their detailed status and completion information.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes Jobs across all namespaces or within a specified namespace, returning their detailed status and completion information.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list Jobs from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 
@@ -686,10 +706,12 @@ async function loadKubernetes(sessionId) {
     sessionId,
     'list_kubernetes_cronjobs',
     listKubernetesCronJobs,
-    [], // No direct parameters
-    'List or get all the Kubernetes CronJobs across all namespaces, returning their detailed status and schedule.',
-    {}, // Empty parameter schema
-    [], // No required parameters
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes CronJobs across all namespaces or within a specified namespace, returning their detailed status and schedule.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list CronJobs from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true, // needSession is true
   );
 }
