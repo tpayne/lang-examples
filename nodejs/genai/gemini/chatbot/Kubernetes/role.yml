@@ -9,6 +9,7 @@ rules:
   - deployments
   - services
   - pods
+  - pods/log
   - replicasets
   - daemonsets
   - statefulsets

@@ -152,7 +152,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line82">line 82</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -297,7 +297,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line88">line 88</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -369,7 +369,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line94">line 94</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line95">line 95</a>
     </li></ul></dd>
     
 
@@ -1100,7 +1100,7 @@ Limits the cache size per session.
     
 
     
-    <h4 class="name" id="callKubernetesApi"><span class="type-signature">(async) </span>callKubernetesApi<span class="signature">(sessionId, path, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="callKubernetesApi"><span class="type-signature">(async) </span>callKubernetesApi<span class="signature">(sessionId, path, namespace<span class="signature-attributes">opt</span>, expectTextResponse<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;(object|string)>}</span></h4>
     
 
     
@@ -1137,6 +1137,8 @@ This function handles authentication and basic error reporting.
         
 
         
+        <th>Default</th>
+        
 
         <th class="last">Description</th>
     </tr>
@@ -1170,6 +1172,10 @@ This function handles authentication and basic error reporting.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The session ID for logging purposes.</td>
         </tr>
@@ -1201,8 +1207,12 @@ This function handles authentication and basic error reporting.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The base Kubernetes API path (e.g., '/api/v1/namespaces').</td>
+            <td class="description last">The Kubernetes API path (e.g., '/api/v1/namespaces').</td>
         </tr>
 
     
@@ -1234,8 +1244,51 @@ This function handles authentication and basic error reporting.
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">Optional: The namespace to scope the request to.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>expectTextResponse</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">If true, expects a plain text response and returns response.text. Otherwise, expects JSON and returns response.body.</td>
         </tr>
 
     
@@ -1276,7 +1329,7 @@ This function handles authentication and basic error reporting.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line15">line 15</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -1335,7 +1388,7 @@ or if the API request fails.
 
         
 <div class="param-desc">
-    The response body from the Kubernetes API.
+    The response body (JSON) or text from the Kubernetes API.
 </div>
 
 
@@ -1346,7 +1399,7 @@ or if the API request fails.
     </dt>
     <dd>
         
-<span class="param-type">Promise.&lt;object></span>
+<span class="param-type">Promise.&lt;(object|string)></span>
 
 
     </dd>
@@ -5743,7 +5796,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line733">line 733</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line748">line 748</a>
     </li></ul></dd>
     
 
@@ -6546,7 +6599,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line724">line 724</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line739">line 739</a>
     </li></ul></dd>
     
 
@@ -6763,6 +6816,211 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
 
     
+    <h4 class="name" id="getKubernetesPodLogs"><span class="type-signature">(async) </span>getKubernetesPodLogs<span class="signature">(sessionId, podName, namespace)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Gets the logs for a specific pod in a given namespace.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>podName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The name of the pod to get logs from.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>namespace</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The namespace the pod resides in.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line94">line 94</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    The logs from the specified pod.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;string></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="getKubernetesVersion"><span class="type-signature">(async) </span>getKubernetesVersion<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
@@ -6864,7 +7122,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line87">line 87</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -7395,7 +7653,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line118">line 118</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line119">line 119</a>
     </li></ul></dd>
     
 
@@ -7554,7 +7812,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line101">line 101</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -9669,7 +9927,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line176">line 176</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line185">line 185</a>
     </li></ul></dd>
     
 
@@ -9698,7 +9956,7 @@ Filters jobs by 'queued' or the provided status.
 
         
 <div class="param-desc">
-    A list of Kubernetes ConfigMaps with their detailed data.
+    A list of Kubernetes ConfigMaps with their detailed data and usage.
 </div>
 
 
@@ -9871,7 +10129,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line216">line 216</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line224">line 224</a>
     </li></ul></dd>
     
 
@@ -10073,7 +10331,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line146">line 146</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -10102,7 +10360,7 @@ Filters jobs by 'queued' or the provided status.
 
         
 <div class="param-desc">
-    A list of Kubernetes DaemonSets with their detailed status.
+    A list of Kubernetes DaemonSets with their detailed status and node assignments.
 </div>
 
 
@@ -10275,7 +10533,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line106">line 106</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line115">line 115</a>
     </li></ul></dd>
     
 
@@ -10477,7 +10735,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line166">line 166</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line175">line 175</a>
     </li></ul></dd>
     
 
@@ -10679,7 +10937,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line206">line 206</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line214">line 214</a>
     </li></ul></dd>
     
 
@@ -10838,7 +11096,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line96">line 96</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line105">line 105</a>
     </li></ul></dd>
     
 
@@ -11040,7 +11298,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line196">line 196</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line204">line 204</a>
     </li></ul></dd>
     
 
@@ -11107,7 +11365,6 @@ Filters jobs by 'queued' or the provided status.
 
 <div class="description">
     Lists all PersistentVolumes in the Kubernetes cluster.
-PersistentVolumes are cluster-scoped, so they do not accept a namespace parameter.
 </div>
 
 
@@ -11200,7 +11457,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line186">line 186</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line194">line 194</a>
     </li></ul></dd>
     
 
@@ -11229,7 +11486,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
 
         
 <div class="param-desc">
-    A list of Kubernetes PersistentVolumes with their detailed status, capacity, and access modes.
+    A list of Kubernetes PersistentVolumes with their detailed status and capacity.
 </div>
 
 
@@ -11402,7 +11659,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line126">line 126</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line135">line 135</a>
     </li></ul></dd>
     
 
@@ -11604,7 +11861,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line136">line 136</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line145">line 145</a>
     </li></ul></dd>
     
 
@@ -11633,7 +11890,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
 
         
 <div class="param-desc">
-    A list of Kubernetes ReplicaSets with their detailed status and replica counts.
+    A list of Kubernetes ReplicaSets with their detailed status and replica information.
 </div>
 
 
@@ -11806,7 +12063,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line116">line 116</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line125">line 125</a>
     </li></ul></dd>
     
 
@@ -12008,7 +12265,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line156">line 156</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line165">line 165</a>
     </li></ul></dd>
     
 
@@ -12037,7 +12294,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
 
         
 <div class="param-desc">
-    A list of Kubernetes StatefulSets with their detailed status and replica counts.
+    A list of Kubernetes StatefulSets with their detailed status and persistent storage information.
 </div>
 
 
@@ -12357,7 +12614,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line540">line 540</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line541">line 541</a>
     </li></ul></dd>
     
 
@@ -12494,7 +12751,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line432">line 432</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line433">line 433</a>
     </li></ul></dd>
     
 
@@ -13432,7 +13689,7 @@ or null if the route cannot be planned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line141">line 141</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -15191,7 +15448,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line57">line 57</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line58">line 58</a>
     </li></ul></dd>
     
 
@@ -15334,7 +15591,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line72">line 72</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line73">line 73</a>
     </li></ul></dd>
     
 
@@ -15364,13 +15621,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 27 2025 23:48:23 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 28 2025 18:32:10 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

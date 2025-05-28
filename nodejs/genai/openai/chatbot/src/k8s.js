@@ -1,3 +1,4 @@
+// k8s.js
 const superagent = require('superagent');
 const https = require('https');
 const logger = require('./logger');
@@ -6,13 +7,14 @@ const logger = require('./logger');
  * Executes a GET request to the Kubernetes API.
  * This function handles authentication and basic error reporting.
  * @param {string} sessionId - The session ID for logging purposes.
- * @param {string} path - The base Kubernetes API path (e.g., '/api/v1/namespaces').
+ * @param {string} path - The Kubernetes API path (e.g., '/api/v1/namespaces').
  * @param {string} [namespace] - Optional: The namespace to scope the request to.
- * @returns {Promise<object>} The response body from the Kubernetes API.
+ * @param {boolean} [expectTextResponse=false] - If true, expects a plain text response and returns response.text. Otherwise, expects JSON and returns response.body.
+ * @returns {Promise<object|string>} The response body (JSON) or text from the Kubernetes API.
  * @throws {Error} If the Kubernetes API endpoint or bearer token are not configured,
  * or if the API request fails.
  */
-async function callKubernetesApi(sessionId, path, namespace) {
+async function callKubernetesApi(sessionId, path, namespace, expectTextResponse = false) {
   const kubernetesApiEndpoint = process.env.KUBERNETES_API_ENDPOINT;
   const kubernetesBearerToken = process.env.KUBERNETES_BEARER_TOKEN;
 
@@ -27,17 +29,9 @@ async function callKubernetesApi(sessionId, path, namespace) {
   }
 
   let fullPath = path;
-  // If a namespace is provided and the path is for a namespaced resource,
-  // insert the namespace into the path.
-  // This logic assumes paths for namespaced resources typically start with /apis/<group>/<version>/ or /api/<version>/
-  // and then would have /<resource-type>
-  // We'll insert /namespaces/{namespace} after the version.
   if (namespace) {
-    // Example: /apis/apps/v1/deployments -> /apis/apps/v1/namespaces/{namespace}/deployments
-    // Example: /api/v1/pods -> /api/v1/namespaces/{namespace}/pods
     const parts = path.split('/');
     if (parts.length >= 3 && (parts[1] === 'api' || parts[1] === 'apis')) {
-      // Find the index after the version (e.g., 'v1')
       const versionIndex = parts.findIndex((part, index) => index > 1 && part.match(/^v\d+((alpha|beta)\d+)?$/));
       if (versionIndex !== -1) {
         parts.splice(versionIndex + 1, 0, 'namespaces', namespace);
@@ -51,25 +45,27 @@ async function callKubernetesApi(sessionId, path, namespace) {
 
   try {
     let request = superagent.get(url)
-      .set('Authorization', `Bearer ${kubernetesBearerToken}`)
-      .set('Accept', 'application/json');
+      .set('Authorization', `Bearer ${kubernetesBearerToken}`);
 
-    // WARNING: Skipping TLS verification is INSECURE and should ONLY be used for development/testing.
-    // For production, ensure proper CA certificates are configured or use a trusted certificate chain.
+    // Only set Accept: application/json if we are not expecting a text response
+    if (!expectTextResponse) {
+      request = request.set('Accept', 'application/json');
+    }
+
     if (skipTlsVerify) {
       logger.warn(`[Session: ${sessionId}] Skipping Kubernetes TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
-
-      // Create an HTTPS agent that does not reject unauthorized (self-signed) certificates
       const insecureAgent = new https.Agent({
-        rejectUnauthorized: false, // This is the key setting to ignore certificate errors
+        rejectUnauthorized: false,
       });
-
-      // Apply this insecure agent to your superagent request
       request = request.agent(insecureAgent);
     }
 
     const response = await request;
-    return response.body;
+
+    // Always return a JSON object; wrap plain text in { text: ... } if expectTextResponse is true
+    return expectTextResponse
+      ? { text: response.text }
+      : response.body;
   } catch (error) {
     const errorMessage = error.response
       ? `Status: ${error.status}, Body: ${JSON.stringify(error.response.body)}`
@@ -86,6 +82,19 @@ async function callKubernetesApi(sessionId, path, namespace) {
  */
 async function getKubernetesVersion(sessionId) {
   return callKubernetesApi(sessionId, '/version');
+}
+
+/**
+ * Gets the logs for a specific pod in a given namespace.
+ * @param {string} sessionId - The session ID.
+ * @param {string} podName - The name of the pod to get logs from.
+ * @param {string} namespace - The namespace the pod resides in.
+ * @returns {Promise<string>} The logs from the specified pod.
+ */
+async function getKubernetesPodLogs(sessionId, podName, namespace) {
+  // Kubernetes API path for pod logs: /api/v1/namespaces/{namespace}/pods/{name}/log
+  // Pass true for expectTextResponse to correctly handle plain text logs
+  return callKubernetesApi(sessionId, `/api/v1/pods/${podName}/log`, namespace, true);
 }
 
 /**
@@ -131,7 +140,7 @@ async function listKubernetesPods(sessionId, namespace) {
  * Lists all ReplicaSets across all namespaces or within a specified namespace in the Kubernetes cluster.
  * @param {string} sessionId - The session ID.
  * @param {string} [namespace] - Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.
- * @returns {Promise<object>} A list of Kubernetes ReplicaSets with their detailed status and replica counts.
+ * @returns {Promise<object>} A list of Kubernetes ReplicaSets with their detailed status and replica information.
  */
 async function listKubernetesReplicaSets(sessionId, namespace) {
   return callKubernetesApi(sessionId, '/apis/apps/v1/replicasets', namespace);
@@ -141,7 +150,7 @@ async function listKubernetesReplicaSets(sessionId, namespace) {
  * Lists all DaemonSets across all namespaces or within a specified namespace in the Kubernetes cluster.
  * @param {string} sessionId - The session ID.
  * @param {string} [namespace] - Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.
- * @returns {Promise<object>} A list of Kubernetes DaemonSets with their detailed status.
+ * @returns {Promise<object>} A list of Kubernetes DaemonSets with their detailed status and node assignments.
  */
 async function listKubernetesDaemonSets(sessionId, namespace) {
   return callKubernetesApi(sessionId, '/apis/apps/v1/daemonsets', namespace);
@@ -151,7 +160,7 @@ async function listKubernetesDaemonSets(sessionId, namespace) {
  * Lists all StatefulSets across all namespaces or within a specified namespace in the Kubernetes cluster.
  * @param {string} sessionId - The session ID.
  * @param {string} [namespace] - Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.
- * @returns {Promise<object>} A list of Kubernetes StatefulSets with their detailed status and replica counts.
+ * @returns {Promise<object>} A list of Kubernetes StatefulSets with their detailed status and persistent storage information.
  */
 async function listKubernetesStatefulSets(sessionId, namespace) {
   return callKubernetesApi(sessionId, '/apis/apps/v1/statefulsets', namespace);
@@ -171,7 +180,7 @@ async function listKubernetesIngresses(sessionId, namespace) {
  * Lists all ConfigMaps across all namespaces or within a specified namespace in the Kubernetes cluster.
  * @param {string} sessionId - The session ID.
  * @param {string} [namespace] - Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.
- * @returns {Promise<object>} A list of Kubernetes ConfigMaps with their detailed data.
+ * @returns {Promise<object>} A list of Kubernetes ConfigMaps with their detailed data and usage.
  */
 async function listKubernetesConfigMaps(sessionId, namespace) {
   return callKubernetesApi(sessionId, '/api/v1/configmaps', namespace);
@@ -179,12 +188,11 @@ async function listKubernetesConfigMaps(sessionId, namespace) {
 
 /**
  * Lists all PersistentVolumes in the Kubernetes cluster.
- * PersistentVolumes are cluster-scoped, so they do not accept a namespace parameter.
  * @param {string} sessionId - The session ID.
- * @returns {Promise<object>} A list of Kubernetes PersistentVolumes with their detailed status, capacity, and access modes.
+ * @returns {Promise<object>} A list of Kubernetes PersistentVolumes with their detailed status and capacity.
  */
 async function listKubernetesPersistentVolumes(sessionId) {
-  return callKubernetesApi(sessionId, '/apis/storage.k8s.io/v1/persistentvolumes');
+  return callKubernetesApi(sessionId, '/api/v1/persistentvolumes');
 }
 
 /**
@@ -219,6 +227,7 @@ async function listKubernetesCronJobs(sessionId, namespace) {
 
 module.exports = {
   getKubernetesVersion,
+  getKubernetesPodLogs,
   listKubernetesNamespaces,
   listKubernetesDeployments,
   listKubernetesServices,

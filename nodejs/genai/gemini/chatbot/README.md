@@ -215,13 +215,14 @@ Kubernetes Integration
 This chatbot can interact with a Kubernetes cluster to retrieve information about its resources. To enable this functionality, you need to set the following environment variables when running the Docker container:
 
 * KUBERNETES_API_ENDPOINT - The base URL for your Kubernetes API server (e.g., https://host.docker.internal:6443).
-* KUBERNETES_BEARER_TOKEN - The bearer token for authentication with the Kubernetes API.
+* KUBERNETES_BEARER_TOKEN - The bearer token for authentication with the Kubernetes API. A sample `Kubernetes/role.yml` is provided to help generate the token.
 
 Available Kubernetes Functions:
 
 The following functions are available for interacting with Kubernetes. Many of these functions support an optional namespace parameter to filter results to a specific namespace. If the namespace parameter is omitted, the function will list resources across all accessible namespaces (where applicable).
 
 * Get the Kubernetes cluster version.
+* Get logs for a specific pod.
 * List all namespaces in the Kubernetes cluster.
 * List Kubernetes deployments (optional namespace).
 * List Kubernetes services (optional namespace).
@@ -259,6 +260,11 @@ curl -c cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"get the kubernetes version"}' \
     -X POST localhost:8080/chat
 ```
+
+Other samples can include things like: -
+* Tell me the pods running on my k8s install?
+* Get me the pod logs for the core-dns ones
+* Are there any issues shown in the pod logs for core-dns ones?
 
 Cleaning Up
 -----------

@@ -37,6 +37,7 @@ const {
 
 const {
   getKubernetesVersion,
+  getKubernetesPodLogs,
   listKubernetesNamespaces,
   listKubernetesDeployments,
   listKubernetesServices,
@@ -548,6 +549,20 @@ async function loadKubernetes(sessionId) {
     {}, // Empty parameter schema
     [], // No required parameters
     true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_pod_logs',
+    getKubernetesPodLogs,
+    ['podName', 'namespace'],
+    'Get the logs for a specific pod in a given namespace.',
+    {
+      podName: { type: 'string', description: 'The name of the pod to get logs from.' },
+      namespace: { type: 'string', description: 'The namespace the pod resides in.' },
+    },
+    ['podName', 'namespace'], // Both podName and namespace are required
+    true,
   );
 
   await registerFunction(
