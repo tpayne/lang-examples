@@ -6,7 +6,7 @@
 	"license": "MIT",
 	"description": "A simple parser",
 	"dependencies": {
-	    "yargs": "^17.7.2",
+	    "yargs": "^18.0.0",
 			"hasbin": "1.2.3",
 			"fs": "0.0.1-security",
 			"child_process": "1.0.2"
