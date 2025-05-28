@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-28	(01:15:55-UTC+0000)
+- **Other**: Update README (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-05-28	(00:25:08-UTC+0000)
 - **Other**: Add basic Kubernetes functionality (in nodejs/genai/openai/chatbot/Kubernetes/role.yml)
 - **Other**: Add basic Kubernetes functionality (in nodejs/genai/openai/chatbot/documentation/chatbot.js.html)
