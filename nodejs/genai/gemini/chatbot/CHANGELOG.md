@@ -1,4 +1,6 @@
 # Changelog
+## 2025-05-28	(01:15:43-UTC+0000)
+- **Other**: Update README (in nodejs/genai/gemini/chatbot/README.md)
 ## 2025-05-28	(00:24:57-UTC+0000)
 - **Other**: Add basic Kubernetes functionality (in nodejs/genai/gemini/chatbot/Kubernetes/role.yml)
 - **Other**: Add basic Kubernetes functionality (in nodejs/genai/gemini/chatbot/documentation/chatbot.js.html)
