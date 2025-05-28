@@ -64,26 +64,33 @@ const {
 } = require('./utilities');
 
 const {
-  deleteKubernetesResource, // New
-  getKubernetesDeploymentDetails, // New
-  getKubernetesPodDetails, // New
+  createKubernetesResource,
+  deleteKubernetesResource,
+  getKubernetesDeploymentDetails,
+  getKubernetesNodeDetails,
+  getKubernetesPodDetails,
   getKubernetesPodLogs,
-  getKubernetesServiceDetails, // New
+  getKubernetesSecretDetails,
+  getKubernetesServiceDetails,
   getKubernetesVersion,
   listKubernetesConfigMaps,
   listKubernetesCronJobs,
   listKubernetesDaemonSets,
   listKubernetesDeployments,
+  listKubernetesEvents,
   listKubernetesIngresses,
   listKubernetesJobs,
   listKubernetesNamespaces,
+  listKubernetesNodes,
   listKubernetesPersistentVolumeClaims,
   listKubernetesPersistentVolumes,
   listKubernetesPods,
   listKubernetesReplicaSets,
+  listKubernetesSecrets,
   listKubernetesServices,
   listKubernetesStatefulSets,
-  scaleKubernetesDeployment, // New
+  scaleKubernetesDeployment,
+  updateKubernetesResource,
 } = require('./k8s');
 
 /* eslint-disable max-len */
@@ -597,6 +604,37 @@ async function loadKubernetes(sessionId) {
 
   await registerFunction(
     sessionId,
+    'create_kubernetes_resource',
+    createKubernetesResource, // This function needs to be imported from k8s.js
+    ['resourceType', 'resourceBody', 'namespace'],
+    'Create a Kubernetes resource from a provided YAML or JSON body.',
+    {
+      resourceType: { type: 'string', description: 'The type of the resource to create (e.g., "pods", "deployments", "services", "namespaces").' },
+      resourceBody: { type: 'string', description: 'The YAML or JSON string representation of the Kubernetes resource to create.' },
+      namespace: { type: 'string', description: 'Optional: The namespace in which to create the resource. Not required for cluster-scoped resources like Namespaces or PersistentVolumes.' },
+    },
+    ['resourceType', 'resourceBody'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'update_kubernetes_resource',
+    updateKubernetesResource, // This function needs to be imported from k8s.js
+    ['resourceType', 'name', 'resourceBody', 'namespace'],
+    'Update an existing Kubernetes resource with a provided YAML or JSON body.',
+    {
+      resourceType: { type: 'string', description: 'The type of the resource to update (e.g., "pods", "deployments", "services", "namespaces").' },
+      name: { type: 'string', description: 'The name of the resource to update.' },
+      resourceBody: { type: 'string', description: 'The YAML or JSON string representation of the Kubernetes resource with the updated configuration.' },
+      namespace: { type: 'string', description: 'Optional: The namespace where the resource resides. Not required for cluster-scoped resources.' },
+    },
+    ['resourceType', 'name', 'resourceBody'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
     'list_kubernetes_deployments',
     listKubernetesDeployments,
     ['namespace'], // Added namespace parameter
@@ -690,6 +728,70 @@ async function loadKubernetes(sessionId) {
     true,
   );
 
+await registerFunction(
+    sessionId,
+    'get_kubernetes_node_details',
+    getKubernetesNodeDetails, // This function needs to be imported from k8s.js
+    ['nodeName'],
+    'Get detailed information about a specific Kubernetes Node by its name.',
+    {
+      nodeName: { type: 'string', description: 'The name of the node to get details for.' },
+    },
+    ['nodeName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_secret_details',
+    getKubernetesSecretDetails, // This function needs to be imported from k8s.js
+    ['secretName', 'namespace'],
+    'Get detailed information about a specific Kubernetes Secret by its name within a given namespace.',
+    {
+      secretName: { type: 'string', description: 'The name of the secret to get details for.' },
+      namespace: { type: 'string', description: 'The namespace the secret resides in.' },
+    },
+    ['secretName', 'namespace'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_events',
+    listKubernetesEvents, // This function needs to be imported from k8s.js
+    ['namespace'],
+    'List or get all Kubernetes Events across all namespaces or within a specified namespace, returning their detailed status and associated resources.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list events from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_nodes',
+    listKubernetesNodes, // This function needs to be imported from k8s.js
+    [], // No direct parameters, nodes are cluster-scoped
+    'List or get all Kubernetes Nodes, returning their detailed status, capacity, and allocatable resources.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_secrets',
+    listKubernetesSecrets, // This function needs to be imported from k8s.js
+    ['namespace'],
+    'List or get all Kubernetes Secrets across all namespaces or within a specified namespace, returning their detailed data (excluding sensitive content).',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list secrets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true,
+  );
+    
   await registerFunction(
     sessionId,
     'scale_kubernetes_deployment', // New function
@@ -910,13 +1012,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 28 2025 23:06:33 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 28 2025 23:24:04 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -36,26 +36,33 @@ const {
 } = require('./utilities');
 
 const {
-  deleteKubernetesResource, // New
-  getKubernetesDeploymentDetails, // New
-  getKubernetesPodDetails, // New
+  createKubernetesResource,
+  deleteKubernetesResource,
+  getKubernetesDeploymentDetails,
+  getKubernetesNodeDetails,
+  getKubernetesPodDetails,
   getKubernetesPodLogs,
-  getKubernetesServiceDetails, // New
+  getKubernetesSecretDetails,
+  getKubernetesServiceDetails,
   getKubernetesVersion,
   listKubernetesConfigMaps,
   listKubernetesCronJobs,
   listKubernetesDaemonSets,
   listKubernetesDeployments,
+  listKubernetesEvents,
   listKubernetesIngresses,
   listKubernetesJobs,
   listKubernetesNamespaces,
+  listKubernetesNodes,
   listKubernetesPersistentVolumeClaims,
   listKubernetesPersistentVolumes,
   listKubernetesPods,
   listKubernetesReplicaSets,
+  listKubernetesSecrets,
   listKubernetesServices,
   listKubernetesStatefulSets,
-  scaleKubernetesDeployment, // New
+  scaleKubernetesDeployment,
+  updateKubernetesResource,
 } = require('./k8s');
 
 /* eslint-disable max-len */
@@ -569,6 +576,37 @@ async function loadKubernetes(sessionId) {
 
   await registerFunction(
     sessionId,
+    'create_kubernetes_resource',
+    createKubernetesResource, // This function needs to be imported from k8s.js
+    ['resourceType', 'resourceBody', 'namespace'],
+    'Create a Kubernetes resource from a provided YAML or JSON body.',
+    {
+      resourceType: { type: 'string', description: 'The type of the resource to create (e.g., "pods", "deployments", "services", "namespaces").' },
+      resourceBody: { type: 'string', description: 'The YAML or JSON string representation of the Kubernetes resource to create.' },
+      namespace: { type: 'string', description: 'Optional: The namespace in which to create the resource. Not required for cluster-scoped resources like Namespaces or PersistentVolumes.' },
+    },
+    ['resourceType', 'resourceBody'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'update_kubernetes_resource',
+    updateKubernetesResource, // This function needs to be imported from k8s.js
+    ['resourceType', 'name', 'resourceBody', 'namespace'],
+    'Update an existing Kubernetes resource with a provided YAML or JSON body.',
+    {
+      resourceType: { type: 'string', description: 'The type of the resource to update (e.g., "pods", "deployments", "services", "namespaces").' },
+      name: { type: 'string', description: 'The name of the resource to update.' },
+      resourceBody: { type: 'string', description: 'The YAML or JSON string representation of the Kubernetes resource with the updated configuration.' },
+      namespace: { type: 'string', description: 'Optional: The namespace where the resource resides. Not required for cluster-scoped resources.' },
+    },
+    ['resourceType', 'name', 'resourceBody'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
     'list_kubernetes_deployments',
     listKubernetesDeployments,
     ['namespace'], // Added namespace parameter
@@ -659,6 +697,70 @@ async function loadKubernetes(sessionId) {
       namespace: { type: 'string', description: 'The namespace the pod resides in.' },
     },
     ['podName', 'namespace'], // Both podName and namespace are required
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_node_details',
+    getKubernetesNodeDetails, // This function needs to be imported from k8s.js
+    ['nodeName'],
+    'Get detailed information about a specific Kubernetes Node by its name.',
+    {
+      nodeName: { type: 'string', description: 'The name of the node to get details for.' },
+    },
+    ['nodeName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_secret_details',
+    getKubernetesSecretDetails, // This function needs to be imported from k8s.js
+    ['secretName', 'namespace'],
+    'Get detailed information about a specific Kubernetes Secret by its name within a given namespace.',
+    {
+      secretName: { type: 'string', description: 'The name of the secret to get details for.' },
+      namespace: { type: 'string', description: 'The namespace the secret resides in.' },
+    },
+    ['secretName', 'namespace'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_events',
+    listKubernetesEvents, // This function needs to be imported from k8s.js
+    ['namespace'],
+    'List or get all Kubernetes Events across all namespaces or within a specified namespace, returning their detailed status and associated resources.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list events from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_nodes',
+    listKubernetesNodes, // This function needs to be imported from k8s.js
+    [], // No direct parameters, nodes are cluster-scoped
+    'List or get all Kubernetes Nodes, returning their detailed status, capacity, and allocatable resources.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_secrets',
+    listKubernetesSecrets, // This function needs to be imported from k8s.js
+    ['namespace'],
+    'List or get all Kubernetes Secrets across all namespaces or within a specified namespace, returning their detailed data (excluding sensitive content).',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list secrets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
     true,
   );
 

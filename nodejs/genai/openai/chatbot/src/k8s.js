@@ -8,7 +8,7 @@ const logger = require('./logger');
  * @param {string} sessionId - The session ID for logging purposes.
  * @param {string} path - The base Kubernetes API path (e.g., '/api/v1/namespaces').
  * @param {string} [namespace] - Optional: The namespace to scope the request to.
- * @param {string} [method='GET'] - Optional: The HTTP method (GET, PUT, DELETE). Defaults to 'GET'.
+ * @param {string} [method='GET'] - Optional: The HTTP method (GET, PUT, DELETE, POST). Defaults to 'GET'.
  * @param {object} [body=null] - Optional: The request body for PUT/POST requests.
  * @returns {Promise<object|string>} The response body from the Kubernetes API. For logs, it might be a string.
  * @throws {Error} If the Kubernetes API endpoint or bearer token are not configured,
@@ -31,11 +31,19 @@ async function callKubernetesApi(sessionId, path, namespace, method = 'GET', bod
   let fullPath = path;
   // If a namespace is provided and the path is for a namespaced resource,
   // insert the namespace into the path.
+  // This logic needs to be careful not to double-add 'namespaces' if the path already contains it.
+  // For simplicity, let's assume `path` always comes without `namespaces/{namespace}` if it's a namespaced resource.
+  // This is how most list calls are done, e.g., /api/v1/pods which callKubernetesApi then makes /api/v1/namespaces/default/pods
   if (namespace) {
     const parts = path.split('/');
     if (parts.length >= 3 && (parts[1] === 'api' || parts[1] === 'apis')) {
       const versionIndex = parts.findIndex((part, index) => index > 1 && part.match(/^v\d+((alpha|beta)\d+)?$/));
-      if (versionIndex !== -1) {
+      // Check if 'namespaces' is *not* already present immediately after the version,
+      // and if the resource type is generally namespaced (e.g., not a cluster-scoped resource like nodes or persistentvolumes)
+      const isNamespacedPath = parts[versionIndex + 1] !== 'namespaces';
+
+      if (versionIndex !== -1 && isNamespacedPath) {
+        // This splices "namespaces" and the actual namespace into the path.
         parts.splice(versionIndex + 1, 0, 'namespaces', namespace);
         fullPath = parts.join('/');
       }
@@ -50,6 +58,9 @@ async function callKubernetesApi(sessionId, path, namespace, method = 'GET', bod
     switch (method.toUpperCase()) {
       case 'GET':
         request = superagent.get(url);
+        break;
+      case 'POST': // Added POST for creation
+        request = superagent.post(url);
         break;
       case 'PUT':
         request = superagent.put(url);
@@ -82,7 +93,7 @@ async function callKubernetesApi(sessionId, path, namespace, method = 'GET', bod
     const response = await request;
     // For logs, the response body might not be JSON, so return as is.
     if (path.endsWith('/log')) {
-      return { text: response.text };
+      return { text: response.text }; // Returning an object with 'text' key as previously observed from tool output
     }
     return response.body;
   } catch (error) {
@@ -180,7 +191,7 @@ async function getKubernetesPodDetails(sessionId, podName, namespace) {
  * @param {string} sessionId - The session ID.
  * @param {string} podName - The name of the pod to get logs from.
  * @param {string} namespace - The namespace the pod resides in.
- * @returns {Promise<string>} The logs from the specified pod.
+ * @returns {Promise<object>} The logs from the specified pod. The logs are returned as a string in the 'text' property of the returned object.
  */
 async function getKubernetesPodLogs(sessionId, podName, namespace) {
   return callKubernetesApi(sessionId, `/api/v1/pods/${podName}/log`, namespace);
@@ -354,25 +365,183 @@ async function deleteKubernetesResource(sessionId, resourceType, name, namespace
   return callKubernetesApi(sessionId, apiPath, namespace, 'DELETE');
 }
 
+/**
+ * Lists all Nodes in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @returns {Promise<object>} A list of Kubernetes Nodes with their detailed status and metadata.
+ */
+async function listKubernetesNodes(sessionId) {
+  return callKubernetesApi(sessionId, '/api/v1/nodes');
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Node.
+ * @param {string} sessionId - The session ID.
+ * @param {string} nodeName - The name of the node.
+ * @returns {Promise<object>} Detailed information about the Kubernetes Node.
+ */
+async function getKubernetesNodeDetails(sessionId, nodeName) {
+  return callKubernetesApi(sessionId, `/api/v1/nodes/${nodeName}`);
+}
+
+/**
+ * Lists all Secrets across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list secrets from. If not provided, lists from all namespaces.
+ * @returns {Promise<object>} A list of Kubernetes Secrets with their detailed data and metadata.
+ */
+async function listKubernetesSecrets(sessionId, namespace) {
+  return callKubernetesApi(sessionId, '/api/v1/secrets', namespace);
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Secret.
+ * @param {string} sessionId - The session ID.
+ * @param {string} secretName - The name of the secret.
+ * @param {string} namespace - The namespace the secret resides in.
+ * @returns {Promise<object>} Detailed information about the Kubernetes Secret.
+ */
+async function getKubernetesSecretDetails(sessionId, secretName, namespace) {
+  return callKubernetesApi(sessionId, `/api/v1/secrets/${secretName}`, namespace);
+}
+
+/**
+ * Lists all Events across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list events from. If not provided, lists from all namespaces.
+ * @returns {Promise<object>} A list of Kubernetes Events with their detailed information.
+ */
+async function listKubernetesEvents(sessionId, namespace) {
+  return callKubernetesApi(sessionId, '/api/v1/events', namespace);
+}
+
+/**
+ * Creates a Kubernetes resource from a provided resource definition.
+ * @param {string} sessionId - The session ID.
+ * @param {string} resourceType - The plural type of the resource to create (e.g., 'deployments', 'pods', 'services').
+ * This should correspond to the API path segment.
+ * @param {string} [namespace] - Optional: The namespace to create the resource in. Required for namespaced resources.
+ * @param {object} resourceBody - The full resource definition (JSON object) to create.
+ * @returns {Promise<object>} The created Kubernetes resource object.
+ */
+async function createKubernetesResource(sessionId, resourceType, namespace, resourceBody) {
+  let apiPath;
+  // Determine the base API path based on resourceType and API group/version
+  // This switch statement will need to be comprehensive for all creatable resources
+  // For simplicity here, we'll assume common types. A more robust solution might
+  // parse apiVersion and kind from resourceBody to determine the correct path.
+  switch (resourceType.toLowerCase()) {
+    case 'pods':
+      apiPath = '/api/v1/pods';
+      break;
+    case 'deployments':
+      apiPath = '/apis/apps/v1/deployments';
+      break;
+    case 'services':
+      apiPath = '/api/v1/services';
+      break;
+    case 'configmaps':
+      apiPath = '/api/v1/configmaps';
+      break;
+    case 'secrets':
+      apiPath = '/api/v1/secrets';
+      break;
+    case 'namespaces': // Namespaces are cluster-scoped for creation, but API path follows pattern
+      apiPath = '/api/v1/namespaces';
+      // No namespace parameter for callKubernetesApi for cluster-scoped creation
+      return callKubernetesApi(sessionId, apiPath, null, 'POST', resourceBody);
+    default:
+      // Fallback: Attempt to derive path from resourceBody's apiVersion and kind
+      if (resourceBody && resourceBody.apiVersion && resourceBody.kind) {
+        const { apiVersion } = resourceBody;
+        const kind = `${resourceBody.kind.toLowerCase()}s`; // Pluralize kind
+        if (apiVersion.includes('/')) { // e.g., apps/v1
+          apiPath = `/apis/${apiVersion}/${kind}`;
+        } else { // e.g., v1
+          apiPath = `/api/${apiVersion}/${kind}`;
+        }
+      } else {
+        throw new Error(`Unsupported resource type for creation: ${resourceType} or missing apiVersion/kind in body.`);
+      }
+  }
+  return callKubernetesApi(sessionId, apiPath, namespace, 'POST', resourceBody);
+}
+
+/**
+ * Updates an existing Kubernetes resource with a provided resource definition.
+ * This performs a full replacement (PUT operation).
+ * @param {string} sessionId - The session ID.
+ * @param {string} resourceType - The plural type of the resource to update (e.g., 'deployments', 'pods', 'services').
+ * @param {string} name - The name of the resource to update.
+ * @param {string} [namespace] - Optional: The namespace the resource resides in. Required for namespaced resources.
+ * @param {object} resourceBody - The full updated resource definition (JSON object).
+ * @returns {Promise<object>} The updated Kubernetes resource object.
+ */
+async function updateKubernetesResource(sessionId, resourceType, name, namespace, resourceBody) {
+  let apiPath;
+  switch (resourceType.toLowerCase()) {
+    case 'pods':
+      apiPath = `/api/v1/pods/${name}`;
+      break;
+    case 'deployments':
+      apiPath = `/apis/apps/v1/deployments/${name}`;
+      break;
+    case 'services':
+      apiPath = `/api/v1/services/${name}`;
+      break;
+    case 'configmaps':
+      apiPath = `/api/v1/configmaps/${name}`;
+      break;
+    case 'secrets':
+      apiPath = `/api/v1/secrets/${name}`;
+      break;
+    case 'namespaces': // Namespaces are cluster-scoped for update, but API path follows pattern
+      apiPath = `/api/v1/namespaces/${name}`;
+      // No namespace parameter for callKubernetesApi for cluster-scoped update
+      return callKubernetesApi(sessionId, apiPath, null, 'PUT', resourceBody);
+    default:
+      // Fallback: Attempt to derive path from resourceBody's apiVersion and kind
+      if (resourceBody && resourceBody.apiVersion && resourceBody.kind) {
+        const { apiVersion } = resourceBody;
+        const kind = `${resourceBody.kind.toLowerCase()}s`;
+        if (apiVersion.includes('/')) {
+          apiPath = `/apis/${apiVersion}/${kind}/${name}`;
+        } else {
+          apiPath = `/api/${apiVersion}/${kind}/${name}`;
+        }
+      } else {
+        throw new Error(`Unsupported resource type for update: ${resourceType} or missing apiVersion/kind in body.`);
+      }
+  }
+  return callKubernetesApi(sessionId, apiPath, namespace, 'PUT', resourceBody);
+}
+
 module.exports = {
-  deleteKubernetesResource, // New
-  getKubernetesDeploymentDetails, // New
-  getKubernetesPodDetails, // New
+  createKubernetesResource,
+  deleteKubernetesResource,
+  getKubernetesDeploymentDetails,
+  getKubernetesNodeDetails,
+  getKubernetesPodDetails,
   getKubernetesPodLogs,
-  getKubernetesServiceDetails, // New
+  getKubernetesSecretDetails,
+  getKubernetesServiceDetails,
   getKubernetesVersion,
   listKubernetesConfigMaps,
   listKubernetesCronJobs,
   listKubernetesDaemonSets,
   listKubernetesDeployments,
+  listKubernetesEvents,
   listKubernetesIngresses,
   listKubernetesJobs,
   listKubernetesNamespaces,
+  listKubernetesNodes,
   listKubernetesPersistentVolumeClaims,
   listKubernetesPersistentVolumes,
   listKubernetesPods,
   listKubernetesReplicaSets,
+  listKubernetesSecrets,
   listKubernetesServices,
   listKubernetesStatefulSets,
-  scaleKubernetesDeployment, // New
+  scaleKubernetesDeployment,
+  updateKubernetesResource,
 };
