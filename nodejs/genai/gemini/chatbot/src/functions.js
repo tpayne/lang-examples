@@ -35,6 +35,23 @@ const {
   saveCodeToFile,
 } = require('./utilities');
 
+const {
+  getKubernetesVersion,
+  listKubernetesNamespaces,
+  listKubernetesDeployments,
+  listKubernetesServices,
+  listKubernetesPods,
+  listKubernetesReplicaSets,
+  listKubernetesDaemonSets,
+  listKubernetesStatefulSets,
+  listKubernetesIngresses,
+  listKubernetesConfigMaps,
+  listKubernetesPersistentVolumes,
+  listKubernetesPersistentVolumeClaims,
+  listKubernetesJobs,
+  listKubernetesCronJobs,
+} = require('./k8s');
+
 /* eslint-disable max-len */
 
 /**
@@ -517,6 +534,189 @@ async function loadMappingFunctions(sessionId) {
 }
 
 /**
+ * Loads Kubernetes functions into the registry if KUBERNETES_API_ENDPOINT and KUBERNETES_BEARER_TOKEN are set.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadKubernetes(sessionId) {
+  // Directly register K8s functions without the helper
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_version',
+    getKubernetesVersion,
+    [], // No direct parameters
+    'List or get all the Kubernetes version information for the connected Kubernetes cluster.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_namespaces',
+    listKubernetesNamespaces,
+    [], // No direct parameters
+    'List or get all the Kubernetes namespaces in the cluster, returning their detailed status and metadata.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_deployments',
+    listKubernetesDeployments,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes deployments across all namespaces or within a specified namespace, returning their detailed status, replicas, and associated metadata.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list deployments from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_services',
+    listKubernetesServices,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes services across all namespaces or within a specified namespace, returning their detailed status, cluster IPs, ports, and selectors.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list services from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_pods',
+    listKubernetesPods,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes pods across all namespaces or within a specified namespace, returning their detailed status, node assignments, and container information.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list pods from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_replicasets',
+    listKubernetesReplicaSets,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes ReplicaSets across all namespaces or within a specified namespace, returning their detailed status and replica counts.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_daemonsets',
+    listKubernetesDaemonSets,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes DaemonSets across all namespaces or within a specified namespace, returning their detailed status.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_statefulsets',
+    listKubernetesStatefulSets,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes StatefulSets across all namespaces or within a specified namespace, returning their detailed status and replica counts.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_ingresses',
+    listKubernetesIngresses,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes Ingresses across all namespaces or within a specified namespace, returning their detailed rules and backend services.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list Ingresses from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_configmaps',
+    listKubernetesConfigMaps,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes ConfigMaps across all namespaces or within a specified namespace, returning their detailed data.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_persistent_volumes',
+    listKubernetesPersistentVolumes,
+    [], // No direct parameters, PVs are cluster-scoped
+    'List or get all the Kubernetes PersistentVolumes, returning their detailed status, capacity, and access modes.',
+    {}, // Empty parameter schema
+    [], // No required parameters
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_persistent_volume_claims',
+    listKubernetesPersistentVolumeClaims,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes PersistentVolumeClaims across all namespaces or within a specified namespace, returning their detailed status and volume bindings.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list PersistentVolumeClaims from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_jobs',
+    listKubernetesJobs,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes Jobs across all namespaces or within a specified namespace, returning their detailed status and completion information.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list Jobs from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_kubernetes_cronjobs',
+    listKubernetesCronJobs,
+    ['namespace'], // Added namespace parameter
+    'List or get all the Kubernetes CronJobs across all namespaces or within a specified namespace, returning their detailed status and schedule.',
+    {
+      namespace: { type: 'string', description: 'Optional: The namespace to list CronJobs from. If not provided, lists from all namespaces.' },
+    },
+    [], // No required parameters, namespace is optional
+    true, // needSession is true
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -552,6 +752,13 @@ async function loadIntegrations(sessionId) {
   if (process.env.GOOGLE_MAPS_API_KEY) {
     logger.info(`Loading Google Maps integration for session: ${sessionId}`);
     await loadMappingFunctions(sessionId);
+  }
+
+  if (process.env.KUBERNETES_API_ENDPOINT && process.env.KUBERNETES_BEARER_TOKEN) {
+    logger.info(`Loading Kubernetes integration for session: ${sessionId}`);
+    await loadKubernetes(sessionId);
+  } else {
+    logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
   }
 }
 
