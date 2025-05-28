@@ -210,6 +210,56 @@ curl -H "Content-Type: application/json" \
     -X POST localhost:8080/chat
 ```
 
+Kubernetes Integration
+----------------------
+This chatbot can interact with a Kubernetes cluster to retrieve information about its resources. To enable this functionality, you need to set the following environment variables when running the Docker container:
+
+* KUBERNETES_API_ENDPOINT - The base URL for your Kubernetes API server (e.g., https://host.docker.internal:6443).
+* KUBERNETES_BEARER_TOKEN - The bearer token for authentication with the Kubernetes API.
+
+Available Kubernetes Functions:
+
+The following functions are available for interacting with Kubernetes. Many of these functions support an optional namespace parameter to filter results to a specific namespace. If the namespace parameter is omitted, the function will list resources across all accessible namespaces (where applicable).
+
+* Get the Kubernetes cluster version.
+* List all namespaces in the Kubernetes cluster.
+* List Kubernetes deployments (optional namespace).
+* List Kubernetes services (optional namespace).
+* List Kubernetes pods (optional namespace).
+* List Kubernetes ReplicaSets (optional namespace).
+* List Kubernetes DaemonSets (optional namespace).
+* List Kubernetes StatefulSets (optional namespace).
+* List Kubernetes Ingresses (optional namespace).
+* List Kubernetes ConfigMaps (optional namespace).
+* List Kubernetes PersistentVolumes (cluster-scoped, no namespace parameter).
+* List Kubernetes PersistentVolumeClaims (optional namespace).
+* List Kubernetes Jobs (optional namespace).
+* List Kubernetes CronJobs (optional namespace).
+
+Example Usage:
+
+To list all pods in the default namespace:
+
+```bash
+curl -c cookies.txt -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load cloudops.txt"}' \
+    -X POST localhost:8080/chat && \
+    curl -b cookies.txt -H "Content-Type: application/json" \
+    -d '{"message":"list all kubernetes pods in the default namespace"}' \
+    -X POST localhost:8080/chat
+```
+
+To get the Kubernetes cluster version:
+
+```bash
+curl -c cookies.txt -H "Content-Type: application/json" \
+    -d '{"message":"bot-context load cloudops.txt"}' \
+    -X POST localhost:8080/chat && \
+    curl -b cookies.txt -H "Content-Type: application/json" \
+    -d '{"message":"get the kubernetes version"}' \
+    -X POST localhost:8080/chat
+```
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
