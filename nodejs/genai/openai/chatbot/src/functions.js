@@ -782,7 +782,7 @@ async function loadKubernetes(sessionId) {
   await registerFunction(
     sessionId,
     'list_kubernetes_cronjobs',
-    listKubernetesCronjobs,
+    listKubernetesCronJobs,
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes CronJobs across all namespaces or within a specified namespace, returning their detailed status and schedule.',
     {

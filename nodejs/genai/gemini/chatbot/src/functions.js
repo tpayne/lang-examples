@@ -36,21 +36,26 @@ const {
 } = require('./utilities');
 
 const {
-  getKubernetesVersion,
+  deleteKubernetesResource, // New
+  getKubernetesDeploymentDetails, // New
+  getKubernetesPodDetails, // New
   getKubernetesPodLogs,
-  listKubernetesNamespaces,
+  getKubernetesServiceDetails, // New
+  getKubernetesVersion,
+  listKubernetesConfigMaps,
+  listKubernetesCronJobs,
+  listKubernetesDaemonSets,
   listKubernetesDeployments,
-  listKubernetesServices,
+  listKubernetesIngresses,
+  listKubernetesJobs,
+  listKubernetesNamespaces,
+  listKubernetesPersistentVolumeClaims,
+  listKubernetesPersistentVolumes,
   listKubernetesPods,
   listKubernetesReplicaSets,
-  listKubernetesDaemonSets,
+  listKubernetesServices,
   listKubernetesStatefulSets,
-  listKubernetesIngresses,
-  listKubernetesConfigMaps,
-  listKubernetesPersistentVolumes,
-  listKubernetesPersistentVolumeClaims,
-  listKubernetesJobs,
-  listKubernetesCronJobs,
+  scaleKubernetesDeployment, // New
 } = require('./k8s');
 
 /* eslint-disable max-len */
@@ -499,7 +504,7 @@ async function loadMappingFunctions(sessionId) {
 
   await registerFunction(
     sessionId,
-    'generate_google_maps_link', // Function name for the AI tool
+    'generate_Maps_link', // Function name for the AI tool
     generateGoogleMapsLink, // The actual function to execute
     ['params'], // Parameters the function expects (wrapped in a single 'params' object)
     'Generates an HTTP link to view a planned route on the Google Maps website using the original route parameters.', // Description for the AI
@@ -553,20 +558,6 @@ async function loadKubernetes(sessionId) {
 
   await registerFunction(
     sessionId,
-    'get_kubernetes_pod_logs',
-    getKubernetesPodLogs,
-    ['podName', 'namespace'],
-    'Get the logs for a specific pod in a given namespace.',
-    {
-      podName: { type: 'string', description: 'The name of the pod to get logs from.' },
-      namespace: { type: 'string', description: 'The namespace the pod resides in.' },
-    },
-    ['podName', 'namespace'], // Both podName and namespace are required
-    true,
-  );
-
-  await registerFunction(
-    sessionId,
     'list_kubernetes_namespaces',
     listKubernetesNamespaces,
     [], // No direct parameters
@@ -591,6 +582,20 @@ async function loadKubernetes(sessionId) {
 
   await registerFunction(
     sessionId,
+    'get_kubernetes_deployment_details', // New function
+    getKubernetesDeploymentDetails,
+    ['deploymentName', 'namespace'],
+    'Get detailed information about a specific Kubernetes Deployment by its name within a given namespace.',
+    {
+      deploymentName: { type: 'string', description: 'The name of the deployment to get details for.' },
+      namespace: { type: 'string', description: 'The namespace the deployment resides in.' },
+    },
+    ['deploymentName', 'namespace'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
     'list_kubernetes_services',
     listKubernetesServices,
     ['namespace'], // Added namespace parameter
@@ -604,6 +609,20 @@ async function loadKubernetes(sessionId) {
 
   await registerFunction(
     sessionId,
+    'get_kubernetes_service_details', // New function
+    getKubernetesServiceDetails,
+    ['serviceName', 'namespace'],
+    'Get detailed information about a specific Kubernetes Service by its name within a given namespace.',
+    {
+      serviceName: { type: 'string', description: 'The name of the service to get details for.' },
+      namespace: { type: 'string', description: 'The namespace the service resides in.' },
+    },
+    ['serviceName', 'namespace'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
     'list_kubernetes_pods',
     listKubernetesPods,
     ['namespace'], // Added namespace parameter
@@ -613,6 +632,49 @@ async function loadKubernetes(sessionId) {
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_pod_details', // New function
+    getKubernetesPodDetails,
+    ['podName', 'namespace'],
+    'Get detailed information about a specific Kubernetes Pod by its name within a given namespace.',
+    {
+      podName: { type: 'string', description: 'The name of the pod to get details for.' },
+      namespace: { type: 'string', description: 'The namespace the pod resides in.' },
+    },
+    ['podName', 'namespace'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_kubernetes_pod_logs',
+    getKubernetesPodLogs,
+    ['podName', 'namespace'],
+    'Get the logs for a specific pod in a given namespace.',
+    {
+      podName: { type: 'string', description: 'The name of the pod to get logs from.' },
+      namespace: { type: 'string', description: 'The namespace the pod resides in.' },
+    },
+    ['podName', 'namespace'], // Both podName and namespace are required
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'scale_kubernetes_deployment', // New function
+    scaleKubernetesDeployment,
+    ['deploymentName', 'namespace', 'replicas'],
+    'Scale a specified Kubernetes Deployment to a desired number of replicas.',
+    {
+      deploymentName: { type: 'string', description: 'The name of the deployment to scale.' },
+      namespace: { type: 'string', description: 'The namespace the deployment resides in.' },
+      replicas: { type: 'number', description: 'The desired number of replicas for the deployment.' },
+    },
+    ['deploymentName', 'namespace', 'replicas'],
+    true,
   );
 
   await registerFunction(
@@ -729,6 +791,21 @@ async function loadKubernetes(sessionId) {
     [], // No required parameters, namespace is optional
     true, // needSession is true
   );
+
+  await registerFunction(
+    sessionId,
+    'delete_kubernetes_resource', // New function
+    deleteKubernetesResource,
+    ['resourceType', 'name', 'namespace'],
+    'Delete a specified Kubernetes resource (e.g., Pod, Deployment, Service) by its name from a given namespace.',
+    {
+      resourceType: { type: 'string', description: 'The type of the resource to delete (e.g., "pods", "deployments", "services", "namespaces").' },
+      name: { type: 'string', description: 'The name of the resource to delete.' },
+      namespace: { type: 'string', description: 'The namespace the resource resides in. Required for namespaced resources. Not used for cluster-scoped resources like PersistentVolumes or Namespaces (when deleting the namespace itself).' },
+    },
+    ['resourceType', 'name'],
+    true,
+  );
 }
 
 /**
@@ -764,7 +841,7 @@ async function loadIntegrations(sessionId) {
     await loadDosa(sessionId);
   }
 
-  if (process.env.GOOGLE_MAPS_API_KEY) {
+  if (process.env.Maps_API_KEY) {
     logger.info(`Loading Google Maps integration for session: ${sessionId}`);
     await loadMappingFunctions(sessionId);
   }

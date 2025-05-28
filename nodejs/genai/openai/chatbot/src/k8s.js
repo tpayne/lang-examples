@@ -82,7 +82,7 @@ async function callKubernetesApi(sessionId, path, namespace, method = 'GET', bod
     const response = await request;
     // For logs, the response body might not be JSON, so return as is.
     if (path.endsWith('/log')) {
-      return { text: response.text }
+      return { text: response.text };
     }
     return response.body;
   } catch (error) {
@@ -201,15 +201,14 @@ async function scaleKubernetesDeployment(sessionId, deploymentName, namespace, r
     kind: 'Scale',
     metadata: {
       name: deploymentName,
-      namespace: namespace,
+      namespace,
     },
     spec: {
-      replicas: replicas,
+      replicas,
     },
   };
   return callKubernetesApi(sessionId, `/apis/apps/v1/deployments/${deploymentName}/scale`, namespace, 'PUT', scaleBody);
 }
-
 
 /**
  * Lists all ReplicaSets across all namespaces or within a specified namespace in the Kubernetes cluster.
@@ -354,7 +353,6 @@ async function deleteKubernetesResource(sessionId, resourceType, name, namespace
   }
   return callKubernetesApi(sessionId, apiPath, namespace, 'DELETE');
 }
-
 
 module.exports = {
   deleteKubernetesResource, // New
