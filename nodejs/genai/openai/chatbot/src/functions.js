@@ -65,6 +65,11 @@ const {
   updateKubernetesResource,
 } = require('./k8s');
 
+const {
+  searchDockerImages, // Import new Docker Hub function
+} = require('./dockerhub'); // Import the new dockerhub.js module
+
+
 /* eslint-disable max-len */
 
 /**
@@ -910,6 +915,23 @@ async function loadKubernetes(sessionId) {
   );
 }
 
+async function loadDockerHub(sessionId) {
+  await registerFunction(
+    sessionId,
+    'search_docker_images',
+    searchDockerImages,
+    ['searchTerm', 'isPrivate', 'username'],
+    'Search for Docker images on Docker Hub, supporting both public and private repositories. For private searches, the Docker Hub username and password must be configured as environment variables.',
+    {
+      searchTerm: { type: 'string', description: 'The term to search for (e.g., "ubuntu", "my-private-repo/my-image").' },
+      isPrivate: { type: 'boolean', description: 'Set to true to search private repositories of the configured Docker Hub user. Defaults to false (public search).' },
+      username: { type: 'string', description: 'Optional: Docker Hub username if searching private repos. Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.' },
+    },
+    ['searchTerm'], // Only searchTerm is strictly required for any search
+    true,
+  );
+}
+
 /**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
@@ -953,6 +975,13 @@ async function loadIntegrations(sessionId) {
     await loadKubernetes(sessionId);
   } else {
     logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
+  }
+
+  if (process.env.DOCKERHUB_USERNAME && process.env.DOCKERHUB_PASSWORD) {
+    logger.info(`Loading Docker Hub integration for session: ${sessionId}`);
+    await loadDockerHub(sessionId);
+  } else {
+    logger.info(`Docker Hub integration not loaded for session: ${sessionId}. DOCKERHUB_USERNAME or DOCKERHUB_PASSWORD not set.`);
   }
 }
 
