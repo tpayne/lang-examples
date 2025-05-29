@@ -436,7 +436,7 @@ async function listKubernetesEvents(sessionId, namespace) {
  * @param {string} [namespace] - Optional: The namespace to create the resource in. Required for namespaced resources.
  * @returns {Promise<object>} The created Kubernetes resource object.
  */
-async function createKubernetesResource(sessionId, resourceType, resourceBody, namespace) {
+async function createKubernetesResource(sessionId, resourceType, resourceBody, namespace = 'default') {
   let apiPath;
   let parsedBody;
   try {
@@ -492,7 +492,7 @@ async function createKubernetesResource(sessionId, resourceType, resourceBody, n
  * @param {string} [namespace] - Optional: The namespace the resource resides in. Required for namespaced resources.
  * @returns {Promise<object>} The updated Kubernetes resource object.
  */
-async function updateKubernetesResource(sessionId, resourceType, name, resourceBody, namespace) {
+async function updateKubernetesResource(sessionId, resourceType, name, resourceBody, namespace = 'default') {
   let apiPath;
   let parsedBody;
   try {
