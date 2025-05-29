@@ -19,7 +19,25 @@ rules:
   - persistentvolumeclaims
   - jobs
   - cronjobs
-  verbs: ["get", "list"] # Granting list and get permissions
+  - secrets
+  - events
+  - endpoints
+  - serviceaccounts
+  - roles
+  - rolebindings
+  - clusterroles
+  - clusterrolebindings
+  - horizontalpodautoscalers
+  - networkpolicies
+  - resourcequotas
+  - poddisruptionbudgets
+  - storageclasses
+  - certificatesigningrequests
+  - podtemplates
+  - priorityclasses
+  - volumeattachments
+  - leases
+  verbs: ["get", "list", "create", "watch", "update", "patch", "delete"] # Granting list and get permissions
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

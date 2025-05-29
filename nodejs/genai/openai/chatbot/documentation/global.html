@@ -1100,7 +1100,7 @@ Limits the cache size per session.
     
 
     
-    <h4 class="name" id="callKubernetesApi"><span class="type-signature">(async) </span>callKubernetesApi<span class="signature">(sessionId, path, namespace<span class="signature-attributes">opt</span>, method<span class="signature-attributes">opt</span>, body<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;(object|string)>}</span></h4>
+    <h4 class="name" id="callKubernetesApi"><span class="type-signature">(async) </span>callKubernetesApi<span class="signature">(sessionId, path, method<span class="signature-attributes">opt</span>, body<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;(object|string)>}</span></h4>
     
 
     
@@ -1212,44 +1212,7 @@ This function handles authentication, different HTTP methods, request bodies, an
                 </td>
             
 
-            <td class="description last">The base Kubernetes API path (e.g., '/api/v1/namespaces').</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>namespace</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last">Optional: The namespace to scope the request to.</td>
+            <td class="description last">The full Kubernetes API path (e.g., '/api/v1/namespaces').</td>
         </tr>
 
     
@@ -3535,7 +3498,7 @@ Handles API errors, including specific GitHub errors.
     
 
     
-    <h4 class="name" id="createKubernetesResource"><span class="type-signature">(async) </span>createKubernetesResource<span class="signature">(sessionId, resourceType, namespace<span class="signature-attributes">opt</span>, resourceBody)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="createKubernetesResource"><span class="type-signature">(async) </span>createKubernetesResource<span class="signature">(sessionId, resourceType, resourceBody, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -3644,6 +3607,37 @@ This should correspond to the API path segment.</td>
 
         <tr>
             
+                <td class="name"><code>resourceBody</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The full resource definition (JSON object) to create.</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>namespace</code></td>
             
 
@@ -3671,37 +3665,6 @@ This should correspond to the API path segment.</td>
             
 
             <td class="description last">Optional: The namespace to create the resource in. Required for namespaced resources.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>resourceBody</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">The full resource definition (JSON object) to create.</td>
         </tr>
 
     
@@ -3742,7 +3705,7 @@ This should correspond to the API path segment.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line427">line 427</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line439">line 439</a>
     </li></ul></dd>
     
 
@@ -4620,7 +4583,7 @@ write permissions to it. The path of the created directory is returned.
     
 
     
-    <h4 class="name" id="deleteKubernetesResource"><span class="type-signature">(async) </span>deleteKubernetesResource<span class="signature">(sessionId, resourceType, name, namespace)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="deleteKubernetesResource"><span class="type-signature">(async) </span>deleteKubernetesResource<span class="signature">(sessionId, resourceType, name, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -4652,6 +4615,8 @@ write permissions to it. The path of the created directory is returned.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4677,6 +4642,14 @@ write permissions to it. The path of the created directory is returned.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -4699,6 +4672,14 @@ write permissions to it. The path of the created directory is returned.
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4723,6 +4704,14 @@ write permissions to it. The path of the created directory is returned.
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -4746,10 +4735,20 @@ write permissions to it. The path of the created directory is returned.
             </td>
 
             
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last">The namespace the resource resides in.</td>
+            <td class="description last">Optional: The namespace the resource resides in. Required for namespaced resources.</td>
         </tr>
 
     
@@ -4790,7 +4789,7 @@ write permissions to it. The path of the created directory is returned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line322">line 322</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line326">line 326</a>
     </li></ul></dd>
     
 
@@ -7495,7 +7494,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line143">line 143</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -7677,7 +7676,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line383">line 383</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line391">line 391</a>
     </li></ul></dd>
     
 
@@ -7882,7 +7881,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line185">line 185</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line178">line 178</a>
     </li></ul></dd>
     
 
@@ -8087,7 +8086,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line196">line 196</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line190">line 190</a>
     </li></ul></dd>
     
 
@@ -8292,7 +8291,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line404">line 404</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line414">line 414</a>
     </li></ul></dd>
     
 
@@ -8497,7 +8496,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line164">line 164</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -8656,7 +8655,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line113">line 113</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line101">line 101</a>
     </li></ul></dd>
     
 
@@ -11663,7 +11662,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line310">line 310</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line313">line 313</a>
     </li></ul></dd>
     
 
@@ -11865,7 +11864,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line240">line 240</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line237">line 237</a>
     </li></ul></dd>
     
 
@@ -12067,7 +12066,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line132">line 132</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -12269,7 +12268,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line414">line 414</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line425">line 425</a>
     </li></ul></dd>
     
 
@@ -12471,7 +12470,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line260">line 260</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line259">line 259</a>
     </li></ul></dd>
     
 
@@ -12673,7 +12672,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line300">line 300</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line302">line 302</a>
     </li></ul></dd>
     
 
@@ -12832,7 +12831,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line122">line 122</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -12991,7 +12990,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line373">line 373</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line381">line 381</a>
     </li></ul></dd>
     
 
@@ -13193,7 +13192,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line290">line 290</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -13353,7 +13352,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line280">line 280</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line281">line 281</a>
     </li></ul></dd>
     
 
@@ -13555,7 +13554,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line174">line 174</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line166">line 166</a>
     </li></ul></dd>
     
 
@@ -13757,7 +13756,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line230">line 230</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line226">line 226</a>
     </li></ul></dd>
     
 
@@ -13959,7 +13958,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line393">line 393</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line402">line 402</a>
     </li></ul></dd>
     
 
@@ -14161,7 +14160,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line153">line 153</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line143">line 143</a>
     </li></ul></dd>
     
 
@@ -14363,7 +14362,7 @@ PersistentVolumes are cluster-scoped, so they do not accept a namespace paramete
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line250">line 250</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line248">line 248</a>
     </li></ul></dd>
     
 
@@ -16315,7 +16314,7 @@ This directly updates the 'scale' subresource of the deployment.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line209">line 209</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line204">line 204</a>
     </li></ul></dd>
     
 
@@ -16613,7 +16612,7 @@ with a message confirming the change.
     
 
     
-    <h4 class="name" id="updateKubernetesResource"><span class="type-signature">(async) </span>updateKubernetesResource<span class="signature">(sessionId, resourceType, name, namespace<span class="signature-attributes">opt</span>, resourceBody)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="updateKubernetesResource"><span class="type-signature">(async) </span>updateKubernetesResource<span class="signature">(sessionId, resourceType, name, resourceBody, namespace<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -16753,6 +16752,37 @@ This performs a full replacement (PUT operation).
 
         <tr>
             
+                <td class="name"><code>resourceBody</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">The full updated resource definition (JSON object).</td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>namespace</code></td>
             
 
@@ -16780,37 +16810,6 @@ This performs a full replacement (PUT operation).
             
 
             <td class="description last">Optional: The namespace the resource resides in. Required for namespaced resources.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>resourceBody</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">The full updated resource definition (JSON object).</td>
         </tr>
 
     
@@ -16851,7 +16850,7 @@ This performs a full replacement (PUT operation).
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line480">line 480</a>
+        <a href="k8s.js.html">k8s.js</a>, <a href="k8s.js.html#line495">line 495</a>
     </li></ul></dd>
     
 
@@ -18250,7 +18249,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed May 28 2025 23:24:04 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu May 29 2025 03:48:44 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
