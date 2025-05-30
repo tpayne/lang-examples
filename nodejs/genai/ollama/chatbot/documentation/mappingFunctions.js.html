@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mappingFunctions.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mappingFunctions.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const dotenv = require('dotenv');
+const logger = require('./logger'); // Assuming you have a logger module
+
+dotenv.config(); // Load environment variables from .env file
+
+/**
+ * Generates an HTTP link to the Google Maps website for a given route.
+ * Note: This link is for displaying the route on the Google Maps website/app,
+ * not for embedding or using the Directions API result directly.
+ *
+ * @param {object} params - The original parameters used for the planRoute API call.
+ * @param {string} params.origin - The starting point.
+ * @param {string} params.destination - The ending point.
+ * @param {string[]} [params.waypoints] - Optional array of intermediate locations.
+ * @param {string} [params.mode] - Optional mode of transport (e.g., "driving", "walking").
+ * @returns {string} The constructed Google Maps URL.
+ */
+async function generateGoogleMapsLink(params) {
+  const baseUrl = 'https://www.google.com/maps/dir/?api=1';
+  const queryParts = [];
+
+  // Add origin and destination - URL encode them to handle spaces and special characters
+  if (params.origin) {
+    queryParts.push(`origin=${encodeURIComponent(params.origin)}`);
+  }
+  if (params.destination) {
+    queryParts.push(`destination=${encodeURIComponent(params.destination)}`);
+  }
+
+  // Add waypoints if they exist - URL encode each one
+  if (params.waypoints &amp;&amp; params.waypoints.length > 0) {
+    const encodedWaypoints = params.waypoints.map((wp) => encodeURIComponent(wp)).join('|');
+    queryParts.push(`waypoints=${encodedWaypoints}`);
+  }
+
+  // Add mode if specified (optional)
+  if (params.mode) {
+    // Google Maps URL uses different mode names sometimes,
+    // mapping Directions API modes to URL modes if necessary.
+    let mapMode = params.mode;
+    if (mapMode === 'bicycling') mapMode = 'bicycling'; // Same
+    if (mapMode === 'transit') mapMode = 'transit'; // Same
+    if (mapMode === 'walking') mapMode = 'walking'; // Same
+    // 'driving' is the default and doesn't usually need to be specified,
+    // but adding it doesn't hurt.
+    if (mapMode === 'driving') mapMode = 'driving';
+
+    queryParts.push(`travelmode=${mapMode}`);
+  }
+
+  // Join all parts with '&amp;'
+  return `${baseUrl}&amp;${queryParts.join('&amp;')}`;
+}
+
+/**
+ * @typedef {object} DirectionsParameters
+ * @property {string} origin - The starting point for the directions request.
+ * @property {string} destination - The ending point for the directions request.
+ * @property {string[]} [waypoints] - An array of intermediate locations to include
+ * in the route.
+ * @property {string} [mode] - Specifies the mode of transport. (e.g., "driving",
+ * "walking", "bicycling", "transit")
+ * @property {string} [language] - The language to use for the results.
+ * @property {string} [units] - Specifies the unit system to use. (e.g., "metric",
+ * "imperial")
+ * @property {boolean} [alternatives] - If true, more than one route may be returned.
+ * @property {string} [avoid] - Indicates features to avoid. (e.g., "tolls", "highways",
+ * "ferries", "indoor")
+ * @property {string} [transit_mode] - Specifies the desired modes of transit. (e.g.,
+ * "bus", "subway", "train", "tram", "rail")
+ * @property {string} [transit_routing_preference] - Specifies preferences for transit
+ * routes. (e.g., "less_walking", "fewer_transfers")
+ * @property {string} [departure_time] - The desired time of departure. Can be a
+ * timestamp or "now".
+ * @property {string} [arrival_time] - The desired time of arrival (for transit).
+ * Can be a timestamp.
+ * @property {string} [traffic_model] - Specifies the assumptions to use when calculating
+ * time in traffic. (e.g., "best_guess", "optimistic", "pessimistic")
+ * @property {boolean} [optimizeWaypoints] - If true and waypoints are provided, the
+ * API will attempt to reorder the waypoints to minimize the total travel time.
+ */
+
+/**
+ * Plans a route between multiple points using the Google Maps Directions API.
+ *
+ * @async
+ * @function planRoute
+ * @param {string} sessionId - The unique identifier for the session (if
+ * needed for logging or context).
+ * @param {DirectionsParameters} params - An object containing the parameters
+ * for the directions request.
+ * @returns {Promise&lt;object|null>} A promise that resolves to the route data
+ * (object) in JSON format,
+ * or null if the route cannot be planned.
+ * @throws {Error} If there is an error during the API call or if the API key is
+ * missing.
+ */
+async function planRoute(sessionId, params) {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY; // Ensure your API key is in your .env file
+  if (!apiKey) {
+    logger.error(`Google Maps API Key not found in environment variables [Session: ${sessionId}]`);
+    throw new Error('Google Maps API Key is not configured.');
+  }
+
+  const apiUrl = 'https://maps.googleapis.com/maps/api/directions/json';
+
+  // Construct the query parameters
+  const queryParams = {
+    origin: params.origin,
+    destination: params.destination,
+    key: apiKey,
+  };
+
+  // Add optional parameters if they exist
+  if (params.waypoints &amp;&amp; params.waypoints.length > 0) {
+    // Join waypoints with '|' for the API
+    queryParams.waypoints = params.waypoints.join('|');
+    if (params.optimizeWaypoints) {
+      queryParams.waypoints = `optimize:true|${queryParams.waypoints}`;
+    }
+  }
+  if (params.mode) queryParams.mode = params.mode;
+  if (params.language) queryParams.language = params.language;
+  if (params.units) queryParams.units = params.units;
+  if (params.alternatives !== undefined) queryParams.alternatives = params.alternatives;
+  if (params.avoid) queryParams.avoid = params.avoid;
+  if (params.transit_mode) queryParams.transit_mode = params.transit_mode;
+  if (params.transit_routing_preference) {
+    queryParams.transit_routing_preference = params.transit_routing_preference;
+  }
+  if (params.departure_time) queryParams.departure_time = params.departure_time;
+  if (params.arrival_time) queryParams.arrival_time = params.arrival_time;
+  if (params.traffic_model) queryParams.traffic_model = params.traffic_model;
+
+  logger.debug(`Invoking Google Maps Directions API [Session: ${sessionId}] `
+    + `with params: ${JSON.stringify(queryParams)}`);
+
+  try {
+    const response = await superagent
+      .get(apiUrl)
+      .query(queryParams)
+      .set('Accept', 'application/json');
+
+    // Handle different response statuses and API specific statuses
+    if (response.status === 200) {
+      const data = response.body;
+      if (data.status === 'OK') {
+        return data; // Return the full JSON response
+      }
+      logger.error(`Google Maps Directions API error [Session: ${sessionId}]: `
+        + `Status - ${data.status}, Error Message - ${data.error_message || 'No error message provided'}`);
+      // Return the error response from the API for the chatbot to handle
+      return data;
+    }
+    logger.error(`Error querying Google Maps Directions API [Session: ${sessionId}]: `
+      + `Status - ${response.status}, Response - ${JSON.stringify(response.body)}`);
+    throw new Error(`Failed to query Google Maps Directions API: ${response.status}`);
+  } catch (error) {
+    logger.error(`Error during Google Maps Directions API query [Session: ${sessionId}]: `
+      + `${error.message}`);
+    throw error;
+  }
+}
+
+module.exports = {
+  generateGoogleMapsLink,
+  planRoute,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri May 30 2025 02:35:12 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
