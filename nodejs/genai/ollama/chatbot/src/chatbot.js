@@ -374,7 +374,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       };
 
       // const requestPayload = {
-      //   model: getConfig().aiModel, // e.g., 'llama3', 'mistral' - this should still be 'mixtral:8x7b'
+      //   model: getConfig().aiModel, // e.g., 'llama3', 'mistral' - this should still be 'mistral:7b'
       //   messages: [{ role: 'user', content: 'what is a car?' }], // Simplified message history
       //   stream: false, // We are not using streaming in this example
       //   // Temporarily remove 'tools' completely

@@ -1,7 +1,7 @@
-NodeJS GPT Chatbot Sample
-==================
+NodeJS Ollama Chatbot Sample
+============================
 
-This repo contains a simple example chatbot that runs using the ChatGPT API.
+This repo contains a simple example chatbot that runs using the Ollama API.
 
 The web page is a very simple interface, so if you wish to create something more complex, feel free.
 
@@ -11,7 +11,6 @@ Pre-Requisites
 --------------
 To run this sample you will need to: -
 * Have Docker installed on your machine
-* Have an OpenAI account created with an OPENAI_API_KEY that you can use for interacting with the OpenAI API
 
 Running the Example with Basic Ops
 ----------------------------------
@@ -21,7 +20,6 @@ To run this solution please do the following steps. They will build and run the 
 
     docker build . --tag chatbot:1.0 && \
      docker run --rm -p 8080:5000 \
-        -e OPENAI_API_KEY=<YourKey> \
         -e GITHUB_TOKEN=<YourKey> \
         chatbot:1.0 
 
@@ -278,15 +276,14 @@ Notes
 -----
 * This code does not have any unit testing or SA analysis run as part of the process
 * Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context)
-* The OpenAI can and will sometimes produce corrupt results that screw up certain operations. Unfortunately, this is beyond my control, so just beware of it
+* You will have to select the model that best suits your need and then modify all the files that use the model to get the right one
+* The models I tried do not support tool calls very well and take a long time to do anything (4 mins+). I do not recommending using Ollama unless you invest time in tuning the models and/or this code. This not something I am going to do
+* Use this code as a starter for 10, not a final product
 
 References
 ----------
-- [OpenAI Platform](https://platform.openai.com/docs/models/gpt-4o-mini)
-- [OpenAI Introduction](https://openai.com/api/)
-- [Developer APIs](https://platform.openai.com/docs/overview)
-- [Useful notes](https://medium.com/@Doug-Creates/nightmares-and-client-chat-completions-create-29ad0acbe16a)
-- [Models](https://platform.openai.com/docs/models/gpt-4o-mini)
-- [NodeJS API](https://github.com/openai/openai-quickstart-node)
+* [Ollama Home](https://ollama.com/)
+* [Ollama Models](https://ollama.com/search)
+* [NodeJS](https://github.com/ollama/ollama-js/tree/main)
 
 
