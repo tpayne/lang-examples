@@ -17,7 +17,7 @@ async function authenticateDockerHub(username, password) {
       .set('Accept', 'application/json');
 
     if (response.body && response.body.token) {
-      logger.debug(`Successfully authenticated with Docker Hub for user: ${username}`);
+      logger.debug('Successfully authenticated with Docker Hub.');
       return response.body.token;
     }
     throw new Error('No token received from Docker Hub authentication.');
