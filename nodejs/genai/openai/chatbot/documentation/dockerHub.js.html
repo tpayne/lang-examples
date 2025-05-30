@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: mappingFunctions.js</title>
+    <title>JSDoc: Source: dockerHub.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: mappingFunctions.js</h1>
+    <h1 class="page-title">Source: dockerHub.js</h1>
 
     
 
@@ -27,173 +27,150 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
-const dotenv = require('dotenv');
-const logger = require('./logger'); // Assuming you have a logger module
-
-dotenv.config(); // Load environment variables from .env file
+const logger = require('./logger');
 
 /**
- * Generates an HTTP link to the Google Maps website for a given route.
- * Note: This link is for displaying the route on the Google Maps website/app,
- * not for embedding or using the Directions API result directly.
- *
- * @param {object} params - The original parameters used for the planRoute API call.
- * @param {string} params.origin - The starting point.
- * @param {string} params.destination - The ending point.
- * @param {string[]} [params.waypoints] - Optional array of intermediate locations.
- * @param {string} [params.mode] - Optional mode of transport (e.g., "driving", "walking").
- * @returns {string} The constructed Google Maps URL.
+ * Authenticates with Docker Hub to obtain a JWT token.
+ * This token is required for accessing private repositories.
+ * @param {string} username - Your Docker Hub username.
+ * @param {string} password - Your Docker Hub password.
+ * @returns {Promise&lt;string>} A JWT token if authentication is successful.
+ * @throws {Error} If authentication fails.
  */
-async function generateGoogleMapsLink(params) {
-  const baseUrl = 'https://www.google.com/maps/dir/?api=1';
-  const queryParts = [];
+async function authenticateDockerHub(username, password) {
+  const authUrl = 'https://hub.docker.com/v2/users/login/';
+  try {
+    const response = await superagent.post(authUrl)
+      .send({ username, password })
+      .set('Accept', 'application/json');
 
-  // Add origin and destination - URL encode them to handle spaces and special characters
-  if (params.origin) {
-    queryParts.push(`origin=${encodeURIComponent(params.origin)}`);
+    if (response.body &amp;&amp; response.body.token) {
+      logger.debug(`Successfully authenticated with Docker Hub for user: ${username}`);
+      return response.body.token;
+    }
+    throw new Error('No token received from Docker Hub authentication.');
+  } catch (error) {
+    const errorMessage = error.response
+      ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+      : error.message;
+    logger.error(`Failed to authenticate with Docker Hub for user ${username}: ${errorMessage}`, error);
+    throw new Error(`Docker Hub authentication failed: ${errorMessage}`);
   }
-  if (params.destination) {
-    queryParts.push(`destination=${encodeURIComponent(params.destination)}`);
-  }
-
-  // Add waypoints if they exist - URL encode each one
-  if (params.waypoints &amp;&amp; params.waypoints.length > 0) {
-    const encodedWaypoints = params.waypoints.map((wp) => encodeURIComponent(wp)).join('|');
-    queryParts.push(`waypoints=${encodedWaypoints}`);
-  }
-
-  // Add mode if specified (optional)
-  if (params.mode) {
-    // Google Maps URL uses different mode names sometimes,
-    // mapping Directions API modes to URL modes if necessary.
-    let mapMode = params.mode;
-    if (mapMode === 'bicycling') mapMode = 'bicycling'; // Same
-    if (mapMode === 'transit') mapMode = 'transit'; // Same
-    if (mapMode === 'walking') mapMode = 'walking'; // Same
-    // 'driving' is the default and doesn't usually need to be specified,
-    // but adding it doesn't hurt.
-    if (mapMode === 'driving') mapMode = 'driving';
-
-    queryParts.push(`travelmode=${mapMode}`);
-  }
-
-  // Join all parts with '&amp;'
-  return `${baseUrl}&amp;${queryParts.join('&amp;')}`;
 }
 
 /**
- * @typedef {object} DirectionsParameters
- * @property {string} origin - The starting point for the directions request.
- * @property {string} destination - The ending point for the directions request.
- * @property {string[]} [waypoints] - An array of intermediate locations to include
- * in the route.
- * @property {string} [mode] - Specifies the mode of transport. (e.g., "driving",
- * "walking", "bicycling", "transit")
- * @property {string} [language] - The language to use for the results.
- * @property {string} [units] - Specifies the unit system to use. (e.g., "metric",
- * "imperial")
- * @property {boolean} [alternatives] - If true, more than one route may be returned.
- * @property {string} [avoid] - Indicates features to avoid. (e.g., "tolls", "highways",
- * "ferries", "indoor")
- * @property {string} [transit_mode] - Specifies the desired modes of transit. (e.g.,
- * "bus", "subway", "train", "tram", "rail")
- * @property {string} [transit_routing_preference] - Specifies preferences for transit
- * routes. (e.g., "less_walking", "fewer_transfers")
- * @property {string} [departure_time] - The desired time of departure. Can be a
- * timestamp or "now".
- * @property {string} [arrival_time] - The desired time of arrival (for transit).
- * Can be a timestamp.
- * @property {string} [traffic_model] - Specifies the assumptions to use when calculating
- * time in traffic. (e.g., "best_guess", "optimistic", "pessimistic")
- * @property {boolean} [optimizeWaypoints] - If true and waypoints are provided, the
- * API will attempt to reorder the waypoints to minimize the total travel time.
+ * Gets the tags for a specified Docker image from Docker Hub.
+ * @param {string} imageName - The full name of the Docker image (e.g., 'library/nginx', 'myuser/myimage').
+ * @returns {Promise&lt;object>} A list of image tags.
+ * @throws {Error} If the API request fails.
  */
-
-/**
- * Plans a route between multiple points using the Google Maps Directions API.
- *
- * @async
- * @function planRoute
- * @param {string} sessionId - The unique identifier for the session (if
- * needed for logging or context).
- * @param {DirectionsParameters} params - An object containing the parameters
- * for the directions request.
- * @returns {Promise&lt;object|null>} A promise that resolves to the route data
- * (object) in JSON format,
- * or null if the route cannot be planned.
- * @throws {Error} If there is an error during the API call or if the API key is
- * missing.
- */
-async function planRoute(sessionId, params) {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY; // Ensure your API key is in your .env file
-  if (!apiKey) {
-    logger.error(`Google Maps API Key not found in environment variables [Session: ${sessionId}]`);
-    throw new Error('Google Maps API Key is not configured.');
+async function getDockerImageTags(imageName) {
+  if (!imageName) {
+    throw new Error('Image name cannot be empty.');
   }
 
-  const apiUrl = 'https://maps.googleapis.com/maps/api/directions/json';
-
-  // Construct the query parameters
-  const queryParams = {
-    origin: params.origin,
-    destination: params.destination,
-    key: apiKey,
-  };
-
-  // Add optional parameters if they exist
-  if (params.waypoints &amp;&amp; params.waypoints.length > 0) {
-    // Join waypoints with '|' for the API
-    queryParams.waypoints = params.waypoints.join('|');
-    if (params.optimizeWaypoints) {
-      queryParams.waypoints = `optimize:true|${queryParams.waypoints}`;
-    }
-  }
-  if (params.mode) queryParams.mode = params.mode;
-  if (params.language) queryParams.language = params.language;
-  if (params.units) queryParams.units = params.units;
-  if (params.alternatives !== undefined) queryParams.alternatives = params.alternatives;
-  if (params.avoid) queryParams.avoid = params.avoid;
-  if (params.transit_mode) queryParams.transit_mode = params.transit_mode;
-  if (params.transit_routing_preference) {
-    queryParams.transit_routing_preference = params.transit_routing_preference;
-  }
-  if (params.departure_time) queryParams.departure_time = params.departure_time;
-  if (params.arrival_time) queryParams.arrival_time = params.arrival_time;
-  if (params.traffic_model) queryParams.traffic_model = params.traffic_model;
-
-  logger.debug(`Invoking Google Maps Directions API [Session: ${sessionId}] `
-    + `with params: ${JSON.stringify(queryParams)}`);
+  const url = `https://hub.docker.com/v2/repositories/${imageName}/tags`;
+  logger.info(`Fetching Docker image tags from: ${url}`);
 
   try {
-    const response = await superagent
-      .get(apiUrl)
-      .query(queryParams)
-      .set('Accept', 'application/json');
-
-    // Handle different response statuses and API specific statuses
-    if (response.status === 200) {
-      const data = response.body;
-      if (data.status === 'OK') {
-        return data; // Return the full JSON response
-      }
-      logger.error(`Google Maps Directions API error [Session: ${sessionId}]: `
-        + `Status - ${data.status}, Error Message - ${data.error_message || 'No error message provided'}`);
-      // Return the error response from the API for the chatbot to handle
-      return data;
-    }
-    logger.error(`Error querying Google Maps Directions API [Session: ${sessionId}]: `
-      + `Status - ${response.status}, Response - ${JSON.stringify(response.body)}`);
-    throw new Error(`Failed to query Google Maps Directions API: ${response.status}`);
+    const response = await superagent.get(url).set('Accept', 'application/json');
+    // The sample output shows the tags within the 'results' array
+    return response.body.results;
   } catch (error) {
-    logger.error(`Error during Google Maps Directions API query [Session: ${sessionId}]: `
-      + `${error.message}`);
-    throw error;
+    logger.error(`Failed to fetch Docker image tags for ${imageName}: ${error.message}`);
+    throw new Error(`Could not retrieve tags for image ${imageName}: ${error.message}`);
   }
+}
+
+/**
+ * Searches for Docker images on Docker Hub.
+ * Supports both public and private repositories. For private repositories,
+ * DOCKERHUB_USERNAME and DOCKERHUB_PASSWORD environment variables must be set.
+ * @param {string} sessionId - The session ID for logging purposes.
+ * @param {string} searchTerm - The term to search for (e.g., 'ubuntu', 'my-private-repo/my-image').
+ * @param {boolean} [isPrivate=false] - If true, searches private repositories of the configured user.
+ * @param {string} [username=null] - Optional: Docker Hub username if searching private repos.
+ * Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.
+ * @returns {Promise&lt;Array&lt;object>>} An array of image objects found.
+ * @throws {Error} If the search fails or authentication is required but credentials are missing.
+ */
+async function searchDockerImages(sessionId, searchTerm, isPrivate = false, username = null) {
+  let images = [];
+
+  if (isPrivate) {
+    const dockerHubUsername = username || process.env.DOCKERHUB_USERNAME;
+    const dockerHubPassword = process.env.DOCKERHUB_PASSWORD;
+
+    if (!dockerHubUsername || !dockerHubPassword) {
+      throw new Error('Docker Hub username and password are required for private image search. Please set DOCKERHUB_USERNAME and DOCKERHUB_PASSWORD environment variables.');
+    }
+
+    try {
+      const token = await authenticateDockerHub(dockerHubUsername, dockerHubPassword);
+      // For private repos, we typically list user's repos and filter by name
+      // Docker Hub API for listing repositories: /v2/repositories/{username}/
+      // Note: This endpoint lists repos BY the user, and allows filtering by name.
+      // This is different from the public search which searches across ALL public repos.
+      const privateSearchUrl = `https://hub.docker.com/v2/repositories/${dockerHubUsername}/?name=${encodeURIComponent(searchTerm)}`;
+      logger.debug(`[Session: ${sessionId}] Searching private Docker Hub for: ${searchTerm}`);
+
+      const response = await superagent.get(privateSearchUrl)
+        .set('Authorization', `JWT ${token}`)
+        .set('Accept', 'application/json');
+
+      if (response.body &amp;&amp; Array.isArray(response.body.results)) {
+        images = response.body.results.map(repo => ({
+          name: `${repo.user}/${repo.name}`,
+          description: repo.description,
+          is_private: repo.is_private,
+          star_count: repo.star_count,
+          pull_count: repo.pull_count,
+          last_updated: repo.last_updated,
+        }));
+      }
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+        : error.message;
+      logger.error(`[Session: ${sessionId}] Failed to search private Docker Hub for ${searchTerm}: ${errorMessage}`, error);
+      throw new Error(`Failed to search private Docker Hub: ${errorMessage}`);
+    }
+
+  } else {
+    // Public search API using the endpoint confirmed to work
+    const publicSearchUrl = `https://hub.docker.com/v2/search/repositories/?query=${encodeURIComponent(searchTerm)}&amp;page_size=25`; // Limit to first 25 results
+    logger.debug(`[Session: ${sessionId}] Searching public Docker Hub for: ${searchTerm} at URL: ${publicSearchUrl}`);
+
+    try {
+      const response = await superagent.get(publicSearchUrl)
+        .set('Accept', 'application/json');
+
+      if (response.body &amp;&amp; Array.isArray(response.body.results)) { // Changed 'summaries' to 'results'
+        images = response.body.results.map(repo => ({ // Changed 'summary' to 'repo'
+          name: repo.repo_name, // Changed from summary.name to repo.repo_name
+          description: repo.short_description, // Changed from summary.short_description to repo.short_description
+          is_official: repo.is_official,
+          is_automated: repo.is_automated,
+          star_count: repo.star_count,
+          pull_count: repo.pull_count,
+          // Removed last_updated as it's not consistently present in this endpoint's results
+        }));
+      }
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+        : error.message;
+      logger.error(`[Session: ${sessionId}] Failed to search public Docker Hub for ${searchTerm}: ${errorMessage}`, error);
+      throw new Error(`Failed to search public Docker Hub: ${errorMessage}`);
+    }
+  }
+
+  return images;
 }
 
 module.exports = {
-  generateGoogleMapsLink,
-  planRoute,
+  getDockerImageTags,
+  searchDockerImages,
 };
 </code></pre>
         </article>
