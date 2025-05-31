@@ -241,6 +241,43 @@ const callFunctionByName = async (sessionId, name, args) => {
 };
 
 /**
+ * Selects relevant functions based on keyword matching in the user's input.
+ * This is a simple, local, rule-based approach.
+ * @param {string} userInput The user's message.
+ * @param {Array<object>} allTools An array of all available tool definitions (Ollama format).
+ * @returns {Array<string>} An array of relevant function names.
+ */
+const selectRelevantFunctionsByKeyword = (userInput, allTools) => {
+    const relevantFunctionNames = new Set();
+    const lowerCaseInput = userInput.toLowerCase();
+
+    for (const tool of allTools) {
+        const functionName = tool.function.name;
+        const functionDescription = tool.function.description || ''; // Ensure description exists
+
+        // Simple keyword matching: check if input contains function name or parts of it
+        // Or if it contains keywords found in the description
+        if (lowerCaseInput.includes(functionName.toLowerCase())) {
+            relevantFunctionNames.add(functionName);
+        } else {
+            // More advanced keyword matching could go here, e.g., checking for synonyms,
+            // or specific keywords defined for each function.
+            // For now, let's also check if input contains any significant word from description.
+            const descriptionWords = functionDescription.toLowerCase().split(/\W+/);
+            for (const word of descriptionWords) {
+                if (word.length > 3 && lowerCaseInput.includes(word)) { // Avoid very short, common words
+                    relevantFunctionNames.add(functionName);
+                    break; // Found a match, move to next tool
+                }
+            }
+        }
+    }
+    logger.info(`Keyword-matched relevant functions: ${Array.from(relevantFunctionNames).join(', ')}`);
+    return Array.from(relevantFunctionNames);
+};
+
+
+/**
  * Gets a chat response from the Ollama API, maintaining state per session.
  * Handles special commands, context, caching, and function calling.
  * @async
@@ -253,9 +290,26 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
   // Ensure integrations (and thus available functions) are loaded
   await loadIntegrations(sessionId);
 
-  // Get function definitions formatted for Ollama tools
-  const availableTools = await getFunctionDefinitionsForTool(sessionId);
-  const tools = availableTools && availableTools.length > 0 ? availableTools : undefined;
+  // Get all function definitions formatted for Ollama tools
+  const allAvailableTools = await getFunctionDefinitionsForTool(sessionId);
+  let toolsToUse = undefined;
+
+  if (allAvailableTools && allAvailableTools.length > 0) {
+      // Select relevant functions using local keyword matching
+      const relevantFunctionNames = selectRelevantFunctionsByKeyword(userInput, allAvailableTools);
+
+      // Filter the tools based on the selected relevant function names
+      toolsToUse = allAvailableTools.filter(tool =>
+          relevantFunctionNames.includes(tool.function.name)
+      );
+
+      if (toolsToUse.length === 0) {
+          logger.info(`No relevant functions selected by keyword for input: "${userInput}". Proceeding without tools.`);
+          toolsToUse = undefined; // Ensure tools is undefined if no relevant tools are found
+      } else {
+          logger.info(`Dynamically selected tools for Ollama (keyword-based): ${toolsToUse.map(t => t.function.name).join(', ')}`);
+      }
+  }
 
   let xsession = sessions.get(sessionId); // Retrieve the session
 
@@ -323,7 +377,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
   try {
     // Add system message if context exists and it's the first message or history is empty
-    if (xsession.context && (xsession.history.length === 0 || xsession.history[0].role !== 'system')) {
+    if (xsession.context && (xsession.history.length === 0 || xsession.history[0].role === 'user' || xsession.history[0].role === 'assistant' || xsession.history[0].role === 'tool')) {
       xsession.history.unshift({ role: 'system', content: xsession.context });
       logger.info(`Added system message from context [Session: ${sessionId}]`);
     } else if (!xsession.context && xsession.history.length > 0 && xsession.history[0].role === 'system') {
@@ -369,17 +423,9 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         model: getConfig().aiModel, // e.g., 'llama3', 'mistral'
         messages: xsession.history, // Send the full conversation history
         stream: false, // We are not using streaming in this example
-        tools: tools, // Pass the tools here for Ollama
+        tools: toolsToUse, // Pass the dynamically selected tools here for Ollama
         options: ollamaOptions,
       };
-
-      // const requestPayload = {
-      //   model: getConfig().aiModel, // e.g., 'llama3', 'mistral' - this should still be 'mistral:7b'
-      //   messages: [{ role: 'user', content: 'what is a car?' }], // Simplified message history
-      //   stream: false, // We are not using streaming in this example
-      //   // Temporarily remove 'tools' completely
-      //   options: ollamaOptions,
-      // };
 
       if (forceJson) {
         requestPayload.format = 'json'; // Request JSON output from Ollama
@@ -479,8 +525,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
       // Check if Ollama model indicates it's done (e.g. after tool calls, it might not be done yet)
       // `response.done` from ollama.chat indicates if the specific chat turn is complete.
-      // If it's false after tool calls, the loop should continue to get the next part of the response.
-      // However, with stream:false, `response.done` should generally be true.
+      // If it's false after tool calls, `response.done` should generally be true for non-streaming.
       if (!response.done && numSteps >= maxSteps) {
           logger.warn(`Ollama API: Max steps reached, but model indicates it's not done processing its current turn. [Session: ${sessionId}]`);
       }
