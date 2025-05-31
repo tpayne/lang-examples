@@ -466,26 +466,61 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         break;
       }
 
-      // Add assistant's response (which might include tool calls) to history
-      // Ensure not to push undefined tool_calls if it's not present.
+      // Initialize an empty array for tool calls that we might parse
+      let parsedToolCalls = [];
+
+      // Check if the Ollama API directly provided structured tool_calls
+      if (message.tool_calls &amp;&amp; message.tool_calls.length > 0) {
+        parsedToolCalls = message.tool_calls;
+      } else if (message.content) {
+        // Attempt to parse message.content for tool calls if it looks like a JSON array of tool calls
+        try {
+          // Regular expression to find JSON array at the start of the content, possibly with leading whitespace
+          const jsonMatch = message.content.match(/^(\s*\[\s*\{.*\}\s*\])/s);
+          if (jsonMatch) {
+            const potentialToolCallsString = jsonMatch[1];
+            // Remove the parsed tool call JSON string from the content, leaving only the natural language part
+            const contentAfterToolCalls = message.content.substring(potentialToolCallsString.length).trim();
+
+            const parsed = JSON.parse(potentialToolCallsString);
+            // Basic validation to ensure it's an array of objects that look like tool calls
+            if (Array.isArray(parsed) &amp;&amp; parsed.every(tc => tc.name &amp;&amp; tc.arguments !== undefined)) {
+              parsedToolCalls = parsed.map(tc => ({
+                id: tc.id || `call_${Math.random().toString(36).substring(2, 9)}`, // Generate a unique ID if not provided by model
+                function: {
+                  name: tc.name,
+                  arguments: tc.arguments
+                }
+              }));
+              message.content = contentAfterToolCalls; // Update message.content to reflect only the textual part
+              logger.info(`Parsed tool call(s) from message.content [Session: ${sessionId}]`);
+            }
+          }
+        } catch (parseError) {
+          logger.debug(`Could not parse message.content as tool calls (likely not a tool call JSON): ${parseError.message} [Session: ${sessionId}]`);
+          // Continue if parsing fails, it's just text content
+        }
+      }
+
+      // Add assistant's response (which might include tool calls, either direct or parsed) to history
       const assistantMessageToPush = {
         role: message.role,
-        content: message.content,
-        ...(message.tool_calls &amp;&amp; message.tool_calls.length > 0 &amp;&amp; { tool_calls: message.tool_calls }),
+        content: message.content, // This will now be the natural language part if tool calls were parsed from content
+        ...(parsedToolCalls.length > 0 &amp;&amp; { tool_calls: parsedToolCalls }),
       };
       xsession.history.push(assistantMessageToPush);
       logger.debug(`Added assistant message to history [Session: ${sessionId}]`, {
         role: message.role,
         content: message.content,
-        tool_calls: message.tool_calls ? message.tool_calls.length : undefined,
+        tool_calls: parsedToolCalls.length,
       });
 
-      // Check if the model wants to call a tool
+      // Now, use parsedToolCalls for the logic
       // Line 260:7
-      if (message.tool_calls &amp;&amp; message.tool_calls.length > 0) {
-        logger.info(`Tool call(s) initiated by Ollama model [Session: ${sessionId}]`);
+      if (parsedToolCalls.length > 0) {
+        logger.info(`Tool call(s) initiated by Ollama model (parsed from content or direct) [Session: ${sessionId}]`);
         // Process all tool calls issued by the model in this turn
-        for (const toolCall of message.tool_calls) {
+        for (const toolCall of parsedToolCalls) { // Iterate over parsedToolCalls
           const functionName = toolCall.function.name;
           const functionArgs = toolCall.function.arguments; // This is an object from Ollama
           const toolCallId = toolCall.id; // ID for linking the tool call and its result
@@ -533,7 +568,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         // The loop continues, and the next API call will include the tool result message(s).
         // The model will then likely generate a text response based on the tool result(s).
       } else if (message.content) {
-        // If the response is text, this is the final response for this turn
+        // If no tool calls (either direct or parsed), and there is content, this is the final response for this turn
         chatResponseContent = message.content;
         logger.info(`Received final text response from Ollama [Session: ${sessionId}]`);
         cleanupSessionTempDir(sessionId); // Clean up temp directory if used
@@ -742,8 +777,7 @@ const startServer = () => {
 };
 
 // Start the server
-startServer();
-</code></pre>
+startServer();</code></pre>
         </article>
     </section>
 
@@ -759,7 +793,7 @@ startServer();
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 31 2025 16:09:03 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 31 2025 18:12:27 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

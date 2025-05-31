@@ -42,6 +42,22 @@ RUN npm install --omit=dev && \
      npm install -g pkg && \
      pkg -t node18 ./src/ -o nodeexe --no-sign
 
+# --- NEW STAGE FOR OLLAMA INSTALLATION ---
+FROM debian:stable-slim AS ollama_installer
+# Install curl and tar to download and extract Ollama
+RUN apt-get update && apt-get install -y curl tar gzip && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp
+# Download and install Ollama for ARM64 (from the correct .tgz archive)
+# The `mv` command places it in /usr/local/bin within THIS stage
+RUN curl -L https://ollama.com/download/ollama-linux-arm64.tgz -o ollama.tgz && \
+    mkdir -p ollama_extracted && \
+    tar -xzf ollama.tgz -C ollama_extracted && \
+    mv $(find ollama_extracted -name ollama -type f) /usr/local/bin/ollama && \
+    rm -rf ollama.tgz ollama_extracted && \
+    chmod +x /usr/local/bin/ollama
+# --- END NEW STAGE ---
+
 # Image runner...
 # CHANGE: Switch to a glibc-based Node.js slim image (Debian-based)
 FROM node:lts-slim AS runner
@@ -113,13 +129,8 @@ ENV OLLAMA_HOST=0.0.0.0:11434
 ENV OLLAMA_MODELS=/app/ollama_models
 ENV OLLAMA_HOME=/app/.ollama
 
-# Download and install Ollama for ARM64 (from the correct .tgz archive)
-RUN curl -L https://ollama.com/download/ollama-linux-arm64.tgz -o /tmp/ollama.tgz && \
-    mkdir -p /tmp/ollama_extracted && \
-    tar -xzf /tmp/ollama.tgz -C /tmp/ollama_extracted && \
-    mv $(find /tmp/ollama_extracted -name ollama -type f) /usr/local/bin/ollama && \
-    rm -rf /tmp/ollama.tgz /tmp/ollama_extracted && \
-    chmod +x /usr/local/bin/ollama
+# COPY Ollama executable from the new ollama_installer stage
+COPY --from=ollama_installer /usr/local/bin/ollama /usr/local/bin/ollama
 
 # Ensure Ollama is runnable by the `nodejs` user
 RUN chown ${account}:${account} /usr/local/bin/ollama
