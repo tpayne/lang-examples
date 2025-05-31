@@ -7,6 +7,10 @@ The web page is a very simple interface, so if you wish to create something more
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
+Important
+---------
+The models I tried do not support tool calls very well and take a long time to do anything (4 mins+). I do not recommending using Ollama unless you invest time in tuning the models and/or this code. This not something I am going to do, so regard this code as a starter only. Models lie, claim they work but then do not do anything. They can do simple one-liners, but anything complex - forget it.
+
 Pre-Requisites
 --------------
 To run this sample you will need to: -
