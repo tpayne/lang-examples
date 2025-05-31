@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: k8s.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: k8s.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const https = require('https');
+const yaml = require('js-yaml'); // Import js-yaml
+const logger = require('./logger');
+
+/**
+ * Executes a request to the Kubernetes API.
+ * This function handles authentication, different HTTP methods, request bodies, and basic error reporting.
+ * @param {string} sessionId - The session ID for logging purposes.
+ * @param {string} path - The full Kubernetes API path (e.g., '/api/v1/namespaces').
+ * @param {string} [method='GET'] - Optional: The HTTP method (GET, PUT, DELETE, POST). Defaults to 'GET'.
+ * @param {object} [body=null] - Optional: The request body for PUT/POST requests.
+ * @returns {Promise&lt;object|string>} The response body from the Kubernetes API. For logs, it might be a string.
+ * @throws {Error} If the Kubernetes API endpoint or bearer token are not configured,
+ * or if the API request fails.
+ */
+async function callKubernetesApi(sessionId, path, method = 'GET', body = null) {
+  const kubernetesApiEndpoint = process.env.KUBERNETES_API_ENDPOINT;
+  const kubernetesBearerToken = process.env.KUBERNETES_BEARER_TOKEN;
+
+  // KUBERNETES_TLS_SKIP_VERIFY should only be used for development/testing, NEVER in production.
+  const skipTlsVerify = process.env.KUBERNETES_TLS_SKIP_VERIFY === 'true';
+
+  if (!kubernetesApiEndpoint) {
+    throw new Error('Kubernetes API endpoint is not configured. Please set KUBERNETES_API_ENDPOINT in your .env or properties file.');
+  }
+  if (!kubernetesBearerToken) {
+    throw new Error('Kubernetes Bearer Token is not configured. Please set KUBERNETES_BEARER_TOKEN in your .env or properties file.');
+  }
+
+  const url = `${kubernetesApiEndpoint}${path}`;
+  logger.debug(`[Session: ${sessionId}] Calling Kubernetes API: ${method} ${url}`);
+
+  try {
+    let request;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        request = superagent.get(url);
+        break;
+      case 'POST':
+        request = superagent.post(url);
+        break;
+      case 'PUT':
+        request = superagent.put(url);
+        break;
+      case 'DELETE':
+        request = superagent.delete(url);
+        break;
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+
+    request
+      .set('Authorization', `Bearer ${kubernetesBearerToken}`)
+      .set('Accept', 'application/json');
+
+    if (body) {
+      if (typeof body === 'string') {
+        logger.debug(`[Session: ${sessionId}] Sending parsed body for ${method}`);
+        request.send(JSON.parse(body)); // Parse if body is a JSON string
+      } else {
+        logger.debug(`[Session: ${sessionId}] Sending JSON body for ${method}`);
+        request.send(body); // Directly send if body is already an object
+      }
+      // Set content type to application/json only for POST/PUT requests
+      if (method.toUpperCase() === 'POST' || method.toUpperCase() === 'PUT') {
+        logger.debug(`[Session: ${sessionId}] Sending body for ${method} request: ${JSON.stringify(body)}`);
+        request.set('Content-Type', 'application/json');
+      }
+    }
+
+    // WARNING: Skipping TLS verification is INSECURE and should ONLY be used for development/testing.
+    if (skipTlsVerify) {
+      logger.warn(`[Session: ${sessionId}] Skipping Kubernetes TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
+      const insecureAgent = new https.Agent({
+        rejectUnauthorized: false,
+      });
+      request = request.agent(insecureAgent);
+    }
+
+    const response = await request;
+    // For logs, the response body might not be JSON, so return as is.
+    if (path.endsWith('/log')) {
+      return { text: response.text }; // Returning an object with 'text' key as previously observed from tool output
+    }
+    return response.body;
+  } catch (error) {
+    const errorMessage = error.response
+      ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+      : error.message;
+    logger.error(`[Session: ${sessionId}] Kubernetes API call failed for ${method} ${path}: ${errorMessage}`, error);
+    throw new Error(`Failed to perform Kubernetes operation on ${path}: ${errorMessage}`);
+  }
+}
+
+/**
+ * Gets the Kubernetes cluster version.
+ * @param {string} sessionId - The session ID.
+ * @returns {Promise&lt;object>} Kubernetes version information (e.g., gitVersion, major, minor).
+ */
+async function getKubernetesVersion(sessionId) {
+  return callKubernetesApi(sessionId, '/version');
+}
+
+/**
+ * Lists all namespaces in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @returns {Promise&lt;object>} A list of Kubernetes namespaces with their detailed status and metadata.
+ */
+async function listKubernetesNamespaces(sessionId) {
+  return callKubernetesApi(sessionId, '/api/v1/namespaces');
+}
+
+/**
+ * Lists all deployments across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list deployments from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes deployments with their detailed status, replicas, and associated metadata.
+ */
+async function listKubernetesDeployments(sessionId, namespace) {
+  const path = namespace ? `/apis/apps/v1/namespaces/${namespace}/deployments` : '/apis/apps/v1/deployments';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Deployment.
+ * @param {string} sessionId - The session ID.
+ * @param {string} deploymentName - The name of the deployment.
+ * @param {string} namespace - The namespace the deployment resides in.
+ * @returns {Promise&lt;object>} Detailed information about the Kubernetes Deployment.
+ */
+async function getKubernetesDeploymentDetails(sessionId, deploymentName, namespace) {
+  const path = `/apis/apps/v1/namespaces/${namespace}/deployments/${deploymentName}`;
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all services across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list services from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes services with their detailed status, cluster IPs, ports, and selectors.
+ */
+async function listKubernetesServices(sessionId, namespace) {
+  const path = namespace ? `/api/v1/namespaces/${namespace}/services` : '/api/v1/services';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Service.
+ * @param {string} sessionId - The session ID.
+ * @param {string} serviceName - The name of the service.
+ * @param {string} namespace - The namespace the service resides in.
+ * @returns {Promise&lt;object>} Detailed information about the Kubernetes Service.
+ */
+async function getKubernetesServiceDetails(sessionId, serviceName, namespace) {
+  const path = `/api/v1/namespaces/${namespace}/services/${serviceName}`;
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all pods across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list pods from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes pods with their detailed status, node assignments, and container information.
+ */
+async function listKubernetesPods(sessionId, namespace) {
+  const path = namespace ? `/api/v1/namespaces/${namespace}/pods` : '/api/v1/pods';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Pod.
+ * @param {string} sessionId - The session ID.
+ * @param {string} podName - The name of the pod.
+ * @param {string} namespace - The namespace the pod resides in.
+ * @returns {Promise&lt;object>} Detailed information about the Kubernetes Pod.
+ */
+async function getKubernetesPodDetails(sessionId, podName, namespace) {
+  const path = `/api/v1/namespaces/${namespace}/pods/${podName}`;
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Gets the logs for a specific pod in a given namespace.
+ * @param {string} sessionId - The session ID.
+ * @param {string} podName - The name of the pod to get logs from.
+ * @param {string} namespace - The namespace the pod resides in.
+ * @returns {Promise&lt;object>} The logs from the specified pod. The logs are returned as a string in the 'text' property of the returned object.
+ */
+async function getKubernetesPodLogs(sessionId, podName, namespace) {
+  const path = `/api/v1/namespaces/${namespace}/pods/${podName}/log`;
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Scales a specified Kubernetes Deployment to a desired number of replicas.
+ * This directly updates the 'scale' subresource of the deployment.
+ * @param {string} sessionId - The session ID.
+ * @param {string} deploymentName - The name of the deployment to scale.
+ * @param {string} namespace - The namespace the deployment resides in.
+ * @param {number} replicas - The desired number of replicas.
+ * @returns {Promise&lt;object>} The updated Scale object for the Deployment.
+ */
+async function scaleKubernetesDeployment(sessionId, deploymentName, namespace, replicas) {
+  const scaleBody = {
+    apiVersion: 'autoscaling/v1',
+    kind: 'Scale',
+    metadata: {
+      name: deploymentName,
+      namespace,
+    },
+    spec: {
+      replicas,
+    },
+  };
+  const path = `/apis/apps/v1/namespaces/${namespace}/deployments/${deploymentName}/scale`;
+  return callKubernetesApi(sessionId, path, 'PUT', scaleBody);
+}
+
+/**
+ * Lists all ReplicaSets across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes ReplicaSets with their detailed status and replica counts.
+ */
+async function listKubernetesReplicaSets(sessionId, namespace) {
+  const path = namespace ? `/apis/apps/v1/namespaces/${namespace}/replicasets` : '/apis/apps/v1/replicasets';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all DaemonSets across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes DaemonSets with their detailed status.
+ */
+async function listKubernetesDaemonSets(sessionId, namespace) {
+  const path = namespace ? `/apis/apps/v1/namespaces/${namespace}/daemonsets` : '/apis/apps/v1/daemonsets';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all StatefulSets across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes StatefulSets with their detailed status and replica counts.
+ */
+async function listKubernetesStatefulSets(sessionId, namespace) {
+  const path = namespace ? `/apis/apps/v1/namespaces/${namespace}/statefulsets` : '/apis/apps/v1/statefulsets';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all Ingresses across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list Ingresses from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes Ingresses with their detailed rules and backend services.
+ */
+async function listKubernetesIngresses(sessionId, namespace) {
+  const path = namespace ? `/apis/networking.k8s.io/v1/namespaces/${namespace}/ingresses` : '/apis/networking.k8s.io/v1/ingresses';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all ConfigMaps across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes ConfigMaps with their detailed data.
+ */
+async function listKubernetesConfigMaps(sessionId, namespace) {
+  const path = namespace ? `/api/v1/namespaces/${namespace}/configmaps` : '/api/v1/configmaps';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all PersistentVolumes in the Kubernetes cluster.
+ * PersistentVolumes are cluster-scoped, so they do not accept a namespace parameter.
+ * @param {string} sessionId - The session ID.
+ * @returns {Promise&lt;object>} A list of Kubernetes PersistentVolumes with their detailed status, capacity, and access modes.
+ */
+async function listKubernetesPersistentVolumes(sessionId) {
+  return callKubernetesApi(sessionId, '/apis/storage.k8s.io/v1/persistentvolumes');
+}
+
+/**
+ * Lists all PersistentVolumeClaims across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list PersistentVolumeClaims from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes PersistentVolumeClaims with their detailed status and volume bindings.
+ */
+async function listKubernetesPersistentVolumeClaims(sessionId, namespace) {
+  const path = namespace ? `/apis/storage.k8s.io/v1/namespaces/${namespace}/persistentvolumeclaims` : '/apis/storage.k8s.io/v1/persistentvolumeclaims';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all Jobs across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list Jobs from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes Jobs with their detailed status and completion information.
+ */
+async function listKubernetesJobs(sessionId, namespace) {
+  const path = namespace ? `/apis/batch/v1/namespaces/${namespace}/jobs` : '/apis/batch/v1/jobs';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all CronJobs across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list CronJobs from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes CronJobs with their detailed status and schedule.
+ */
+async function listKubernetesCronJobs(sessionId, namespace) {
+  const path = namespace ? `/apis/batch/v1/namespaces/${namespace}/cronjobs` : '/apis/batch/v1/cronjobs';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Deletes a specified Kubernetes resource.
+ * @param {string} sessionId - The session ID.
+ * @param {string} resourceType - The type of the resource to delete (e.g., 'pods', 'deployments', 'services').
+ * @param {string} name - The name of the resource to delete.
+ * @param {string} [namespace] - Optional: The namespace the resource resides in. Required for namespaced resources.
+ * @returns {Promise&lt;object>} The status object from the deletion operation.
+ */
+async function deleteKubernetesResource(sessionId, resourceType, name, namespace) {
+  let apiPath;
+  const namespacedPart = namespace &amp;&amp; resourceType.toLowerCase() !== 'namespaces' ? `namespaces/${namespace}/` : ''; // Only add namespace for namespaced resources
+
+  switch (resourceType.toLowerCase()) {
+    case 'pods':
+      apiPath = `/api/v1/${namespacedPart}pods/${name}`;
+      break;
+    case 'deployments':
+      apiPath = `/apis/apps/v1/${namespacedPart}deployments/${name}`;
+      break;
+    case 'services':
+      apiPath = `/api/v1/${namespacedPart}services/${name}`;
+      break;
+    case 'replicasets':
+      apiPath = `/apis/apps/v1/${namespacedPart}replicasets/${name}`;
+      break;
+    case 'daemonsets':
+      apiPath = `/apis/apps/v1/${namespacedPart}daemonsets/${name}`;
+      break;
+    case 'statefulsets':
+      apiPath = `/apis/apps/v1/${namespacedPart}statefulsets/${name}`;
+      break;
+    case 'ingresses':
+      apiPath = `/apis/networking.k8s.io/v1/${namespacedPart}ingresses/${name}`;
+      break;
+    case 'configmaps':
+      apiPath = `/api/v1/${namespacedPart}configmaps/${name}`;
+      break;
+    case 'persistentvolumeclaims':
+      apiPath = `/apis/storage.k8s.io/v1/${namespacedPart}persistentvolumeclaims/${name}`;
+      break;
+    case 'jobs':
+      apiPath = `/apis/batch/v1/${namespacedPart}jobs/${name}`;
+      break;
+    case 'cronjobs':
+      apiPath = `/apis/batch/v1/${namespacedPart}cronjobs/${name}`;
+      break;
+    case 'secrets':
+      apiPath = `/api/v1/${namespacedPart}secrets/${name}`;
+      break;
+    case 'namespaces':
+      apiPath = `/api/v1/namespaces/${name}`; // Namespaces are cluster-scoped, but API path follows similar pattern
+      break;
+    default:
+      throw new Error(`Unsupported resource type for deletion: ${resourceType}`);
+  }
+  return callKubernetesApi(sessionId, apiPath, 'DELETE');
+}
+
+/**
+ * Lists all Nodes in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @returns {Promise&lt;object>} A list of Kubernetes Nodes with their detailed status and metadata.
+ */
+async function listKubernetesNodes(sessionId) {
+  return callKubernetesApi(sessionId, '/api/v1/nodes');
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Node.
+ * @param {string} sessionId - The session ID.
+ * @param {string} nodeName - The name of the node.
+ * @returns {Promise&lt;object>} Detailed information about the Kubernetes Node.
+ */
+async function getKubernetesNodeDetails(sessionId, nodeName) {
+  const path = `/api/v1/nodes/${nodeName}`;
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all Secrets across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list secrets from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes Secrets with their detailed data and metadata.
+ */
+async function listKubernetesSecrets(sessionId, namespace) {
+  const path = namespace ? `/api/v1/namespaces/${namespace}/secrets` : '/api/v1/secrets';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Gets detailed information about a specific Kubernetes Secret.
+ * @param {string} sessionId - The session ID.
+ * @param {string} secretName - The name of the secret.
+ * @param {string} namespace - The namespace the secret resides in.
+ * @returns {Promise&lt;object>} Detailed information about the Kubernetes Secret.
+ */
+async function getKubernetesSecretDetails(sessionId, secretName, namespace) {
+  const path = `/api/v1/namespaces/${namespace}/secrets/${secretName}`;
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Lists all Events across all namespaces or within a specified namespace in the Kubernetes cluster.
+ * @param {string} sessionId - The session ID.
+ * @param {string} [namespace] - Optional: The namespace to list events from. If not provided, lists from all namespaces.
+ * @returns {Promise&lt;object>} A list of Kubernetes Events with their detailed information.
+ */
+async function listKubernetesEvents(sessionId, namespace) {
+  const path = namespace ? `/api/v1/namespaces/${namespace}/events` : '/api/v1/events';
+  return callKubernetesApi(sessionId, path);
+}
+
+/**
+ * Creates a Kubernetes resource from a provided resource definition.
+ * @param {string} sessionId - The session ID.
+ * @param {string} resourceType - The plural type of the resource to create (e.g., 'deployments', 'pods', 'services').
+ * This should correspond to the API path segment.
+ * @param {object} resourceBody - The full resource definition (JSON object) to create.
+ * @param {string} [namespace] - Optional: The namespace to create the resource in. Required for namespaced resources.
+ * @returns {Promise&lt;object>} The created Kubernetes resource object.
+ */
+async function createKubernetesResource(sessionId, resourceType, resourceBody, namespace = 'default') {
+  let apiPath;
+  let parsedBody;
+  try {
+    parsedBody = yaml.load(resourceBody);
+  } catch (e) {
+    throw new Error(`Failed to parse resourceBody: ${e.message}`);
+  }
+
+  const namespacedPart = namespace &amp;&amp; resourceType.toLowerCase() !== 'namespaces' ? `namespaces/${namespace}/` : '';
+
+  switch (resourceType.toLowerCase()) {
+    case 'pods':
+      apiPath = `/api/v1/${namespacedPart}pods`;
+      break;
+    case 'deployments':
+      apiPath = `/apis/apps/v1/${namespacedPart}deployments`;
+      break;
+    case 'services':
+      apiPath = `/api/v1/${namespacedPart}services`;
+      break;
+    case 'configmaps':
+      apiPath = `/api/v1/${namespacedPart}configmaps`;
+      break;
+    case 'secrets':
+      apiPath = `/api/v1/${namespacedPart}secrets`;
+      break;
+    case 'namespaces':
+      apiPath = '/api/v1/namespaces'; // Namespaces are cluster-scoped
+      break;
+    default:
+      if (parsedBody &amp;&amp; parsedBody.apiVersion &amp;&amp; parsedBody.kind) {
+        const { apiVersion } = parsedBody;
+        const kind = `${parsedBody.kind.toLowerCase()}s`;
+        if (apiVersion.includes('/')) {
+          apiPath = `/apis/${apiVersion}/${namespacedPart}${kind}`;
+        } else {
+          apiPath = `/api/${apiVersion}/${namespacedPart}${kind}`;
+        }
+      } else {
+        throw new Error(`Unsupported resource type for creation: ${resourceType} or missing apiVersion/kind in body.`);
+      }
+  }
+  return callKubernetesApi(sessionId, apiPath, 'POST', parsedBody);
+}
+
+/**
+ * Updates an existing Kubernetes resource with a provided resource definition.
+ * This performs a full replacement (PUT operation).
+ * @param {string} sessionId - The session ID.
+ * @param {string} resourceType - The plural type of the resource to update (e.g., 'deployments', 'pods', 'services').
+ * @param {string} name - The name of the resource to update.
+ * @param {object} resourceBody - The full updated resource definition (JSON object).
+ * @param {string} [namespace] - Optional: The namespace the resource resides in. Required for namespaced resources.
+ * @returns {Promise&lt;object>} The updated Kubernetes resource object.
+ */
+async function updateKubernetesResource(sessionId, resourceType, name, resourceBody, namespace = 'default') {
+  let apiPath;
+  let parsedBody;
+  try {
+    parsedBody = yaml.load(resourceBody);
+  } catch (e) {
+    throw new Error(`Failed to parse resourceBody: ${e.message}`);
+  }
+
+  const namespacedPart = namespace &amp;&amp; resourceType.toLowerCase() !== 'namespaces' ? `namespaces/${namespace}/` : '';
+
+  switch (resourceType.toLowerCase()) {
+    case 'pods':
+      apiPath = `/api/v1/${namespacedPart}pods/${name}`;
+      break;
+    case 'deployments':
+      apiPath = `/apis/apps/v1/${namespacedPart}deployments/${name}`;
+      break;
+    case 'services':
+      apiPath = `/api/v1/${namespacedPart}services/${name}`;
+      break;
+    case 'configmaps':
+      apiPath = `/api/v1/${namespacedPart}configmaps/${name}`;
+      break;
+    case 'secrets':
+      apiPath = `/api/v1/${namespacedPart}secrets/${name}`;
+      break;
+    case 'namespaces':
+      apiPath = `/api/v1/namespaces/${name}`; // Namespaces are cluster-scoped
+      break;
+    default:
+      if (parsedBody &amp;&amp; parsedBody.apiVersion &amp;&amp; parsedBody.kind) {
+        const { apiVersion } = parsedBody;
+        const kind = `${parsedBody.kind.toLowerCase()}s`;
+        if (apiVersion.includes('/')) {
+          apiPath = `/apis/${apiVersion}/${namespacedPart}${kind}/${name}`;
+        } else {
+          apiPath = `/api/${apiVersion}/${namespacedPart}${kind}/${name}`;
+        }
+      } else {
+        throw new Error(`Unsupported resource type for update: ${resourceType} or missing apiVersion/kind in body.`);
+      }
+  }
+  return callKubernetesApi(sessionId, apiPath, 'PUT', parsedBody);
+}
+
+module.exports = {
+  createKubernetesResource,
+  deleteKubernetesResource,
+  getKubernetesDeploymentDetails,
+  getKubernetesNodeDetails,
+  getKubernetesPodDetails,
+  getKubernetesPodLogs,
+  getKubernetesSecretDetails,
+  getKubernetesServiceDetails,
+  getKubernetesVersion,
+  listKubernetesConfigMaps,
+  listKubernetesCronJobs,
+  listKubernetesDaemonSets,
+  listKubernetesDeployments,
+  listKubernetesEvents,
+  listKubernetesIngresses,
+  listKubernetesJobs,
+  listKubernetesNamespaces,
+  listKubernetesNodes,
+  listKubernetesPersistentVolumeClaims,
+  listKubernetesPersistentVolumes,
+  listKubernetesPods,
+  listKubernetesReplicaSets,
+  listKubernetesSecrets,
+  listKubernetesServices,
+  listKubernetesStatefulSets,
+  scaleKubernetesDeployment,
+  updateKubernetesResource,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 31 2025 18:12:27 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

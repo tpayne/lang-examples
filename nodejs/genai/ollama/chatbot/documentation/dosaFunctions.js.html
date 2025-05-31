@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: dosaFunctions.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: dosaFunctions.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const dotenv = require('dotenv');
+const { Mutex } = require('async-mutex');
+const logger = require('./logger');
+
+dotenv.config();
+
+/**
+ * Stores the current authentication token obtained
+ * from the Microsoft OAuth2 server per session.
+ * @type {Map&lt;string, string|null>}
+ */
+const sessionAuthTokens = new Map();
+
+/**
+ * Stores the timestamp (in milliseconds) when the current
+ * authentication token will expire per session.
+ * @type {Map&lt;string, number|null>}
+ */
+const sessionTokenExpiries = new Map();
+
+/**
+ * Mutex to control access to token retrieval and caching per session.
+ * @type {Map&lt;string, Mutex>}
+ */
+const sessionTokenMutexes = new Map();
+
+/**
+ * Gets or creates a mutex for a given session ID.
+ * @param {string} sessionId The unique identifier for the session.
+ * @returns {Mutex} The mutex for the session.
+ */
+function getSessionTokenMutex(sessionId) {
+  if (!sessionTokenMutexes.has(sessionId)) {
+    sessionTokenMutexes.set(sessionId, new Mutex());
+  }
+  return sessionTokenMutexes.get(sessionId);
+}
+
+/**
+ * Retrieves an authentication token from the Microsoft OAuth2 server for a specific session.
+ *
+ * This function checks if a valid cached token exists for the session. If a valid token is found,
+ * it returns the cached token. If not, it requests a new token from the Microsoft
+ * authentication endpoint using the client credentials grant type.
+ *
+ * @async
+ * @function getAuthToken
+ * @param {string} sessionId - The unique identifier for the session.
+ * @param {string} tenantId - The tenant ID for the Azure Active Directory.
+ * @param {string} clientId - The client ID of the application registered in Azure AD.
+ * @param {string} clientSecret - The client secret associated with the application.
+ * @param {string} scope - The scope for which the token is requested.
+ * @param {string} apiKey - The API key to use.
+ * @returns {Promise&lt;string>} - A promise that resolves to the authentication token.
+ * @throws {Error} - Throws an error if the token request fails.
+ */
+async function getAuthToken(
+  sessionId,
+  tenantId,
+  clientId,
+  clientSecret,
+  scope,
+  apiKey,
+) {
+  const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+  const mutex = getSessionTokenMutex(sessionId);
+  const release = await mutex.acquire();
+  let authToken = sessionAuthTokens.get(sessionId);
+  let tokenExpiry = sessionTokenExpiries.get(sessionId);
+
+  try {
+    // Check if a valid cached token exists for this session
+    if (authToken &amp;&amp; tokenExpiry &amp;&amp; Date.now() &lt; tokenExpiry) {
+      return authToken;
+    }
+
+    if (!apiKey || !clientId || !clientSecret || !tenantId) {
+      throw new Error('Parameters not specified');
+    }
+
+    // Make a POST request to the authentication endpoint
+    const response = await superagent
+      .post(authUrl)
+      .set('Content-Type', 'application/x-www-form-urlencoded')
+      .send('grant_type=client_credentials')
+      .send(`client_id=${clientId}`)
+      .send(`client_secret=${clientSecret}`)
+      .send(`scope=${scope}`);
+
+    // Check if the request was successful and the response contains a token
+    if (response.status === 200 &amp;&amp; response.body &amp;&amp; response.body.access_token) {
+      authToken = response.body.access_token;
+      // Assuming the token has a 60-minute validity, set expiry to 59 minutes for safety.
+      tokenExpiry = Date.now() + (59 * 60 * 1000);
+      sessionAuthTokens.set(sessionId, authToken);
+      sessionTokenExpiries.set(sessionId, tokenExpiry);
+      return authToken;
+    }
+    logger.error(`Error obtaining auth token [Session: ${sessionId}]: ${response.status} ${JSON.stringify(response.body)}`);
+    throw new Error('Failed to obtain auth token from Microsoft server.');
+  } catch (error) {
+    logger.error(`Error during auth token request [Session: ${sessionId}]: ${error.message}`);
+    throw error;
+  } finally {
+    release();
+  }
+}
+
+/**
+ * Asynchronously queries the MOT history of a vehicle given
+ * its registration number for a specific session.
+ * It first ensures a valid authentication token is available
+ * before making the API call.
+ * @async
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} registrationNumber The registration number of the vehicle to query.
+ * @returns {Promise&lt;object|null>} A promise that resolves to the vehicle history data (object)
+ * if found, or null if the vehicle is not found (404).
+ * @throws {Error} If there is an error during the API call.
+ */
+async function getVehicleHistory(sessionId, registrationNumber) {
+  const apiKey = process.env.DOSA_API_KEY;
+  const clientId = process.env.DOSA_CLIENT_ID;
+  const clientSecret = process.env.DOSA_API_SECRET;
+  const tenantId = process.env.DOSA_AUTH_TENANT_ID;
+  const regNo = registrationNumber.toUpperCase();
+
+  logger.debug(`Invoking get MOT history for ${regNo} [Session: ${sessionId}]`);
+  let token = null;
+
+  try {
+    // Get a valid authentication token for the session
+    token = await getAuthToken(
+      sessionId,
+      tenantId,
+      clientId,
+      clientSecret,
+      'https://tapi.dvsa.gov.uk/.default',
+      apiKey,
+    );
+  } catch (error) {
+    logger.error(`Error obtaining auth token [Session: ${sessionId}]: ${error.message}`);
+    throw new Error('Failed to obtain auth token for vehicle history query.');
+  }
+
+  if (!token) {
+    throw new Error('Error: The authToken was not generated successfully');
+  }
+
+  try {
+    const apiUrl = `https://history.mot.api.gov.uk/v1/trade/vehicles/registration/${encodeURIComponent(regNo)}`;
+
+    logger.debug(`Querying vehicle history for ${regNo} [Session: ${sessionId}]`);
+    const response = await superagent
+      .get(apiUrl)
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-API-Key', apiKey)
+      .set('Accept', 'application/json');
+
+    if (response.status === 200) {
+      return response.body;
+    }
+    if (response.status === 404) {
+      logger.error(`Vehicle with registration '${registrationNumber}' not found [Session: ${sessionId}]`);
+      return null;
+    }
+    logger.error(`Error querying vehicle history [Session: ${sessionId}]: ${response.status} ${JSON.stringify(response.body)}`);
+    throw new Error(`Failed to query vehicle history: ${response.status} ${JSON.stringify(response.body)}`);
+  } catch (error) {
+    if (error.response) {
+      const { status } = error.response;
+      const responseBody = JSON.stringify(error.response.body);
+      logger.error(
+        `Vehicle history query failed [Session: ${sessionId}]: ${status} ${responseBody}`,
+      );
+      if (status === 400) {
+        throw new Error(
+          `Vehicle history query failed: Bad Request. Please check if the registration number '${registrationNumber}' is valid and correctly formatted.`,
+        );
+      } else {
+        throw new Error(
+          `Vehicle history query failed: ${status} ${responseBody}`,
+        );
+      }
+    } else {
+      logger.error(`Error during vehicle history query exception [Session: ${sessionId}]: ${error.message}`);
+      throw error;
+    }
+  }
+}
+
+module.exports = {
+  getVehicleHistory,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 31 2025 18:12:27 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

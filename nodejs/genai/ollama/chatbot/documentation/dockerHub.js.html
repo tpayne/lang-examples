@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: dockerHub.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: dockerHub.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const logger = require('./logger');
+
+/**
+ * Authenticates with Docker Hub to obtain a JWT token.
+ * This token is required for accessing private repositories.
+ * @param {string} username - Your Docker Hub username.
+ * @param {string} password - Your Docker Hub password.
+ * @returns {Promise&lt;string>} A JWT token if authentication is successful.
+ * @throws {Error} If authentication fails.
+ */
+async function authenticateDockerHub(username, password) {
+  const authUrl = 'https://hub.docker.com/v2/users/login/';
+  try {
+    const response = await superagent.post(authUrl)
+      .send({ username, password })
+      .set('Accept', 'application/json');
+
+    if (response.body &amp;&amp; response.body.token) {
+      logger.debug('Successfully authenticated with Docker Hub.');
+      return response.body.token;
+    }
+    throw new Error('No token received from Docker Hub authentication.');
+  } catch (error) {
+    const errorMessage = error.response
+      ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+      : error.message;
+    logger.error(`Failed to authenticate with Docker Hub for user ${username}: ${errorMessage}`, error);
+    throw new Error(`Docker Hub authentication failed: ${errorMessage}`);
+  }
+}
+
+/**
+ * Gets the tags for a specified Docker image from Docker Hub.
+ * @param {string} imageName - The full name of the Docker image (e.g., 'library/nginx', 'myuser/myimage').
+ * @returns {Promise&lt;object>} A list of image tags.
+ * @throws {Error} If the API request fails.
+ */
+async function getDockerImageTags(imageName) {
+  if (!imageName) {
+    throw new Error('Image name cannot be empty.');
+  }
+
+  const url = `https://hub.docker.com/v2/repositories/${imageName}/tags`;
+  logger.info(`Fetching Docker image tags from: ${url}`);
+
+  try {
+    const response = await superagent.get(url).set('Accept', 'application/json');
+    // The sample output shows the tags within the 'results' array
+    return response.body.results;
+  } catch (error) {
+    logger.error(`Failed to fetch Docker image tags for ${imageName}: ${error.message}`);
+    throw new Error(`Could not retrieve tags for image ${imageName}: ${error.message}`);
+  }
+}
+
+/**
+ * Searches for Docker images on Docker Hub.
+ * Supports both public and private repositories. For private repositories,
+ * DOCKERHUB_USERNAME and DOCKERHUB_PASSWORD environment variables must be set.
+ * @param {string} sessionId - The session ID for logging purposes.
+ * @param {string} searchTerm - The term to search for (e.g., 'ubuntu', 'my-private-repo/my-image').
+ * @param {boolean} [isPrivate=false] - If true, searches private repositories of the configured user.
+ * @param {string} [username=null] - Optional: Docker Hub username if searching private repos.
+ * Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.
+ * @returns {Promise&lt;Array&lt;object>>} An array of image objects found.
+ * @throws {Error} If the search fails or authentication is required but credentials are missing.
+ */
+async function searchDockerImages(sessionId, searchTerm, isPrivate = false, username = null) {
+  let images = [];
+
+  if (isPrivate) {
+    const dockerHubUsername = username || process.env.DOCKERHUB_USERNAME;
+    const dockerHubPassword = process.env.DOCKERHUB_PASSWORD;
+
+    if (!dockerHubUsername || !dockerHubPassword) {
+      throw new Error('Docker Hub username and password are required for private image search. Please set DOCKERHUB_USERNAME and DOCKERHUB_PASSWORD environment variables.');
+    }
+
+    try {
+      const token = await authenticateDockerHub(dockerHubUsername, dockerHubPassword);
+      // For private repos, we typically list user's repos and filter by name
+      // Docker Hub API for listing repositories: /v2/repositories/{username}/
+      // Note: This endpoint lists repos BY the user, and allows filtering by name.
+      // This is different from the public search which searches across ALL public repos.
+      const privateSearchUrl = `https://hub.docker.com/v2/repositories/${dockerHubUsername}/?name=${encodeURIComponent(searchTerm)}`;
+      logger.debug(`[Session: ${sessionId}] Searching private Docker Hub for: ${searchTerm}`);
+
+      const response = await superagent.get(privateSearchUrl)
+        .set('Authorization', `JWT ${token}`)
+        .set('Accept', 'application/json');
+
+      if (response.body &amp;&amp; Array.isArray(response.body.results)) {
+        images = response.body.results.map((repo) => ({
+          name: `${repo.user}/${repo.name}`,
+          description: repo.description,
+          is_private: repo.is_private,
+          star_count: repo.star_count,
+          pull_count: repo.pull_count,
+          last_updated: repo.last_updated,
+        }));
+      }
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+        : error.message;
+      logger.error(`[Session: ${sessionId}] Failed to search private Docker Hub for ${searchTerm}: ${errorMessage}`, error);
+      throw new Error(`Failed to search private Docker Hub: ${errorMessage}`);
+    }
+  } else {
+    // Public search API using the endpoint confirmed to work
+    const publicSearchUrl = `https://hub.docker.com/v2/search/repositories/?query=${encodeURIComponent(searchTerm)}&amp;page_size=25`; // Limit to first 25 results
+    logger.debug(`[Session: ${sessionId}] Searching public Docker Hub for: ${searchTerm} at URL: ${publicSearchUrl}`);
+
+    try {
+      const response = await superagent.get(publicSearchUrl)
+        .set('Accept', 'application/json');
+
+      if (response.body &amp;&amp; Array.isArray(response.body.results)) { // Changed 'summaries' to 'results'
+        images = response.body.results.map((repo) => ({ // Changed 'summary' to 'repo'
+          name: repo.repo_name, // Changed from summary.name to repo.repo_name
+          description: repo.short_description, // Changed from summary.short_description to repo.short_description
+          is_official: repo.is_official,
+          is_automated: repo.is_automated,
+          star_count: repo.star_count,
+          pull_count: repo.pull_count,
+          // Removed last_updated as it's not consistently present in this endpoint's results
+        }));
+      }
+    } catch (error) {
+      const errorMessage = error.response
+        ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+        : error.message;
+      logger.error(`[Session: ${sessionId}] Failed to search public Docker Hub for ${searchTerm}: ${errorMessage}`, error);
+      throw new Error(`Failed to search public Docker Hub: ${errorMessage}`);
+    }
+  }
+
+  return images;
+}
+
+module.exports = {
+  getDockerImageTags,
+  searchDockerImages,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat May 31 2025 18:12:27 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
