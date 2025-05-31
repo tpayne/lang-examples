@@ -36,28 +36,22 @@ app.use(limiter);
 // Initialize Ollama client
 // Assumes Ollama is running on http://localhost:11434
 // You can configure it: const ollama = new Ollama({ host: 'http://custom.host:port' });
-const ollama = new Ollama( process.env.OLLAMA_HOST ? { host: process.env.OLLAMA_HOST } : { host: 'http://localhost:11434' });
+const ollama = new Ollama(process.env.OLLAMA_HOST ? { host: process.env.OLLAMA_HOST } : { host: 'http://localhost:11434' });
 
 /**
  * Stores the conversation history and context for each client session.
  * The key is the client's session ID.
- * History is now in Ollama's messages format.
- * @type {Map<string, {
- * context: string,
- * history: Array<{
- * role: 'system' | 'user' | 'assistant' | 'tool',
- * content: string,
- * images?: string[], // For user messages, Ollama can accept images
- * tool_calls?: Array<{ id: string, type: 'function', function: { name: string, arguments: object } }>, // For assistant messages
- * tool_call_id?: string // For tool messages
- * }>,
- * messageCache: Map<string, string>
- * }>}
+ * History is now in OpenAI's messages format.
+ * @type {Map<string, { context: string,
+ * history: Array<{ role: string, content: string,
+ * tool_calls: any[], tool_call_id: string,
+ * name: string, function_call: any }>,
+ * messageCache: Map<string, string> }>}
  */
 const sessions = new Map();
 
 const morganMiddleware = require('./morganmw');
-const logger =require('./logger');
+const logger = require('./logger');
 
 // IMPORTANT: Use a dedicated session secret from .env or a default (log warning if default in prod)
 const sessionSecret = process.env.SESSION_SECRET || 'your-very-secure-session-secret';
@@ -128,13 +122,12 @@ const addResponse = (sessionId, query, response) => {
   }
   const xsession = sessions.get(sessionId);
   const cache = xsession.messageCache;
-  const keyStr = getKey(query);
-  if (cache.has(keyStr)) return true; // Avoid adding duplicates
+  if (cache.has(getKey(query))) return true; // Avoid adding duplicates
   if (cache.size > 1000) { // Simple cache eviction
     // Evict oldest 100 items
     Array.from(cache.keys()).slice(0, 100).forEach((key) => cache.delete(key));
   }
-  cache.set(keyStr, response);
+  cache.set(getKey(query), response);
   return true;
 };
 
@@ -248,34 +241,36 @@ const callFunctionByName = async (sessionId, name, args) => {
  * @returns {Array<string>} An array of relevant function names.
  */
 const selectRelevantFunctionsByKeyword = (userInput, allTools) => {
-    const relevantFunctionNames = new Set();
-    const lowerCaseInput = userInput.toLowerCase();
+  const relevantFunctionNames = new Set();
+  const lowerCaseInput = userInput.toLowerCase();
 
-    for (const tool of allTools) {
-        const functionName = tool.function.name;
-        const functionDescription = tool.function.description || ''; // Ensure description exists
+  /* eslint-disable no-restricted-syntax */
+  for (const tool of allTools) {
+    const functionName = tool.function.name;
+    const functionDescription = tool.function.description || ''; // Ensure description exists
 
-        // Simple keyword matching: check if input contains function name or parts of it
-        // Or if it contains keywords found in the description
-        if (lowerCaseInput.includes(functionName.toLowerCase())) {
-            relevantFunctionNames.add(functionName);
-        } else {
-            // More advanced keyword matching could go here, e.g., checking for synonyms,
-            // or specific keywords defined for each function.
-            // For now, let's also check if input contains any significant word from description.
-            const descriptionWords = functionDescription.toLowerCase().split(/\W+/);
-            for (const word of descriptionWords) {
-                if (word.length > 3 && lowerCaseInput.includes(word)) { // Avoid very short, common words
-                    relevantFunctionNames.add(functionName);
-                    break; // Found a match, move to next tool
-                }
-            }
+    // Simple keyword matching: check if input contains function name or parts of it
+    // Or if it contains keywords found in the description
+    if (lowerCaseInput.includes(functionName.toLowerCase())) {
+      relevantFunctionNames.add(functionName);
+    } else {
+      // More advanced keyword matching could go here, e.g., checking for synonyms,
+      // or specific keywords defined for each function.
+      // For now, let's also check if input contains any significant word from description.
+      const descriptionWords = functionDescription.toLowerCase().split(/\W+/);
+      for (const word of descriptionWords) {
+        if (word.length > 3 && lowerCaseInput.includes(word)) { // Avoid very short, common words
+          relevantFunctionNames.add(functionName);
+          break; // Found a match, move to next tool
         }
+      }
     }
-    logger.info(`Keyword-matched relevant functions: ${Array.from(relevantFunctionNames).join(', ')}`);
-    return Array.from(relevantFunctionNames);
-};
+  }
+  /* eslint-enable no-restricted-syntax */
 
+  logger.info(`Keyword-matched relevant functions: ${Array.from(relevantFunctionNames).join(', ')}`);
+  return Array.from(relevantFunctionNames);
+};
 
 /**
  * Gets a chat response from the Ollama API, maintaining state per session.
@@ -292,23 +287,21 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
   // Get all function definitions formatted for Ollama tools
   const allAvailableTools = await getFunctionDefinitionsForTool(sessionId);
-  let toolsToUse = undefined;
+  let toolsToUse;
 
   if (allAvailableTools && allAvailableTools.length > 0) {
-      // Select relevant functions using local keyword matching
-      const relevantFunctionNames = selectRelevantFunctionsByKeyword(userInput, allAvailableTools);
+    // Select relevant functions using local keyword matching
+    const relevantFunctionNames = selectRelevantFunctionsByKeyword(userInput, allAvailableTools);
 
-      // Filter the tools based on the selected relevant function names
-      toolsToUse = allAvailableTools.filter(tool =>
-          relevantFunctionNames.includes(tool.function.name)
-      );
+    // Filter the tools based on the selected relevant function names
+    toolsToUse = allAvailableTools.filter((tool) => relevantFunctionNames.includes(tool.function.name));
 
-      if (toolsToUse.length === 0) {
-          logger.info(`No relevant functions selected by keyword for input: "${userInput}". Proceeding without tools.`);
-          toolsToUse = undefined; // Ensure tools is undefined if no relevant tools are found
-      } else {
-          logger.info(`Dynamically selected tools for Ollama (keyword-based): ${toolsToUse.map(t => t.function.name).join(', ')}`);
-      }
+    if (toolsToUse.length === 0) {
+      logger.info(`No relevant functions selected by keyword for input: "${userInput}". Proceeding without tools.`);
+      toolsToUse = undefined; // Ensure tools is undefined if no relevant tools are found
+    } else {
+      logger.info(`Dynamically selected tools for Ollama (keyword-based): ${toolsToUse.map((t) => t.function.name).join(', ')}`);
+    }
   }
 
   let xsession = sessions.get(sessionId); // Retrieve the session
@@ -395,7 +388,8 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     const maxSteps = getConfig().maxChatSteps; // Limit steps (API calls + function calls)
 
     // Loop to handle potential function calls and subsequent AI responses
-    /* eslint-disable no-await-in-loop, no-plusplus */
+    /* eslint-disable no-await-in-loop, no-plusplus, no-restricted-syntax */
+    // Line 247:3
     while (numSteps < maxSteps) {
       numSteps++;
 
@@ -409,15 +403,15 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       const maxTokensConfig = getConfig().maxTokens;
       if (maxTokensConfig && maxTokensConfig !== 'auto') {
         const numPredict = Number(maxTokensConfig);
-        if (!isNaN(numPredict) && numPredict > 0) {
+        // Fix: Use Number.isNaN instead of global isNaN
+        if (!Number.isNaN(numPredict) && numPredict > 0) {
           ollamaOptions.num_predict = numPredict; // Max tokens for Ollama
         } else if (numPredict !== -1) { // Allow -1 for infinite generation if explicitly set
-            logger.warn(`Invalid maxTokens value '${maxTokensConfig}', using Ollama's default for num_predict. Set to -1 for 'infinite'.`);
+          logger.warn(`Invalid maxTokens value '${maxTokensConfig}', using Ollama's default for num_predict. Set to -1 for 'infinite'.`);
         } else {
-            ollamaOptions.num_predict = -1; // User explicitly wants infinite
+          ollamaOptions.num_predict = -1; // User explicitly wants infinite
         }
       }
-
 
       const requestPayload = {
         model: getConfig().aiModel, // e.g., 'llama3', 'mistral'
@@ -436,7 +430,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       const response = await ollama.chat(requestPayload);
       logger.debug(`Ollama API response [Session: ${sessionId}]: ${util.inspect(response, { depth: null })}`); // Log full response
 
-      const message = response.message; // Ollama response structure
+      const { message } = response; // Ollama response structure
 
       if (!message) {
         logger.warn(`Ollama API: No message in response [Session: ${sessionId}]`);
@@ -447,9 +441,9 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       // Add assistant's response (which might include tool calls) to history
       // Ensure not to push undefined tool_calls if it's not present.
       const assistantMessageToPush = {
-          role: message.role,
-          content: message.content,
-          ...(message.tool_calls && message.tool_calls.length > 0 && { tool_calls: message.tool_calls })
+        role: message.role,
+        content: message.content,
+        ...(message.tool_calls && message.tool_calls.length > 0 && { tool_calls: message.tool_calls }),
       };
       xsession.history.push(assistantMessageToPush);
       logger.debug(`Added assistant message to history [Session: ${sessionId}]`, {
@@ -459,7 +453,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       });
 
       // Check if the model wants to call a tool
-      /* eslint-disable no-await-in-loop, no-plusplus, no-restricted-syntax */
+      // Line 260:7
       if (message.tool_calls && message.tool_calls.length > 0) {
         logger.info(`Tool call(s) initiated by Ollama model [Session: ${sessionId}]`);
         // Process all tool calls issued by the model in this turn
@@ -502,7 +496,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
           };
           // Crucially, add tool_call_id to link it back to the assistant's request.
           if (toolCallId) {
-             toolResponseMessage.tool_call_id = toolCallId;
+            toolResponseMessage.tool_call_id = toolCallId;
           }
 
           xsession.history.push(toolResponseMessage);
@@ -527,7 +521,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       // `response.done` from ollama.chat indicates if the specific chat turn is complete.
       // If it's false after tool calls, `response.done` should generally be true for non-streaming.
       if (!response.done && numSteps >= maxSteps) {
-          logger.warn(`Ollama API: Max steps reached, but model indicates it's not done processing its current turn. [Session: ${sessionId}]`);
+        logger.warn(`Ollama API: Max steps reached, but model indicates it's not done processing its current turn. [Session: ${sessionId}]`);
       }
     }
     /* eslint-enable no-await-in-loop, no-plusplus, no-restricted-syntax */
@@ -559,10 +553,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     logger.error(`Ollama API error or processing error [Session: ${sessionId}]`, err);
     // Provide more informative error to the user
     if (err.message && err.message.includes('model not found')) {
-        return `Error: The specified Ollama model '${getConfig().aiModel}' was not found. Please ensure it is pulled and spelled correctly.`;
+      return `Error: The specified Ollama model '${getConfig().aiModel}' was not found. Please ensure it is pulled and spelled correctly.`;
     }
     if (err.cause && err.cause.code === 'ECONNREFUSED') { // Node.js HTTP errors often have err.cause
-        return `Error: Could not connect to Ollama. Please ensure Ollama is running. (${err.message})`;
+      return `Error: Could not connect to Ollama. Please ensure Ollama is running. (${err.message})`;
     }
     return `Error processing your request with Ollama: ${err.message}. Please try again or contact support.`;
   }
@@ -681,7 +675,7 @@ const startServer = () => {
     const credentials = {
       key: privateKey,
       cert: certificate,
-      // ca: ca // Uncomment if you have a CA certificate
+      // ca: ca // Uncomment if you have a certificate chain
     };
 
     const httpsPort = Number(getConfig().httpsPort) || 8443;
@@ -702,7 +696,6 @@ const startServer = () => {
     // }).listen(httpPortForRedirect, host, () => {
     //   logger.info(`HTTP server for redirection listening on ${host}:${httpPortForRedirect}`);
     // });
-
   } catch (err) {
     // --- Fallback to HTTP Server ---
     logger.warn(`Failed to load SSL certificates or start HTTPS server (Error: ${err.message}). Falling back to HTTP.`);
