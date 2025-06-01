@@ -25,7 +25,7 @@
             <div class="carousel-pane generative-ai-info">
                 <h2>About This Chatbot Demo</h2>
                 <p>
-                    This demo showcases a simple chatbot powered by a Generative AI model, utilizing the Gemini API. It's designed to illustrate how AI can be used for conversational interfaces and integrating with external data sources and APIs.
+                    This demo showcases a simple chatbot powered by a Generative AI model, utilizing the OpenAI API. It's designed to illustrate how AI can be used for conversational interfaces and integrating with external data sources and APIs.
                 </p>
                 <br>
                 <h3>Key Capabilities</h3>
@@ -54,12 +54,12 @@
                 <p>Here are some examples of messages you can send to the chatbot or commands to run the demo.</p>
 
                 <h3>Running the Example with Basic Ops</h3>
-                <p>To run the server, you will need Docker installed and your API keys set as environment variables (<code>GOOGLE_API_KEY</code> and <code>GITHUB_TOKEN</code>).</p>
+                <p>To run the server, you will need Docker installed and your API keys set as environment variables (<code>OPENAI_API_KEY</code> and <code>GITHUB_TOKEN</code>).</p>
                 <div class="code-block-container">
                     <pre>
 docker build . --tag chatbot:1.0 &amp;&amp; \
   docker run --rm -p 8080:5000 \
-    -e GOOGLE_API_KEY=&lt;YourKey&gt; \
+    -e OPENAI_API_KEY=&lt;YourKey&gt; \
     -e GITHUB_TOKEN=&lt;YourKey&gt; \
     chatbot:1.0
                     </pre>
@@ -167,7 +167,7 @@ tell me all the MOT defects for ABC123
                  <p>Based on the demo's capabilities and notes from the README:</p>
 
                  <h3>What are the prerequisites for running this demo?</h3>
-                 <p>You need Docker installed and an Gemini account with an <code>GOOGLE_API_KEY</code>. For GitHub and DOSA integration, relevant API keys (<code>GITHUB_TOKEN</code>, <code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are required as environment variables.</p>
+                 <p>You need Docker installed and an OpenAI account with an <code>OPENAI_API_KEY</code>. For GitHub and DOSA integration, relevant API keys (<code>GITHUB_TOKEN</code>, <code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are required as environment variables.</p>
 
                  <h3>How do I start the chatbot server?</h3>
                  <p>Build and run the Docker image using the command provided in the "Running the Example with Basic Ops" section. Ensure your API keys are set as environment variables.</p>
@@ -176,7 +176,7 @@ tell me all the MOT defects for ABC123
                  <p>Yes, the README explicitly notes that answers may not always be correct. AI responses should be reviewed, especially for critical information or actions.</p>
 
                  <h3>What kind of API keys are needed?</h3>
-                 <p>An <code>GOOGLE_API_KEY</code> for Gemini is essential. Additionally, a <code>GITHUB_TOKEN</code> is needed for GitHub interactions, and specific keys (<code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are needed for DOSA API usage.</p>
+                 <p>An <code>OPENAI_API_KEY</code> for OpenAI is essential. Additionally, a <code>GITHUB_TOKEN</code> is needed for GitHub interactions, and specific keys (<code>DOSA_API_KEY</code>, <code>DOSA_API_SECRET</code>, <code>DOSA_CLIENT_ID</code>, <code>DOSA_AUTH_TENANT_ID</code>) are needed for DOSA API usage.</p>
 
                  <h3>What happens if I ask about a topic outside the loaded context?</h3>
                  <p>The bot's response quality depends on the loaded context. Without a relevant context loaded, it might not be able to provide specific information on that topic or may give a more general answer based on its training data.</p>
@@ -187,7 +187,6 @@ tell me all the MOT defects for ABC123
                      <li>The code currently lacks unit testing and Static Analysis (SA).</li>
                      <li>The support for AI actions is noted as "experimental" and can be temperamental. Retrying operations with different phrasing is sometimes necessary.</li>
                      <li>Error handling could be improved, and not all error conditions have been tested.</li>
-                     <li>The support for Gemini actions is noted as "experimental" and can be temperamental. Retrying operations with different phrasing is sometimes necessary.</li>
                      <li>Processing large amounts of data, like extensive code reviews, may take time and potentially hit model limits.</li>
                  </ul>
 
@@ -237,6 +236,7 @@ docker rmi chatbot:1.0
                 <button class="toolbar-button" data-command="createLink" title="Insert Link">🔗</button>
                 <button class="toolbar-button" data-command="insertUnorderedList" title="Bullet List">•</button>
                 <button class="toolbar-button" data-command="insertOrderedList" title="Numbered List">1.</button>
+                <button class="toolbar-button" id="saveConversationButton" title="Save Chat">💾</button>
             </div>
 
             <div id="input_container">

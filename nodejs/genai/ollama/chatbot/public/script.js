@@ -391,3 +391,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Get a reference to the new save button
+const saveConversationButton = document.getElementById('saveConversationButton');
+
+// Function to save the conversation as Markdown
+saveConversationButton.addEventListener('click', () => {
+    let markdownContent = "# Chatbot Conversation\n\n";
+    const messages = chatContainer.querySelectorAll('.message');
+
+    messages.forEach(messageElement => {
+        const sender = messageElement.classList.contains('user') ? 'You' : 'Bot';
+        const messageContentElement = messageElement.querySelector('.message-content');
+        let messageText = messageContentElement ? messageContentElement.innerText : '';
+
+        // Basic Markdown formatting for content from the bot
+        if (messageElement.classList.contains('agent')) {
+            // For bot messages, we already have innerHTML as marked.parse output.
+            // We need to convert it back to something resembling Markdown.
+            // This is a simplification; a full HTML-to-Markdown conversion is complex.
+            // For now, we'll try to reverse some common ones.
+            messageText = messageContentElement.innerHTML
+                .replace(/<\/?b>/g, '**')      // Bold
+                .replace(/<\/?i>/g, '*')       // Italic
+                .replace(/<\/?u>/g, '__')      // Underline
+                .replace(/<a href="(.*?)"[^>]*>(.*?)<\/a>/g, '[$2]($1)') // Links
+                .replace(/<ul>/g, '\n')        // Unordered lists
+                .replace(/<\/ul>/g, '\n')      // Unordered lists
+                .replace(/<ol>/g, '\n')        // Ordered lists
+                .replace(/<\/ol>/g, '\n')      // Ordered lists
+                .replace(/<li>/g, '* ')        // List items (simple bullet)
+                .replace(/<\/li>/g, '\n')      // List items
+                .replace(/<pre>(.*?)<\/pre>/gs, '```\n$1\n```') // Code blocks
+                .replace(/&amp;/g, '&')        // Decode HTML entities
+                .replace(/&lt;/g, '<')         // Decode HTML entities
+                .replace(/&gt;/g, '>')         // Decode HTML entities
+                .replace(/&quot;/g, '"')       // Decode HTML entities
+                .replace(/&#39;/g, "'")        // Decode HTML entities
+                .replace(/\n\s*\n/g, '\n\n'); // Normalize multiple newlines
+        }
+
+
+        markdownContent += `**${sender}:**\n${messageText}\n\n`;
+    });
+
+    // Create a Blob with the Markdown content
+    const blob = new Blob([markdownContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary anchor element and trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'chatbot_conversation.md';
+    document.body.appendChild(a);
+    a.click();
+
+    // Clean up
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
