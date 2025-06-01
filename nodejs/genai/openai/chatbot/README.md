@@ -288,5 +288,5 @@ References
 - [Useful notes](https://medium.com/@Doug-Creates/nightmares-and-client-chat-completions-create-29ad0acbe16a)
 - [Models](https://platform.openai.com/docs/models/gpt-4o-mini)
 - [NodeJS API](https://github.com/openai/openai-quickstart-node)
-
+- [Sample chat](sampleChat.md)
 
