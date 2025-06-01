@@ -423,11 +423,11 @@ saveConversationButton.addEventListener('click', () => {
                 .replace(/<li>/g, '* ')        // List items (simple bullet)
                 .replace(/<\/li>/g, '\n')      // List items
                 .replace(/<pre>(.*?)<\/pre>/gs, '```\n$1\n```') // Code blocks
-                .replace(/&amp;/g, '&')        // Decode HTML entities
                 .replace(/&lt;/g, '<')         // Decode HTML entities
                 .replace(/&gt;/g, '>')         // Decode HTML entities
                 .replace(/&quot;/g, '"')       // Decode HTML entities
                 .replace(/&#39;/g, "'")        // Decode HTML entities
+                .replace(/&amp;/g, '&')        // Decode HTML entities last
                 .replace(/\n\s*\n/g, '\n\n'); // Normalize multiple newlines
         }
 
