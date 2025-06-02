@@ -89,6 +89,9 @@ const {
   terraformRefresh,
 } = require('./terraform'); // Import the new terraform.js module
 
+// Import the new workflow function
+const { runTerraformWorkflow } = require('./terraformWorkflow');
+
 /* eslint-disable max-len */
 
 /**
@@ -1174,6 +1177,40 @@ async function loadTerraform(sessionId) {
 }
 
 /**
+ * Loads the comprehensive Terraform workflow function into the registry.
+ * This function handles saving Terraform files, archiving them, and then
+ * initiating a plan or apply operation via Terraform Cloud.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraformWorkflow(sessionId) {
+  await registerFunction(
+    sessionId,
+    'run_terraform_workflow',
+    runTerraformWorkflow,
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action', 'projectDirectoryName', 'message'],
+    'Orchestrates a full Terraform workflow: saves provided Terraform code to a temporary directory, creates a .tar.gz archive, uploads it to Terraform Cloud, and then initiates either a plan or apply operation.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the Terraform Cloud workspace.' },
+      terraformFiles: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing an object where keys are filenames (e.g., "main.tf", "variables.tf") and values are their HCL/JSON content. Example: \'{"main.tf": "resource \\"aws_s3_bucket\\" \\"example\\" { bucket = \\"my-bucket\\" }", "variables.tf": "variable \\"region\\" { default = \\"us-east-1\\" }"}\'',
+      },
+      action: {
+        type: 'string',
+        description: 'The desired Terraform action to perform ("plan" or "apply").',
+        enum: ['plan', 'apply'],
+      },
+      projectDirectoryName: { type: 'string', description: 'Optional: A subdirectory name within the session\'s temporary directory to store the Terraform files. Defaults to "terraform-project".' },
+      message: { type: 'string', description: 'Optional: A message for the Terraform run in Terraform Cloud. Defaults to "Triggered by API [action]".' },
+    },
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action'],
+    true, // needSession is true
+  );
+}
+
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -1223,6 +1260,8 @@ async function loadIntegrations(sessionId) {
   if (process.env.TERRAFORM_API_ENDPOINT && process.env.TERRAFORM_API_TOKEN) {
     logger.info(`Loading Terraform integration for session: ${sessionId}`);
     await loadTerraform(sessionId);
+    // Load the new comprehensive Terraform workflow
+    await loadTerraformWorkflow(sessionId);
   } else {
     logger.info(`Terraform integration not loaded for session: ${sessionId}. TERRAFORM_API_ENDPOINT or TERRAFORM_API_TOKEN not set.`);
   }
