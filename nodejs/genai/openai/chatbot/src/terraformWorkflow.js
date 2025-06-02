@@ -1,13 +1,13 @@
 const fs = require('fs/promises');
 const path = require('path');
-const archiver = require('archiver');
 const logger = require('./logger'); // Assuming a logger utility exists
 
 // Import necessary utilities from your utilities.js
 const {
   saveCodeToFile,
   getOrCreateSessionTempDir, // Use this to get the session's base temp directory
-  cleanupSessionTempDir,    // Use this for comprehensive cleanup
+  cleanupSessionTempDir,    // Use this for comprehensive cleanup,
+  createTarGzFromDirectory,
 } = require('./utilities');
 
 // Import Terraform functions from your terraform.js
@@ -15,48 +15,6 @@ const {
   terraformApply,
   terraformPlan,
 } = require('./terraform');
-
-/**
- * Creates a .tar.gz archive of a given directory.
- * @param {string} sourceDirectory - The path to the directory to archive.
- * @param {string} outputFilePath - The full path for the output .tar.gz file.
- * @returns {Promise<void>} A promise that resolves when the archive is created.
- */
-async function createTarGzFromDirectory(sourceDirectory, outputFilePath) {
-  return new Promise((resolve, reject) => {
-    const output = fs.createWriteStream(outputFilePath);
-    const archive = archiver('tar', {
-      gzip: true,
-      zlib: { level: 9 } // Sets the compression level.
-    });
-
-    output.on('close', () => {
-      logger.info(`[Archiver] Archive created: ${archive.pointer()} total bytes`);
-      resolve();
-    });
-
-    archive.on('warning', (err) => {
-      if (err.code === 'ENOENT') {
-        logger.warn(`[Archiver] Warning: ${err.message}`);
-      } else {
-        logger.error(`[Archiver] Error: ${err.message}`);
-        reject(err);
-      }
-    });
-
-    archive.on('error', (err) => {
-      logger.error(`[Archiver] Archiving failed: ${err.message}`);
-      reject(err);
-    });
-
-    archive.pipe(output);
-
-    // Append the source directory. The 'dest' option ensures files are at the root of the archive.
-    archive.directory(sourceDirectory, false);
-
-    archive.finalize();
-  });
-}
 
 /**
  * Orchestrates the full Terraform workflow: saving files, creating a .tar.gz,

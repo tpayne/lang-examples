@@ -4,11 +4,54 @@ const path = require('path');
 const os = require('os');
 const { Mutex } = require('async-mutex'); // Import Mutex
 const logger = require('./logger'); // Assuming you have a logger utility
+const archiver = require('archiver');
 
 // Shared cache for temporary directories per session
 const sessionTempDirs = new Map();
 // Mutex map for protecting the cache per session
 const sessionMutexes = new Map();
+
+/**
+ * Creates a .tar.gz archive of a given directory.
+ * @param {string} sourceDirectory - The path to the directory to archive.
+ * @param {string} outputFilePath - The full path for the output .tar.gz file.
+ * @returns {Promise<void>} A promise that resolves when the archive is created.
+ */
+async function createTarGzFromDirectory(sourceDirectory, outputFilePath) {
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(outputFilePath);
+    const archive = archiver('tar', {
+      gzip: true,
+      zlib: { level: 9 } // Sets the compression level.
+    });
+
+    output.on('close', () => {
+      logger.info(`[Archiver] Archive created: ${archive.pointer()} total bytes`);
+      resolve();
+    });
+
+    archive.on('warning', (err) => {
+      if (err.code === 'ENOENT') {
+        logger.warn(`[Archiver] Warning: ${err.message}`);
+      } else {
+        logger.error(`[Archiver] Error: ${err.message}`);
+        reject(err);
+      }
+    });
+
+    archive.on('error', (err) => {
+      logger.error(`[Archiver] Archiving failed: ${err.message}`);
+      reject(err);
+    });
+
+    archive.pipe(output);
+
+    // Append the source directory. The 'dest' option ensures files are at the root of the archive.
+    archive.directory(sourceDirectory, false);
+
+    archive.finalize();
+  });
+}
 
 /**
  * Recursively deletes a directory.
@@ -345,6 +388,7 @@ async function saveCodeToFile(sessionId, code, filename, repoDirName = null) {
 // temporary directories and files, specifically for session-based operations.
 module.exports = {
   createUniqueTempDir, // Keep this export if it's used elsewhere for non-session purposes
+  createTarGzFromDirectory,
   deleteDirectoryRecursively,
   mkdir,
   readFilesInDirectory,
