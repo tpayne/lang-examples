@@ -70,6 +70,25 @@ const {
   searchDockerImages,
 } = require('./dockerHub'); // Import the new dockerhub.js module
 
+// Import Terraform functions
+const {
+  listTerraformWorkspaces,
+  getTerraformWorkspaceDetails,
+  createTerraformWorkspace,
+  updateTerraformWorkspace,
+  deleteTerraformWorkspace,
+  createTerraformRun,
+  createTerraformConfigurationVersion,
+  uploadTerraformConfiguration,
+  applyTerraformRun,
+  discardTerraformRun,
+  getTerraformRunDetails,
+  terraformApply,
+  terraformPlan,
+  terraformDestroy,
+  terraformRefresh,
+} = require('./terraform'); // Import the new terraform.js module
+
 /* eslint-disable max-len */
 
 /**
@@ -945,6 +964,216 @@ async function loadDockerHub(sessionId) {
 }
 
 /**
+ * Loads Terraform functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraform(sessionId) {
+  await registerFunction(
+    sessionId,
+    'list_terraform_workspaces',
+    listTerraformWorkspaces,
+    ['organizationName'],
+    'List all workspaces in a given Terraform Cloud/Enterprise organization.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+    },
+    ['organizationName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_terraform_workspace_details',
+    getTerraformWorkspaceDetails,
+    ['workspaceId'],
+    'Get detailed information about a specific Terraform workspace by its ID.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the Terraform workspace.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_terraform_workspace',
+    createTerraformWorkspace,
+    ['organizationName', 'workspaceName', 'autoApply', 'workingDirectory', 'vcsRepoIdentifier'],
+    'Create a new Terraform workspace in a specified organization.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the new workspace.' },
+      autoApply: { type: 'boolean', description: 'Optional: Whether to automatically apply runs in this workspace. Defaults to false.' },
+      workingDirectory: { type: 'string', description: 'Optional: The working directory for the workspace.' },
+      vcsRepoIdentifier: { type: 'string', description: 'Optional: The VCS repository identifier (e.g., "org/repo"). If provided, TERRAFORM_VCS_OAUTH_TOKEN_ID must also be set.' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'update_terraform_workspace',
+    updateTerraformWorkspace,
+    ['workspaceId', 'updates'],
+    'Update an existing Terraform workspace with specified attributes.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to update.' },
+      updates: {
+        type: 'object',
+        description: 'An object containing attributes to update (e.g., { "auto-apply": true, "working-directory": "new-path" }).',
+        properties: {
+          'auto-apply': { type: 'boolean', description: 'Whether to automatically apply runs in this workspace.' },
+          'working-directory': { type: 'string', description: 'The working directory for the workspace.' },
+          name: { type: 'string', description: 'The new name of the workspace.' },
+          // Add other updatable attributes as needed based on Terraform API documentation
+        },
+        // No required properties for updates, as it's a partial update
+      },
+    },
+    ['workspaceId', 'updates'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'delete_terraform_workspace',
+    deleteTerraformWorkspace,
+    ['workspaceId'],
+    'Delete a Terraform workspace by its ID.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to delete.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_terraform_run',
+    createTerraformRun,
+    ['workspaceId', 'message', 'runType', 'isDestroy', 'isRefreshOnly'],
+    'Create a new run in a Terraform workspace for planning, applying, destroying, or refreshing.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to create the run in.' },
+      message: { type: 'string', description: 'A message describing the run.' },
+      runType: {
+        type: 'string',
+        description: 'The type of run ("plan-and-apply", "destroy", "refresh-only"). Defaults to "plan-and-apply".',
+        enum: ['plan-and-apply', 'destroy', 'refresh-only'],
+      },
+      isDestroy: { type: 'boolean', description: 'Set to true for a destroy run. Defaults to false.' },
+      isRefreshOnly: { type: 'boolean', description: 'Set to true for a refresh-only run. Defaults to false.' },
+    },
+    ['workspaceId', 'message'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'apply_terraform_run',
+    applyTerraformRun,
+    ['runId', 'comment'],
+    'Apply a specific Terraform run that is in a "planned" or "cost_estimated" state.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to apply.' },
+      comment: { type: 'string', description: 'Optional: A comment for the apply action. Defaults to "Applied via API".' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'discard_terraform_run',
+    discardTerraformRun,
+    ['runId', 'comment'],
+    'Discard a specific Terraform run.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to discard.' },
+      comment: { type: 'string', description: 'Optional: A comment for the discard action. Defaults to "Discarded via API".' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_terraform_run_details',
+    getTerraformRunDetails,
+    ['runId'],
+    'Get detailed information about a specific Terraform run.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to get details for.' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_apply',
+    terraformApply,
+    ['organizationName', 'workspaceName', 'tarGzBuffer', 'message'],
+    'Perform a full Terraform "apply" workflow: creates a config version, uploads code, creates a run, and applies it. Requires a .tar.gz buffer of your Terraform configuration.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to apply changes to.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration. This should be generated from the Terraform configuration files.' },
+      message: { type: 'string', description: 'Optional: A message for the run. Defaults to "Triggered by API apply".' },
+    },
+    ['organizationName', 'workspaceName', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_plan',
+    terraformPlan,
+    ['organizationName', 'workspaceName', 'tarGzBuffer', 'message'],
+    'Perform a Terraform "plan" workflow: creates a config version, uploads code, and creates a run. Does NOT apply the changes. Requires a .tar.gz buffer of your Terraform configuration.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to plan changes for.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration. This should be generated from the Terraform configuration files.' },
+      message: { type: 'string', description: 'Optional: A message for the run. Defaults to "Triggered by API plan".' },
+    },
+    ['organizationName', 'workspaceName', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_destroy',
+    terraformDestroy,
+    ['organizationName', 'workspaceName', 'message'],
+    'Perform a Terraform "destroy" workflow: creates a destroy run and applies it. Note: Terraform Cloud typically requires a confirmation step for destroy runs.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to destroy.' },
+      message: { type: 'string', description: 'Optional: A message for the destroy run. Defaults to "Triggered by API destroy".' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_refresh',
+    terraformRefresh,
+    ['organizationName', 'workspaceName', 'message'],
+    'Perform a Terraform "refresh-only" workflow: creates a refresh-only run and applies it. This will update the state without making any infrastructure changes.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to refresh.' },
+      message: { type: 'string', description: 'Optional: A message for the refresh-only run. Defaults to "Triggered by API refresh".' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -988,6 +1217,14 @@ async function loadIntegrations(sessionId) {
     await loadDockerHub(sessionId);
   } else {
     logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
+  }
+
+  // Add Terraform integration loading
+  if (process.env.TERRAFORM_API_ENDPOINT && process.env.TERRAFORM_API_TOKEN) {
+    logger.info(`Loading Terraform integration for session: ${sessionId}`);
+    await loadTerraform(sessionId);
+  } else {
+    logger.info(`Terraform integration not loaded for session: ${sessionId}. TERRAFORM_API_ENDPOINT or TERRAFORM_API_TOKEN not set.`);
   }
 }
 
