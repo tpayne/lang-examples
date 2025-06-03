@@ -47,7 +47,7 @@ RUN npm install --omit=dev && \
 FROM node:lts-alpine${alpineVersion} AS runner
 
 # Combined apk install and upgrade
-RUN apk add --no-cache memcached supervisor openssl && \
+RUN apk add --no-cache memcached supervisor openssl terraform && \
      apk -U upgrade
 
 EXPOSE 11211

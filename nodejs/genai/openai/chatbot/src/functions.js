@@ -70,7 +70,7 @@ const {
   searchDockerImages,
 } = require('./dockerHub'); // Import the new dockerhub.js module
 
-// Import Terraform functions
+// Import Terraform Cloud API functions
 const {
   listTerraformWorkspaces,
   getTerraformWorkspaceDetails,
@@ -78,8 +78,8 @@ const {
   updateTerraformWorkspace,
   deleteTerraformWorkspace,
   createTerraformRun,
-  createTerraformConfigurationVersion, // Added for registration
-  uploadTerraformConfiguration, // Added for registration
+  createTerraformConfigurationVersion,
+  uploadTerraformConfiguration,
   applyTerraformRun,
   discardTerraformRun,
   getTerraformRunDetails,
@@ -87,10 +87,18 @@ const {
   terraformPlan,
   terraformDestroy,
   terraformRefresh,
-} = require('./terraform'); // Import the new terraform.js module
+} = require('./terraform'); // Import the terraform.js module for Cloud API
 
-// Import the new workflow function
-const { runTerraformWorkflow } = require('./terraformWorkflow');
+// Import Terraform CLI functions
+const {
+  checkTerraformCliExists,
+  runTerraformCliWorkflow,
+  setCloudContext, // Import the new setCloudContext function
+} = require('./terraformCli'); // Import the new terraform-cli.js module
+
+const {
+  runTerraformWorkflow,
+} = require('./terraformWorkflow'); // Import the Terraform CLI workflow function
 
 /* eslint-disable max-len */
 
@@ -967,10 +975,45 @@ async function loadDockerHub(sessionId) {
 }
 
 /**
- * Loads Terraform functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
+ * Loads the comprehensive Terraform workflow function into the registry.
+ * This function handles saving Terraform files, archiving them, and then
+ * initiating a plan or apply operation via Terraform Cloud.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraformWorkflow(sessionId) {
+  await registerFunction(
+    sessionId,
+    'run_terraform_workflow',
+    runTerraformWorkflow,
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action', 'projectDirectoryName', 'message'],
+    'Orchestrates a full Terraform workflow: saves provided Terraform code to a temporary directory, creates a .tar.gz archive, uploads it to Terraform Cloud, and then initiates either a plan or apply operation.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the Terraform Cloud workspace.' },
+      terraformFiles: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing an object where keys are filenames (e.g., "main.tf", "variables.tf") and values are their HCL/JSON content. Example: \'{"main.tf": "resource \\"aws_s3_bucket\\" \\"example\\" { bucket = \\"my-bucket\\" }", "variables.tf": "variable \\"region\\" { default = \\"us-east-1\\" }"}\'',
+      },
+      action: {
+        type: 'string',
+        description: 'The desired Terraform action to perform ("plan" or "apply").',
+        enum: ['plan', 'apply'],
+      },
+      projectDirectoryName: { type: 'string', description: 'Optional: A subdirectory name within the session\'s temporary directory to store the Terraform files. Defaults to "terraform-project".' },
+      message: { type: 'string', description: 'Optional: A message for the Terraform run in Terraform Cloud. Defaults to "Triggered by API [action]".' },
+    },
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action'],
+    true, // needSession is true
+  );
+}
+
+/**
+ * Loads Terraform Cloud API functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
  * @param {string} sessionId - The unique identifier for the session.
  */
 async function loadTerraform(sessionId) {
+  await loadTerraformWorkflow();
+
   await registerFunction(
     sessionId,
     'list_terraform_workspaces',
@@ -1087,7 +1130,6 @@ async function loadTerraform(sessionId) {
     true,
   );
 
-  // New registration for uploadTerraformConfiguration
   await registerFunction(
     sessionId,
     'upload_terraform_configuration',
@@ -1207,34 +1249,52 @@ async function loadTerraform(sessionId) {
 }
 
 /**
- * Loads the comprehensive Terraform workflow function into the registry.
- * This function handles saving Terraform files, archiving them, and then
- * initiating a plan or apply operation via Terraform Cloud.
+ * Loads Terraform CLI functions into the registry if the Terraform CLI is available.
  * @param {string} sessionId - The unique identifier for the session.
  */
-async function loadTerraformWorkflow(sessionId) {
+async function loadTerraformCli(sessionId) {
   await registerFunction(
     sessionId,
-    'run_terraform_workflow',
-    runTerraformWorkflow,
-    ['organizationName', 'workspaceName', 'terraformFiles', 'action', 'projectDirectoryName', 'message'],
-    'Orchestrates a full Terraform workflow: saves provided Terraform code to a temporary directory, creates a .tar.gz archive, uploads it to Terraform Cloud, and then initiates either a plan or apply operation.',
+    'run_terraform_cli_workflow',
+    runTerraformCliWorkflow,
+    ['terraformFiles', 'action', 'projectDirectoryName', 'additionalArgs'],
+    'Orchestrates a full Terraform CLI workflow: saves provided Terraform code to a temporary directory, runs `terraform init`, and then executes the specified Terraform CLI action (e.g., `plan`, `apply`, `destroy`, `refresh`, `validate`, `fmt`, `output`, `state list`, `state show`, `state rm`, `state mv`).',
     {
-      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
-      workspaceName: { type: 'string', description: 'The name of the Terraform Cloud workspace.' },
       terraformFiles: {
         type: 'string', // Will be a JSON string of an object
         description: 'A JSON string representing an object where keys are filenames (e.g., "main.tf", "variables.tf") and values are their HCL/JSON content. Example: \'{"main.tf": "resource \\"aws_s3_bucket\\" \\"example\\" { bucket = \\"my-bucket\\" }", "variables.tf": "variable \\"region\\" { default = \\"us-east-1\\" }"}\'',
       },
       action: {
         type: 'string',
-        description: 'The desired Terraform action to perform ("plan" or "apply").',
-        enum: ['plan', 'apply'],
+        description: 'The desired Terraform CLI action to perform. Supported actions: "plan", "apply", "destroy", "refresh", "validate", "fmt", "output", "state list", "state show", "state rm", "state mv".',
+        enum: ['plan', 'apply', 'destroy', 'refresh', 'validate', 'fmt', 'output', 'state list', 'state show', 'state rm', 'state mv'],
       },
       projectDirectoryName: { type: 'string', description: 'Optional: A subdirectory name within the session\'s temporary directory to store the Terraform files. Defaults to "terraform-project".' },
-      message: { type: 'string', description: 'Optional: A message for the Terraform run in Terraform Cloud. Defaults to "Triggered by API [action]".' },
+      additionalArgs: { type: 'string', description: 'Optional: Any additional arguments to pass directly to the Terraform command (e.g., \'-var="foo=bar"\', \'-auto-approve\'). Note: `apply` and `destroy` actions automatically include `-auto-approve` by default in this workflow unless overridden.' },
     },
-    ['organizationName', 'workspaceName', 'terraformFiles', 'action'],
+    ['terraformFiles', 'action'],
+    true, // needSession is true
+  );
+
+  // Register the new set_cloud_context function
+  await registerFunction(
+    sessionId,
+    'set_cloud_context',
+    setCloudContext,
+    ['cloudProvider', 'credentials'],
+    'Sets the cloud provider context (AWS, Azure, or GCP) for subsequent Terraform CLI operations in this session. This will configure environment variables for the chosen provider.',
+    {
+      cloudProvider: {
+        type: 'string',
+        description: 'The target cloud provider (e.g., "aws", "azure", "gcp").',
+        enum: ['aws', 'azure', 'gcp'],
+      },
+      credentials: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing the credentials for the specified cloud provider. For AWS: {"AWS_ACCESS_KEY_ID": "...", "AWS_SECRET_ACCESS_KEY": "...", "AWS_REGION": "..."}. For Azure: {"ARM_CLIENT_ID": "...", "ARM_CLIENT_SECRET": "...", "ARM_TENANT_ID": "...", "ARM_SUBSCRIPTION_ID": "..."}. For GCP: {"GOOGLE_APPLICATION_CREDENTIALS_JSON": "..."} (the content of your service account key JSON file).',
+      },
+    },
+    ['cloudProvider', 'credentials'],
     true, // needSession is true
   );
 }
@@ -1285,14 +1345,32 @@ async function loadIntegrations(sessionId) {
     logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
   }
 
-  // Add Terraform integration loading
-  if (process.env.TERRAFORM_API_ENDPOINT && process.env.TERRAFORM_API_TOKEN) {
-    logger.info(`Loading Terraform integration for session: ${sessionId}`);
+  // Terraform integration loading logic (CLI vs. Cloud API)
+  const terraformCliEnabled = process.env.TERRAFORM_CLI_ENABLED === 'true';
+  const terraformApiConfigured = process.env.TERRAFORM_API_ENDPOINT && process.env.TERRAFORM_API_TOKEN;
+
+  // Prioritize CLI if enabled and available
+  if (terraformCliEnabled) {
+    logger.info(`Checking for Terraform CLI availability for session: ${sessionId}`);
+    const cliAvailable = await checkTerraformCliExists();
+    if (cliAvailable) {
+      logger.info(`Loading Terraform CLI integration for session: ${sessionId}`);
+      await loadTerraformCli(sessionId);
+    } else {
+      logger.warn(`Terraform CLI integration not loaded for session: ${sessionId}. CLI not found or not accessible.`);
+      // If CLI is enabled but not found, check for Cloud API as a fallback
+      if (terraformApiConfigured) {
+        logger.info(`Falling back to Terraform Cloud API integration for session: ${sessionId}`);
+        await loadTerraform(sessionId);
+      } else {
+        logger.warn(`No Terraform integration loaded for session: ${sessionId}. Neither CLI (enabled but not found) nor Cloud API (not configured).`);
+      }
+    }
+  } else if (terraformApiConfigured) { // Load Cloud API if CLI not enabled, but API is configured
+    logger.info(`Loading Terraform Cloud API integration for session: ${sessionId}`);
     await loadTerraform(sessionId);
-    // Load the new comprehensive Terraform workflow
-    await loadTerraformWorkflow(sessionId);
-  } else {
-    logger.info(`Terraform integration not loaded for session: ${sessionId}. TERRAFORM_API_ENDPOINT or TERRAFORM_API_TOKEN not set.`);
+  } else { // No Terraform integration loaded at all
+    logger.info(`No Terraform integration loaded for session: ${sessionId}. TERRAFORM_CLI_ENABLED is not 'true' and TERRAFORM_API_ENDPOINT/TERRAFORM_API_TOKEN are not set.`);
   }
 }
 

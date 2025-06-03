@@ -152,7 +152,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line122">line 122</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line130">line 130</a>
     </li></ul></dd>
     
 
@@ -297,7 +297,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line128">line 128</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line136">line 136</a>
     </li></ul></dd>
     
 
@@ -369,7 +369,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line134">line 134</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -2676,6 +2676,117 @@ the existence of the repository.
     <dd>
         
 <span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="checkTerraformCliExists"><span class="type-signature">(async) </span>checkTerraformCliExists<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;boolean>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Checks if the Terraform CLI is installed and accessible by running 'terraform version'.
+This function updates an internal flag and should be called once during integration loading.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="terraformCli.js.html">terraformCli.js</a>, <a href="terraformCli.js.html#line45">line 45</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    True if Terraform CLI is found, false otherwise.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;boolean></span>
 
 
     </dd>
@@ -7540,6 +7651,319 @@ write permissions to it. The path of the created directory is returned.
     
 
     
+    <h4 class="name" id="executeTerraformCommand"><span class="type-signature">(async) </span>executeTerraformCommand<span class="signature">(sessionId, command, workingDirectory, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Executes a Terraform CLI command in a specified directory.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The session ID for logging.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>command</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The Terraform command to execute (e.g., 'init', 'plan', 'apply -auto-approve').</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>workingDirectory</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The directory where the command should be executed.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    {}
+                
+                </td>
+            
+
+            <td class="description last">Additional options for child_process.exec.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="terraformCli.js.html">terraformCli.js</a>, <a href="terraformCli.js.html#line68">line 68</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If the command fails or Terraform CLI is not available.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    The stdout and stderr of the command.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="fetchRepoContentsRecursive"><span class="type-signature">(async) </span>fetchRepoContentsRecursive<span class="signature">(sessionId, username, repoName, repoDirName, initialrepoDirName, localDestPath<span class="signature-attributes">opt</span>, includeDotGithub<span class="signature-attributes">opt</span>, skipBinaryFiles<span class="signature-attributes">opt</span>, retryCount<span class="signature-attributes">opt</span>, maxRetries<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
@@ -8755,7 +9179,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1256">line 1256</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1316">line 1316</a>
     </li></ul></dd>
     
 
@@ -9746,7 +10170,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1247">line 1247</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1307">line 1307</a>
     </li></ul></dd>
     
 
@@ -11802,7 +12226,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line158">line 158</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line166">line 166</a>
     </li></ul></dd>
     
 
@@ -11961,7 +12385,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line141">line 141</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line149">line 149</a>
     </li></ul></dd>
     
 
@@ -18107,7 +18531,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line580">line 580</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line588">line 588</a>
     </li></ul></dd>
     
 
@@ -18244,7 +18668,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line472">line 472</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line480">line 480</a>
     </li></ul></dd>
     
 
@@ -18288,7 +18712,7 @@ Handles API errors and "Not Found" exceptions.
 
 
 <div class="description">
-    Loads Terraform functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
+    Loads Terraform Cloud API functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
 </div>
 
 
@@ -18381,7 +18805,144 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line973">line 973</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1014">line 1014</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="loadTerraformCli"><span class="type-signature">(async) </span>loadTerraformCli<span class="signature">(sessionId)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Loads Terraform CLI functions into the registry if the Terraform CLI is available.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1255">line 1255</a>
     </li></ul></dd>
     
 
@@ -18520,7 +19081,7 @@ initiating a plan or apply operation via Terraform Cloud.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1215">line 1215</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line983">line 983</a>
     </li></ul></dd>
     
 
@@ -19458,7 +20019,7 @@ or null if the route cannot be planned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line181">line 181</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line189">line 189</a>
     </li></ul></dd>
     
 
@@ -19483,6 +20044,388 @@ or null if the route cannot be planned.
 
 
 
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="runTerraformCliWorkflow"><span class="type-signature">(async) </span>runTerraformCliWorkflow<span class="signature">(sessionId, terraformFiles, action, projectDirectoryName<span class="signature-attributes">opt</span>, additionalArgs<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Orchestrates a full Terraform CLI workflow: saving files, running init, and then the specified action.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The current session ID.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>terraformFiles</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">An object where keys are filenames (e.g., 'main.tf') and values are their HCL/JSON content.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>action</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">'plan'</span>
+|
+
+<span class="param-type">'apply'</span>
+|
+
+<span class="param-type">'destroy'</span>
+|
+
+<span class="param-type">'refresh'</span>
+|
+
+<span class="param-type">'validate'</span>
+|
+
+<span class="param-type">'fmt'</span>
+|
+
+<span class="param-type">'output'</span>
+|
+
+<span class="param-type">'state list'</span>
+|
+
+<span class="param-type">'state show'</span>
+|
+
+<span class="param-type">'state rm'</span>
+|
+
+<span class="param-type">'state mv'</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The desired Terraform action.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>projectDirectoryName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'terraform-project'
+                
+                </td>
+            
+
+            <td class="description last">A subdirectory name within the session's temp dir to store the TF files.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>additionalArgs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    ''
+                
+                </td>
+            
+
+            <td class="description last">Any additional arguments to pass to the Terraform command (e.g., '-var="foo=bar"', '-auto-approve').</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="terraformCli.js.html">terraformCli.js</a>, <a href="terraformCli.js.html#line158">line 158</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If Terraform CLI is not available or any step in the workflow fails.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    The result (stdout and stderr) of the Terraform operation.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;object></span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -20748,6 +21691,199 @@ Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.</t
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setCloudContext"><span class="type-signature"></span>setCloudContext<span class="signature">(sessionId, cloudProvider, credentials)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Sets the cloud context for a given session.
+This function stores the target cloud provider and its associated credentials/configuration.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sessionId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The unique identifier for the session.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cloudProvider</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">'aws'</span>
+|
+
+<span class="param-type">'azure'</span>
+|
+
+<span class="param-type">'gcp'</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The target cloud provider.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>credentials</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">An object containing the necessary credentials/configuration for the cloud provider.
+For AWS: { AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION }
+For Azure: { ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID, ARM_SUBSCRIPTION_ID }
+For GCP: { GOOGLE_APPLICATION_CREDENTIALS_JSON } (JSON string of service account key)</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="terraformCli.js.html">terraformCli.js</a>, <a href="terraformCli.js.html#line32">line 32</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -24102,7 +25238,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line97">line 97</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line105">line 105</a>
     </li></ul></dd>
     
 
@@ -24245,7 +25381,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line112">line 112</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -24275,13 +25411,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#applyTerraformRun">applyTerraformRun</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#callTerraformApi">callTerraformApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createTarGzFromDirectory">createTarGzFromDirectory</a></li><li><a href="global.html#createTerraformConfigurationVersion">createTerraformConfigurationVersion</a></li><li><a href="global.html#createTerraformRun">createTerraformRun</a></li><li><a href="global.html#createTerraformWorkspace">createTerraformWorkspace</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#deleteTerraformWorkspace">deleteTerraformWorkspace</a></li><li><a href="global.html#discardTerraformRun">discardTerraformRun</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getTerraformRunDetails">getTerraformRunDetails</a></li><li><a href="global.html#getTerraformWorkspaceDetails">getTerraformWorkspaceDetails</a></li><li><a href="global.html#getTerraformWorkspaceIdByName">getTerraformWorkspaceIdByName</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listTerraformWorkspaces">listTerraformWorkspaces</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadTerraform">loadTerraform</a></li><li><a href="global.html#loadTerraformWorkflow">loadTerraformWorkflow</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runTerraformWorkflow">runTerraformWorkflow</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#terraformApply">terraformApply</a></li><li><a href="global.html#terraformDestroy">terraformDestroy</a></li><li><a href="global.html#terraformPlan">terraformPlan</a></li><li><a href="global.html#terraformRefresh">terraformRefresh</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#updateTerraformWorkspace">updateTerraformWorkspace</a></li><li><a href="global.html#uploadTerraformConfiguration">uploadTerraformConfiguration</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#applyTerraformRun">applyTerraformRun</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#callTerraformApi">callTerraformApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#checkTerraformCliExists">checkTerraformCliExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createTarGzFromDirectory">createTarGzFromDirectory</a></li><li><a href="global.html#createTerraformConfigurationVersion">createTerraformConfigurationVersion</a></li><li><a href="global.html#createTerraformRun">createTerraformRun</a></li><li><a href="global.html#createTerraformWorkspace">createTerraformWorkspace</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#deleteTerraformWorkspace">deleteTerraformWorkspace</a></li><li><a href="global.html#discardTerraformRun">discardTerraformRun</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#executeTerraformCommand">executeTerraformCommand</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getTerraformRunDetails">getTerraformRunDetails</a></li><li><a href="global.html#getTerraformWorkspaceDetails">getTerraformWorkspaceDetails</a></li><li><a href="global.html#getTerraformWorkspaceIdByName">getTerraformWorkspaceIdByName</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listTerraformWorkspaces">listTerraformWorkspaces</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadTerraform">loadTerraform</a></li><li><a href="global.html#loadTerraformCli">loadTerraformCli</a></li><li><a href="global.html#loadTerraformWorkflow">loadTerraformWorkflow</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runTerraformCliWorkflow">runTerraformCliWorkflow</a></li><li><a href="global.html#runTerraformWorkflow">runTerraformWorkflow</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setCloudContext">setCloudContext</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#terraformApply">terraformApply</a></li><li><a href="global.html#terraformDestroy">terraformDestroy</a></li><li><a href="global.html#terraformPlan">terraformPlan</a></li><li><a href="global.html#terraformRefresh">terraformRefresh</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#updateTerraformWorkspace">updateTerraformWorkspace</a></li><li><a href="global.html#uploadTerraformConfiguration">uploadTerraformConfiguration</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jun 03 2025 12:52:09 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jun 03 2025 19:17:52 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
