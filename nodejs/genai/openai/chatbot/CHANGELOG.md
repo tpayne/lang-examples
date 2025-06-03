@@ -1,4 +1,6 @@
 # Changelog
+## 2025-06-03	(19:44:21-UTC+0000)
+- **Other**: Update README.md (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-05-30	(01:47:21-UTC+0000)
 - **Other**: Version updates (in nodejs/genai/openai/chatbot/documentation/chatbot.js.html)
 - **Other**: Version updates (in nodejs/genai/openai/chatbot/documentation/codeReviews.js.html)
