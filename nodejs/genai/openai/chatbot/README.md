@@ -236,6 +236,7 @@ The following functions are available for interacting with Kubernetes. Many of t
 * List Kubernetes PersistentVolumeClaims (optional namespace).
 * List Kubernetes Jobs (optional namespace).
 * List Kubernetes CronJobs (optional namespace).
+* Create, delete or update resources
 
 Example Usage:
 
@@ -265,6 +266,9 @@ Other samples can include things like: -
 * Tell me the pods running on my k8s install?
 * Get me the pod logs for the core-dns ones
 * Are there any issues shown in the pod logs for core-dns ones?
+* Create a tomcat deployment for me using the official docker image from Dockerhub
+* Review the logs of failing deployments and diagnose any issues you can see
+* Fix my failing tomcat deployment after you have reviewed the failing logs
 
 Cleaning Up
 -----------
