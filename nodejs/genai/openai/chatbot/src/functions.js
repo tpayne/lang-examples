@@ -1279,10 +1279,10 @@ async function loadTerraformCli(sessionId) {
   // Register the new set_cloud_context function
   await registerFunction(
     sessionId,
-    'set_cloud_context',
+    'set_terraform_cloud_context',
     setCloudContext,
     ['cloudProvider', 'credentials'],
-    'Sets the cloud provider context (AWS, Azure, or GCP) for subsequent Terraform CLI operations in this session. This will configure environment variables for the chosen provider.',
+    'Sets the Terraform cloud provider context (AWS, Azure, or GCP) for subsequent Terraform CLI operations in this session. This will configure environment variables for the chosen provider.',
     {
       cloudProvider: {
         type: 'string',
