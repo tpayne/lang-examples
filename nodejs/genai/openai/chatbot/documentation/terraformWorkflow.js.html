@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: terraformWorkflow.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: terraformWorkflow.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const fs = require('fs/promises');
+const path = require('path');
+const logger = require('./logger'); // Assuming a logger utility exists
+
+// Import necessary utilities from your utilities.js
+const {
+  saveCodeToFile,
+  getOrCreateSessionTempDir, // Use this to get the session's base temp directory
+  cleanupSessionTempDir, // Use this for comprehensive cleanup,
+  createTarGzFromDirectory, // Assuming this is now in utilities.js or still imported from elsewhere
+} = require('./utilities'); // Ensure createTarGzFromDirectory is imported correctly if it's moved
+
+// Import Terraform functions from your terraform.js
+const {
+  terraformApply,
+  terraformPlan,
+} = require('./terraform');
+
+/**
+ * Orchestrates the full Terraform workflow: saving files, creating a .tar.gz,
+ * uploading to Terraform Cloud, and initiating a plan or apply.
+ * @param {string} sessionId - The current session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the Terraform Cloud workspace.
+ * @param {object} terraformFiles - An object where keys are filenames (e.g., 'main.tf') and values are their HCL/JSON content.
+ * @param {'plan' | 'apply'} action - The desired Terraform action ('plan' or 'apply').
+ * @param {string} [projectDirectoryName='terraform-project'] - A subdirectory name within the session's temp dir to store the TF files.
+ * @param {string} [message] - An optional message for the Terraform run.
+ * @returns {Promise&lt;object>} The result of the Terraform plan or apply operation.
+ */
+async function runTerraformWorkflow(
+  sessionId,
+  organizationName,
+  workspaceName,
+  terraformFiles,
+  action,
+  projectDirectoryName = 'terraform-project',
+  message = `Triggered by API ${action}`,
+) {
+  // Get the session's base temporary directory using the utility function
+  const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
+  const projectPath = path.join(sessionTempDir, projectDirectoryName);
+  const tarGzOutputPath = path.join(sessionTempDir, `${projectDirectoryName}.tar.gz`);
+
+  try {
+    logger.info(`[Session: ${sessionId}] Starting Terraform workflow for workspace '${workspaceName}' with action '${action}'.`);
+
+    // 1. Save Terraform code to session directory
+    logger.info(`[Session: ${sessionId}] Saving Terraform files to: ${projectPath}`);
+    // Use Promise.all with map to iterate over object keys and save files
+    await Promise.all(Object.keys(terraformFiles).map(async (filename) => {
+      await saveCodeToFile(sessionId, terraformFiles[filename], filename, projectDirectoryName);
+    }));
+
+    // 2. Create a .tar.gz archive from the saved files
+    logger.info(`[Session: ${sessionId}] Creating .tar.gz archive from ${projectPath}`);
+    await createTarGzFromDirectory(projectPath, tarGzOutputPath);
+
+    // 3. Read the .tar.gz into a Buffer
+    const tarGzBuffer = await fs.readFile(tarGzOutputPath);
+    logger.info(`[Session: ${sessionId}] .tar.gz archive read into buffer. Size: ${tarGzBuffer.length} bytes.`);
+
+    // 4. Upload and run Terraform operation
+    let result;
+    if (action === 'apply') {
+      logger.info(`[Session: ${sessionId}] Initiating terraformApply...`);
+      result = await terraformApply(sessionId, organizationName, workspaceName, tarGzBuffer, message);
+    } else if (action === 'plan') {
+      logger.info(`[Session: ${sessionId}] Initiating terraformPlan...`);
+      result = await terraformPlan(sessionId, organizationName, workspaceName, tarGzBuffer, message);
+    } else {
+      throw new Error(`Unsupported action: ${action}. Must be 'plan' or 'apply'.`);
+    }
+
+    logger.info(`[Session: ${sessionId}] Terraform operation '${action}' completed successfully.`);
+    return result;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Terraform workflow failed: ${error.message}`, error);
+    throw error; // Re-throw to propagate the error
+  } finally {
+    // Clean up the entire session's temporary directory using the utility function
+    logger.info(`[Session: ${sessionId}] Cleaning up session temporary directory: ${sessionTempDir}`);
+    await cleanupSessionTempDir(sessionId).catch((err) => logger.error(`Failed to clean up session temp directory: ${err.message}`));
+  }
+}
+
+module.exports = {
+  runTerraformWorkflow,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#applyTerraformRun">applyTerraformRun</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#callTerraformApi">callTerraformApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createTarGzFromDirectory">createTarGzFromDirectory</a></li><li><a href="global.html#createTerraformConfigurationVersion">createTerraformConfigurationVersion</a></li><li><a href="global.html#createTerraformRun">createTerraformRun</a></li><li><a href="global.html#createTerraformWorkspace">createTerraformWorkspace</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#deleteTerraformWorkspace">deleteTerraformWorkspace</a></li><li><a href="global.html#discardTerraformRun">discardTerraformRun</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getTerraformRunDetails">getTerraformRunDetails</a></li><li><a href="global.html#getTerraformWorkspaceDetails">getTerraformWorkspaceDetails</a></li><li><a href="global.html#getTerraformWorkspaceIdByName">getTerraformWorkspaceIdByName</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listTerraformWorkspaces">listTerraformWorkspaces</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadTerraform">loadTerraform</a></li><li><a href="global.html#loadTerraformWorkflow">loadTerraformWorkflow</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runTerraformWorkflow">runTerraformWorkflow</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#terraformApply">terraformApply</a></li><li><a href="global.html#terraformDestroy">terraformDestroy</a></li><li><a href="global.html#terraformPlan">terraformPlan</a></li><li><a href="global.html#terraformRefresh">terraformRefresh</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#updateTerraformWorkspace">updateTerraformWorkspace</a></li><li><a href="global.html#uploadTerraformConfiguration">uploadTerraformConfiguration</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jun 03 2025 12:52:09 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
