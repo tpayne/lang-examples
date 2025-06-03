@@ -22,7 +22,7 @@ async function callTerraformApi(sessionId, path, method = 'GET', body = null, co
   const skipTlsVerify = process.env.TERRAFORM_TLS_SKIP_VERIFY === 'true';
 
   if (!terraformApiEndpoint) {
-    throw new Error('Terraform API endpoint is not configured. Please set TERRAFORM_API_ENDPOINT in your .env or properties file.');
+    throw new Error('Kubernetes API endpoint is not configured. Please set TERRAFORM_API_ENDPOINT in your .env or properties file.');
   }
   if (!terraformApiToken) {
     throw new Error('Terraform API Token is not configured. Please set TERRAFORM_API_TOKEN in your .env or properties file.');
@@ -102,7 +102,7 @@ async function getTerraformWorkspaceIdByName(sessionId, organizationName, worksp
   logger.debug(`[Session: ${sessionId}] Attempting to find workspace ID for organization '${organizationName}', workspace '${workspaceName}'`);
   const path = `/organizations/${organizationName}/workspaces`;
   const response = await callTerraformApi(sessionId, path);
-  const workspace = response.data.find(ws => ws.attributes.name === workspaceName);
+  const workspace = response.data.find((ws) => ws.attributes.name === workspaceName);
 
   if (!workspace) {
     throw new Error(`Workspace '${workspaceName}' not found in organization '${organizationName}'.`);
@@ -155,10 +155,10 @@ async function createTerraformWorkspace(sessionId, organizationName, workspaceNa
         'auto-apply': autoApply,
         'working-directory': workingDirectory,
         'vcs-repo': vcsRepoIdentifier ? {
-          'identifier': vcsRepoIdentifier,
+          identifier: vcsRepoIdentifier,
           'oauth-token-id': process.env.TERRAFORM_VCS_OAUTH_TOKEN_ID, // Requires a configured VCS OAuth Token ID
-          'branch': 'main', // Default branch, can be parameterized
-          'ingress-submodules': false
+          branch: 'main', // Default branch, can be parameterized
+          'ingress-submodules': false,
         } : null,
       },
       type: 'workspaces',
@@ -211,11 +211,11 @@ async function deleteTerraformWorkspace(sessionId, workspaceId) {
  */
 async function createTerraformRun(sessionId, workspaceId, message, runType = 'plan-and-apply', isDestroy = false, isRefreshOnly = false) {
   logger.info(`[Session: ${sessionId}] Creating a '${runType}' run for workspace ID: ${workspaceId}`);
-  const path = `/runs`;
+  const path = '/runs';
   const body = {
     data: {
       attributes: {
-        message: message,
+        message,
         'is-destroy': isDestroy,
         'refresh-only': isRefreshOnly,
       },
@@ -292,7 +292,7 @@ async function applyTerraformRun(sessionId, runId, comment = 'Applied via API') 
   logger.info(`[Session: ${sessionId}] Applying run ID: ${runId}`);
   const path = `/runs/${runId}/actions/apply`;
   const body = {
-    comment: comment,
+    comment,
   };
   return callTerraformApi(sessionId, path, 'POST', body);
 }
@@ -308,7 +308,7 @@ async function discardTerraformRun(sessionId, runId, comment = 'Discarded via AP
   logger.info(`[Session: ${sessionId}] Discarding run ID: ${runId}`);
   const path = `/runs/${runId}/actions/discard`;
   const body = {
-    comment: comment,
+    comment,
   };
   return callTerraformApi(sessionId, path, 'POST', body);
 }
@@ -348,10 +348,13 @@ async function terraformApply(sessionId, organizationName, workspaceName, tarGzB
   // Wait for the plan to complete and be confirmable (optional, but good practice)
   logger.info(`[Session: ${sessionId}] Waiting for plan to complete for run ID: ${runId}`);
   let runDetails = await getTerraformRunDetails(sessionId, runId);
-  while (runDetails.data.attributes.status !== 'planned' && runDetails.data.attributes.status !== 'errored' && runDetails.data.attributes.status !== 'cost_estimated') {
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
     logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
   }
 
   if (runDetails.data.attributes.status === 'errored') {
@@ -386,10 +389,13 @@ async function terraformPlan(sessionId, organizationName, workspaceName, tarGzBu
   // Wait for the plan to complete
   logger.info(`[Session: ${sessionId}] Waiting for plan to complete for run ID: ${runId}`);
   let runDetails = await getTerraformRunDetails(sessionId, runId);
-  while (runDetails.data.attributes.status !== 'planned' && runDetails.data.attributes.status !== 'errored' && runDetails.data.attributes.status !== 'cost_estimated') {
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
     logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
   }
 
   if (runDetails.data.attributes.status === 'errored') {
@@ -421,10 +427,13 @@ async function terraformDestroy(sessionId, organizationName, workspaceName, mess
   // Wait for the plan (destroy plan) to complete and be confirmable
   logger.info(`[Session: ${sessionId}] Waiting for destroy plan to complete for run ID: ${runId}`);
   let runDetails = await getTerraformRunDetails(sessionId, runId);
-  while (runDetails.data.attributes.status !== 'planned' && runDetails.data.attributes.status !== 'errored') {
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
     logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
   }
 
   if (runDetails.data.attributes.status === 'errored') {
@@ -454,10 +463,13 @@ async function terraformRefresh(sessionId, organizationName, workspaceName, mess
   // Wait for the refresh plan to complete and be confirmable
   logger.info(`[Session: ${sessionId}] Waiting for refresh plan to complete for run ID: ${runId}`);
   let runDetails = await getTerraformRunDetails(sessionId, runId);
-  while (runDetails.data.attributes.status !== 'planned' && runDetails.data.attributes.status !== 'errored') {
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
     logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
-    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
   }
 
   if (runDetails.data.attributes.status === 'errored') {

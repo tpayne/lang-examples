@@ -98,6 +98,28 @@ const {
   searchDockerImages,
 } = require('./dockerHub'); // Import the new dockerhub.js module
 
+// Import Terraform functions
+const {
+  listTerraformWorkspaces,
+  getTerraformWorkspaceDetails,
+  createTerraformWorkspace,
+  updateTerraformWorkspace,
+  deleteTerraformWorkspace,
+  createTerraformRun,
+  createTerraformConfigurationVersion, // Added for registration
+  uploadTerraformConfiguration, // Added for registration
+  applyTerraformRun,
+  discardTerraformRun,
+  getTerraformRunDetails,
+  terraformApply,
+  terraformPlan,
+  terraformDestroy,
+  terraformRefresh,
+} = require('./terraform'); // Import the new terraform.js module
+
+// Import the new workflow function
+const { runTerraformWorkflow } = require('./terraformWorkflow');
+
 /* eslint-disable max-len */
 
 /**
@@ -973,6 +995,279 @@ async function loadDockerHub(sessionId) {
 }
 
 /**
+ * Loads Terraform functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraform(sessionId) {
+  await registerFunction(
+    sessionId,
+    'list_terraform_workspaces',
+    listTerraformWorkspaces,
+    ['organizationName'],
+    'List all workspaces in a given Terraform Cloud/Enterprise organization.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+    },
+    ['organizationName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_terraform_workspace_details',
+    getTerraformWorkspaceDetails,
+    ['workspaceId'],
+    'Get detailed information about a specific Terraform workspace by its ID.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the Terraform workspace.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_terraform_workspace',
+    createTerraformWorkspace,
+    ['organizationName', 'workspaceName', 'autoApply', 'workingDirectory', 'vcsRepoIdentifier'],
+    'Create a new Terraform workspace in a specified organization.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the new workspace.' },
+      autoApply: { type: 'boolean', description: 'Optional: Whether to automatically apply runs in this workspace. Defaults to false.' },
+      workingDirectory: { type: 'string', description: 'Optional: The working directory for the workspace.' },
+      vcsRepoIdentifier: { type: 'string', description: 'Optional: The VCS repository identifier (e.g., "org/repo"). If provided, TERRAFORM_VCS_OAUTH_TOKEN_ID must also be set.' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'update_terraform_workspace',
+    updateTerraformWorkspace,
+    ['workspaceId', 'updates'],
+    'Update an existing Terraform workspace with specified attributes.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to update.' },
+      updates: {
+        type: 'object',
+        description: 'An object containing attributes to update (e.g., { "auto-apply": true, "working-directory": "new-path" }).',
+        properties: {
+          'auto-apply': { type: 'boolean', description: 'Whether to automatically apply runs in this workspace.' },
+          'working-directory': { type: 'string', description: 'The working directory for the workspace.' },
+          name: { type: 'string', description: 'The new name of the workspace.' },
+          // Add other updatable attributes as needed based on Terraform API documentation
+        },
+        // No required properties for updates, as it's a partial update
+      },
+    },
+    ['workspaceId', 'updates'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'delete_terraform_workspace',
+    deleteTerraformWorkspace,
+    ['workspaceId'],
+    'Delete a Terraform workspace by its ID.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to delete.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_terraform_run',
+    createTerraformRun,
+    ['workspaceId', 'message', 'runType', 'isDestroy', 'isRefreshOnly'],
+    'Create a new run in a Terraform workspace for planning, applying, destroying, or refreshing.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to create the run in.' },
+      message: { type: 'string', description: 'A message describing the run.' },
+      runType: {
+        type: 'string',
+        description: 'The type of run ("plan-and-apply", "destroy", "refresh-only"). Defaults to "plan-and-apply".',
+        enum: ['plan-and-apply', 'destroy', 'refresh-only'],
+      },
+      isDestroy: { type: 'boolean', description: 'Set to true for a destroy run. Defaults to false.' },
+      isRefreshOnly: { type: 'boolean', description: 'Set to true for a refresh-only run. Defaults to false.' },
+    },
+    ['workspaceId', 'message'],
+    true,
+  );
+
+  // New registration for createTerraformConfigurationVersion
+  await registerFunction(
+    sessionId,
+    'create_terraform_configuration_version',
+    createTerraformConfigurationVersion,
+    ['workspaceId', 'autoQueueRuns'],
+    'Create a new configuration version for a Terraform workspace. This is a prerequisite for uploading Terraform code.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to create the configuration version for.' },
+      autoQueueRuns: { type: 'boolean', description: 'Optional: Whether to automatically queue runs after configuration upload. Defaults to true.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  // New registration for uploadTerraformConfiguration
+  await registerFunction(
+    sessionId,
+    'upload_terraform_configuration',
+    uploadTerraformConfiguration,
+    ['uploadUrl', 'tarGzBuffer'],
+    'Upload a .tar.gz file containing Terraform configuration to a given upload URL obtained from create_terraform_configuration_version.',
+    {
+      uploadUrl: { type: 'string', description: 'The pre-signed URL provided by the create_terraform_configuration_version endpoint for uploading the .tar.gz file.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration.' },
+    },
+    ['uploadUrl', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'apply_terraform_run',
+    applyTerraformRun,
+    ['runId', 'comment'],
+    'Apply a specific Terraform run that is in a "planned" or "cost_estimated" state.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to apply.' },
+      comment: { type: 'string', description: 'Optional: A comment for the apply action. Defaults to "Applied via API".' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'discard_terraform_run',
+    discardTerraformRun,
+    ['runId', 'comment'],
+    'Discard a specific Terraform run.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to discard.' },
+      comment: { type: 'string', description: 'Optional: A comment for the discard action. Defaults to "Discarded via API".' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_terraform_run_details',
+    getTerraformRunDetails,
+    ['runId'],
+    'Get detailed information about a specific Terraform run.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to get details for.' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_apply',
+    terraformApply,
+    ['organizationName', 'workspaceName', 'tarGzBuffer', 'message'],
+    'Perform a full Terraform "apply" workflow: creates a config version, uploads code, creates a run, and applies it. Requires a .tar.gz buffer of your Terraform configuration.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to apply changes to.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration. This should be generated from the Terraform configuration files.' },
+      message: { type: 'string', description: 'Optional: A message for the run. Defaults to "Triggered by API apply".' },
+    },
+    ['organizationName', 'workspaceName', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_plan',
+    terraformPlan,
+    ['organizationName', 'workspaceName', 'tarGzBuffer', 'message'],
+    'Perform a Terraform "plan" workflow: creates a config version, uploads code, and creates a run. Does NOT apply the changes. Requires a .tar.gz buffer of your Terraform configuration.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to plan changes for.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration. This should be generated from the Terraform configuration files.' },
+      message: { type: 'string', description: 'Optional: A message for the run. Defaults to "Triggered by API plan".' },
+    },
+    ['organizationName', 'workspaceName', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_destroy',
+    terraformDestroy,
+    ['organizationName', 'workspaceName', 'message'],
+    'Perform a Terraform "destroy" workflow: creates a destroy run and applies it. Note: Terraform Cloud typically requires a confirmation step for destroy runs.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to destroy.' },
+      message: { type: 'string', description: 'Optional: A message for the destroy run. Defaults to "Triggered by API destroy".' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_refresh',
+    terraformRefresh,
+    ['organizationName', 'workspaceName', 'message'],
+    'Perform a Terraform "refresh-only" workflow: creates a refresh-only run and applies it. This will update the state without making any infrastructure changes.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to refresh.' },
+      message: { type: 'string', description: 'Optional: A message for the refresh-only run. Defaults to "Triggered by API refresh".' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+}
+
+/**
+ * Loads the comprehensive Terraform workflow function into the registry.
+ * This function handles saving Terraform files, archiving them, and then
+ * initiating a plan or apply operation via Terraform Cloud.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraformWorkflow(sessionId) {
+  await registerFunction(
+    sessionId,
+    'run_terraform_workflow',
+    runTerraformWorkflow,
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action', 'projectDirectoryName', 'message'],
+    'Orchestrates a full Terraform workflow: saves provided Terraform code to a temporary directory, creates a .tar.gz archive, uploads it to Terraform Cloud, and then initiates either a plan or apply operation.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the Terraform Cloud workspace.' },
+      terraformFiles: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing an object where keys are filenames (e.g., "main.tf", "variables.tf") and values are their HCL/JSON content. Example: \'{"main.tf": "resource \\"aws_s3_bucket\\" \\"example\\" { bucket = \\"my-bucket\\" }", "variables.tf": "variable \\"region\\" { default = \\"us-east-1\\" }"}\'',
+      },
+      action: {
+        type: 'string',
+        description: 'The desired Terraform action to perform ("plan" or "apply").',
+        enum: ['plan', 'apply'],
+      },
+      projectDirectoryName: { type: 'string', description: 'Optional: A subdirectory name within the session\'s temporary directory to store the Terraform files. Defaults to "terraform-project".' },
+      message: { type: 'string', description: 'Optional: A message for the Terraform run in Terraform Cloud. Defaults to "Triggered by API [action]".' },
+    },
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action'],
+    true, // needSession is true
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise&lt;FunctionMetadata[]>} An array of function metadata.
@@ -1017,6 +1312,16 @@ async function loadIntegrations(sessionId) {
   } else {
     logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
   }
+
+  // Add Terraform integration loading
+  if (process.env.TERRAFORM_API_ENDPOINT &amp;&amp; process.env.TERRAFORM_API_TOKEN) {
+    logger.info(`Loading Terraform integration for session: ${sessionId}`);
+    await loadTerraform(sessionId);
+    // Load the new comprehensive Terraform workflow
+    await loadTerraformWorkflow(sessionId);
+  } else {
+    logger.info(`Terraform integration not loaded for session: ${sessionId}. TERRAFORM_API_ENDPOINT or TERRAFORM_API_TOKEN not set.`);
+  }
 }
 
 async function cleanupSession(sessionId) {
@@ -1047,13 +1352,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#applyTerraformRun">applyTerraformRun</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#callTerraformApi">callTerraformApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createTarGzFromDirectory">createTarGzFromDirectory</a></li><li><a href="global.html#createTerraformConfigurationVersion">createTerraformConfigurationVersion</a></li><li><a href="global.html#createTerraformRun">createTerraformRun</a></li><li><a href="global.html#createTerraformWorkspace">createTerraformWorkspace</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#deleteTerraformWorkspace">deleteTerraformWorkspace</a></li><li><a href="global.html#discardTerraformRun">discardTerraformRun</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getTerraformRunDetails">getTerraformRunDetails</a></li><li><a href="global.html#getTerraformWorkspaceDetails">getTerraformWorkspaceDetails</a></li><li><a href="global.html#getTerraformWorkspaceIdByName">getTerraformWorkspaceIdByName</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listTerraformWorkspaces">listTerraformWorkspaces</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadTerraform">loadTerraform</a></li><li><a href="global.html#loadTerraformWorkflow">loadTerraformWorkflow</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runTerraformWorkflow">runTerraformWorkflow</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#terraformApply">terraformApply</a></li><li><a href="global.html#terraformDestroy">terraformDestroy</a></li><li><a href="global.html#terraformPlan">terraformPlan</a></li><li><a href="global.html#terraformRefresh">terraformRefresh</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#updateTerraformWorkspace">updateTerraformWorkspace</a></li><li><a href="global.html#uploadTerraformConfiguration">uploadTerraformConfiguration</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri May 30 2025 02:35:12 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jun 03 2025 12:52:09 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

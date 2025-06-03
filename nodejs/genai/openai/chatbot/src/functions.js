@@ -78,8 +78,8 @@ const {
   updateTerraformWorkspace,
   deleteTerraformWorkspace,
   createTerraformRun,
-  createTerraformConfigurationVersion,
-  uploadTerraformConfiguration,
+  createTerraformConfigurationVersion, // Added for registration
+  uploadTerraformConfiguration, // Added for registration
   applyTerraformRun,
   discardTerraformRun,
   getTerraformRunDetails,
@@ -1072,6 +1072,36 @@ async function loadTerraform(sessionId) {
     true,
   );
 
+  // New registration for createTerraformConfigurationVersion
+  await registerFunction(
+    sessionId,
+    'create_terraform_configuration_version',
+    createTerraformConfigurationVersion,
+    ['workspaceId', 'autoQueueRuns'],
+    'Create a new configuration version for a Terraform workspace. This is a prerequisite for uploading Terraform code.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to create the configuration version for.' },
+      autoQueueRuns: { type: 'boolean', description: 'Optional: Whether to automatically queue runs after configuration upload. Defaults to true.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  // New registration for uploadTerraformConfiguration
+  await registerFunction(
+    sessionId,
+    'upload_terraform_configuration',
+    uploadTerraformConfiguration,
+    ['uploadUrl', 'tarGzBuffer'],
+    'Upload a .tar.gz file containing Terraform configuration to a given upload URL obtained from create_terraform_configuration_version.',
+    {
+      uploadUrl: { type: 'string', description: 'The pre-signed URL provided by the create_terraform_configuration_version endpoint for uploading the .tar.gz file.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration.' },
+    },
+    ['uploadUrl', 'tarGzBuffer'],
+    true,
+  );
+
   await registerFunction(
     sessionId,
     'apply_terraform_run',
@@ -1208,7 +1238,6 @@ async function loadTerraformWorkflow(sessionId) {
     true, // needSession is true
   );
 }
-
 
 /**
  * Returns the function definitions for the AI tool for a specific session.

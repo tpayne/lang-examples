@@ -3,8 +3,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 const { Mutex } = require('async-mutex'); // Import Mutex
+const tar = require('tar');
 const logger = require('./logger'); // Assuming you have a logger utility
-const archiver = require('archiver');
 
 // Shared cache for temporary directories per session
 const sessionTempDirs = new Map();
@@ -18,39 +18,26 @@ const sessionMutexes = new Map();
  * @returns {Promise<void>} A promise that resolves when the archive is created.
  */
 async function createTarGzFromDirectory(sourceDirectory, outputFilePath) {
-  return new Promise((resolve, reject) => {
-    const output = fs.createWriteStream(outputFilePath);
-    const archive = archiver('tar', {
-      gzip: true,
-      zlib: { level: 9 } // Sets the compression level.
-    });
-
-    output.on('close', () => {
-      logger.info(`[Archiver] Archive created: ${archive.pointer()} total bytes`);
-      resolve();
-    });
-
-    archive.on('warning', (err) => {
-      if (err.code === 'ENOENT') {
-        logger.warn(`[Archiver] Warning: ${err.message}`);
-      } else {
-        logger.error(`[Archiver] Error: ${err.message}`);
-        reject(err);
-      }
-    });
-
-    archive.on('error', (err) => {
-      logger.error(`[Archiver] Archiving failed: ${err.message}`);
-      reject(err);
-    });
-
-    archive.pipe(output);
-
-    // Append the source directory. The 'dest' option ensures files are at the root of the archive.
-    archive.directory(sourceDirectory, false);
-
-    archive.finalize();
-  });
+  logger.info(`[node-tar] Creating .tar.gz archive from '${sourceDirectory}' to '${outputFilePath}'`);
+  try {
+    // The `tar.create` method is powerful.
+    // `gzip: true` enables gzip compression.
+    // `file: outputFilePath` specifies the output file.
+    // `cwd: sourceDirectory` sets the current working directory for the tar operation.
+    // The last argument `['.']` tells it to archive the current directory (which is `sourceDirectory` due to `cwd`).
+    await tar.create(
+      {
+        gzip: true,
+        file: outputFilePath,
+        cwd: sourceDirectory,
+      },
+      ['.'], // Archive the contents of the current working directory (sourceDirectory)
+    );
+    logger.info(`[node-tar] Archive created successfully: ${outputFilePath}`);
+  } catch (error) {
+    logger.error(`[node-tar] Archiving failed: ${error.message}`, error);
+    throw new Error(`Failed to create .tar.gz archive: ${error.message}`);
+  }
 }
 
 /**

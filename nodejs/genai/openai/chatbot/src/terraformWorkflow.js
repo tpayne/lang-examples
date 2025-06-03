@@ -6,9 +6,9 @@ const logger = require('./logger'); // Assuming a logger utility exists
 const {
   saveCodeToFile,
   getOrCreateSessionTempDir, // Use this to get the session's base temp directory
-  cleanupSessionTempDir,    // Use this for comprehensive cleanup,
-  createTarGzFromDirectory,
-} = require('./utilities');
+  cleanupSessionTempDir, // Use this for comprehensive cleanup,
+  createTarGzFromDirectory, // Assuming this is now in utilities.js or still imported from elsewhere
+} = require('./utilities'); // Ensure createTarGzFromDirectory is imported correctly if it's moved
 
 // Import Terraform functions from your terraform.js
 const {
@@ -35,7 +35,7 @@ async function runTerraformWorkflow(
   terraformFiles,
   action,
   projectDirectoryName = 'terraform-project',
-  message = `Triggered by API ${action}`
+  message = `Triggered by API ${action}`,
 ) {
   // Get the session's base temporary directory using the utility function
   const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
@@ -47,12 +47,10 @@ async function runTerraformWorkflow(
 
     // 1. Save Terraform code to session directory
     logger.info(`[Session: ${sessionId}] Saving Terraform files to: ${projectPath}`);
-    // saveCodeToFile handles creating the directory structure if projectDirectoryName is provided
-    for (const filename in terraformFiles) {
-      if (Object.prototype.hasOwnProperty.call(terraformFiles, filename)) {
-        await saveCodeToFile(sessionId, terraformFiles[filename], filename, projectDirectoryName);
-      }
-    }
+    // Use Promise.all with map to iterate over object keys and save files
+    await Promise.all(Object.keys(terraformFiles).map(async (filename) => {
+      await saveCodeToFile(sessionId, terraformFiles[filename], filename, projectDirectoryName);
+    }));
 
     // 2. Create a .tar.gz archive from the saved files
     logger.info(`[Session: ${sessionId}] Creating .tar.gz archive from ${projectPath}`);
@@ -76,14 +74,13 @@ async function runTerraformWorkflow(
 
     logger.info(`[Session: ${sessionId}] Terraform operation '${action}' completed successfully.`);
     return result;
-
   } catch (error) {
     logger.error(`[Session: ${sessionId}] Terraform workflow failed: ${error.message}`, error);
     throw error; // Re-throw to propagate the error
   } finally {
     // Clean up the entire session's temporary directory using the utility function
     logger.info(`[Session: ${sessionId}] Cleaning up session temporary directory: ${sessionTempDir}`);
-    await cleanupSessionTempDir(sessionId).catch(err => logger.error(`Failed to clean up session temp directory: ${err.message}`));
+    await cleanupSessionTempDir(sessionId).catch((err) => logger.error(`Failed to clean up session temp directory: ${err.message}`));
   }
 }
 
