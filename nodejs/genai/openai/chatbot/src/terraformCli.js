@@ -139,7 +139,7 @@ async function executeTerraformCommand(sessionId, command, workingDirectory, opt
       const credsFilePath = env.GOOGLE_APPLICATION_CREDENTIALS;
       const credsDir = path.dirname(credsFilePath);
       await fs.rm(credsDir, { recursive: true, force: true }).catch((err) => {
-        logger.error(`[Session: ${sessionId}] Failed to clean up GCP credentials directory ${credsDir}: ${err.message}`);
+        logger.error(`[Session: ${sessionId}] Failed to clean up GCP credentials directory. Error: ${err.message}`);
       });
       logger.debug(`[Session: ${sessionId}] Cleaned up GCP credentials at ${credsFilePath}`);
     }
