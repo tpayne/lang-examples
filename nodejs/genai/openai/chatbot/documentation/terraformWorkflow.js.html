@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: codeReviews.js</title>
+    <title>JSDoc: Source: terraformWorkflow.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: codeReviews.js</h1>
+    <h1 class="page-title">Source: terraformWorkflow.js</h1>
 
     
 
@@ -26,101 +26,94 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>const { Mutex } = require('async-mutex'); // Ensure Mutex is imported
-const logger = require('./logger');
-const { fetchRepoContentsRecursive, switchBranch } = require('./gitFunctions');
-const { readFilesInDirectory, getOrCreateSessionTempDir, cleanupSessionTempDir } = require('./utilities');
+            <pre class="prettyprint source linenums"><code>const fs = require('fs/promises');
+const path = require('path');
+const logger = require('./logger'); // Assuming a logger utility exists
 
-const sessionMutexes = new Map(); // **This map needs to be defined**
+// Import necessary utilities from your utilities.js
+const {
+  saveCodeToFile,
+  getOrCreateSessionTempDir, // Use this to get the session's base temp directory
+  cleanupSessionTempDir, // Use this for comprehensive cleanup,
+  createTarGzFromDirectory, // Assuming this is now in utilities.js or still imported from elsewhere
+} = require('./utilities'); // Ensure createTarGzFromDirectory is imported correctly if it's moved
 
-function getSessionMutex(sessionId) { // **This function needs to be defined**
-  if (!sessionMutexes.has(sessionId)) {
-    sessionMutexes.set(sessionId, new Mutex());
-  }
-  return sessionMutexes.get(sessionId);
-}
+// Import Terraform functions from your terraform.js
+const {
+  terraformApply,
+  terraformPlan,
+} = require('./terraform');
 
 /**
- * Lists the names of public repositories for a given GitHub username for a specific session.
- * Fetches repo data and extracts the 'name' property.
- * Handles API errors and "Not Found" exceptions.
- * Uses a temporary directory and ensures thread safety per session.
- * @async
- * @param {string} sessionId The unique identifier for the session.
- * @param {string} username The GitHub username.
- * @param {string} repoName The GitHub repo name.
- * @param {string} repoDirName The GitHub path name.
- * @param {string} branchName The GitHub repo branch to use.
- * @returns {Promise&lt;string[] | { success: boolean, message: string }>} Array of public repository names or an error object.
- * @throws {Error} If API request fails or user is not found.
+ * Orchestrates the full Terraform workflow: saving files, creating a .tar.gz,
+ * uploading to Terraform Cloud, and initiating a plan or apply.
+ * @param {string} sessionId - The current session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the Terraform Cloud workspace.
+ * @param {object} terraformFiles - An object where keys are filenames (e.g., 'main.tf') and values are their HCL/JSON content.
+ * @param {'plan' | 'apply'} action - The desired Terraform action ('plan' or 'apply').
+ * @param {string} [projectDirectoryName='terraform-project'] - A subdirectory name within the session's temp dir to store the TF files.
+ * @param {string} [message] - An optional message for the Terraform run.
+ * @returns {Promise&lt;object>} The result of the Terraform plan or apply operation.
  */
-async function codeReviews(sessionId, username, repoName, repoDirName, branchName) { // Reverted function signature
-  let tmpDir;
-  const sessionMutex = getSessionMutex(sessionId); // Acquire mutex
-  const release = await sessionMutex.acquire();
+async function runTerraformWorkflow(
+  sessionId,
+  organizationName,
+  workspaceName,
+  terraformFiles,
+  action,
+  projectDirectoryName = 'terraform-project',
+  message = `Triggered by API ${action}`,
+) {
+  // Get the session's base temporary directory using the utility function
+  const sessionTempDir = await getOrCreateSessionTempDir(sessionId);
+  const projectPath = path.join(sessionTempDir, projectDirectoryName);
+  const tarGzOutputPath = path.join(sessionTempDir, `${projectDirectoryName}.tar.gz`);
+
   try {
-    tmpDir = await getOrCreateSessionTempDir(sessionId);
+    logger.info(`[Session: ${sessionId}] Starting Terraform workflow for workspace '${workspaceName}' with action '${action}'.`);
 
-    // if the branchName is provided, switch to that branch
-    // before fetching the repo contents.
-    if (branchName) {
-      const resp = await switchBranch(username, repoName, branchName);
-      if (!resp.success) {
-        return {
-          success: false,
-          message: resp.message,
-        };
-      }
-    }
-    // Call fetchRepoContentsRecursive, passing repoDirName as both repoDirName and initialrepoDirName.
-    // Since codeReviews doesn't have a branch parameter, fetchRepoContentsRecursive
-    // will use its default branch (likely 'main').
-    const response = await fetchRepoContentsRecursive(
-      sessionId,
-      username,
-      repoName,
-      repoDirName, // Current path for the first fetch
-      repoDirName, // **Initial path for relative path calculation**
-      tmpDir,
-      false, // includeDotGithub
-      true, // skipBinaryFiles
-      0, // retryCount
-      3, // maxRetries
-      // Branch parameter is omitted here, fetchRepoContentsRecursive will use its default
-    );
+    // 1. Save Terraform code to session directory
+    logger.info(`[Session: ${sessionId}] Saving Terraform files to: ${projectPath}`);
+    // Use Promise.all with map to iterate over object keys and save files
+    await Promise.all(Object.keys(terraformFiles).map(async (filename) => {
+      await saveCodeToFile(sessionId, terraformFiles[filename], filename, projectDirectoryName);
+    }));
 
-    if (!response.success) {
-      return {
-        success: false,
-        message: response.message,
-      };
+    // 2. Create a .tar.gz archive from the saved files
+    logger.info(`[Session: ${sessionId}] Creating .tar.gz archive from ${projectPath}`);
+    await createTarGzFromDirectory(projectPath, tarGzOutputPath);
+
+    // 3. Read the .tar.gz into a Buffer
+    const tarGzBuffer = await fs.readFile(tarGzOutputPath);
+    logger.info(`[Session: ${sessionId}] .tar.gz archive read into buffer. Size: ${tarGzBuffer.length} bytes.`);
+
+    // 4. Upload and run Terraform operation
+    let result;
+    if (action === 'apply') {
+      logger.info(`[Session: ${sessionId}] Initiating terraformApply...`);
+      result = await terraformApply(sessionId, organizationName, workspaceName, tarGzBuffer, message);
+    } else if (action === 'plan') {
+      logger.info(`[Session: ${sessionId}] Initiating terraformPlan...`);
+      result = await terraformPlan(sessionId, organizationName, workspaceName, tarGzBuffer, message);
+    } else {
+      throw new Error(`Unsupported action: ${action}. Must be 'plan' or 'apply'.`);
     }
 
-    // readFilesInDirectory will now return file paths relative to the temporary directory root,
-    // which should mirror the structure relative to the original repoDirName.
-    const files = await readFilesInDirectory(tmpDir);
-    return Array.from(files);
+    logger.info(`[Session: ${sessionId}] Terraform operation '${action}' completed successfully.`);
+    return result;
   } catch (error) {
-    logger.error(`Error getting files for review (exception) [Session: ${sessionId}]: ${error.message || error}`);
-    throw error;
+    logger.error(`[Session: ${sessionId}] Terraform workflow failed: ${error.message}`, error);
+    throw error; // Re-throw to propagate the error
   } finally {
-    release(); // Release the mutex
-    // Cleanup logic remains the same, handled by cleanupSession or similar
+    // Clean up the entire session's temporary directory using the utility function
+    logger.info(`[Session: ${sessionId}] Cleaning up session temporary directory: ${sessionTempDir}`);
+    await cleanupSessionTempDir(sessionId).catch((err) => logger.error(`Failed to clean up session temp directory: ${err.message}`));
   }
-}
-
-/**
- * Cleans up the temporary directory associated with a specific session.
- * @async
- * @param {string} sessionId The unique identifier for the session.
- */
-async function cleanupSession(sessionId) {
-  await cleanupSessionTempDir(sessionId);
 }
 
 module.exports = {
-  codeReviews,
-  cleanupSession,
+  runTerraformWorkflow,
 };
 </code></pre>
         </article>
