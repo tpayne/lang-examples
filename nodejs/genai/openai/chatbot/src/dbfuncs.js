@@ -97,15 +97,12 @@ function parseJdbcUri(sessionId, uri) {
     // Ensure required properties for mssql package
     config.server = config.server || 'localhost';
     config.port = config.port || 1433;
-    config.user = config.user;
-    config.password = config.password;
-    config.database = config.database;
+    // Removed redundant self-assignments
     config.options = {
       encrypt: (config.options && config.options.encrypt) || false, // Use TLS/SSL for connection
       trustServerCertificate: (config.options && config.options.trustServerCertificate) || false, // Change to true for local dev / self-signed certs
       // You might add other options here like `enableArithAbort` etc.
     };
-
   } else if (uri.startsWith('mongodb://')) {
     dbType = 'mongodb';
     config.uri = uri;
@@ -202,7 +199,6 @@ async function testTcpConnection(host, port, sessionId) {
     socket.connect(port, host);
   });
 }
-
 
 /**
  * Connects to a database using a JDBC-like URI.

@@ -34,6 +34,7 @@ const sql = require('mssql'); // For MSSQL - Replaced tedious with mssql
 const { MongoClient } = require('mongodb'); // For MongoDB
 const oracledb = require('oracledb'); // For Oracle (requires Oracle Instant Client)
 const mysql = require('mysql2/promise'); // For MySQL
+const net = require('net'); // Node.js built-in net module for TCP diagnostics
 
 const logger = require('./logger'); // Assuming a logger utility exists
 
@@ -79,11 +80,12 @@ async function disconnectFromDatabase(sessionId, client, dbType) {
 /**
  * Parses a JDBC-like URI and extracts connection parameters.
  * This is a simplified parser and may not cover all complex JDBC URI variations.
+ * @param {string} sessionId - The current session ID for logging.
  * @param {string} uri - The JDBC-like URI (e.g., "jdbc:postgresql://host:port/database?user=...").
  * @returns {object} - An object containing database type and connection details.
  * @throws {Error} - If the URI format is unsupported.
  */
-function parseJdbcUri(uri) {
+function parseJdbcUri(sessionId, uri) {
   let dbType;
   const config = {};
 
@@ -101,7 +103,7 @@ function parseJdbcUri(uri) {
         const [key, value] = param.split('=');
         if (key === 'user') config.user = value;
         if (key === 'password') config.password = value;
-        if (key === 'sslmode' &amp;&amp; value === 'require') config.ssl = true;
+        if (key === 'sslmode' &amp;&amp; value === 'true') config.ssl = true;
       });
     }
   } else if (uri.startsWith('jdbc:sqlserver://')) {
@@ -123,12 +125,13 @@ function parseJdbcUri(uri) {
     // Ensure required properties for mssql package
     config.server = config.server || 'localhost';
     config.port = config.port || 1433;
-    // Removed redundant self-assignments for user, password, database
+    // Removed redundant self-assignments
     config.options = {
       encrypt: (config.options &amp;&amp; config.options.encrypt) || false, // Use TLS/SSL for connection
       trustServerCertificate: (config.options &amp;&amp; config.options.trustServerCertificate) || false, // Change to true for local dev / self-signed certs
       // You might add other options here like `enableArithAbort` etc.
     };
+
   } else if (uri.startsWith('mongodb://')) {
     dbType = 'mongodb';
     config.uri = uri;
@@ -155,7 +158,17 @@ function parseJdbcUri(uri) {
     const [hostPort, database] = hostPortDb.split('/');
     const [host, port] = hostPort.split(':');
 
-    config.host = host;
+    // Determine host based on Docker environment
+    if (process.env.DOCKER_ENV === 'true') {
+      // If running inside Docker, connect to the host machine
+      config.host = 'host.docker.internal';
+      logger.info(`[Session: ${sessionId}] MySQL host set to 'host.docker.internal' for Docker environment.`);
+    } else {
+      // Otherwise, explicitly set host to 127.0.0.1 for local non-Docker environments
+      config.host = (host === 'localhost' || host === '::1') ? '127.0.0.1' : host;
+      logger.info(`[Session: ${sessionId}] MySQL host set to '${config.host}' for non-Docker environment.`);
+    }
+
     config.port = port ? parseInt(port, 10) : 3306;
     config.database = database;
     if (paramsString) {
@@ -174,6 +187,50 @@ function parseJdbcUri(uri) {
 }
 
 /**
+ * Temporary diagnostic function to test raw TCP connection.
+ * @param {string} host - The host to connect to.
+ * @param {number} port - The port to connect to.
+ * @param {string} sessionId - The session ID for logging.
+ * @returns {Promise&lt;boolean>} - True if connection succeeds, false otherwise.
+ */
+async function testTcpConnection(host, port, sessionId) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let connected = false;
+
+    socket.setTimeout(2000); // 2-second timeout
+
+    socket.on('connect', () => {
+      logger.info(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} succeeded.`);
+      connected = true;
+      socket.destroy(); // Close the socket immediately
+      resolve(true);
+    });
+
+    socket.on('timeout', () => {
+      logger.error(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} timed out.`);
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on('error', (err) => {
+      logger.error(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} failed: ${err.message}`);
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on('close', () => {
+      if (!connected) {
+        logger.warn(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} closed without connecting (possibly refused or error before connect event).`);
+      }
+    });
+
+    socket.connect(port, host);
+  });
+}
+
+
+/**
  * Connects to a database using a JDBC-like URI.
  * @param {string} sessionId - The session ID for logging.
  * @param {string} uri - The JDBC-like URI for the database connection.
@@ -182,10 +239,18 @@ function parseJdbcUri(uri) {
  */
 async function connectToDatabase(sessionId, uri) {
   logger.info(`[Session: ${sessionId}] Attempting to connect to database using URI: ${uri}`);
-  const { dbType, config } = parseJdbcUri(uri);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
 
   let client;
   try {
+    if (dbType === 'mysql') {
+      // Run the diagnostic TCP connection test first for MySQL
+      const tcpSuccess = await testTcpConnection(config.host, config.port, sessionId);
+      if (!tcpSuccess) {
+        throw new Error(`DIAGNOSTIC: Raw TCP connection to ${config.host}:${config.port} failed. Cannot proceed with MySQL connection.`);
+      }
+    }
+
     switch (dbType) {
       case 'postgres': {
         client = new PgClient(config);
@@ -236,7 +301,7 @@ async function connectToDatabase(sessionId, uri) {
  */
 async function dumpDatabaseStructure(sessionId, uri) {
   logger.info(`[Session: ${sessionId}] Dumping database structure for URI: ${uri}`);
-  const { dbType, config } = parseJdbcUri(uri);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
   let client;
   try {
     client = await connectToDatabase(sessionId, uri);
@@ -474,7 +539,7 @@ async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentag
   }
   logger.info(`[Session: ${sessionId}] Selecting ${percentage}% data from ${tableNameOrViewName} for URI: ${uri}`);
 
-  const { dbType, config } = parseJdbcUri(uri);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
   let client;
   try {
     client = await connectToDatabase(sessionId, uri);
@@ -593,7 +658,7 @@ async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentag
     logger.info(`[Session: ${sessionId}] Successfully selected data from ${tableNameOrViewName} for ${dbType}.`);
     return results;
   } catch (error) {
-    logger.error(`[Session: ${sessionId}] Failed to select data from ${tableNameOrViewName} for ${dbType}: ${error.message}`, error);
+    logger.error(`[Session: ${sessionId}] Failed to select data from ${dbType}: ${error.message}`, error);
     throw new Error(`Database data selection failed: ${error.message}`);
   } finally {
     if (client) {
@@ -611,7 +676,7 @@ async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentag
  */
 async function listDatabaseSchemas(sessionId, uri) {
   logger.info(`[Session: ${sessionId}] Listing schemas for URI: ${uri}`);
-  const { dbType, config } = parseJdbcUri(uri);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
   let client;
   try {
     client = await connectToDatabase(sessionId, uri);
@@ -680,7 +745,7 @@ async function listDatabaseSchemas(sessionId, uri) {
  */
 async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tables', 'views', 'indexes', 'constraints']) {
   logger.info(`[Session: ${sessionId}] Listing objects for schema '${schemaName}' of types: ${objectTypes.join(', ')} for URI: ${uri}`);
-  const { dbType, config } = parseJdbcUri(uri);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
   let client;
   try {
     client = await connectToDatabase(sessionId, uri);
@@ -861,21 +926,24 @@ async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tab
                         SELECT table_name FROM information_schema.tables
                         WHERE table_schema = ? AND table_type = 'BASE TABLE';
                     `, [schemaName]);
-          objects.tables.push(...res.map((row) => row.table_name));
+          logger.debug(`[Session: ${sessionId}] MySQL listSchemaObjects raw table result for schema '${schemaName}': ${JSON.stringify(res)}`); // DIAGNOSTIC LOG
+          // The mysql2/promise library returns column names in uppercase by default when fetching objects via execute.
+          // We need to explicitly access TABLE_NAME.
+          objects.tables.push(...res.map((row) => row.TABLE_NAME)); // FIXED: Changed to row.TABLE_NAME
         }
         if (lowerCaseObjectTypes.includes('views')) {
           const [res] = await client.execute(`
                         SELECT table_name AS view_name FROM information_schema.views
                         WHERE table_schema = ?;
                     `, [schemaName]);
-          objects.views.push(...res.map((row) => row.view_name));
+          objects.views.push(...res.map((row) => row.VIEW_NAME)); // FIXED: Changed to row.VIEW_NAME
         }
         if (lowerCaseObjectTypes.includes('indexes')) {
           const [res] = await client.execute(`
                         SELECT index_name, table_name FROM information_schema.statistics
                         WHERE table_schema = ?;
                     `, [schemaName]);
-          objects.indexes.push(...res.map((row) => ({ name: row.index_name, table: row.table_name })));
+          objects.indexes.push(...res.map((row) => ({ name: row.INDEX_NAME, table: row.TABLE_NAME }))); // FIXED: Changed to uppercase
         }
         if (lowerCaseObjectTypes.includes('constraints')) {
           const [res] = await client.execute(`
@@ -883,10 +951,10 @@ async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tab
                         WHERE table_schema = ?;
                     `, [schemaName]);
           objects.constraints.push(...res.map((row) => ({
-            name: row.constraint_name,
-            type: row.constraint_type,
-            table: row.table_name,
-          })));
+            name: row.CONSTRAINT_NAME,
+            type: row.CONSTRAINT_TYPE,
+            table: row.TABLE_NAME,
+          }))); // FIXED: Changed to uppercase
         }
         break;
       }
@@ -924,13 +992,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jul 07 2025 16:23:14 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jul 07 2025 21:39:57 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
