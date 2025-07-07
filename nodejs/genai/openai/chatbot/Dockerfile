@@ -25,7 +25,7 @@ RUN npm install && npm test
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
 # Combined apk install and upgrade
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+RUN apk add --no-cache xdg-utils --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
         && apk -U upgrade
 
 WORKDIR /source
@@ -47,7 +47,7 @@ RUN npm install --omit=dev && \
 FROM node:lts-alpine${alpineVersion} AS runner
 
 # Combined apk install and upgrade
-RUN apk add --no-cache memcached supervisor openssl && \
+RUN apk add --no-cache memcached supervisor openssl xdg-utils && \
      apk -U upgrade
 
 EXPOSE 11211
