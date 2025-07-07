@@ -46,9 +46,51 @@ RUN npm install --omit=dev && \
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
 
-# Combined apk install and upgrade
-RUN apk add --no-cache memcached supervisor openssl && \
-     apk -U upgrade
+# Set environment variable for Azure CLI version to ensure reproducibility
+ENV AZURE_CLI_VERSION=2.61.0
+
+# Combined apk install for runtime dependencies and upgrade
+RUN apk add --no-cache \
+    memcached \
+    supervisor \
+    openssl \
+    terraform \
+    curl \
+    bash \
+    python3 \
+    py3-pip \
+    && apk -U upgrade
+
+# Install Azure CLI and its build dependencies, then clean up build dependencies
+# This step is crucial for minimizing the final image size.
+RUN apk add --no-cache --virtual .build-deps \
+    python3-dev \
+    libffi-dev \
+    openssl-dev \
+    gcc \
+    musl-dev \
+    make \
+    && pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir azure-cli==${AZURE_CLI_VERSION} \
+    && apk del .build-deps \
+    && rm -rf /var/cache/apk/* /tmp/*
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip" && \
+     unzip /tmp/awscliv2.zip -d /tmp && \
+     /tmp/aws/install && \
+     rm -rf /tmp/aws /tmp/awscliv2.zip
+
+# Install Google Cloud SDK
+# Note: Installing Google Cloud SDK on Alpine is not officially supported and may require additional dependencies
+# or workarounds depending on the Alpine version and gcloud SDK version.
+# The `libc6-compat` package is often necessary for compatibility.
+RUN apk add --no-cache libc6-compat
+RUN echo "https://packages.cloud.google.com/apt/doc/apt-key.gpg" && \
+     curl -sSL https://sdk.cloud.google.com | bash -s -- --disable-prompts && \
+     ln -s /root/google-cloud-sdk/bin/gcloud /usr/local/bin/gcloud
+
+ENV PATH="/root/google-cloud-sdk/bin:${PATH}"
 
 EXPOSE 11211
 EXPOSE 8080

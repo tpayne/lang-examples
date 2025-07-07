@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: terraform.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: terraform.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const https = require('https');
+const logger = require('./logger'); // Assuming a logger utility exists
+
+/**
+ * Executes a request to the Terraform Cloud/Enterprise API.
+ * This function handles authentication, different HTTP methods, request bodies, and basic error reporting.
+ * @param {string} sessionId - The session ID for logging purposes.
+ * @param {string} path - The full Terraform API path (e.g., '/organizations/my-org/workspaces').
+ * @param {string} [method='GET'] - Optional: The HTTP method (GET, POST, PATCH, DELETE). Defaults to 'GET'.
+ * @param {object|Buffer} [body=null] - Optional: The request body for POST/PATCH requests. Can be an object or a Buffer for file uploads.
+ * @param {string} [contentType='application/vnd.api+json'] - Optional: The Content-Type header.
+ * @returns {Promise&lt;object|string>} The response body from the Terraform API.
+ * @throws {Error} If the Terraform API endpoint or token are not configured,
+ * or if the API request fails.
+ */
+async function callTerraformApi(sessionId, path, method = 'GET', body = null, contentType = 'application/vnd.api+json') {
+  const terraformApiEndpoint = process.env.TERRAFORM_API_ENDPOINT || 'https://app.terraform.io/api/v2';
+  const terraformApiToken = process.env.TERRAFORM_API_TOKEN;
+
+  // TERRAFORM_TLS_SKIP_VERIFY should only be used for development/testing, NEVER in production.
+  const skipTlsVerify = process.env.TERRAFORM_TLS_SKIP_VERIFY === 'true';
+
+  if (!terraformApiEndpoint) {
+    throw new Error('Kubernetes API endpoint is not configured. Please set TERRAFORM_API_ENDPOINT in your .env or properties file.');
+  }
+  if (!terraformApiToken) {
+    throw new Error('Terraform API Token is not configured. Please set TERRAFORM_API_TOKEN in your .env or properties file.');
+  }
+
+  const url = `${terraformApiEndpoint}${path}`;
+  logger.debug(`[Session: ${sessionId}] Calling Terraform API: ${method} ${url}`);
+
+  try {
+    let request;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        request = superagent.get(url);
+        break;
+      case 'POST':
+        request = superagent.post(url);
+        break;
+      case 'PATCH':
+        request = superagent.patch(url);
+        break;
+      case 'DELETE':
+        request = superagent.delete(url);
+        break;
+      case 'PUT': // For file uploads, specifically configuration versions
+        request = superagent.put(url);
+        break;
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+
+    request
+      .set('Authorization', `Bearer ${terraformApiToken}`)
+      .set('Accept', 'application/vnd.api+json'); // Standard Terraform API accept header
+
+    if (body) {
+      if (contentType === 'application/vnd.api+json' || contentType === 'application/json') {
+        logger.debug(`[Session: ${sessionId}] Sending JSON body for ${method} ${path}`);
+        request.send(body);
+        request.set('Content-Type', contentType);
+      } else {
+        // For raw body (e.g., .tar.gz upload), set appropriate content type and send as buffer
+        logger.debug(`[Session: ${sessionId}] Sending raw body with content type ${contentType} for ${method} ${path}`);
+        request.set('Content-Type', contentType);
+        request.send(body);
+      }
+    }
+
+    // WARNING: Skipping TLS verification is INSECURE and should ONLY be used for development/testing.
+    if (skipTlsVerify) {
+      logger.warn(`[Session: ${sessionId}] Skipping Terraform TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
+      const insecureAgent = new https.Agent({
+        rejectUnauthorized: false,
+      });
+      request = request.agent(insecureAgent);
+    }
+
+    const response = await request;
+    return response.body;
+  } catch (error) {
+    const errorMessage = error.response
+      ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+      : error.message;
+    logger.error(`[Session: ${sessionId}] Terraform API call failed for ${method} ${path}: ${errorMessage}`, error);
+    throw new Error(`Failed to perform Terraform operation on ${path}: ${errorMessage}`);
+  }
+}
+
+/**
+ * Helper function to get a workspace ID by name.
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the workspace.
+ * @returns {Promise&lt;string>} The ID of the workspace.
+ * @throws {Error} If the workspace is not found.
+ */
+async function getTerraformWorkspaceIdByName(sessionId, organizationName, workspaceName) {
+  logger.debug(`[Session: ${sessionId}] Attempting to find workspace ID for organization '${organizationName}', workspace '${workspaceName}'`);
+  const path = `/organizations/${organizationName}/workspaces`;
+  const response = await callTerraformApi(sessionId, path);
+  const workspace = response.data.find((ws) => ws.attributes.name === workspaceName);
+
+  if (!workspace) {
+    throw new Error(`Workspace '${workspaceName}' not found in organization '${organizationName}'.`);
+  }
+  logger.debug(`[Session: ${sessionId}] Found workspace ID: ${workspace.id} for workspace '${workspaceName}'`);
+  return workspace.id;
+}
+
+/**
+ * Lists all workspaces in a given Terraform Cloud/Enterprise organization.
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @returns {Promise&lt;object>} A list of Terraform workspaces.
+ */
+async function listTerraformWorkspaces(sessionId, organizationName) {
+  logger.info(`[Session: ${sessionId}] Listing workspaces for organization: ${organizationName}`);
+  const path = `/organizations/${organizationName}/workspaces`;
+  return callTerraformApi(sessionId, path);
+}
+
+/**
+ * Gets detailed information about a specific Terraform workspace.
+ * @param {string} sessionId - The session ID.
+ * @param {string} workspaceId - The ID of the workspace.
+ * @returns {Promise&lt;object>} Detailed information about the Terraform workspace.
+ */
+async function getTerraformWorkspaceDetails(sessionId, workspaceId) {
+  logger.info(`[Session: ${sessionId}] Getting details for workspace ID: ${workspaceId}`);
+  const path = `/workspaces/${workspaceId}`;
+  return callTerraformApi(sessionId, path);
+}
+
+/**
+ * Creates a new Terraform workspace.
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the new workspace.
+ * @param {boolean} [autoApply=false] - Whether to automatically apply runs in this workspace.
+ * @param {string} [workingDirectory=''] - The working directory for the workspace.
+ * @param {string} [vcsRepoIdentifier=''] - The VCS repository identifier (e.g., 'org/repo').
+ * @returns {Promise&lt;object>} The created workspace object.
+ */
+async function createTerraformWorkspace(sessionId, organizationName, workspaceName, autoApply = false, workingDirectory = '', vcsRepoIdentifier = '') {
+  logger.info(`[Session: ${sessionId}] Creating workspace '${workspaceName}' in organization '${organizationName}'`);
+  const path = `/organizations/${organizationName}/workspaces`;
+  const body = {
+    data: {
+      attributes: {
+        name: workspaceName,
+        'auto-apply': autoApply,
+        'working-directory': workingDirectory,
+        'vcs-repo': vcsRepoIdentifier ? {
+          identifier: vcsRepoIdentifier,
+          'oauth-token-id': process.env.TERRAFORM_VCS_OAUTH_TOKEN_ID, // Requires a configured VCS OAuth Token ID
+          branch: 'main', // Default branch, can be parameterized
+          'ingress-submodules': false,
+        } : null,
+      },
+      type: 'workspaces',
+    },
+  };
+  return callTerraformApi(sessionId, path, 'POST', body);
+}
+
+/**
+ * Updates an existing Terraform workspace.
+ * @param {string} sessionId - The session ID.
+ * @param {string} workspaceId - The ID of the workspace to update.
+ * @param {object} updates - An object containing attributes to update (e.g., { 'auto-apply': true, 'working-directory': 'new-path' }).
+ * @returns {Promise&lt;object>} The updated workspace object.
+ */
+async function updateTerraformWorkspace(sessionId, workspaceId, updates) {
+  logger.info(`[Session: ${sessionId}] Updating workspace ID: ${workspaceId} with updates: ${JSON.stringify(updates)}`);
+  const path = `/workspaces/${workspaceId}`;
+  const body = {
+    data: {
+      id: workspaceId,
+      attributes: updates,
+      type: 'workspaces',
+    },
+  };
+  return callTerraformApi(sessionId, path, 'PATCH', body);
+}
+
+/**
+ * Deletes a Terraform workspace.
+ * @param {string} sessionId - The session ID.
+ * @param {string} workspaceId - The ID of the workspace to delete.
+ * @returns {Promise&lt;object>} The response from the deletion operation (usually empty on success).
+ */
+async function deleteTerraformWorkspace(sessionId, workspaceId) {
+  logger.info(`[Session: ${sessionId}] Deleting workspace ID: ${workspaceId}`);
+  const path = `/workspaces/${workspaceId}`;
+  return callTerraformApi(sessionId, path, 'DELETE');
+}
+
+/**
+ * Creates a new run in a Terraform workspace. This is the first step for plan/apply/destroy.
+ * @param {string} sessionId - The session ID.
+ * @param {string} workspaceId - The ID of the workspace to create the run in.
+ * @param {string} message - A message for the run.
+ * @param {string} [runType='plan-and-apply'] - The type of run ('plan-and-apply', 'destroy', 'refresh-only').
+ * @param {boolean} [isDestroy=false] - Set to true for a destroy run.
+ * @param {boolean} [isRefreshOnly=false] - Set to true for a refresh-only run.
+ * @returns {Promise&lt;object>} The created run object.
+ */
+async function createTerraformRun(sessionId, workspaceId, message, runType = 'plan-and-apply', isDestroy = false, isRefreshOnly = false) {
+  logger.info(`[Session: ${sessionId}] Creating a '${runType}' run for workspace ID: ${workspaceId}`);
+  const path = '/runs';
+  const body = {
+    data: {
+      attributes: {
+        message,
+        'is-destroy': isDestroy,
+        'refresh-only': isRefreshOnly,
+      },
+      relationships: {
+        workspace: {
+          data: {
+            id: workspaceId,
+            type: 'workspaces',
+          },
+        },
+      },
+      type: 'runs',
+    },
+  };
+  return callTerraformApi(sessionId, path, 'POST', body);
+}
+
+/**
+ * Creates a new configuration version for a workspace. This is needed before uploading Terraform code.
+ * @param {string} sessionId - The session ID.
+ * @param {string} workspaceId - The ID of the workspace.
+ * @param {boolean} [autoQueueRuns=true] - Whether to automatically queue runs after configuration upload.
+ * @returns {Promise&lt;object>} The created configuration version object, including the upload URL.
+ */
+async function createTerraformConfigurationVersion(sessionId, workspaceId, autoQueueRuns = true) {
+  logger.info(`[Session: ${sessionId}] Creating configuration version for workspace ID: ${workspaceId}`);
+  const path = `/workspaces/${workspaceId}/configuration-versions`;
+  const body = {
+    data: {
+      attributes: {
+        'auto-queue-runs': autoQueueRuns,
+      },
+      type: 'configuration-versions',
+    },
+  };
+  return callTerraformApi(sessionId, path, 'POST', body);
+}
+
+/**
+ * Uploads a .tar.gz file containing Terraform configuration to a given upload URL.
+ * @param {string} sessionId - The session ID.
+ * @param {string} uploadUrl - The URL provided by the configuration version creation endpoint.
+ * @param {Buffer} tarGzBuffer - The Buffer containing the .tar.gz archive of your Terraform configuration.
+ * @returns {Promise&lt;void>} Resolves on successful upload.
+ */
+async function uploadTerraformConfiguration(sessionId, uploadUrl, tarGzBuffer) {
+  logger.info(`[Session: ${sessionId}] Uploading Terraform configuration to: ${uploadUrl}`);
+  // The uploadUrl is a direct S3-like URL, so we don't use callTerraformApi for this.
+  // We need to use superagent directly with the provided URL.
+  try {
+    // Note: The uploadUrl is typically a pre-signed S3 URL, which doesn't require the Terraform API token.
+    await superagent
+      .put(uploadUrl)
+      .set('Content-Type', 'application/octet-stream')
+      .send(tarGzBuffer);
+    logger.info(`[Session: ${sessionId}] Terraform configuration uploaded successfully.`);
+  } catch (error) {
+    const errorMessage = error.response
+      ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
+      : error.message;
+    logger.error(`[Session: ${sessionId}] Failed to upload Terraform configuration to ${uploadUrl}: ${errorMessage}`, error);
+    throw new Error(`Failed to upload Terraform configuration: ${errorMessage}`);
+  }
+}
+
+/**
+ * Applies a specific Terraform run.
+ * @param {string} sessionId - The session ID.
+ * @param {string} runId - The ID of the run to apply.
+ * @param {string} [comment='Applied via API'] - A comment for the apply action.
+ * @returns {Promise&lt;object>} The updated run object.
+ */
+async function applyTerraformRun(sessionId, runId, comment = 'Applied via API') {
+  logger.info(`[Session: ${sessionId}] Applying run ID: ${runId}`);
+  const path = `/runs/${runId}/actions/apply`;
+  const body = {
+    comment,
+  };
+  return callTerraformApi(sessionId, path, 'POST', body);
+}
+
+/**
+ * Discards a specific Terraform run.
+ * @param {string} sessionId - The session ID.
+ * @param {string} runId - The ID of the run to discard.
+ * @param {string} [comment='Discarded via API'] - A comment for the discard action.
+ * @returns {Promise&lt;object>} The updated run object.
+ */
+async function discardTerraformRun(sessionId, runId, comment = 'Discarded via API') {
+  logger.info(`[Session: ${sessionId}] Discarding run ID: ${runId}`);
+  const path = `/runs/${runId}/actions/discard`;
+  const body = {
+    comment,
+  };
+  return callTerraformApi(sessionId, path, 'POST', body);
+}
+
+/**
+ * Gets detailed information about a specific Terraform run.
+ * @param {string} sessionId - The session ID.
+ * @param {string} runId - The ID of the run.
+ * @returns {Promise&lt;object>} Detailed information about the Terraform run.
+ */
+async function getTerraformRunDetails(sessionId, runId) {
+  logger.info(`[Session: ${sessionId}] Getting details for run ID: ${runId}`);
+  const path = `/runs/${runId}`;
+  return callTerraformApi(sessionId, path);
+}
+
+/**
+ * Performs a full Terraform 'apply' workflow: creates a config version, uploads code, creates a run, and applies it.
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the workspace.
+ * @param {Buffer} tarGzBuffer - The .tar.gz archive of your Terraform configuration.
+ * @param {string} [message='Triggered by API apply'] - A message for the run.
+ * @returns {Promise&lt;object>} The final run object after application.
+ */
+async function terraformApply(sessionId, organizationName, workspaceName, tarGzBuffer, message = 'Triggered by API apply') {
+  logger.info(`[Session: ${sessionId}] Starting Terraform apply workflow for workspace '${workspaceName}'`);
+  const workspaceId = await getTerraformWorkspaceIdByName(sessionId, organizationName, workspaceName);
+
+  const configVersion = await createTerraformConfigurationVersion(sessionId, workspaceId);
+  const uploadUrl = configVersion.data.attributes['upload-url'];
+  await uploadTerraformConfiguration(sessionId, uploadUrl, tarGzBuffer);
+
+  const run = await createTerraformRun(sessionId, workspaceId, message, 'plan-and-apply');
+  const runId = run.data.id;
+
+  // Wait for the plan to complete and be confirmable (optional, but good practice)
+  logger.info(`[Session: ${sessionId}] Waiting for plan to complete for run ID: ${runId}`);
+  let runDetails = await getTerraformRunDetails(sessionId, runId);
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
+    logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
+  }
+
+  if (runDetails.data.attributes.status === 'errored') {
+    throw new Error(`Terraform plan failed for run ID ${runId}: ${runDetails.data.attributes['status-messages'] ? runDetails.data.attributes['status-messages'].join(', ') : 'Unknown error'}`);
+  }
+
+  logger.info(`[Session: ${sessionId}] Plan completed for run ID: ${runId}. Applying...`);
+  return applyTerraformRun(sessionId, runId, `Applied via API: ${message}`);
+}
+
+/**
+ * Performs a Terraform 'plan' workflow: creates a config version, uploads code, and creates a run.
+ * Does NOT apply the changes.
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the workspace.
+ * @param {Buffer} tarGzBuffer - The .tar.gz archive of your Terraform configuration.
+ * @param {string} [message='Triggered by API plan'] - A message for the run.
+ * @returns {Promise&lt;object>} The created run object after the plan phase.
+ */
+async function terraformPlan(sessionId, organizationName, workspaceName, tarGzBuffer, message = 'Triggered by API plan') {
+  logger.info(`[Session: ${sessionId}] Starting Terraform plan workflow for workspace '${workspaceName}'`);
+  const workspaceId = await getTerraformWorkspaceIdByName(sessionId, organizationName, workspaceName);
+
+  const configVersion = await createTerraformConfigurationVersion(sessionId, workspaceId);
+  const uploadUrl = configVersion.data.attributes['upload-url'];
+  await uploadTerraformConfiguration(sessionId, uploadUrl, tarGzBuffer);
+
+  const run = await createTerraformRun(sessionId, workspaceId, message, 'plan-only');
+  const runId = run.data.id;
+
+  // Wait for the plan to complete
+  logger.info(`[Session: ${sessionId}] Waiting for plan to complete for run ID: ${runId}`);
+  let runDetails = await getTerraformRunDetails(sessionId, runId);
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
+    logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
+  }
+
+  if (runDetails.data.attributes.status === 'errored') {
+    throw new Error(`Terraform plan failed for run ID ${runId}: ${runDetails.data.attributes['status-messages'] ? runDetails.data.attributes['status-messages'].join(', ') : 'Unknown error'}`);
+  }
+
+  logger.info(`[Session: ${sessionId}] Plan completed for run ID: ${runId}.`);
+  return runDetails;
+}
+
+/**
+ * Performs a Terraform 'destroy' workflow: creates a destroy run and applies it.
+ * Note: Terraform Cloud typically requires a confirmation step for destroy runs.
+ * This function will initiate the destroy, but a manual confirmation might be needed in the UI
+ * unless auto-apply is enabled for destroy runs (which is generally not recommended).
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the workspace to destroy.
+ * @param {string} [message='Triggered by API destroy'] - A message for the destroy run.
+ * @returns {Promise&lt;object>} The final run object after destroy application.
+ */
+async function terraformDestroy(sessionId, organizationName, workspaceName, message = 'Triggered by API destroy') {
+  logger.info(`[Session: ${sessionId}] Starting Terraform destroy workflow for workspace '${workspaceName}'`);
+  const workspaceId = await getTerraformWorkspaceIdByName(sessionId, organizationName, workspaceName);
+
+  const run = await createTerraformRun(sessionId, workspaceId, message, 'destroy', true);
+  const runId = run.data.id;
+
+  // Wait for the plan (destroy plan) to complete and be confirmable
+  logger.info(`[Session: ${sessionId}] Waiting for destroy plan to complete for run ID: ${runId}`);
+  let runDetails = await getTerraformRunDetails(sessionId, runId);
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
+    logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
+  }
+
+  if (runDetails.data.attributes.status === 'errored') {
+    throw new Error(`Terraform destroy plan failed for run ID ${runId}: ${runDetails.data.attributes['status-messages'] ? runDetails.data.attributes['status-messages'].join(', ') : 'Unknown error'}`);
+  }
+
+  logger.info(`[Session: ${sessionId}] Destroy plan completed for run ID: ${runId}. Applying destroy...`);
+  return applyTerraformRun(sessionId, runId, `Destroyed via API: ${message}`);
+}
+
+/**
+ * Performs a Terraform 'refresh-only' workflow: creates a refresh-only run and applies it.
+ * This will update the state without making any infrastructure changes.
+ * @param {string} sessionId - The session ID.
+ * @param {string} organizationName - The name of the Terraform Cloud/Enterprise organization.
+ * @param {string} workspaceName - The name of the workspace to refresh.
+ * @param {string} [message='Triggered by API refresh'] - A message for the refresh-only run.
+ * @returns {Promise&lt;object>} The final run object after refresh application.
+ */
+async function terraformRefresh(sessionId, organizationName, workspaceName, message = 'Triggered by API refresh') {
+  logger.info(`[Session: ${sessionId}] Starting Terraform refresh workflow for workspace '${workspaceName}'`);
+  const workspaceId = await getTerraformWorkspaceIdByName(sessionId, organizationName, workspaceName);
+
+  const run = await createTerraformRun(sessionId, workspaceId, message, 'refresh-only', false, true);
+  const runId = run.data.id;
+
+  // Wait for the refresh plan to complete and be confirmable
+  logger.info(`[Session: ${sessionId}] Waiting for refresh plan to complete for run ID: ${runId}`);
+  let runDetails = await getTerraformRunDetails(sessionId, runId);
+  // Refactored loop to address no-await-in-loop and no-promise-executor-return
+  while (['pending', 'planning', 'cost_estimating'].includes(runDetails.data.attributes.status)) {
+    logger.debug(`[Session: ${sessionId}] Current run status: ${runDetails.data.attributes.status}. Waiting...`);
+    /* eslint-disable no-await-in-loop, no-promise-executor-return */
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    runDetails = await getTerraformRunDetails(sessionId, runId);
+    /* eslint-enable no-await-in-loop, no-promise-executor-return */
+  }
+
+  if (runDetails.data.attributes.status === 'errored') {
+    throw new Error(`Terraform refresh plan failed for run ID ${runId}: ${runDetails.data.attributes['status-messages'] ? runDetails.data.attributes['status-messages'].join(', ') : 'Unknown error'}`);
+  }
+
+  logger.info(`[Session: ${sessionId}] Refresh plan completed for run ID: ${runId}. Applying refresh...`);
+  return applyTerraformRun(sessionId, runId, `Refreshed via API: ${message}`);
+}
+
+module.exports = {
+  listTerraformWorkspaces,
+  getTerraformWorkspaceDetails,
+  createTerraformWorkspace,
+  updateTerraformWorkspace,
+  deleteTerraformWorkspace,
+  createTerraformRun,
+  createTerraformConfigurationVersion,
+  uploadTerraformConfiguration,
+  applyTerraformRun,
+  discardTerraformRun,
+  getTerraformRunDetails,
+  terraformApply,
+  terraformPlan,
+  terraformDestroy,
+  terraformRefresh,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#applyTerraformRun">applyTerraformRun</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#callTerraformApi">callTerraformApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#checkTerraformCliExists">checkTerraformCliExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createTarGzFromDirectory">createTarGzFromDirectory</a></li><li><a href="global.html#createTerraformConfigurationVersion">createTerraformConfigurationVersion</a></li><li><a href="global.html#createTerraformRun">createTerraformRun</a></li><li><a href="global.html#createTerraformWorkspace">createTerraformWorkspace</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#deleteTerraformWorkspace">deleteTerraformWorkspace</a></li><li><a href="global.html#discardTerraformRun">discardTerraformRun</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#executeTerraformCommand">executeTerraformCommand</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getTerraformRunDetails">getTerraformRunDetails</a></li><li><a href="global.html#getTerraformWorkspaceDetails">getTerraformWorkspaceDetails</a></li><li><a href="global.html#getTerraformWorkspaceIdByName">getTerraformWorkspaceIdByName</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listTerraformWorkspaces">listTerraformWorkspaces</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadTerraform">loadTerraform</a></li><li><a href="global.html#loadTerraformCli">loadTerraformCli</a></li><li><a href="global.html#loadTerraformWorkflow">loadTerraformWorkflow</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runTerraformCliWorkflow">runTerraformCliWorkflow</a></li><li><a href="global.html#runTerraformWorkflow">runTerraformWorkflow</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setCloudContext">setCloudContext</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#terraformApply">terraformApply</a></li><li><a href="global.html#terraformDestroy">terraformDestroy</a></li><li><a href="global.html#terraformPlan">terraformPlan</a></li><li><a href="global.html#terraformRefresh">terraformRefresh</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#updateTerraformWorkspace">updateTerraformWorkspace</a></li><li><a href="global.html#uploadTerraformConfiguration">uploadTerraformConfiguration</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Jun 06 2025 21:40:59 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

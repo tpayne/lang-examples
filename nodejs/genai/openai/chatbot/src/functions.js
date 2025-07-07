@@ -70,6 +70,36 @@ const {
   searchDockerImages,
 } = require('./dockerHub'); // Import the new dockerhub.js module
 
+// Import Terraform Cloud API functions
+const {
+  listTerraformWorkspaces,
+  getTerraformWorkspaceDetails,
+  createTerraformWorkspace,
+  updateTerraformWorkspace,
+  deleteTerraformWorkspace,
+  createTerraformRun,
+  createTerraformConfigurationVersion,
+  uploadTerraformConfiguration,
+  applyTerraformRun,
+  discardTerraformRun,
+  getTerraformRunDetails,
+  terraformApply,
+  terraformPlan,
+  terraformDestroy,
+  terraformRefresh,
+} = require('./terraform'); // Import the terraform.js module for Cloud API
+
+// Import Terraform CLI functions
+const {
+  checkTerraformCliExists,
+  runTerraformCliWorkflow,
+  setCloudContext, // Import the new setCloudContext function
+} = require('./terraformCli'); // Import the new terraform-cli.js module
+
+const {
+  runTerraformWorkflow,
+} = require('./terraformWorkflow'); // Import the Terraform CLI workflow function
+
 /* eslint-disable max-len */
 
 /**
@@ -945,6 +975,331 @@ async function loadDockerHub(sessionId) {
 }
 
 /**
+ * Loads the comprehensive Terraform workflow function into the registry.
+ * This function handles saving Terraform files, archiving them, and then
+ * initiating a plan or apply operation via Terraform Cloud.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraformWorkflow(sessionId) {
+  await registerFunction(
+    sessionId,
+    'run_terraform_workflow',
+    runTerraformWorkflow,
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action', 'projectDirectoryName', 'message'],
+    'Orchestrates a full Terraform workflow: saves provided Terraform code to a temporary directory, creates a .tar.gz archive, uploads it to Terraform Cloud, and then initiates either a plan or apply operation.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the Terraform Cloud workspace.' },
+      terraformFiles: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing an object where keys are filenames (e.g., "main.tf", "variables.tf") and values are their HCL/JSON content. Example: \'{"main.tf": "resource \\"aws_s3_bucket\\" \\"example\\" { bucket = \\"my-bucket\\" }", "variables.tf": "variable \\"region\\" { default = \\"us-east-1\\" }"}\'',
+      },
+      action: {
+        type: 'string',
+        description: 'The desired Terraform action to perform ("plan" or "apply").',
+        enum: ['plan', 'apply'],
+      },
+      projectDirectoryName: { type: 'string', description: 'Optional: A subdirectory name within the session\'s temporary directory to store the Terraform files. Defaults to "terraform-project".' },
+      message: { type: 'string', description: 'Optional: A message for the Terraform run in Terraform Cloud. Defaults to "Triggered by API [action]".' },
+    },
+    ['organizationName', 'workspaceName', 'terraformFiles', 'action'],
+    true, // needSession is true
+  );
+}
+
+/**
+ * Loads Terraform Cloud API functions into the registry if TERRAFORM_API_ENDPOINT and TERRAFORM_API_TOKEN are set.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraform(sessionId) {
+  await loadTerraformWorkflow();
+
+  await registerFunction(
+    sessionId,
+    'list_terraform_workspaces',
+    listTerraformWorkspaces,
+    ['organizationName'],
+    'List all workspaces in a given Terraform Cloud/Enterprise organization.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+    },
+    ['organizationName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_terraform_workspace_details',
+    getTerraformWorkspaceDetails,
+    ['workspaceId'],
+    'Get detailed information about a specific Terraform workspace by its ID.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the Terraform workspace.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_terraform_workspace',
+    createTerraformWorkspace,
+    ['organizationName', 'workspaceName', 'autoApply', 'workingDirectory', 'vcsRepoIdentifier'],
+    'Create a new Terraform workspace in a specified organization.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the new workspace.' },
+      autoApply: { type: 'boolean', description: 'Optional: Whether to automatically apply runs in this workspace. Defaults to false.' },
+      workingDirectory: { type: 'string', description: 'Optional: The working directory for the workspace.' },
+      vcsRepoIdentifier: { type: 'string', description: 'Optional: The VCS repository identifier (e.g., "org/repo"). If provided, TERRAFORM_VCS_OAUTH_TOKEN_ID must also be set.' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'update_terraform_workspace',
+    updateTerraformWorkspace,
+    ['workspaceId', 'updates'],
+    'Update an existing Terraform workspace with specified attributes.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to update.' },
+      updates: {
+        type: 'object',
+        description: 'An object containing attributes to update (e.g., { "auto-apply": true, "working-directory": "new-path" }).',
+        properties: {
+          'auto-apply': { type: 'boolean', description: 'Whether to automatically apply runs in this workspace.' },
+          'working-directory': { type: 'string', description: 'The working directory for the workspace.' },
+          name: { type: 'string', description: 'The new name of the workspace.' },
+          // Add other updatable attributes as needed based on Terraform API documentation
+        },
+        // No required properties for updates, as it's a partial update
+      },
+    },
+    ['workspaceId', 'updates'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'delete_terraform_workspace',
+    deleteTerraformWorkspace,
+    ['workspaceId'],
+    'Delete a Terraform workspace by its ID.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to delete.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_terraform_run',
+    createTerraformRun,
+    ['workspaceId', 'message', 'runType', 'isDestroy', 'isRefreshOnly'],
+    'Create a new run in a Terraform workspace for planning, applying, destroying, or refreshing.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to create the run in.' },
+      message: { type: 'string', description: 'A message describing the run.' },
+      runType: {
+        type: 'string',
+        description: 'The type of run ("plan-and-apply", "destroy", "refresh-only"). Defaults to "plan-and-apply".',
+        enum: ['plan-and-apply', 'destroy', 'refresh-only'],
+      },
+      isDestroy: { type: 'boolean', description: 'Set to true for a destroy run. Defaults to false.' },
+      isRefreshOnly: { type: 'boolean', description: 'Set to true for a refresh-only run. Defaults to false.' },
+    },
+    ['workspaceId', 'message'],
+    true,
+  );
+
+  // New registration for createTerraformConfigurationVersion
+  await registerFunction(
+    sessionId,
+    'create_terraform_configuration_version',
+    createTerraformConfigurationVersion,
+    ['workspaceId', 'autoQueueRuns'],
+    'Create a new configuration version for a Terraform workspace. This is a prerequisite for uploading Terraform code.',
+    {
+      workspaceId: { type: 'string', description: 'The ID of the workspace to create the configuration version for.' },
+      autoQueueRuns: { type: 'boolean', description: 'Optional: Whether to automatically queue runs after configuration upload. Defaults to true.' },
+    },
+    ['workspaceId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'upload_terraform_configuration',
+    uploadTerraformConfiguration,
+    ['uploadUrl', 'tarGzBuffer'],
+    'Upload a .tar.gz file containing Terraform configuration to a given upload URL obtained from create_terraform_configuration_version.',
+    {
+      uploadUrl: { type: 'string', description: 'The pre-signed URL provided by the create_terraform_configuration_version endpoint for uploading the .tar.gz file.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration.' },
+    },
+    ['uploadUrl', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'apply_terraform_run',
+    applyTerraformRun,
+    ['runId', 'comment'],
+    'Apply a specific Terraform run that is in a "planned" or "cost_estimated" state.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to apply.' },
+      comment: { type: 'string', description: 'Optional: A comment for the apply action. Defaults to "Applied via API".' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'discard_terraform_run',
+    discardTerraformRun,
+    ['runId', 'comment'],
+    'Discard a specific Terraform run.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to discard.' },
+      comment: { type: 'string', description: 'Optional: A comment for the discard action. Defaults to "Discarded via API".' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_terraform_run_details',
+    getTerraformRunDetails,
+    ['runId'],
+    'Get detailed information about a specific Terraform run.',
+    {
+      runId: { type: 'string', description: 'The ID of the run to get details for.' },
+    },
+    ['runId'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_apply',
+    terraformApply,
+    ['organizationName', 'workspaceName', 'tarGzBuffer', 'message'],
+    'Perform a full Terraform "apply" workflow: creates a config version, uploads code, creates a run, and applies it. Requires a .tar.gz buffer of your Terraform configuration.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to apply changes to.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration. This should be generated from the Terraform configuration files.' },
+      message: { type: 'string', description: 'Optional: A message for the run. Defaults to "Triggered by API apply".' },
+    },
+    ['organizationName', 'workspaceName', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_plan',
+    terraformPlan,
+    ['organizationName', 'workspaceName', 'tarGzBuffer', 'message'],
+    'Perform a Terraform "plan" workflow: creates a config version, uploads code, and creates a run. Does NOT apply the changes. Requires a .tar.gz buffer of your Terraform configuration.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to plan changes for.' },
+      tarGzBuffer: { type: 'string', description: 'The base64 encoded string of the .tar.gz archive containing your Terraform configuration. This should be generated from the Terraform configuration files.' },
+      message: { type: 'string', description: 'Optional: A message for the run. Defaults to "Triggered by API plan".' },
+    },
+    ['organizationName', 'workspaceName', 'tarGzBuffer'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_destroy',
+    terraformDestroy,
+    ['organizationName', 'workspaceName', 'message'],
+    'Perform a Terraform "destroy" workflow: creates a destroy run and applies it. Note: Terraform Cloud typically requires a confirmation step for destroy runs.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to destroy.' },
+      message: { type: 'string', description: 'Optional: A message for the destroy run. Defaults to "Triggered by API destroy".' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'terraform_refresh',
+    terraformRefresh,
+    ['organizationName', 'workspaceName', 'message'],
+    'Perform a Terraform "refresh-only" workflow: creates a refresh-only run and applies it. This will update the state without making any infrastructure changes.',
+    {
+      organizationName: { type: 'string', description: 'The name of the Terraform Cloud/Enterprise organization.' },
+      workspaceName: { type: 'string', description: 'The name of the workspace to refresh.' },
+      message: { type: 'string', description: 'Optional: A message for the refresh-only run. Defaults to "Triggered by API refresh".' },
+    },
+    ['organizationName', 'workspaceName'],
+    true,
+  );
+}
+
+/**
+ * Loads Terraform CLI functions into the registry if the Terraform CLI is available.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadTerraformCli(sessionId) {
+  await registerFunction(
+    sessionId,
+    'run_terraform_cli_workflow',
+    runTerraformCliWorkflow,
+    ['terraformFiles', 'action', 'projectDirectoryName', 'additionalArgs'],
+    'Orchestrates a full Terraform CLI workflow: saves provided Terraform code to a temporary directory, runs `terraform init`, and then executes the specified Terraform CLI action (e.g., `plan`, `apply`, `destroy`, `refresh`, `validate`, `fmt`, `output`, `state list`, `state show`, `state rm`, `state mv`).',
+    {
+      terraformFiles: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing an object where keys are filenames (e.g., "main.tf", "variables.tf") and values are their HCL/JSON content. Example: \'{"main.tf": "resource \\"aws_s3_bucket\\" \\"example\\" { bucket = \\"my-bucket\\" }", "variables.tf": "variable \\"region\\" { default = \\"us-east-1\\" }"}\'',
+      },
+      action: {
+        type: 'string',
+        description: 'The desired Terraform CLI action to perform. Supported actions: "plan", "apply", "destroy", "refresh", "validate", "fmt", "output", "state list", "state show", "state rm", "state mv".',
+        enum: ['plan', 'apply', 'destroy', 'refresh', 'validate', 'fmt', 'output', 'state list', 'state show', 'state rm', 'state mv'],
+      },
+      projectDirectoryName: { type: 'string', description: 'Optional: A subdirectory name within the session\'s temporary directory to store the Terraform files. Defaults to "terraform-project".' },
+      additionalArgs: { type: 'string', description: 'Optional: Any additional arguments to pass directly to the Terraform command (e.g., \'-var="foo=bar"\', \'-auto-approve\'). Note: `apply` and `destroy` actions automatically include `-auto-approve` by default in this workflow unless overridden.' },
+    },
+    ['terraformFiles', 'action'],
+    true, // needSession is true
+  );
+
+  // Register the new set_cloud_context function
+  await registerFunction(
+    sessionId,
+    'set_terraform_cloud_context',
+    setCloudContext,
+    ['cloudProvider', 'credentials'],
+    'Sets the Terraform cloud provider context (AWS, Azure, or GCP) for subsequent Terraform CLI operations in this session. This will configure environment variables for the chosen provider.',
+    {
+      cloudProvider: {
+        type: 'string',
+        description: 'The target cloud provider (e.g., "aws", "azure", "gcp").',
+        enum: ['aws', 'azure', 'gcp'],
+      },
+      credentials: {
+        type: 'string', // Will be a JSON string of an object
+        description: 'A JSON string representing the credentials for the specified cloud provider. For AWS: {"AWS_ACCESS_KEY_ID": "...", "AWS_SECRET_ACCESS_KEY": "...", "AWS_REGION": "..."}. For Azure: {"ARM_CLIENT_ID": "...", "ARM_CLIENT_SECRET": "...", "ARM_TENANT_ID": "...", "ARM_SUBSCRIPTION_ID": "..."}. For GCP: {"GOOGLE_APPLICATION_CREDENTIALS_JSON": "..."} (the content of your service account key JSON file).',
+      },
+    },
+    ['cloudProvider', 'credentials'],
+    true, // needSession is true
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -988,6 +1343,34 @@ async function loadIntegrations(sessionId) {
     await loadDockerHub(sessionId);
   } else {
     logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
+  }
+
+  // Terraform integration loading logic (CLI vs. Cloud API)
+  const terraformCliEnabled = process.env.TERRAFORM_CLI_ENABLED === 'true';
+  const terraformApiConfigured = process.env.TERRAFORM_API_ENDPOINT && process.env.TERRAFORM_API_TOKEN;
+
+  // Prioritize CLI if enabled and available
+  if (terraformCliEnabled) {
+    logger.info(`Checking for Terraform CLI availability for session: ${sessionId}`);
+    const cliAvailable = await checkTerraformCliExists();
+    if (cliAvailable) {
+      logger.info(`Loading Terraform CLI integration for session: ${sessionId}`);
+      await loadTerraformCli(sessionId);
+    } else {
+      logger.warn(`Terraform CLI integration not loaded for session: ${sessionId}. CLI not found or not accessible.`);
+      // If CLI is enabled but not found, check for Cloud API as a fallback
+      if (terraformApiConfigured) {
+        logger.info(`Falling back to Terraform Cloud API integration for session: ${sessionId}`);
+        await loadTerraform(sessionId);
+      } else {
+        logger.warn(`No Terraform integration loaded for session: ${sessionId}. Neither CLI (enabled but not found) nor Cloud API (not configured).`);
+      }
+    }
+  } else if (terraformApiConfigured) { // Load Cloud API if CLI not enabled, but API is configured
+    logger.info(`Loading Terraform Cloud API integration for session: ${sessionId}`);
+    await loadTerraform(sessionId);
+  } else { // No Terraform integration loaded at all
+    logger.info(`No Terraform integration loaded for session: ${sessionId}. TERRAFORM_CLI_ENABLED is not 'true' and TERRAFORM_API_ENDPOINT/TERRAFORM_API_TOKEN are not set.`);
   }
 }
 
