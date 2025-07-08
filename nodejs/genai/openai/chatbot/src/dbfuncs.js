@@ -97,7 +97,6 @@ function parseJdbcUri(sessionId, uri) {
     // Ensure required properties for mssql package
     config.server = config.server || 'localhost';
     config.port = config.port || 1433;
-    // Removed redundant self-assignments
     config.options = {
       encrypt: (config.options && config.options.encrypt) || false, // Use TLS/SSL for connection
       trustServerCertificate: (config.options && config.options.trustServerCertificate) || false, // Change to true for local dev / self-signed certs
@@ -943,12 +942,103 @@ async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tab
   }
 }
 
+/**
+ * Executes an ad-hoc SQL query against a connected database.
+ * Supports SELECT, INSERT, UPDATE, and DELETE statements.
+ * Returns query results for SELECT statements and affected rows for DML statements.
+ *
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @param {string} sqlQuery - The free-text SQL query to execute.
+ * @returns {Promise<object>} - An object containing query results (for SELECT) or affected rows (for DML).
+ * @throws {Error} - If connection fails or SQL execution encounters an error.
+ */
+async function runAdhocSql(sessionId, uri, sqlQuery) {
+  logger.info(`[Session: ${sessionId}] Running ad-hoc SQL query: ${sqlQuery}`);
+  const { dbType } = parseJdbcUri(sessionId, uri);
+  let client;
+  try {
+    client = await connectToDatabase(sessionId, uri);
+    let result;
+
+    const queryType = sqlQuery.trim().toUpperCase().split(' ')[0];
+
+    switch (dbType) {
+      case 'postgres': {
+        const pgResult = await client.query(sqlQuery);
+        if (queryType === 'SELECT') {
+          result = {
+            columns: pgResult.rows.length > 0 ? Object.keys(pgResult.rows[0]) : [],
+            data: pgResult.rows,
+          };
+        } else {
+          result = { affectedRows: pgResult.rowCount };
+        }
+        break;
+      }
+      case 'mssql': {
+        const request = new sql.Request(client);
+        const msSqlResult = await request.query(sqlQuery);
+        if (queryType === 'SELECT') {
+          result = {
+            columns: msSqlResult.recordset.length > 0 ? Object.keys(msSqlResult.recordset[0]) : [],
+            data: msSqlResult.recordset,
+          };
+        } else {
+          result = { affectedRows: msSqlResult.rowsAffected ? msSqlResult.rowsAffected[0] : 0 };
+        }
+        break;
+      }
+      case 'mongodb': {
+        // MongoDB does not execute SQL directly. This function is not applicable.
+        throw new Error('Ad-hoc SQL execution is not supported for MongoDB.');
+      }
+      case 'oracle': {
+        const oracleResult = await client.execute(sqlQuery, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        if (queryType === 'SELECT') {
+          result = {
+            columns: oracleResult.rows.length > 0 ? Object.keys(oracleResult.rows[0]) : [],
+            data: oracleResult.rows,
+          };
+        } else {
+          result = { affectedRows: oracleResult.rowsAffected || 0 };
+        }
+        break;
+      }
+      case 'mysql': {
+        const [mysqlResult] = await client.execute(sqlQuery);
+        if (queryType === 'SELECT') {
+          result = {
+            columns: mysqlResult.length > 0 ? Object.keys(mysqlResult[0]) : [],
+            data: mysqlResult,
+          };
+        } else {
+          result = { affectedRows: mysqlResult.affectedRows || 0 };
+        }
+        break;
+      }
+      default:
+        throw new Error(`Database type ${dbType} not supported for ad-hoc SQL execution.`);
+    }
+    logger.info(`[Session: ${sessionId}] Successfully executed ad-hoc SQL query for ${dbType}. Result: ${JSON.stringify(result)}`);
+    return result;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to execute ad-hoc SQL query for ${dbType}: ${error.message}`, error);
+    throw new Error(`Ad-hoc SQL execution failed: ${error.message}`);
+  } finally {
+    if (client) {
+      await disconnectFromDatabase(sessionId, client, dbType);
+    }
+  }
+}
+
 module.exports = {
   connectToDatabase,
   dumpDatabaseStructure,
   selectDatabaseData,
   listDatabaseSchemas, // Export the new function
   listSchemaObjects, // Export the new function
+  runAdhocSql, // Export the new ad-hoc SQL function
   // You might want to expose disconnectFromDatabase if you need manual control
   // disconnectFromDatabase,
 };

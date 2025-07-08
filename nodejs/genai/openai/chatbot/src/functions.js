@@ -76,6 +76,7 @@ const {
   selectDatabaseData,
   listDatabaseSchemas,
   listSchemaObjects,
+  runAdhocSql, // Import the new runAdhocSql function
 } = require('./dbfuncs'); // Import the new databaseUtils.js module
 
 /* eslint-disable max-len */
@@ -1027,6 +1028,21 @@ async function loadDatabaseFunctions(sessionId) {
       },
     },
     ['uri', 'schemaName'],
+    true,
+  );
+
+  // Register the new runAdhocSql function
+  await registerFunction(
+    sessionId,
+    'run_adhoc_sql',
+    runAdhocSql,
+    ['uri', 'sqlQuery'],
+    'Executes an ad-hoc SQL query (SELECT, INSERT, UPDATE, DELETE) against a connected database. Returns query results for SELECT statements and affected rows for DML statements, along with any SQL syntax errors.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+      sqlQuery: { type: 'string', description: 'The free-text SQL query to execute.' },
+    },
+    ['uri', 'sqlQuery'],
     true,
   );
 }
