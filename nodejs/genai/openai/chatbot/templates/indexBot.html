@@ -57,7 +57,7 @@
                 <p>To run the server, you will need Docker installed and your API keys set as environment variables (<code>OPENAI_API_KEY</code> and <code>GITHUB_TOKEN</code>).</p>
                 <div class="code-block-container">
                     <pre>
-docker build . --tag chatbot:1.0 &amp;&amp; \
+docker build . --tag chatbot:1.0 && \
   docker run --rm -p 8080:5000 \
     -e OPENAI_API_KEY=&lt;YourKey&gt; \
     -e GITHUB_TOKEN=&lt;YourKey&gt; \
@@ -238,6 +238,10 @@ docker rmi chatbot:1.0
                 <button class="toolbar-button" data-command="insertOrderedList" title="Numbered List">1.</button>
                 <button class="toolbar-button" id="saveConversationButton" title="Save Chat">💾</button>
             </div>
+
+            <!-- Predictive Text Ribbon -->
+            <div id="predictive_text_ribbon" class="hidden">
+                </div>
 
             <div id="input_container">
                 <div id="user_input" contenteditable="true" placeholder="Type your message..."></div>
