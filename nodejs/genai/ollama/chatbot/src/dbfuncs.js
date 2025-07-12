@@ -1,32 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>JSDoc: Source: dbfuncs.js</title>
-
-    <script src="scripts/prettify/prettify.js"> </script>
-    <script src="scripts/prettify/lang-css.js"> </script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
-    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
-</head>
-
-<body>
-
-<div id="main">
-
-    <h1 class="page-title">Source: dbfuncs.js</h1>
-
-    
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>// databaseUtils.js
+// databaseUtils.js
 
 // Database-specific client imports (will need to be installed via npm)
 const { Client: PgClient } = require('pg'); // For PostgreSQL
@@ -99,11 +71,11 @@ function parseJdbcUri(sessionId, uri) {
     config.port = port ? parseInt(port, 10) : 5432;
     config.database = database;
     if (paramsString) {
-      paramsString.split('&amp;').forEach((param) => {
+      paramsString.split('&').forEach((param) => {
         const [key, value] = param.split('=');
         if (key === 'user') config.user = value;
         if (key === 'password') config.password = value;
-        if (key === 'sslmode' &amp;&amp; value === 'true') config.ssl = true;
+        if (key === 'sslmode' && value === 'true') config.ssl = true;
       });
     }
   } else if (uri.startsWith('jdbc:sqlserver://')) {
@@ -118,16 +90,16 @@ function parseJdbcUri(sessionId, uri) {
       if (key === 'databaseName') config.database = value; // mssql uses databaseName
       if (key === 'user') config.user = value;
       if (key === 'password') config.password = value;
-      if (key === 'encrypt' &amp;&amp; value === 'true') config.options = { ...config.options, encrypt: true };
-      if (key === 'trustServerCertificate' &amp;&amp; value === 'true') config.options = { ...config.options, trustServerCertificate: true };
+      if (key === 'encrypt' && value === 'true') config.options = { ...config.options, encrypt: true };
+      if (key === 'trustServerCertificate' && value === 'true') config.options = { ...config.options, trustServerCertificate: true };
     });
 
     // Ensure required properties for mssql package
     config.server = config.server || 'localhost';
     config.port = config.port || 1433;
     config.options = {
-      encrypt: (config.options &amp;&amp; config.options.encrypt) || false, // Use TLS/SSL for connection
-      trustServerCertificate: (config.options &amp;&amp; config.options.trustServerCertificate) || false, // Change to true for local dev / self-signed certs
+      encrypt: (config.options && config.options.encrypt) || false, // Use TLS/SSL for connection
+      trustServerCertificate: (config.options && config.options.trustServerCertificate) || false, // Change to true for local dev / self-signed certs
       // You might add other options here like `enableArithAbort` etc.
     };
   } else if (uri.startsWith('mongodb://')) {
@@ -135,7 +107,7 @@ function parseJdbcUri(sessionId, uri) {
     config.uri = uri;
     // Extract database name from URI if present, otherwise assume it's part of the connection string
     const path = uri.split('/').pop().split('?')[0];
-    if (path &amp;&amp; path.length > 0) {
+    if (path && path.length > 0) {
       config.database = path;
     }
   } else if (uri.startsWith('jdbc:oracle:thin:@')) {
@@ -144,7 +116,7 @@ function parseJdbcUri(sessionId, uri) {
     const [connectString, paramsString] = connStr.split('?');
     config.connectString = connectString; // host:port/service_name or TNS alias
     if (paramsString) {
-      paramsString.split('&amp;').forEach((param) => {
+      paramsString.split('&').forEach((param) => {
         const [key, value] = param.split('=');
         if (key === 'user') config.user = value;
         if (key === 'password') config.password = value;
@@ -170,11 +142,11 @@ function parseJdbcUri(sessionId, uri) {
     config.port = port ? parseInt(port, 10) : 3306;
     config.database = database;
     if (paramsString) {
-      paramsString.split('&amp;').forEach((param) => {
+      paramsString.split('&').forEach((param) => {
         const [key, value] = param.split('=');
         if (key === 'user') config.user = value;
         if (key === 'password') config.password = value;
-        if (key === 'ssl' &amp;&amp; value === 'true') config.ssl = {}; // MySQL2 handles this
+        if (key === 'ssl' && value === 'true') config.ssl = {}; // MySQL2 handles this
       });
     }
   } else {
@@ -189,7 +161,7 @@ function parseJdbcUri(sessionId, uri) {
  * @param {string} host - The host to connect to.
  * @param {number} port - The port to connect to.
  * @param {string} sessionId - The session ID for logging.
- * @returns {Promise&lt;boolean>} - True if connection succeeds, false otherwise.
+ * @returns {Promise<boolean>} - True if connection succeeds, false otherwise.
  */
 async function testTcpConnection(host, port, sessionId) {
   return new Promise((resolve) => {
@@ -231,7 +203,7 @@ async function testTcpConnection(host, port, sessionId) {
  * Connects to a database using a JDBC-like URI.
  * @param {string} sessionId - The session ID for logging.
  * @param {string} uri - The JDBC-like URI for the database connection.
- * @returns {Promise&lt;object>} - The database client/connection object.
+ * @returns {Promise<object>} - The database client/connection object.
  * @throws {Error} - If connection fails or URI is invalid.
  */
 async function connectToDatabase(sessionId, uri) {
@@ -293,7 +265,7 @@ async function connectToDatabase(sessionId, uri) {
  * Dumps the database structure (tables, views, columns) in JSON format.
  * @param {string} sessionId - The session ID for logging.
  * @param {string} uri - The JDBC-like URI for the database connection.
- * @returns {Promise&lt;object>} - A JSON object representing the database structure.
+ * @returns {Promise<object>} - A JSON object representing the database structure.
  * @throws {Error} - If connection or dumping fails.
  */
 async function dumpDatabaseStructure(sessionId, uri) {
@@ -527,11 +499,11 @@ async function dumpDatabaseStructure(sessionId, uri) {
  * @param {string} uri - The JDBC-like URI for the database connection.
  * @param {string} tableNameOrViewName - The name of the table or view to select data from.
  * @param {number} [percentage=10] - The percentage of data to select (0-100). Defaults to 10%.
- * @returns {Promise&lt;object>} - A JSON object containing the selected data and column names.
+ * @returns {Promise<object>} - A JSON object containing the selected data and column names.
  * @throws {Error} - If connection or data selection fails.
  */
 async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentage = 10) {
-  if (percentage &lt; 0 || percentage > 100) {
+  if (percentage < 0 || percentage > 100) {
     throw new Error('Percentage must be between 0 and 100.');
   }
   logger.info(`[Session: ${sessionId}] Selecting ${percentage}% data from ${tableNameOrViewName} for URI: ${uri}`);
@@ -588,7 +560,7 @@ async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentag
           // Estimate count for sampling
           const count = await db.collection(tableNameOrViewName).estimatedDocumentCount();
           sampleSize = Math.ceil(count * (percentage / 100));
-          if (sampleSize === 0 &amp;&amp; count > 0) sampleSize = 1; // Ensure at least one if percentage > 0 and count > 0
+          if (sampleSize === 0 && count > 0) sampleSize = 1; // Ensure at least one if percentage > 0 and count > 0
         }
 
         let mongoData;
@@ -632,7 +604,7 @@ async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentag
         const [totalRowsResult] = await client.execute(`SELECT COUNT(*) AS total FROM \`${tableNameOrViewName}\``);
         const totalRows = totalRowsResult[0].total;
         let limit = Math.ceil(totalRows * (percentage / 100));
-        if (limit === 0 &amp;&amp; totalRows > 0 &amp;&amp; percentage > 0) limit = 1; // Ensure at least one if percentage > 0 and count > 0
+        if (limit === 0 && totalRows > 0 && percentage > 0) limit = 1; // Ensure at least one if percentage > 0 and count > 0
 
         const mySqlQuery = percentage === 100
           ? `SELECT * FROM \`${tableNameOrViewName}\``
@@ -668,7 +640,7 @@ async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentag
  * Lists all schemas in the connected database.
  * @param {string} sessionId - The session ID for logging.
  * @param {string} uri - The JDBC-like URI for the database connection.
- * @returns {Promise&lt;string[]>} - An array of schema names.
+ * @returns {Promise<string[]>} - An array of schema names.
  * @throws {Error} - If connection or listing fails.
  */
 async function listDatabaseSchemas(sessionId, uri) {
@@ -687,7 +659,7 @@ async function listDatabaseSchemas(sessionId, uri) {
       }
       case 'mssql': {
         const request = new sql.Request(client);
-        const result = await request.query('SELECT name FROM sys.schemas WHERE schema_id &lt; 16384'); // schema_id &lt; 16384 to exclude system schemas
+        const result = await request.query('SELECT name FROM sys.schemas WHERE schema_id < 16384'); // schema_id < 16384 to exclude system schemas
         schemas.push(...result.recordset.map((row) => row.name));
         break;
       }
@@ -737,7 +709,7 @@ async function listDatabaseSchemas(sessionId, uri) {
  * @param {string} uri - The JDBC-like URI for the database connection.
  * @param {string} schemaName - The name of the schema to list objects from.
  * @param {string[]} [objectTypes=['tables', 'views', 'indexes', 'constraints']] - An array of object types to list.
- * @returns {Promise&lt;object>} - A JSON object containing lists of requested objects.
+ * @returns {Promise<object>} - A JSON object containing lists of requested objects.
  * @throws {Error} - If connection or listing fails.
  */
 async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tables', 'views', 'indexes', 'constraints']) {
@@ -978,7 +950,7 @@ async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tab
  * @param {string} sessionId - The session ID for logging.
  * @param {string} uri - The JDBC-like URI for the database connection.
  * @param {string} sqlQuery - The free-text SQL query to execute.
- * @returns {Promise&lt;object>} - An object containing query results (for SELECT) or affected rows (for DML).
+ * @returns {Promise<object>} - An object containing query results (for SELECT) or affected rows (for DML).
  * @throws {Error} - If connection fails or SQL execution encounters an error.
  */
 async function runAdhocSql(sessionId, uri, sqlQuery) {
@@ -1070,26 +1042,3 @@ module.exports = {
   // You might want to expose disconnectFromDatabase if you need manual control
   // disconnectFromDatabase,
 };
-</code></pre>
-        </article>
-    </section>
-
-
-
-
-</div>
-
-<nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
-</nav>
-
-<br class="clear">
-
-<footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Jul 12 2025 16:15:42 GMT+0100 (British Summer Time)
-</footer>
-
-<script> prettyPrint(); </script>
-<script src="scripts/linenumber.js"> </script>
-</body>
-</html>

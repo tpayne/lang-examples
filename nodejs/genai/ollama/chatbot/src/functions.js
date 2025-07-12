@@ -7,7 +7,6 @@ const {
   commitFiles,
   createBranch,
   createGithubPullRequest,
-  createRepo,
   fetchRepoContentsRecursive,
   listBranches,
   listCommitHistory,
@@ -15,6 +14,7 @@ const {
   listGitHubActions,
   listPublicRepos,
   switchBranch,
+  createRepo, // Ensure createRepo is imported
 } = require('./gitFunctions');
 
 const {
@@ -69,6 +69,15 @@ const {
   getDockerImageTags,
   searchDockerImages,
 } = require('./dockerHub'); // Import the new dockerhub.js module
+
+const {
+  connectToDatabase,
+  dumpDatabaseStructure,
+  selectDatabaseData,
+  listDatabaseSchemas,
+  listSchemaObjects,
+  runAdhocSql, // Import the new runAdhocSql function
+} = require('./dbfuncs'); // Import the new databaseUtils.js module
 
 /* eslint-disable max-len */
 
@@ -147,7 +156,7 @@ async function getSessionFuncsMetadata(sessionId) {
 
 /**
  * Registers a new function for AI for a specific session.
- * @param {string} sessionId The unique identifier for the session.
+ * @param {string} sessionId The unique name of the session.
  * @param {string} name - The unique name of the function (used as the key).
  * @param {Function} func - The JavaScript function to execute.
  * @param {string[]} params - An array of parameter names the function expects.
@@ -945,6 +954,100 @@ async function loadDockerHub(sessionId) {
 }
 
 /**
+ * Loads database utility functions into the registry if DATABASE_URI is set.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadDatabaseFunctions(sessionId) {
+  await registerFunction(
+    sessionId,
+    'connect_database',
+    connectToDatabase,
+    ['uri'],
+    'Connects to a database using a JDBC-like URI. This function establishes a connection to the specified database and returns a client object for further operations.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection (e.g., "jdbc:postgresql://host:port/database?user=...").' },
+    },
+    ['uri'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'dump_database_structure',
+    dumpDatabaseStructure,
+    ['uri'],
+    'Dumps the structure (tables, views, columns) of a database in JSON format. Requires a JDBC-like URI to connect.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+    },
+    ['uri'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'select_database_data',
+    selectDatabaseData,
+    ['uri', 'tableNameOrViewName', 'percentage'],
+    'Selects an optional percentage of data from a specified table or view in a database, returning the results in JSON format including column names. Defaults to 10% if percentage is not specified.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+      tableNameOrViewName: { type: 'string', description: 'The name of the table or view to select data from.' },
+      percentage: { type: 'number', description: 'Optional: The percentage of data to select (0-100). Defaults to 10% if not provided.' },
+    },
+    ['uri', 'tableNameOrViewName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_database_schemas',
+    listDatabaseSchemas,
+    ['uri'],
+    'Lists all schemas available in the connected database.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+    },
+    ['uri'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_schema_objects',
+    listSchemaObjects,
+    ['uri', 'schemaName', 'objectTypes'],
+    'Lists objects (tables, views, indexes, constraints) owned by a specific schema in a database. The type of objects to list can be specified, defaulting to all if not provided.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+      schemaName: { type: 'string', description: 'The name of the schema to list objects from.' },
+      objectTypes: {
+        type: 'array',
+        items: { type: 'string', enum: ['tables', 'views', 'indexes', 'constraints'] },
+        description: 'Optional: An array of object types to list (e.g., ["tables", "views"]). Defaults to all types if not provided.',
+      },
+    },
+    ['uri', 'schemaName'],
+    true,
+  );
+
+  // Register the new runAdhocSql function
+  await registerFunction(
+    sessionId,
+    'run_adhoc_sql',
+    runAdhocSql,
+    ['uri', 'sqlQuery'],
+    'Executes an ad-hoc SQL query (SELECT, INSERT, UPDATE, DELETE) against a connected database. Returns query results for SELECT statements and affected rows for DML statements, along with any SQL syntax errors.',
+    {
+      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+      sqlQuery: { type: 'string', description: 'The free-text SQL query to execute.' },
+    },
+    ['uri', 'sqlQuery'],
+    true,
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -988,6 +1091,14 @@ async function loadIntegrations(sessionId) {
     await loadDockerHub(sessionId);
   } else {
     logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
+  }
+
+  // Load Database integration
+  if (process.env.DATABASE_URI) {
+    logger.info(`Loading Database integration for session: ${sessionId}`);
+    await loadDatabaseFunctions(sessionId);
+  } else {
+    logger.info(`Database integration not loaded for session: ${sessionId}. DATABASE_URI not set.`);
   }
 }
 
