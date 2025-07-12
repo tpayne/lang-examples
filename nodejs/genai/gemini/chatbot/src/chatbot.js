@@ -384,6 +384,10 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
       // Note: Forcing JSON is better handled by the model's response format setting
       // if the API supports it directly for the chosen model version.
       // Adding it to the prompt is a fallback.
+    } else {
+      let geminiInstructions = 'You are a helpful assistant.';
+      geminiInstructions += ' Always process JSON responses to return human readable output unless the user specifically requests JSON.';
+      prompt += `\n\n${geminiInstructions}`;
     }
 
     let chatResponse = null;
