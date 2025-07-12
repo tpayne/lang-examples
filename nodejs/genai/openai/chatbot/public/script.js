@@ -160,156 +160,265 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Defines rules for generating predictive text suggestions.
+     * Each rule has an array of keywords and a function to generate suggestions.
+     * The order matters: more specific rules should come before more general ones.
+     */
+    const suggestionRules = [
+        // --- GitHub Related Suggestions ---
+        {
+            keywords: ['list all the branches'],
+            generate: (msg) => {
+                const suggestions = [];
+                const match = msg.match(/repo\s+([a-zA-Z0-9_-]+)\s+that is owned by the user\s+([a-zA-Z0-9_-]+)/);
+                if (match && match[1] && match[2]) {
+                    suggestions.push(`List files in ${match[1]} by ${match[2]}`);
+                    suggestions.push(`Create a new branch in ${match[1]} by ${match[2]}`);
+                } else {
+                    suggestions.push('List files in a GitHub repo');
+                    suggestions.push('Create a new branch in a GitHub repo');
+                }
+                suggestions.push('What else can you do with GitHub?');
+                return suggestions;
+            }
+        },
+        {
+            keywords: ['list all the files'],
+            generate: (msg) => {
+                const suggestions = [];
+                const match = msg.match(/repo\s+([a-zA-Z0-9_-]+)\s+that is owned by the user\s+([a-zA-Z0-9_-]+)/);
+                if (match && match[1] && match[2]) {
+                    suggestions.push(`Fetch contents of a file in ${match[1]} by ${match[2]}`);
+                    suggestions.push(`Commit changes to ${match[1]} by ${match[2]}`);
+                } else {
+                    suggestions.push('Fetch contents of a file');
+                    suggestions.push('Commit changes to GitHub');
+                }
+                suggestions.push('What else can you do with GitHub?');
+                return suggestions;
+            }
+        },
+        {
+            keywords: ['create a new branch'],
+            generate: () => [
+                'Check if a branch exists',
+                'Switch to an existing branch',
+                'Create a pull request'
+            ]
+        },
+        {
+            keywords: ['commit files', 'upload files'],
+            generate: () => [
+                'Create a pull request for these changes',
+                'List commit history for a file',
+                'Fetch repository contents'
+            ]
+        },
+        {
+            keywords: ['pull request'],
+            generate: () => [
+                'List pull requests',
+                'Merge a pull request',
+                'Check pull request status'
+            ]
+        },
+        {
+            keywords: ['fetch repo contents', 'download repository'],
+            generate: () => [
+                'Save this code to a file',
+                'Review this code',
+                'List directory contents'
+            ]
+        },
+        {
+            keywords: ['github'], // General GitHub mention
+            generate: () => [
+                'List my public repos',
+                'Create a new repo',
+                'Review code in a repo',
+                'List GitHub actions',
+                'Check if a repository exists'
+            ]
+        },
+
+        // --- Kubernetes Related Suggestions ---
+        {
+            keywords: ['kubernetes pods'],
+            generate: () => [
+                'List all Kubernetes deployments',
+                'List all Kubernetes services',
+                'Get logs for a specific pod',
+                'Delete a Kubernetes pod'
+            ]
+        },
+        {
+            keywords: ['kubernetes deployments'],
+            generate: () => [
+                'Get deployment details',
+                'Scale a Kubernetes deployment',
+                'Create a Kubernetes deployment'
+            ]
+        },
+        {
+            keywords: ['kubernetes services'],
+            generate: () => [
+                'Get service details',
+                'Create a Kubernetes service',
+                'Delete a Kubernetes service'
+            ]
+        },
+        {
+            keywords: ['create a kubernetes resource'],
+            generate: () => [
+                'List Kubernetes resources',
+                'Update a Kubernetes resource',
+                'Delete a Kubernetes resource'
+            ]
+        },
+        {
+            keywords: ['kubernetes'], // General Kubernetes mention
+            generate: () => [
+                'List Kubernetes namespaces',
+                'List Kubernetes nodes',
+                'List Kubernetes secrets',
+                'List Kubernetes events',
+                'Get Kubernetes version'
+            ]
+        },
+
+        // --- Database Related Suggestions ---
+        {
+            keywords: ['database structure', 'database connected', 'database type', 'successfully connected to'],
+            generate: () => [
+                'List all tables in the database',
+                'Select data from a specific table',
+                'Dump the database schema',
+                'Run an ad-hoc SQL query',
+                'List all schemas',
+                'List objects in a schema'
+            ]
+        },
+        {
+            keywords: ['select data from'],
+            generate: () => [
+                'List tables in the database',
+                'Dump the database structure',
+                'Run a custom query'
+            ]
+        },
+        {
+            keywords: ['list schemas'],
+            generate: () => [
+                'List objects in a specific schema',
+                'Dump schema structure'
+            ]
+        },
+        {
+            keywords: ['ad-hoc sql query'],
+            generate: () => [
+                'What kind of queries can I run?',
+                'Show me example queries'
+            ]
+        },
+        {
+            keywords: ['database'], // General database mention
+            generate: () => [
+                'Connect to a database',
+                'List available database types',
+                'Troubleshoot database connection'
+            ]
+        },
+
+        // --- Car Operations (DOSA) Related Suggestions ---
+        {
+            keywords: ['mot history for the car'],
+            generate: (msg) => {
+                const suggestions = [];
+                const match = msg.match(/car\s+([a-zA-Z0-9]+)/);
+                if (match && match[1]) {
+                    suggestions.push(`Tell me all the MOT defects for ${match[1]}`);
+                }
+                suggestions.push('What other car information can you provide?');
+                suggestions.push('Check MOT status for another car');
+                return suggestions;
+            }
+        },
+        {
+            keywords: ['mot defects'],
+            generate: () => [
+                'What do these defects mean?',
+                'How can I fix common MOT defects?'
+            ]
+        },
+        {
+            keywords: ['car', 'vehicle'], // General car/vehicle mention
+            generate: () => [
+                'Get MOT history for a vehicle',
+                'Explain car registration numbers'
+            ]
+        },
+
+        // --- Terraform Related Suggestions ---
+        {
+            keywords: ['terraform workflow', 'terraform plan', 'terraform apply', 'terraform destroy', 'terraform refresh'],
+            generate: () => [
+                'Perform a Terraform plan',
+                'Perform a Terraform apply',
+                'Perform a Terraform destroy',
+                'List Terraform workspaces',
+                'Set cloud context for Terraform CLI'
+            ]
+        },
+        {
+            keywords: ['terraform'], // General Terraform mention
+            generate: () => [
+                'List Terraform workspaces',
+                'Create a Terraform workspace',
+                'Run a Terraform plan',
+                'Run a Terraform apply',
+                'Set cloud context for Terraform CLI'
+            ]
+        },
+
+        // --- General and Error Suggestions (Lower Priority) ---
+        {
+            keywords: ['something went wrong', 'not authorized', 'error', 'failed to'],
+            generate: () => [
+                'Can you try again?',
+                'What kind of error occurred?',
+                'Start a new conversation'
+            ]
+        },
+        {
+            keywords: ['how can i assist you today?', 'what can i help you with?'],
+            generate: () => [
+                'What are your capabilities?',
+                'Tell me about GitHub integration',
+                'Tell me about Kubernetes integration',
+                'Tell me about database integration',
+                'Tell me about car operations',
+                'Tell me about Terraform integration'
+            ]
+        },
+    ];
+
+    /**
      * Generates predictive text suggestions based on the last bot message.
      * This is a rule-based example. In a real application, this could be
      * powered by a more sophisticated model or backend logic.
      */
     function generatePredictiveSuggestions() {
-        const suggestions = [];
-        // Defensive check: ensure lastBotMessage is a string before processing
+        let suggestions = [];
         const lowerCaseBotMessage = typeof lastBotMessage === 'string' ? lastBotMessage.toLowerCase() : '';
 
-        // --- GitHub Related Suggestions ---
-        if (lowerCaseBotMessage.includes('list all the branches')) {
-            const match = lowerCaseBotMessage.match(/repo\s+([a-zA-Z0-9_-]+)\s+that is owned by the user\s+([a-zA-Z0-9_-]+)/);
-            if (match && match[1] && match[2]) {
-                suggestions.push(`List files in ${match[1]} by ${match[2]}`);
-                suggestions.push(`Create a new branch in ${match[1]} by ${match[2]}`);
-            } else {
-                suggestions.push('List files in a GitHub repo');
-                suggestions.push('Create a new branch in a GitHub repo');
+        // Iterate through rules and apply the first one that matches
+        for (const rule of suggestionRules) {
+            const matched = rule.keywords.some(keyword => lowerCaseBotMessage.includes(keyword));
+            if (matched) {
+                suggestions = rule.generate(lowerCaseBotMessage);
+                break; // Stop after the first matching rule
             }
-            suggestions.push('What else can you do with GitHub?');
-        } else if (lowerCaseBotMessage.includes('list all the files')) {
-            const match = lowerCaseBotMessage.match(/repo\s+([a-zA-Z0-9_-]+)\s+that is owned by the user\s+([a-zA-Z0-9_-]+)/);
-            if (match && match[1] && match[2]) {
-                suggestions.push(`Fetch contents of a file in ${match[1]} by ${match[2]}`);
-                suggestions.push(`Commit changes to ${match[1]} by ${match[2]}`);
-            } else {
-                suggestions.push('Fetch contents of a file');
-                suggestions.push('Commit changes to GitHub');
-            }
-            suggestions.push('What else can you do with GitHub?');
-        } else if (lowerCaseBotMessage.includes('create a new branch')) {
-            suggestions.push('Check if a branch exists');
-            suggestions.push('Switch to an existing branch');
-            suggestions.push('Create a pull request');
-        } else if (lowerCaseBotMessage.includes('commit files') || lowerCaseBotMessage.includes('upload files')) {
-            suggestions.push('Create a pull request for these changes');
-            suggestions.push('List commit history for a file');
-            suggestions.push('Fetch repository contents');
-        } else if (lowerCaseBotMessage.includes('pull request')) {
-            suggestions.push('List pull requests'); // Assuming a function for this if available
-            suggestions.push('Merge a pull request'); // Assuming a function for this if available
-            suggestions.push('Check pull request status');
-        } else if (lowerCaseBotMessage.includes('fetch repo contents') || lowerCaseBotMessage.includes('download repository')) {
-            suggestions.push('Save this code to a file');
-            suggestions.push('Review this code');
-            suggestions.push('List directory contents');
-        } else if (lowerCaseBotMessage.includes('github')) { // General GitHub mention
-            suggestions.push('List my public repos');
-            suggestions.push('Create a new repo');
-            suggestions.push('Review code in a repo');
-            suggestions.push('List GitHub actions');
-            suggestions.push('Check if a repository exists');
         }
-
-        // --- Kubernetes Related Suggestions ---
-        if (lowerCaseBotMessage.includes('kubernetes pods')) {
-            suggestions.push('List all Kubernetes deployments');
-            suggestions.push('List all Kubernetes services');
-            suggestions.push('Get logs for a specific pod');
-            suggestions.push('Delete a Kubernetes pod');
-        } else if (lowerCaseBotMessage.includes('kubernetes deployments')) {
-            suggestions.push('Get deployment details');
-            suggestions.push('Scale a Kubernetes deployment');
-            suggestions.push('Create a Kubernetes deployment');
-        } else if (lowerCaseBotMessage.includes('kubernetes services')) {
-            suggestions.push('Get service details');
-            suggestions.push('Create a Kubernetes service');
-            suggestions.push('Delete a Kubernetes service');
-        } else if (lowerCaseBotMessage.includes('create a kubernetes resource')) {
-            suggestions.push('List Kubernetes resources');
-            suggestions.push('Update a Kubernetes resource');
-            suggestions.push('Delete a Kubernetes resource');
-        } else if (lowerCaseBotMessage.includes('kubernetes')) { // General Kubernetes mention
-            suggestions.push('List Kubernetes namespaces');
-            suggestions.push('List Kubernetes nodes');
-            suggestions.push('List Kubernetes secrets');
-            suggestions.push('List Kubernetes events');
-            suggestions.push('Get Kubernetes version');
-        }
-
-        // --- Database Related Suggestions ---
-        if (lowerCaseBotMessage.includes('database structure') || lowerCaseBotMessage.includes('database connected') || lowerCaseBotMessage.includes('database type') || lowerCaseBotMessage.includes('successfully connected to')) {
-            suggestions.push('List all tables in the database');
-            suggestions.push('Select data from a specific table');
-            suggestions.push('Dump the database schema');
-            suggestions.push('Run an ad-hoc SQL query');
-            suggestions.push('List all schemas');
-            suggestions.push('List objects in a schema');
-        } else if (lowerCaseBotMessage.includes('select data from')) {
-            suggestions.push('List tables in the database');
-            suggestions.push('Dump the database structure');
-            suggestions.push('Run a custom query');
-        } else if (lowerCaseBotMessage.includes('list schemas')) {
-            suggestions.push('List objects in a specific schema');
-            suggestions.push('Dump schema structure');
-        } else if (lowerCaseBotMessage.includes('ad-hoc sql query')) {
-            suggestions.push('What kind of queries can I run?');
-            suggestions.push('Show me example queries');
-        } else if (lowerCaseBotMessage.includes('database')) { // General database mention
-            suggestions.push('Connect to a database');
-            suggestions.push('List available database types');
-            suggestions.push('Troubleshoot database connection');
-        }
-
-        // --- Car Operations (DOSA) Related Suggestions ---
-        if (lowerCaseBotMessage.includes('mot history for the car')) {
-            const match = lowerCaseBotMessage.match(/car\s+([a-zA-Z0-9]+)/);
-            if (match && match[1]) {
-                suggestions.push(`Tell me all the MOT defects for ${match[1]}`);
-            }
-            suggestions.push('What other car information can you provide?');
-            suggestions.push('Check MOT status for another car');
-        } else if (lowerCaseBotMessage.includes('mot defects')) {
-            suggestions.push('What do these defects mean?');
-            suggestions.push('How can I fix common MOT defects?');
-        } else if (lowerCaseBotMessage.includes('car') || lowerCaseBotMessage.includes('vehicle')) { // General car/vehicle mention
-            suggestions.push('Get MOT history for a vehicle');
-            suggestions.push('Explain car registration numbers');
-        }
-
-        // --- Terraform Related Suggestions (if applicable) ---
-        if (lowerCaseBotMessage.includes('terraform workflow') || lowerCaseBotMessage.includes('terraform plan') || lowerCaseBotMessage.includes('terraform apply') || lowerCaseBotMessage.includes('terraform destroy') || lowerCaseBotMessage.includes('terraform refresh')) {
-            suggestions.push('Perform a Terraform plan');
-            suggestions.push('Perform a Terraform apply');
-            suggestions.push('Perform a Terraform destroy');
-            suggestions.push('List Terraform workspaces');
-            suggestions.push('Set cloud context for Terraform CLI');
-        } else if (lowerCaseBotMessage.includes('terraform')) { // General Terraform mention
-            suggestions.push('List Terraform workspaces');
-            suggestions.push('Create a Terraform workspace');
-            suggestions.push('Run a Terraform plan');
-            suggestions.push('Run a Terraform apply');
-            suggestions.push('Set cloud context for Terraform CLI');
-        }
-
-
-        // --- General and Error Suggestions ---
-        if (lowerCaseBotMessage.includes('something went wrong') || lowerCaseBotMessage.includes('not authorized') || lowerCaseBotMessage.includes('error') || lowerCaseBotMessage.includes('failed to')) {
-            suggestions.push('Can you try again?');
-            suggestions.push('What kind of error occurred?');
-            suggestions.push('Start a new conversation');
-        } else if (lowerCaseBotMessage.includes('how can i assist you today?') || lowerCaseBotMessage.includes('what can i help you with?')) {
-            suggestions.push('What are your capabilities?');
-            suggestions.push('Tell me about GitHub integration');
-            suggestions.push('Tell me about Kubernetes integration');
-            suggestions.push('Tell me about database integration');
-            suggestions.push('Tell me about car operations');
-            suggestions.push('Tell me about Terraform integration');
-        }
-
 
         // Fallback: If no specific rule matches, provide some general suggestions
         if (suggestions.length === 0) {
