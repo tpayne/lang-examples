@@ -765,4 +765,70 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     });
+
+
+    // --- Carousel Logic ---
+    const carouselInner = document.querySelector('.carousel-inner');
+    const carouselPanes = document.querySelectorAll('.carousel-pane');
+    const prevButton = document.getElementById('prevPane');
+    const nextButton = document.getElementById('nextPane');
+    const carouselIndicators = document.getElementById('carouselIndicators');
+
+    let currentPaneIndex = 0;
+    const totalPanes = carouselPanes.length;
+
+    // Create indicator dots
+    function createIndicators() {
+        carouselIndicators.innerHTML = ''; // Clear existing indicators
+        for (let i = 0; i < totalPanes; i++) {
+            const dot = document.createElement('span');
+            dot.classList.add('indicator-dot');
+            if (i === currentPaneIndex) {
+                dot.classList.add('active');
+            }
+            dot.dataset.index = i; // Store index for click handling
+            dot.addEventListener('click', () => showPane(i));
+            carouselIndicators.appendChild(dot);
+        }
+    }
+
+    // Update active indicator dot
+    function updateIndicators() {
+        const dots = carouselIndicators.querySelectorAll('.indicator-dot');
+        dots.forEach((dot, index) => {
+            if (index === currentPaneIndex) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+    }
+
+    // Show a specific carousel pane
+    function showPane(index) {
+        if (index < 0) {
+            currentPaneIndex = totalPanes - 1; // Loop to last pane
+        } else if (index >= totalPanes) {
+            currentPaneIndex = 0; // Loop to first pane
+        } else {
+            currentPaneIndex = index;
+        }
+        const offset = -currentPaneIndex * 100;
+        carouselInner.style.transform = `translateX(${offset}%)`;
+        updateIndicators();
+    }
+
+    // Event listeners for carousel arrows
+    prevButton.addEventListener('click', () => showPane(currentPaneIndex - 1));
+    nextButton.addEventListener('click', () => showPane(currentPaneIndex + 1));
+
+    // Initialize carousel
+    createIndicators();
+    showPane(0); // Show the first pane initially
+
+    // Optional: Auto-cycle carousel (uncomment to enable)
+    // setInterval(() => {
+    //     showPane(currentPaneIndex + 1);
+    // }, 7000); // Change pane every 7 seconds
+
 });

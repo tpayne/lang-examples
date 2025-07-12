@@ -7,6 +7,10 @@ The web page is a very simple interface, so if you wish to create something more
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
+By the way, the Gemini chat technology for callouts is a bit rubbish, so I would advise you to use OpenAI. It is alot better.
+
+But if you want to use Gemini, here is the code.
+
 Pre-Requisites
 --------------
 To run this sample you will need to: -
