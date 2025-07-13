@@ -554,7 +554,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentInputDraft = ''; // Clear draft once returned
                 } else {
                     // Load the next message from history
-                    userInput.innerHTML = messageHistory[historyIndex];
+                    // Use textContent to avoid interpreting text as HTML
+                    userInput.textContent = messageHistory[historyIndex];
                 }
                 // Place cursor at the end (optional but good UX)
                 placeCaretAtEnd(userInput);
