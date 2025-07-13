@@ -1006,14 +1006,29 @@ async function runAdhocSql(sessionId, uri, sqlQuery) {
         break;
       }
       case 'mysql': {
-        const [mysqlResult] = await client.execute(sqlQuery);
-        if (queryType === 'SELECT') {
-          result = {
-            columns: mysqlResult.length > 0 ? Object.keys(mysqlResult[0]) : [],
-            data: mysqlResult,
-          };
+        // For MySQL, use client.query() for DDL statements like CREATE TRIGGER/PROCEDURE
+        // and client.execute() for DML/SELECT statements.
+        // A simple heuristic is to check for common DDL keywords.
+        const isDDL = sqlQuery.trim().toUpperCase().startsWith('CREATE')
+                       || sqlQuery.trim().toUpperCase().startsWith('ALTER')
+                       || sqlQuery.trim().toUpperCase().startsWith('DROP')
+                       || sqlQuery.trim().toUpperCase().startsWith('DELIMITER'); // Added DELIMITER for multi-statement triggers/procedures
+
+        if (isDDL) {
+          // Use client.query() for DDL statements
+          const [mysqlDDLResult] = await client.query(sqlQuery);
+          result = { message: 'DDL command executed successfully.', rawResult: mysqlDDLResult };
         } else {
-          result = { affectedRows: mysqlResult.affectedRows || 0 };
+          // Use client.execute() for DML/SELECT statements
+          const [mysqlResult] = await client.execute(sqlQuery);
+          if (queryType === 'SELECT') {
+            result = {
+              columns: mysqlResult.length > 0 ? Object.keys(mysqlResult[0]) : [],
+              data: mysqlResult,
+            };
+          } else {
+            result = { affectedRows: mysqlResult.affectedRows || 0 };
+          }
         }
         break;
       }
