@@ -1,4 +1,6 @@
 # Changelog
+## 2025-07-07	(21:31:30-UTC+0000)
+- **Fix**:  update dependency dotenv to v17 (in nodejs/genai/gemini/chatbot/package.json)
 ## 2025-06-01	(22:11:26-UTC+0000)
 - **Other**: Potential fix for code scanning alert no. 77: Double escaping or unescaping (in nodejs/genai/gemini/chatbot/public/script.js)
 ## 2025-05-30	(01:47:08-UTC+0000)

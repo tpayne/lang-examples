@@ -1,4 +1,6 @@
 # Changelog
+## 2025-07-07	(21:31:39-UTC+0000)
+- **Fix**:  update dependency dotenv to v17 (in nodejs/genai/openai/chatbot/package.json)
 ## 2025-06-03	(19:44:21-UTC+0000)
 - **Other**: Update README.md (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-05-30	(01:47:21-UTC+0000)
