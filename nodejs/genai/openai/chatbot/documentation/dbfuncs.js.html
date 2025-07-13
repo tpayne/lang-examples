@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: dbfuncs.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: dbfuncs.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// databaseUtils.js
+
+// Database-specific client imports (will need to be installed via npm)
+const { Client: PgClient } = require('pg'); // For PostgreSQL
+const sql = require('mssql'); // For MSSQL - Replaced tedious with mssql
+const { MongoClient } = require('mongodb'); // For MongoDB
+const oracledb = require('oracledb'); // For Oracle (requires Oracle Instant Client)
+const mysql = require('mysql2/promise'); // For MySQL
+const net = require('net'); // Node.js built-in net module for TCP diagnostics
+
+const logger = require('./logger'); // Assuming a logger utility exists
+
+// Map to store active database connections per session (for potential reuse or proper cleanup)
+const activeConnections = new Map();
+
+/**
+ * Disconnects from a database.
+ * Moved this function definition before `connectToDatabase` to resolve `no-use-before-define` error.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {object} client - The database client/connection object.
+ * @param {string} dbType - The type of the database (e.g., 'postgres', 'mssql').
+ */
+async function disconnectFromDatabase(sessionId, client, dbType) {
+  if (!client) return;
+  try {
+    switch (dbType) {
+      case 'postgres':
+        await client.end();
+        break;
+      case 'mssql':
+        await client.close(); // mssql uses .close() for connection pools
+        break;
+      case 'mongodb':
+        await client.close();
+        break;
+      case 'oracle':
+        await client.close();
+        break;
+      case 'mysql':
+        await client.end();
+        break;
+      default:
+        logger.warn(`[Session: ${sessionId}] No specific disconnect method for database type: ${dbType}`);
+    }
+    activeConnections.delete(sessionId);
+    logger.info(`[Session: ${sessionId}] Successfully disconnected from ${dbType} database.`);
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Error disconnecting from ${dbType} database: ${error.message}`, error);
+  }
+}
+
+/**
+ * Parses a JDBC-like URI and extracts connection parameters.
+ * This is a simplified parser and may not cover all complex JDBC URI variations.
+ * @param {string} sessionId - The current session ID for logging.
+ * @param {string} uri - The JDBC-like URI (e.g., "jdbc:postgresql://host:port/database?user=...").
+ * @returns {object} - An object containing database type and connection details.
+ * @throws {Error} - If the URI format is unsupported.
+ */
+function parseJdbcUri(sessionId, uri) {
+  let dbType;
+  const config = {};
+
+  if (uri.startsWith('jdbc:postgresql://')) {
+    dbType = 'postgres';
+    const [hostPortDb, paramsString] = uri.substring('jdbc:postgresql://'.length).split('?');
+    const [hostPort, database] = hostPortDb.split('/');
+    const [host, port] = hostPort.split(':');
+
+    config.host = host;
+    config.port = port ? parseInt(port, 10) : 5432;
+    config.database = database;
+    if (paramsString) {
+      paramsString.split('&amp;').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key === 'user') config.user = value;
+        if (key === 'password') config.password = value;
+        if (key === 'sslmode' &amp;&amp; value === 'true') config.ssl = true;
+      });
+    }
+  } else if (uri.startsWith('jdbc:sqlserver://')) {
+    dbType = 'mssql';
+    // MSSQL connection string for mssql package
+    // Example: "jdbc:sqlserver://localhost:1433;databaseName=mydb;user=sa;password=Password123!"
+    const parts = uri.substring('jdbc:sqlserver://'.length).split(';');
+    parts.forEach((part) => {
+      const [key, value] = part.split('=');
+      if (key === 'server') config.server = value;
+      if (key === 'port') config.port = parseInt(value, 10);
+      if (key === 'databaseName') config.database = value; // mssql uses databaseName
+      if (key === 'user') config.user = value;
+      if (key === 'password') config.password = value;
+      if (key === 'encrypt' &amp;&amp; value === 'true') config.options = { ...config.options, encrypt: true };
+      if (key === 'trustServerCertificate' &amp;&amp; value === 'true') config.options = { ...config.options, trustServerCertificate: true };
+    });
+
+    // Ensure required properties for mssql package
+    config.server = config.server || 'localhost';
+    config.port = config.port || 1433;
+    config.options = {
+      encrypt: (config.options &amp;&amp; config.options.encrypt) || false, // Use TLS/SSL for connection
+      trustServerCertificate: (config.options &amp;&amp; config.options.trustServerCertificate) || false, // Change to true for local dev / self-signed certs
+      // You might add other options here like `enableArithAbort` etc.
+    };
+  } else if (uri.startsWith('mongodb://')) {
+    dbType = 'mongodb';
+    config.uri = uri;
+    // Extract database name from URI if present, otherwise assume it's part of the connection string
+    const path = uri.split('/').pop().split('?')[0];
+    if (path &amp;&amp; path.length > 0) {
+      config.database = path;
+    }
+  } else if (uri.startsWith('jdbc:oracle:thin:@')) {
+    dbType = 'oracle';
+    const connStr = uri.substring('jdbc:oracle:thin:@'.length);
+    const [connectString, paramsString] = connStr.split('?');
+    config.connectString = connectString; // host:port/service_name or TNS alias
+    if (paramsString) {
+      paramsString.split('&amp;').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key === 'user') config.user = value;
+        if (key === 'password') config.password = value;
+      });
+    }
+  } else if (uri.startsWith('jdbc:mysql://')) {
+    dbType = 'mysql';
+    const [hostPortDb, paramsString] = uri.substring('jdbc:mysql://'.length).split('?');
+    const [hostPort, database] = hostPortDb.split('/');
+    const [host, port] = hostPort.split(':');
+
+    // Determine host based on Docker environment
+    if (process.env.DOCKER_ENV === 'true') {
+      // If running inside Docker, connect to the host machine
+      config.host = 'host.docker.internal';
+      logger.info(`[Session: ${sessionId}] MySQL host set to 'host.docker.internal' for Docker environment.`);
+    } else {
+      // Otherwise, explicitly set host to 127.0.0.1 for local non-Docker environments
+      config.host = (host === 'localhost' || host === '::1') ? '127.0.0.1' : host;
+      logger.info(`[Session: ${sessionId}] MySQL host set to '${config.host}' for non-Docker environment.`);
+    }
+
+    config.port = port ? parseInt(port, 10) : 3306;
+    config.database = database;
+    if (paramsString) {
+      paramsString.split('&amp;').forEach((param) => {
+        const [key, value] = param.split('=');
+        if (key === 'user') config.user = value;
+        if (key === 'password') config.password = value;
+        if (key === 'ssl' &amp;&amp; value === 'true') config.ssl = {}; // MySQL2 handles this
+      });
+    }
+  } else {
+    throw new Error(`Unsupported database URI format: ${uri}`);
+  }
+
+  return { dbType, config };
+}
+
+/**
+ * Temporary diagnostic function to test raw TCP connection.
+ * @param {string} host - The host to connect to.
+ * @param {number} port - The port to connect to.
+ * @param {string} sessionId - The session ID for logging.
+ * @returns {Promise&lt;boolean>} - True if connection succeeds, false otherwise.
+ */
+async function testTcpConnection(host, port, sessionId) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let connected = false;
+
+    socket.setTimeout(2000); // 2-second timeout
+
+    socket.on('connect', () => {
+      logger.info(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} succeeded.`);
+      connected = true;
+      socket.destroy(); // Close the socket immediately
+      resolve(true);
+    });
+
+    socket.on('timeout', () => {
+      logger.error(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} timed out.`);
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on('error', (err) => {
+      logger.error(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} failed: ${err.message}`);
+      socket.destroy();
+      resolve(false);
+    });
+
+    socket.on('close', () => {
+      if (!connected) {
+        logger.warn(`[Session: ${sessionId}] DIAGNOSTIC: Raw TCP connection to ${host}:${port} closed without connecting (possibly refused or error before connect event).`);
+      }
+    });
+
+    socket.connect(port, host);
+  });
+}
+
+/**
+ * Connects to a database using a JDBC-like URI.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @returns {Promise&lt;object>} - The database client/connection object.
+ * @throws {Error} - If connection fails or URI is invalid.
+ */
+async function connectToDatabase(sessionId, uri) {
+  logger.info(`[Session: ${sessionId}] Attempting to connect to database using URI: ${uri}`);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
+
+  let client;
+  try {
+    if (dbType === 'mysql') {
+      // Run the diagnostic TCP connection test first for MySQL
+      const tcpSuccess = await testTcpConnection(config.host, config.port, sessionId);
+      if (!tcpSuccess) {
+        throw new Error(`DIAGNOSTIC: Raw TCP connection to ${config.host}:${config.port} failed. Cannot proceed with MySQL connection.`);
+      }
+    }
+
+    switch (dbType) {
+      case 'postgres': {
+        client = new PgClient(config);
+        await client.connect();
+        break;
+      }
+      case 'mssql': {
+        // mssql package uses a connection pool
+        client = new sql.ConnectionPool(config);
+        await client.connect();
+        break;
+      }
+      case 'mongodb': {
+        client = new MongoClient(config.uri);
+        await client.connect();
+        break;
+      }
+      case 'oracle': {
+        // oracledb.initOracleClient(); // Uncomment and configure if Oracle Instant Client is not in PATH
+        client = await oracledb.getConnection(config);
+        break;
+      }
+      case 'mysql': {
+        client = await mysql.createConnection(config);
+        break;
+      }
+      default:
+        throw new Error(`Unsupported database type for connection: ${dbType}`);
+    }
+    activeConnections.set(sessionId, { client, dbType });
+    logger.info(`[Session: ${sessionId}] Successfully connected to ${dbType} database.`);
+    return client;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to connect to ${dbType} database: ${error.message}`, error);
+    throw new Error(`Database connection failed: ${error.message}`);
+  } finally {
+    // Note: For mssql, we keep the connection pool open for reuse.
+    // It will be closed on session cleanup or explicit disconnect.
+  }
+}
+
+/**
+ * Dumps the database structure (tables, views, columns) in JSON format.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @returns {Promise&lt;object>} - A JSON object representing the database structure.
+ * @throws {Error} - If connection or dumping fails.
+ */
+async function dumpDatabaseStructure(sessionId, uri) {
+  logger.info(`[Session: ${sessionId}] Dumping database structure for URI: ${uri}`);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
+  let client;
+  try {
+    client = await connectToDatabase(sessionId, uri);
+    const structure = { tables: [], views: [] };
+
+    switch (dbType) {
+      case 'postgres': {
+        // Tables and their columns
+        const tablesResult = await client.query(`
+                    SELECT
+                        table_name,
+                        column_name,
+                        data_type,
+                        is_nullable
+                    FROM
+                        information_schema.columns
+                    WHERE
+                        table_schema = 'public'
+                    ORDER BY
+                        table_name, ordinal_position;
+                `);
+        tablesResult.rows.forEach((row) => {
+          let table = structure.tables.find((t) => t.name === row.table_name);
+          if (!table) {
+            table = { name: row.table_name, columns: [] };
+            structure.tables.push(table);
+          }
+          table.columns.push({
+            name: row.column_name,
+            type: row.data_type,
+            nullable: row.is_nullable === 'YES',
+          });
+        });
+
+        // Views
+        const viewsResult = await client.query(`
+                    SELECT
+                        table_name AS view_name,
+                        view_definition
+                    FROM
+                        information_schema.views
+                    WHERE
+                        table_schema = 'public';
+                `);
+        structure.views = viewsResult.rows.map((row) => ({
+          name: row.view_name,
+          definition: row.view_definition,
+        }));
+        break;
+      }
+      case 'mssql': {
+        const request = new sql.Request(client); // Use client from connection pool
+        const tablesResult = await request.query(`
+                    SELECT
+                        t.name AS table_name,
+                        c.name AS column_name,
+                        ty.name AS data_type,
+                        c.is_nullable
+                    FROM
+                        sys.tables t
+                    INNER JOIN
+                        sys.columns c ON t.object_id = c.object_id
+                    INNER JOIN
+                        sys.types ty ON c.system_type_id = ty.system_type_id AND c.user_type_id = ty.user_type_id
+                    ORDER BY
+                        t.name, c.column_id;
+                `);
+        tablesResult.recordset.forEach((row) => {
+          let table = structure.tables.find((t) => t.name === row.table_name);
+          if (!table) {
+            table = { name: row.table_name, columns: [] };
+            structure.tables.push(table);
+          }
+          table.columns.push({
+            name: row.column_name,
+            type: row.data_type,
+            nullable: row.is_nullable,
+          });
+        });
+
+        const viewsResult = await request.query(`
+                    SELECT
+                        v.name AS view_name,
+                        OBJECT_DEFINITION(v.object_id) AS view_definition
+                    FROM
+                        sys.views v;
+                `);
+        structure.views = viewsResult.recordset.map((row) => ({
+          name: row.view_name,
+          definition: row.view_definition,
+        }));
+        break;
+      }
+      case 'mongodb': {
+        const db = client.db(config.database);
+        const collections = await db.listCollections().toArray();
+        await Promise.all(collections.map(async (colInfo) => { // Refactored loop
+          const collectionName = colInfo.name;
+          // For MongoDB, schema is dynamic. We can sample documents to infer a schema.
+          // This is a simplified inference, a full one is complex.
+          const sampleDoc = await db.collection(collectionName).findOne({});
+          const columns = [];
+          if (sampleDoc) {
+            Object.keys(sampleDoc).forEach((key) => { // Refactored for...in
+              columns.push({
+                name: key,
+                type: typeof sampleDoc[key], // Basic type inference
+                // MongoDB doesn't have direct "nullable" concept like SQL
+              });
+            });
+          }
+          structure.tables.push({ name: collectionName, columns }); // Treat collections as tables
+        }));
+        // MongoDB doesn't have "views" in the same way as SQL, but has aggregation views.
+        // Listing them requires more specific aggregation pipeline queries.
+        // For simplicity, we'll omit detailed view definitions for now.
+        break;
+      }
+      case 'oracle': {
+        // Tables and their columns
+        const oracleTablesResult = await client.execute(`
+                    SELECT
+                        TABLE_NAME,
+                        COLUMN_NAME,
+                        DATA_TYPE,
+                        NULLABLE
+                    FROM
+                        ALL_TAB_COLUMNS
+                    WHERE
+                        OWNER = USER
+                    ORDER BY
+                        TABLE_NAME, COLUMN_ID
+                `);
+        oracleTablesResult.rows.forEach((row) => {
+          const [tableName, columnName, dataType, nullable] = row;
+          let table = structure.tables.find((t) => t.name === tableName);
+          if (!table) {
+            table = { name: tableName, columns: [] };
+            structure.tables.push(table);
+          }
+          table.columns.push({
+            name: columnName,
+            type: dataType,
+            nullable: nullable === 'Y',
+          });
+        });
+
+        // Views
+        const oracleViewsResult = await client.execute(`
+                    SELECT
+                        VIEW_NAME,
+                        TEXT AS VIEW_DEFINITION
+                    FROM
+                        ALL_VIEWS
+                    WHERE
+                        OWNER = USER
+                `);
+        structure.views = oracleViewsResult.rows.map((row) => ({
+          name: row[0], // VIEW_NAME
+          definition: row[1], // TEXT
+        }));
+        break;
+      }
+      case 'mysql': {
+        // Tables and their columns
+        const [mysqlTablesResult] = await client.execute(`
+                    SELECT
+                        TABLE_NAME,
+                        COLUMN_NAME,
+                        DATA_TYPE,
+                        IS_NULLABLE
+                    FROM
+                        information_schema.columns
+                    WHERE
+                        table_schema = DATABASE()
+                    ORDER BY
+                        TABLE_NAME, ORDINAL_POSITION;
+                `);
+        mysqlTablesResult.forEach((row) => {
+          let table = structure.tables.find((t) => t.name === row.TABLE_NAME);
+          if (!table) {
+            table = { name: row.TABLE_NAME, columns: [] };
+            structure.tables.push(table);
+          }
+          table.columns.push({
+            name: row.COLUMN_NAME,
+            type: row.DATA_TYPE,
+            nullable: row.IS_NULLABLE === 'YES',
+          });
+        });
+
+        // Views
+        const [mysqlViewsResult] = await client.execute(`
+                    SELECT
+                        TABLE_NAME AS view_name,
+                        VIEW_DEFINITION
+                    FROM
+                        information_schema.views
+                    WHERE
+                        table_schema = DATABASE();
+                `);
+        structure.views = mysqlViewsResult.map((row) => ({
+          name: row.view_name,
+          definition: row.VIEW_DEFINITION,
+        }));
+        break;
+      }
+      default:
+        throw new Error(`Database type ${dbType} not supported for structure dump.`);
+    }
+    logger.info(`[Session: ${sessionId}] Successfully dumped database structure for ${dbType}.`);
+    return structure;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to dump database structure for ${dbType}: ${error.message}`, error);
+    throw new Error(`Database structure dump failed: ${error.message}`);
+  } finally {
+    if (client) {
+      await disconnectFromDatabase(sessionId, client, dbType);
+    }
+  }
+}
+
+/**
+ * Selects an optional percentage of data from a valid table or view.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @param {string} tableNameOrViewName - The name of the table or view to select data from.
+ * @param {number} [percentage=10] - The percentage of data to select (0-100). Defaults to 10%.
+ * @returns {Promise&lt;object>} - A JSON object containing the selected data and column names.
+ * @throws {Error} - If connection or data selection fails.
+ */
+async function selectDatabaseData(sessionId, uri, tableNameOrViewName, percentage = 10) {
+  if (percentage &lt; 0 || percentage > 100) {
+    throw new Error('Percentage must be between 0 and 100.');
+  }
+  logger.info(`[Session: ${sessionId}] Selecting ${percentage}% data from ${tableNameOrViewName} for URI: ${uri}`);
+
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
+  let client;
+  try {
+    client = await connectToDatabase(sessionId, uri);
+    const results = { columns: [], data: [] };
+
+    switch (dbType) {
+      case 'postgres': {
+        // For sampling, use TABLESAMPLE SYSTEM (percentage)
+        // Note: TABLESAMPLE is approximate and might not return exact percentage.
+        // For exact percentage, you'd need to count, calculate limit, and use OFFSET RAND()
+        // which is inefficient for large tables.
+        const pgQuery = percentage === 100
+          ? `SELECT * FROM "${tableNameOrViewName}"`
+          : `SELECT * FROM "${tableNameOrViewName}" TABLESAMPLE SYSTEM (${percentage})`;
+
+        if (percentage === 0) {
+          return results; // Return empty for 0%
+        }
+
+        const pgData = await client.query(pgQuery);
+        if (pgData.rows.length > 0) {
+          results.columns = Object.keys(pgData.rows[0]);
+          results.data = pgData.rows;
+        }
+        break;
+      }
+      case 'mssql': {
+        // Use TOP (percentage) PERCENT or TOP N for exact number
+        const msSqlQuery = percentage === 100
+          ? `SELECT * FROM [${tableNameOrViewName}]`
+          : `SELECT TOP (${percentage}) PERCENT * FROM [${tableNameOrViewName}] ORDER BY NEWID()`;
+
+        if (percentage === 0) {
+          return results; // Return empty for 0%
+        }
+
+        const request = new sql.Request(client);
+        const msSqlData = await request.query(msSqlQuery);
+        if (msSqlData.recordset.length > 0) {
+          results.columns = Object.keys(msSqlData.recordset[0]);
+          results.data = msSqlData.recordset;
+        }
+        break;
+      }
+      case 'mongodb': {
+        const db = client.db(config.database);
+        let sampleSize = 0;
+        if (percentage > 0) {
+          // Estimate count for sampling
+          const count = await db.collection(tableNameOrViewName).estimatedDocumentCount();
+          sampleSize = Math.ceil(count * (percentage / 100));
+          if (sampleSize === 0 &amp;&amp; count > 0) sampleSize = 1; // Ensure at least one if percentage > 0 and count > 0
+        }
+
+        let mongoData;
+        if (sampleSize > 0) {
+          mongoData = await db.collection(tableNameOrViewName).aggregate([
+            { $sample: { size: sampleSize } },
+          ]).toArray();
+        } else {
+          mongoData = [];
+        }
+
+        if (mongoData.length > 0) {
+          // Infer columns from the first sampled document
+          results.columns = Object.keys(mongoData[0]);
+          results.data = mongoData;
+        }
+        break;
+      }
+      case 'oracle': {
+        // Oracle doesn't have a direct TABLESAMPLE PERCENT.
+        // We can use SAMPLE BLOCK (percentage) or ROWNUM with DBMS_RANDOM.
+        // SAMPLE BLOCK is approximate. For exact, it's more complex.
+        const oracleQuery = percentage === 100
+          ? `SELECT * FROM "${tableNameOrViewName}"`
+          : `SELECT * FROM "${tableNameOrViewName}" SAMPLE BLOCK (${percentage})`;
+
+        if (percentage === 0) {
+          return results; // Return empty for 0%
+        }
+
+        const oracleData = await client.execute(oracleQuery, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        if (oracleData.rows.length > 0) {
+          results.columns = Object.keys(oracleData.rows[0]);
+          results.data = oracleData.rows;
+        }
+        break;
+      }
+      case 'mysql': {
+        // MySQL uses ORDER BY RAND() LIMIT N.
+        // To get a percentage, we need to estimate total rows first.
+        const [totalRowsResult] = await client.execute(`SELECT COUNT(*) AS total FROM \`${tableNameOrViewName}\``);
+        const totalRows = totalRowsResult[0].total;
+        let limit = Math.ceil(totalRows * (percentage / 100));
+        if (limit === 0 &amp;&amp; totalRows > 0 &amp;&amp; percentage > 0) limit = 1; // Ensure at least one if percentage > 0 and count > 0
+
+        const mySqlQuery = percentage === 100
+          ? `SELECT * FROM \`${tableNameOrViewName}\``
+          : `SELECT * FROM \`${tableNameOrViewName}\` ORDER BY RAND() LIMIT ${limit}`;
+
+        if (percentage === 0) {
+          return results; // Return empty for 0%
+        }
+
+        const [mysqlData] = await client.execute(mySqlQuery);
+        if (mysqlData.length > 0) {
+          results.columns = Object.keys(mysqlData[0]);
+          results.data = mysqlData;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Database type ${dbType} not supported for data selection.`);
+    }
+    logger.info(`[Session: ${sessionId}] Successfully selected data from ${tableNameOrViewName} for ${dbType}.`);
+    return results;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to select data from ${dbType}: ${error.message}`, error);
+    throw new Error(`Database data selection failed: ${error.message}`);
+  } finally {
+    if (client) {
+      await disconnectFromDatabase(sessionId, client, dbType);
+    }
+  }
+}
+
+/**
+ * Lists all schemas in the connected database.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @returns {Promise&lt;string[]>} - An array of schema names.
+ * @throws {Error} - If connection or listing fails.
+ */
+async function listDatabaseSchemas(sessionId, uri) {
+  logger.info(`[Session: ${sessionId}] Listing schemas for URI: ${uri}`);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
+  let client;
+  try {
+    client = await connectToDatabase(sessionId, uri);
+    const schemas = [];
+
+    switch (dbType) {
+      case 'postgres': {
+        const pgSchemas = await client.query("SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema'");
+        schemas.push(...pgSchemas.rows.map((row) => row.schema_name));
+        break;
+      }
+      case 'mssql': {
+        const request = new sql.Request(client);
+        const result = await request.query('SELECT name FROM sys.schemas WHERE schema_id &lt; 16384'); // schema_id &lt; 16384 to exclude system schemas
+        schemas.push(...result.recordset.map((row) => row.name));
+        break;
+      }
+      case 'mongodb': {
+        // MongoDB doesn't have "schemas" in the relational sense.
+        // It has databases and collections within a database.
+        // For this context, we'll return the current database name as the "schema".
+        // If the URI doesn't specify a database, it might connect to 'test' by default.
+        if (config.database) {
+          schemas.push(config.database);
+        } else {
+          // Attempt to get the current database name from the client
+          const db = client.db(); // Gets the default database from the URI or 'test'
+          schemas.push(db.databaseName);
+        }
+        logger.warn(`[Session: ${sessionId}] MongoDB does not have traditional schemas. Returning the connected database name as a schema.`);
+        break;
+      }
+      case 'oracle': {
+        const oracleSchemas = await client.execute('SELECT USERNAME FROM ALL_USERS ORDER BY USERNAME');
+        schemas.push(...oracleSchemas.rows.map((row) => row[0]));
+        break;
+      }
+      case 'mysql': {
+        const [mysqlSchemas] = await client.execute('SELECT schema_name FROM information_schema.schemata');
+        schemas.push(...mysqlSchemas.map((row) => row.schema_name));
+        break;
+      }
+      default:
+        throw new Error(`Database type ${dbType} not supported for listing schemas.`);
+    }
+    logger.info(`[Session: ${sessionId}] Successfully listed schemas for ${dbType}.`);
+    return schemas;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to list schemas for ${dbType}: ${error.message}`, error);
+    throw new Error(`Database schema listing failed: ${error.message}`);
+  } finally {
+    if (client) {
+      await disconnectFromDatabase(sessionId, client, dbType);
+    }
+  }
+}
+
+/**
+ * Lists objects (tables, views, indexes, constraints) owned by a specific schema.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @param {string} schemaName - The name of the schema to list objects from.
+ * @param {string[]} [objectTypes=['tables', 'views', 'indexes', 'constraints']] - An array of object types to list.
+ * @returns {Promise&lt;object>} - A JSON object containing lists of requested objects.
+ * @throws {Error} - If connection or listing fails.
+ */
+async function listSchemaObjects(sessionId, uri, schemaName, objectTypes = ['tables', 'views', 'indexes', 'constraints']) {
+  logger.info(`[Session: ${sessionId}] Listing objects for schema '${schemaName}' of types: ${objectTypes.join(', ')} for URI: ${uri}`);
+  const { dbType, config } = parseJdbcUri(sessionId, uri);
+  let client;
+  try {
+    client = await connectToDatabase(sessionId, uri);
+    const objects = {
+      tables: [],
+      views: [],
+      indexes: [],
+      constraints: [],
+    };
+
+    const lowerCaseObjectTypes = objectTypes.map((type) => type.toLowerCase());
+
+    switch (dbType) {
+      case 'postgres': {
+        if (lowerCaseObjectTypes.includes('tables')) {
+          const res = await client.query(`
+                        SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = $1 AND table_type = 'BASE TABLE';
+                    `, [schemaName]);
+          objects.tables.push(...res.rows.map((row) => row.table_name));
+        }
+        if (lowerCaseObjectTypes.includes('views')) {
+          const res = await client.query(`
+                        SELECT table_name AS view_name FROM information_schema.views
+                        WHERE table_schema = $1;
+                    `, [schemaName]);
+          objects.views.push(...res.rows.map((row) => row.view_name));
+        }
+        if (lowerCaseObjectTypes.includes('indexes')) {
+          const res = await client.query(`
+                        SELECT indexname FROM pg_indexes
+                        WHERE schemaname = $1;
+                    `, [schemaName]);
+          objects.indexes.push(...res.rows.map((row) => row.indexname));
+        }
+        if (lowerCaseObjectTypes.includes('constraints')) {
+          const res = await client.query(`
+                        SELECT constraint_name, constraint_type, table_name FROM information_schema.table_constraints
+                        WHERE constraint_schema = $1;
+                    `, [schemaName]);
+          objects.constraints.push(...res.rows.map((row) => ({
+            name: row.constraint_name,
+            type: row.constraint_type,
+            table: row.table_name,
+          })));
+        }
+        break;
+      }
+      case 'mssql': {
+        const request = new sql.Request(client);
+
+        if (lowerCaseObjectTypes.includes('tables')) {
+          const res = await request.query(`
+                        SELECT t.name AS table_name FROM sys.tables t
+                        INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+                        WHERE s.name = '${schemaName}';
+                    `);
+          objects.tables.push(...res.recordset.map((row) => row.table_name));
+        }
+        if (lowerCaseObjectTypes.includes('views')) {
+          const res = await request.query(`
+                        SELECT v.name AS view_name FROM sys.views v
+                        INNER JOIN sys.schemas s ON v.schema_id = s.schema_id
+                        WHERE s.name = '${schemaName}';
+                    `);
+          objects.views.push(...res.recordset.map((row) => row.view_name));
+        }
+        if (lowerCaseObjectTypes.includes('indexes')) {
+          const res = await request.query(`
+                        SELECT i.name AS index_name, OBJECT_NAME(i.object_id) AS table_name
+                        FROM sys.indexes i
+                        INNER JOIN sys.tables t ON i.object_id = t.object_id
+                        INNER JOIN sys.schemas s ON t.schema_id = s.schema_id
+                        WHERE s.name = '${schemaName}' AND i.is_primary_key = 0 AND i.is_unique_constraint = 0;
+                    `);
+          objects.indexes.push(...res.recordset.map((row) => ({ name: row.index_name, table: row.table_name })));
+        }
+        if (lowerCaseObjectTypes.includes('constraints')) {
+          const res = await request.query(`
+                        SELECT
+                            OBJECT_NAME(c.object_id) AS constraint_name,
+                            c.type_desc AS constraint_type,
+                            OBJECT_NAME(c.parent_object_id) AS table_name
+                        FROM sys.objects c
+                        INNER JOIN sys.schemas s ON c.schema_id = s.schema_id
+                        WHERE s.name = '${schemaName}'
+                        AND c.type IN ('PK', 'UQ', 'F', 'C'); -- PK: Primary Key, UQ: Unique, F: Foreign Key, C: Check
+                    `);
+          objects.constraints.push(...res.recordset.map((row) => ({
+            name: row.constraint_name,
+            type: row.constraint_type,
+            table: row.table_name,
+          })));
+        }
+        break;
+      }
+      case 'mongodb': {
+        // MongoDB doesn't have schemas in the relational sense.
+        // We treat the database as the "schema" and collections as "tables".
+        // Other object types like views, indexes, constraints are handled differently
+        // or are properties of collections/documents.
+        if (schemaName !== config.database) {
+          logger.warn(`[Session: ${sessionId}] For MongoDB, schemaName '${schemaName}' must match the connected database '${config.database}'.`);
+          // We might still proceed to list collections in the connected DB,
+          // or throw an error if strict schema matching is desired.
+          // For now, we'll list collections if the schemaName matches the connected DB.
+        }
+
+        if (lowerCaseObjectTypes.includes('tables') || lowerCaseObjectTypes.includes('views')) {
+          // For MongoDB, 'tables' are collections. 'views' are aggregation views.
+          const db = client.db(config.database);
+          const collections = await db.listCollections().toArray();
+          collections.forEach((colInfo) => {
+            if (colInfo.type === 'collection') {
+              objects.tables.push(colInfo.name);
+            } else if (colInfo.type === 'view') {
+              objects.views.push(colInfo.name);
+            }
+          });
+        }
+        if (lowerCaseObjectTypes.includes('indexes')) {
+          // List indexes for all collections in the database
+          const db = client.db(config.database);
+          const collections = await db.listCollections().toArray();
+          await Promise.all(collections.map(async (colInfo) => { // Refactored loop
+            const collectionName = colInfo.name;
+            const indexes = await db.collection(collectionName).indexes();
+            indexes.forEach((idx) => {
+              objects.indexes.push({
+                collection: collectionName,
+                name: idx.name,
+                key: idx.key,
+                unique: idx.unique || false,
+              });
+            });
+          }));
+        }
+        // MongoDB doesn't have direct "constraints" outside of unique indexes.
+        // For simplicity, we'll omit a separate constraints listing for now.
+        logger.warn(`[Session: ${sessionId}] MongoDB schema objects listing is limited to collections (tables) and aggregation views. Indexes are listed per collection.`);
+        break;
+      }
+      case 'oracle': {
+        if (lowerCaseObjectTypes.includes('tables')) {
+          const res = await client.execute(`
+                        SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER = :schemaName
+                    `, { schemaName }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+          objects.tables.push(...res.rows.map((row) => row.TABLE_NAME));
+        }
+        if (lowerCaseObjectTypes.includes('views')) {
+          const res = await client.execute(`
+                        SELECT VIEW_NAME FROM ALL_VIEWS WHERE OWNER = :schemaName
+                    `, { schemaName }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+          objects.views.push(...res.rows.map((row) => row.VIEW_NAME));
+        }
+        if (lowerCaseObjectTypes.includes('indexes')) {
+          const res = await client.execute(`
+                        SELECT INDEX_NAME, TABLE_NAME FROM ALL_INDEXES WHERE OWNER = :schemaName
+                    `, { schemaName }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+          objects.indexes.push(...res.rows.map((row) => ({ name: row.INDEX_NAME, table: row.TABLE_NAME })));
+        }
+        if (lowerCaseObjectTypes.includes('constraints')) {
+          const res = await client.execute(`
+                        SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE, TABLE_NAME FROM ALL_CONSTRAINTS
+                        WHERE OWNER = :schemaName AND CONSTRAINT_TYPE IN ('P', 'U', 'R', 'C')
+                    `, { schemaName }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+          objects.constraints.push(...res.rows.map((row) => ({
+            name: row.CONSTRAINT_NAME,
+            type: row.CONSTRAINT_TYPE, // P: Primary Key, U: Unique, R: Foreign Key, C: Check
+            table: row.TABLE_NAME,
+          })));
+        }
+        break;
+      }
+      case 'mysql': {
+        if (lowerCaseObjectTypes.includes('tables')) {
+          const [res] = await client.execute(`
+                        SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = ? AND table_type = 'BASE TABLE';
+                    `, [schemaName]);
+          logger.debug(`[Session: ${sessionId}] MySQL listSchemaObjects raw table result for schema '${schemaName}': ${JSON.stringify(res)}`); // DIAGNOSTIC LOG
+          // The mysql2/promise library returns column names in uppercase by default when fetching objects via execute.
+          // We need to explicitly access TABLE_NAME.
+          objects.tables.push(...res.map((row) => row.TABLE_NAME)); // FIXED: Changed to row.TABLE_NAME
+        }
+        if (lowerCaseObjectTypes.includes('views')) {
+          const [res] = await client.execute(`
+                        SELECT table_name AS view_name FROM information_schema.views
+                        WHERE table_schema = ?;
+                    `, [schemaName]);
+          objects.views.push(...res.map((row) => row.VIEW_NAME)); // FIXED: Changed to row.VIEW_NAME
+        }
+        if (lowerCaseObjectTypes.includes('indexes')) {
+          const [res] = await client.execute(`
+                        SELECT index_name, table_name FROM information_schema.statistics
+                        WHERE table_schema = ?;
+                    `, [schemaName]);
+          objects.indexes.push(...res.map((row) => ({ name: row.INDEX_NAME, table: row.TABLE_NAME }))); // FIXED: Changed to uppercase
+        }
+        if (lowerCaseObjectTypes.includes('constraints')) {
+          const [res] = await client.execute(`
+                        SELECT constraint_name, constraint_type, table_name FROM information_schema.table_constraints
+                        WHERE table_schema = ?;
+                    `, [schemaName]);
+          objects.constraints.push(...res.map((row) => ({
+            name: row.CONSTRAINT_NAME,
+            type: row.CONSTRAINT_TYPE,
+            table: row.TABLE_NAME,
+          }))); // FIXED: Changed to uppercase
+        }
+        break;
+      }
+      default:
+        throw new Error(`Database type ${dbType} not supported for listing schema objects.`);
+    }
+    logger.info(`[Session: ${sessionId}] Successfully listed objects for schema '${schemaName}' for ${dbType}.`);
+    return objects;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to list objects for schema '${schemaName}' for ${dbType}: ${error.message}`, error);
+    throw new Error(`Database schema object listing failed: ${error.message}`);
+  } finally {
+    if (client) {
+      await disconnectFromDatabase(sessionId, client, dbType);
+    }
+  }
+}
+
+/**
+ * Executes an ad-hoc SQL query against a connected database.
+ * Supports SELECT, INSERT, UPDATE, and DELETE statements.
+ * Returns query results for SELECT statements and affected rows for DML statements.
+ *
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} uri - The JDBC-like URI for the database connection.
+ * @param {string} sqlQuery - The free-text SQL query to execute.
+ * @returns {Promise&lt;object>} - An object containing query results (for SELECT) or affected rows (for DML).
+ * @throws {Error} - If connection fails or SQL execution encounters an error.
+ */
+async function runAdhocSql(sessionId, uri, sqlQuery) {
+  logger.info(`[Session: ${sessionId}] Running ad-hoc SQL query: ${sqlQuery}`);
+  const { dbType } = parseJdbcUri(sessionId, uri);
+  let client;
+  try {
+    client = await connectToDatabase(sessionId, uri);
+    let result;
+
+    const queryType = sqlQuery.trim().toUpperCase().split(' ')[0];
+
+    switch (dbType) {
+      case 'postgres': {
+        const pgResult = await client.query(sqlQuery);
+        if (queryType === 'SELECT') {
+          result = {
+            columns: pgResult.rows.length > 0 ? Object.keys(pgResult.rows[0]) : [],
+            data: pgResult.rows,
+          };
+        } else {
+          result = { affectedRows: pgResult.rowCount };
+        }
+        break;
+      }
+      case 'mssql': {
+        const request = new sql.Request(client);
+        const msSqlResult = await request.query(sqlQuery);
+        if (queryType === 'SELECT') {
+          result = {
+            columns: msSqlResult.recordset.length > 0 ? Object.keys(msSqlResult.recordset[0]) : [],
+            data: msSqlResult.recordset,
+          };
+        } else {
+          result = { affectedRows: msSqlResult.rowsAffected ? msSqlResult.rowsAffected[0] : 0 };
+        }
+        break;
+      }
+      case 'mongodb': {
+        // MongoDB does not execute SQL directly. This function is not applicable.
+        throw new Error('Ad-hoc SQL execution is not supported for MongoDB.');
+      }
+      case 'oracle': {
+        const oracleResult = await client.execute(sqlQuery, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        if (queryType === 'SELECT') {
+          result = {
+            columns: oracleResult.rows.length > 0 ? Object.keys(oracleResult.rows[0]) : [],
+            data: oracleResult.rows,
+          };
+        } else {
+          result = { affectedRows: oracleResult.rowsAffected || 0 };
+        }
+        break;
+      }
+      case 'mysql': {
+        // For MySQL, use client.query() for DDL statements like CREATE TRIGGER/PROCEDURE
+        // and client.execute() for DML/SELECT statements.
+        // A simple heuristic is to check for common DDL keywords.
+        const isDDL = sqlQuery.trim().toUpperCase().startsWith('CREATE')
+                       || sqlQuery.trim().toUpperCase().startsWith('ALTER')
+                       || sqlQuery.trim().toUpperCase().startsWith('DROP')
+                       || sqlQuery.trim().toUpperCase().startsWith('DELIMITER'); // Added DELIMITER for multi-statement triggers/procedures
+
+        if (isDDL) {
+          // Use client.query() for DDL statements
+          const [mysqlDDLResult] = await client.query(sqlQuery);
+          result = { message: 'DDL command executed successfully.', rawResult: mysqlDDLResult };
+        } else {
+          // Use client.execute() for DML/SELECT statements
+          const [mysqlResult] = await client.execute(sqlQuery);
+          if (queryType === 'SELECT') {
+            result = {
+              columns: mysqlResult.length > 0 ? Object.keys(mysqlResult[0]) : [],
+              data: mysqlResult,
+            };
+          } else {
+            result = { affectedRows: mysqlResult.affectedRows || 0 };
+          }
+        }
+        break;
+      }
+      default:
+        throw new Error(`Database type ${dbType} not supported for ad-hoc SQL execution.`);
+    }
+    logger.info(`[Session: ${sessionId}] Successfully executed ad-hoc SQL query for ${dbType}. Result: ${JSON.stringify(result)}`);
+    return result;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to execute ad-hoc SQL query for ${dbType}: ${error.message}`, error);
+    throw new Error(`Ad-hoc SQL execution failed: ${error.message}`);
+  } finally {
+    if (client) {
+      await disconnectFromDatabase(sessionId, client, dbType);
+    }
+  }
+}
+
+module.exports = {
+  connectToDatabase,
+  dumpDatabaseStructure,
+  selectDatabaseData,
+  listDatabaseSchemas, // Export the new function
+  listSchemaObjects, // Export the new function
+  runAdhocSql, // Export the new ad-hoc SQL function
+  // You might want to expose disconnectFromDatabase if you need manual control
+  // disconnectFromDatabase,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Jul 13 2025 14:59:30 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

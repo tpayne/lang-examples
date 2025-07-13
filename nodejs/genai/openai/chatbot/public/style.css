@@ -237,7 +237,7 @@ body {
     border-radius: 0.5rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     flex-direction: column; /* Arrange content vertically */
-    overflow: auto; /* Add scrollbars if content overflows during resize */
+    overflow: hidden; /* Changed to hidden to control scrolling more precisely */
     resize: both; /* Enable resizing in both directions */
     min-width: 300px; /* Minimum width */
     min-height: 350px; /* Minimum height */
@@ -265,6 +265,7 @@ body {
     align-items: center;
     font-size: 1.1rem;
     font-weight: 600;
+    flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 #chat-header h3 {
@@ -291,7 +292,7 @@ body {
 /* --- Existing Chat Container and Input Styles (Adjusted for new layout) --- */
 #chat_container {
     flex-grow: 1; /* Take available space */
-    overflow-y: auto; /* Keep vertical scroll */
+    overflow-y: auto; /* Keep vertical scroll for messages */
     padding: 1rem; /* Padding inside the chat area */
     display: flex;
     flex-direction: column;
@@ -311,6 +312,7 @@ body {
     /* Ensure toolbar is positioned correctly above the input */
     width: 100%; /* Take full width */
     box-sizing: border-box; /* Include padding and border in the element's total width */
+    flex-shrink: 0; /* Prevent toolbar from shrinking */
 }
 
 .toolbar-button {
@@ -338,9 +340,7 @@ body {
     padding: 1rem; /* Padding around the input */
     background-color: #ffffff; /* White background for input area */
     border-top: 1px solid #e2e8f0; /* Separator line */
-    /* Removed: margin, max-width, justify-content: center */
-    /* Removed flex-direction: column and align-items: stretch */
-    /* position: relative; /* Needed for positioning the send button */
+    flex-shrink: 0; /* Prevent input container from shrinking */
 }
 
 
@@ -604,6 +604,57 @@ body {
     color: -webkit-link; /* Use default browser link color */
     text-decoration: underline; /* Ensure underline */
     cursor: pointer; /* Ensure pointer cursor */
+}
+
+
+/* --- Predictive Text Ribbon Styles --- */
+#predictive_text_ribbon {
+    display: flex;
+    flex-wrap: wrap; /* Allow buttons to wrap to the next line */
+    gap: 8px; /* Space between buttons */
+    padding: 8px 16px;
+    background-color: #f0f4f8; /* Light background for the ribbon */
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    overflow-x: auto; /* Enable horizontal scrolling if many suggestions */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+    flex-shrink: 0; /* Prevent the ribbon from shrinking */
+    max-height: 100px; /* Limit height of the ribbon to prevent it from taking too much space */
+    overflow-y: auto; /* Add vertical scroll if suggestions exceed max-height */
+}
+
+/* Hide scrollbar for Webkit browsers */
+#predictive_text_ribbon::-webkit-scrollbar {
+    display: none;
+}
+
+#predictive_text_ribbon.hidden {
+    display: none; /* Hide the ribbon when no suggestions */
+}
+
+.predictive-button {
+    background-color: #ffffff;
+    color: #3b82f6; /* Blue text */
+    border: 1px solid #93c5fd; /* Light blue border */
+    border-radius: 20px; /* Pill shape */
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap; /* Prevent text from wrapping */
+    flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+.predictive-button:hover {
+    background-color: #e0f2fe; /* Lighter blue on hover */
+    transform: translateY(-1px); /* Slight lift effect */
+}
+
+.predictive-button:active {
+    background-color: #bfdbfe; /* Even lighter blue on active */
+    transform: translateY(0);
 }
 
 

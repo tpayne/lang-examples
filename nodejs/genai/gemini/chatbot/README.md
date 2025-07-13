@@ -7,6 +7,10 @@ The web page is a very simple interface, so if you wish to create something more
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
+By the way, the Gemini chat technology for callouts is a bit rubbish, so I would advise you to use OpenAI. It is alot better.
+
+But if you want to use Gemini, here is the code.
+
 Pre-Requisites
 --------------
 To run this sample you will need to: -
@@ -208,6 +212,65 @@ curl -H "Content-Type: application/json" \
 curl -H "Content-Type: application/json" \
     -d '{"message":"tell me all the MOT defects for ABC123"}' \
     -X POST localhost:8080/chat
+```
+
+Database Integration
+--------------------
+This chatbot can interact with a database that is connected to via a JDBC connection. To enable this, you need to set the following environment variable when running the Docker container:
+
+* DATABASE_URI - The JDBC connection string for your database
+
+Although this string does not need to be used directly as the bot can connect to any database given the URI format.
+
+The bot allows any SQL to be run based on the request that you pass down. Examples might be:
+
+* Connect to a database given a JDBC URI
+* Listing tables, views or other schema objects
+* Running CRUD operations on that objects
+* Identifying data quality issues
+* Identifying PII data
+* Identifying inconsistent or invalid data
+* Fixing data quality issues & inconsistencies once identified
+
+And others.
+
+Note - Whilst the code supports a wide range of common RDBMS like Postgres, Oracle, MySQL, MongoDB, MS/SQL etc., only MySQL has been tested, so if you want to use the others you may have to change the code for any issues arising. This was only a test PoC for database integration, so I have not validated lots of RDBMs.
+
+Example usage is shown below...
+
+```bash
+You: connect to the schema my_company_db in the database jdbc:mysql://localhost:3306/my_company_db?user=root
+
+Bot: I am now connected to the database my_company_db at jdbc:mysql://localhost:3306/my_company_db using the user root. If you need any specific operations to be performed on this database schema, such as querying data, updating records, or any other database-related tasks, please let me know!
+
+You: what tables are in here?
+
+Bot: Here are the tables present in the schema my_company_db:
+
+customer_details
+invoice
+order_items
+orders
+products
+stock
+suppliers
+
+If you need further information about any specific table or want to perform actions related to these tables, feel free to ask!
+
+You: what pii data is in suppliers?
+
+Bot: The suppliers table contains the following Personally Identifiable Information (PII) data:
+
+Supplier ID	Supplier Name	Contact Person	Phone	Email	Address
+5	Office Essentials	David Lee	555-1005	david.lee@officeessentials.com	50 Business Blvd, Corpville
+
+The PII data included here is:
+Contact Person: David Lee
+Phone: 555-1005
+Email: david.lee@officeessentials.com
+Address: 50 Business Blvd, Corpville
+
+If you need any more information or specific operations regarding this data, just let me know!
 ```
 
 Kubernetes Integration
