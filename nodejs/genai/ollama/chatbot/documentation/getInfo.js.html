@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: getInfo.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: getInfo.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const os = require('os');
+const { exec } = require('child_process');
+const util = require('util');
+const logger = require('./logger'); // Assuming a logger utility exists, similar to dbfuncs.js
+
+// Promisify the exec function for easier async/await usage
+const execPromise = util.promisify(exec);
+
+/**
+ * Executes a shell command and returns its stdout.
+ * Handles errors gracefully if the command fails, logging the error.
+ * @param {string} command - The shell command to execute.
+ * @returns {Promise&lt;string|null>} - The stdout of the command, or null if an error occurs.
+ */
+async function runCommand(command) {
+  try {
+    const { stdout } = await execPromise(command);
+    return stdout.trim();
+  } catch (error) {
+    logger.error(`Error executing command "${command}": ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Gathers general host machine information.
+ * @returns {Promise&lt;object>} - An object containing general system info.
+ */
+async function getGeneralInfo() {
+  const generalInfo = {
+    hostname: os.hostname(),
+    os: {
+      platform: os.platform(),
+      type: os.type(),
+      release: os.release(),
+      arch: os.arch(),
+      uptime: os.uptime(), // in seconds
+      loadavg: os.loadavg(), // 1, 5, and 15 minute load averages
+      os_release: await runCommand('cat /etc/os-release') || 'N/A',
+      kernel_version: await runCommand('uname -a') || 'N/A',
+    },
+    cpu: {
+      model: os.cpus()[0] ? os.cpus()[0].model : 'N/A',
+      cores: os.cpus().length,
+      speed: os.cpus()[0] ? os.cpus()[0].speed : 'N/A', // in MHz
+      lscpu_info: await runCommand('lscpu') || 'N/A',
+    },
+    memory: {
+      total_bytes: os.totalmem(),
+      free_bytes: os.freemem(),
+      total_gb: (os.totalmem() / (1024 ** 3)).toFixed(2),
+      free_gb: (os.freemem() / (1024 ** 3)).toFixed(2),
+      free_h_info: await runCommand('free -h') || 'N/A',
+    },
+    network_interfaces: os.networkInterfaces(),
+  };
+
+  return generalInfo;
+}
+
+/**
+ * Gathers information about running processes.
+ * @returns {Promise&lt;object>} - An object containing process info.
+ */
+async function getProcessInfo() {
+  const processInfo = {
+    all_processes_ps_aux: await runCommand('ps aux') || 'N/A',
+    top_processes_snapshot: await runCommand('top -bn1 | head -n 20') || 'N/A', // Top 20 lines from top
+  };
+  return processInfo;
+}
+
+/**
+ * Gathers disk and block device information.
+ * @returns {Promise&lt;object>} - An object containing disk info.
+ */
+async function getDiskInfo() {
+  const diskInfo = {
+    filesystem_usage_df_h: await runCommand('df -h') || 'N/A',
+    block_devices_lsblk_json: null, // Will try to parse JSON
+  };
+
+  const lsblkOutput = await runCommand('lsblk -J');
+  if (lsblkOutput) {
+    try {
+      diskInfo.block_devices_lsblk_json = JSON.parse(lsblkOutput);
+    } catch (e) {
+      logger.error('Failed to parse lsblk -J output:', e.message);
+      diskInfo.block_devices_lsblk_json = lsblkOutput; // Store raw output if parsing fails
+    }
+  }
+
+  return diskInfo;
+}
+
+/**
+ * Gathers kernel configuration and module information.
+ * @returns {Promise&lt;object>} - An object containing kernel info.
+ */
+async function getKernelInfo() {
+  const kernelInfo = {
+    kernel_config_sysctl_a: await runCommand('sysctl -a') || 'N/A',
+    loaded_modules_lsmod: await runCommand('lsmod') || 'N/A',
+  };
+  return kernelInfo;
+}
+
+/**
+ * Gathers information about network services (listening ports).
+ * Requires sudo for full details (PID/Program Name).
+ * @returns {Promise&lt;object>} - An object containing network service info.
+ */
+async function getNetworkServices() {
+  const networkServices = {
+    netstat_tulnp: await runCommand('netstat -tulnp') || 'N/A', // TCP, UDP, listening, numeric, programs (requires root)
+    ss_tulnp: await runCommand('ss -tulnp') || 'N/A', // Similar to netstat, often faster (requires root)
+    lsof_i_P_n: await runCommand('lsof -i -P -n') || 'N/A', // List open files (network connections) (requires root)
+  };
+  return networkServices;
+}
+
+/**
+ * Attempts to identify running databases and other common services.
+ * This is heuristic-based and might not be exhaustive or perfectly accurate.
+ * @returns {Promise&lt;object>} - An object containing identified services.
+ */
+async function getIdentifiableServices() {
+  const identifiedServices = {
+    databases: [],
+    web_servers: [],
+    other_services: [],
+    docker_daemon_status: null,
+  };
+
+  const psAuxOutput = await runCommand('ps aux');
+  if (psAuxOutput) {
+    // Check for common database processes
+    if (psAuxOutput.includes('mysqld')) identifiedServices.databases.push('MySQL');
+    if (psAuxOutput.includes('postgres')) identifiedServices.databases.push('PostgreSQL');
+    if (psAuxOutput.includes('mongod')) identifiedServices.databases.push('MongoDB');
+    if (psAuxOutput.includes('oracle')) identifiedServices.databases.push('Oracle'); // Process name might vary
+    if (psAuxOutput.includes('redis-server')) identifiedServices.databases.push('Redis');
+    if (psAuxOutput.includes('memcached')) identifiedServices.other_services.push('Memcached');
+
+    // Check for common web servers
+    if (psAuxOutput.includes('apache2') || psAuxOutput.includes('httpd')) identifiedServices.web_servers.push('Apache HTTP Server');
+    if (psAuxOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx');
+
+    // Check for Docker daemon
+    if (psAuxOutput.includes('dockerd')) identifiedServices.docker_daemon_status = 'Running';
+    else identifiedServices.docker_daemon_status = 'Not Running (process not found)';
+  }
+
+  // Check systemd services (if systemd is used)
+  const systemctlServices = await runCommand('systemctl list-units --type=service --all --no-pager');
+  if (systemctlServices &amp;&amp; systemctlServices !== 'N/A') {
+    if (systemctlServices.includes('mysql.service') || systemctlServices.includes('mariadb.service')) {
+      if (!identifiedServices.databases.includes('MySQL')) identifiedServices.databases.push('MySQL (systemd)');
+    }
+    if (systemctlServices.includes('postgresql.service')) {
+      if (!identifiedServices.databases.includes('PostgreSQL')) identifiedServices.databases.push('PostgreSQL (systemd)');
+    }
+    if (systemctlServices.includes('mongod.service')) {
+      if (!identifiedServices.databases.includes('MongoDB')) identifiedServices.databases.push('MongoDB (systemd)');
+    }
+    if (systemctlServices.includes('redis.service')) {
+      if (!identifiedServices.databases.includes('Redis')) identifiedServices.databases.push('Redis (systemd)');
+    }
+    if (systemctlServices.includes('apache2.service') || systemctlServices.includes('httpd.service')) {
+      if (!identifiedServices.web_servers.includes('Apache HTTP Server')) identifiedServices.web_servers.push('Apache HTTP Server (systemd)');
+    }
+    if (systemctlServices.includes('nginx.service')) {
+      if (!identifiedServices.web_servers.includes('Nginx')) identifiedServices.web_servers.push('Nginx (systemd)');
+    }
+    if (systemctlServices.includes('docker.service')) {
+      if (identifiedServices.docker_daemon_status === 'Not Running (process not found)') {
+        identifiedServices.docker_daemon_status = 'Running (systemd)';
+      }
+    }
+  }
+
+  // Attempt to get installed packages (basic check for common package managers)
+  const dpkgOutput = await runCommand('dpkg -l');
+  if (dpkgOutput &amp;&amp; dpkgOutput !== 'N/A') {
+    if (dpkgOutput.includes('mysql-server')) identifiedServices.databases.push('MySQL (package)');
+    if (dpkgOutput.includes('postgresql')) identifiedServices.databases.push('PostgreSQL (package)');
+    if (dpkgOutput.includes('mongodb-org')) identifiedServices.databases.push('MongoDB (package)');
+    if (dpkgOutput.includes('redis-server')) identifiedServices.databases.push('Redis (package)');
+    if (dpkgOutput.includes('apache2')) identifiedServices.web_servers.push('Apache HTTP Server (package)');
+    if (dpkgOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx (package)');
+    if (dpkgOutput.includes('docker-ce')) identifiedServices.other_services.push('Docker Engine (package)');
+  } else {
+    const rpmOutput = await runCommand('rpm -qa');
+    if (rpmOutput &amp;&amp; rpmOutput !== 'N/A') {
+      if (rpmOutput.includes('mysql-server')) identifiedServices.databases.push('MySQL (package)');
+      if (rpmOutput.includes('postgresql-server')) identifiedServices.databases.push('PostgreSQL (package)');
+      if (rpmOutput.includes('mongodb-org-server')) identifiedServices.databases.push('MongoDB (package)');
+      if (rpmOutput.includes('redis')) identifiedServices.databases.push('Redis (package)');
+      if (rpmOutput.includes('httpd')) identifiedServices.web_servers.push('Apache HTTP Server (package)');
+      if (rpmOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx (package)');
+      if (rpmOutput.includes('docker-ce')) identifiedServices.other_services.push('Docker Engine (package)');
+    }
+  }
+
+  // Deduplicate lists
+  identifiedServices.databases = [...new Set(identifiedServices.databases)];
+  identifiedServices.web_servers = [...new Set(identifiedServices.web_servers)];
+  identifiedServices.other_services = [...new Set(identifiedServices.other_services)];
+
+  return identifiedServices;
+}
+
+/**
+ * Gathers detailed hardware information using lshw and dmidecode if available.
+ * These commands often require root privileges.
+ * @returns {Promise&lt;object>} - An object containing hardware info.
+ */
+async function getHardwareInfo() {
+  const hardwareInfo = {
+    lshw_json: null, // Will try to parse JSON
+    dmidecode_info: null,
+  };
+
+  // lshw -json provides structured hardware info
+  const lshwOutput = await runCommand('lshw -json');
+  if (lshwOutput) {
+    try {
+      hardwareInfo.lshw_json = JSON.parse(lshwOutput);
+    } catch (e) {
+      logger.error('Failed to parse lshw -json output for lshw:', e.message);
+      hardwareInfo.lshw_json = lshwOutput; // Store raw output if parsing fails
+    }
+  }
+
+  // dmidecode provides DMI table contents (BIOS, motherboard, memory, etc.)
+  hardwareInfo.dmidecode_info = await runCommand('dmidecode') || 'N/A';
+
+  return hardwareInfo;
+}
+
+/**
+ * Main function to collect all system information.
+ * This serves as the single entry point for the chatbot.
+ * @param {string} sessionId - The session ID for logging.
+ * @returns {Promise&lt;object>} - A JSON object containing the comprehensive system information.
+ */
+async function collectSystemInfo(sessionId) {
+  logger.info(`[Session: ${sessionId}] Starting system information collection.`);
+  const systemInfo = {};
+
+  try {
+    systemInfo.general = await getGeneralInfo();
+    systemInfo.processes = await getProcessInfo();
+    systemInfo.disk = await getDiskInfo();
+    systemInfo.kernel = await getKernelInfo();
+    systemInfo.network_services = await getNetworkServices();
+    systemInfo.identified_services = await getIdentifiableServices();
+    systemInfo.hardware = await getHardwareInfo();
+
+    logger.info(`[Session: ${sessionId}] System information collection completed successfully.`);
+    return systemInfo;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to collect system information: ${error.message}`, error);
+    // Return a structured error for the chatbot to handle
+    return { error: 'Failed to collect system information', details: error.message };
+  }
+}
+
+// Export the main collection function
+module.exports = {
+  collectSystemInfo,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectSystemInfo">collectSystemInfo</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Jul 13 2025 19:55:38 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

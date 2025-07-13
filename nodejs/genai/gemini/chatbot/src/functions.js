@@ -79,6 +79,10 @@ const {
   runAdhocSql, // Import the new runAdhocSql function
 } = require('./dbfuncs'); // Import the new databaseUtils.js module
 
+const {
+  collectSystemInfo, // Import the system information collector function
+} = require('./getInfo'); // Import the new system-info-collector.js module
+
 /* eslint-disable max-len */
 
 /**
@@ -1048,6 +1052,23 @@ async function loadDatabaseFunctions(sessionId) {
 }
 
 /**
+ * Loads system information functions into the registry.
+ * @param {string} sessionId - The unique identifier for the session.
+ */
+async function loadSystemInfoFunctions(sessionId) {
+  await registerFunction(
+    sessionId,
+    'collect_system_info',
+    collectSystemInfo,
+    [], // No parameters needed for this top-level function
+    'Collects comprehensive host machine information, including OS, CPU, memory, running processes, network services, identified databases/services, and hardware details. Returns the data in a structured JSON format.',
+    {}, // Empty parameter schema as it takes no direct arguments
+    [], // No required parameters
+    true, // needsSession is true
+  );
+}
+
+/**
  * Returns the function definitions for the AI tool for a specific session.
  * @param {string} sessionId The unique identifier for the session.
  * @returns {Promise<FunctionMetadata[]>} An array of function metadata.
@@ -1100,6 +1121,10 @@ async function loadIntegrations(sessionId) {
   } else {
     logger.info(`Database integration not loaded for session: ${sessionId}. DATABASE_URI not set.`);
   }
+
+  // Load System Info integration
+  logger.info(`Loading System Information integration for session: ${sessionId}`);
+  await loadSystemInfoFunctions(sessionId);
 }
 
 async function cleanupSession(sessionId) {
