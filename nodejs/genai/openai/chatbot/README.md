@@ -269,6 +269,8 @@ Address: 50 Business Blvd, Corpville
 If you need any more information or specific operations regarding this data, just let me know!
 ```
 
+![Sample run](images/DatabaseChat.png)
+
 Kubernetes Integration
 ----------------------
 This chatbot can interact with a Kubernetes cluster to retrieve information about its resources. To enable this functionality, you need to set the following environment variables when running the Docker container:
