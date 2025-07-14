@@ -1,4 +1,6 @@
 # Changelog
+## 2025-07-14	(20:48:59-UTC+0000)
+- **Other**: Update README (in nodejs/genai/openai/chatbot/images/DatabaseChat.png)
 ## 2025-07-13	(19:08:18-UTC+0000)
 - **Other**: Update for os info (in nodejs/genai/openai/chatbot/documentation/chatbot.js.html)
 - **Other**: Update for os info (in nodejs/genai/openai/chatbot/documentation/codeReviews.js.html)
