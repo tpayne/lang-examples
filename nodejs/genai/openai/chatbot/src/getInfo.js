@@ -1,7 +1,8 @@
 const os = require('os');
 const { exec } = require('child_process');
 const util = require('util');
-const logger = require('./logger'); // Assuming a logger utility exists
+const fs = require('fs/promises'); // Use fs.promises for async file operations
+const logger = require('./logger');
 
 // Promisify the exec function for easier async/await usage
 const execPromise = util.promisify(exec);
@@ -15,6 +16,11 @@ let SSH_HOST_USER = '';
 let SSH_HOST_IP = '';
 let SSH_HOST_PASSWORD = ''; // WARNING: Storing and passing passwords directly is INSECURE.
 
+// Docker secret paths
+const SSH_SECRET_HOST_PATH = '/run/secrets/ssh_host';
+const SSH_SECRET_USER_PATH = '/run/secrets/ssh_user';
+const SSH_SECRET_PASSWORD_PATH = '/run/secrets/ssh_password';
+
 /**
  * Checks if the current process is running inside a Docker container.
  * This is a heuristic check based on the existence of /.dockerenv and/or cgroup info.
@@ -22,7 +28,7 @@ let SSH_HOST_PASSWORD = ''; // WARNING: Storing and passing passwords directly i
 async function checkIfRunningInDocker() {
   try {
     // Check for the existence of the /.dockerenv file
-    await execPromise('test -f /.dockerenv');
+    await fs.access('/.dockerenv'); // Checks if file exists and is accessible
     IS_RUNNING_IN_DOCKER = true;
     logger.info("Detected running inside Docker via /.dockerenv");
     return;
@@ -32,13 +38,65 @@ async function checkIfRunningInDocker() {
 
   try {
     // Check cgroup information for 'docker' or 'lxc'
-    const cgroupContent = await util.promisify(require('fs').readFile)('/proc/self/cgroup', 'utf8');
+    const cgroupContent = await fs.readFile('/proc/self/cgroup', 'utf8');
     if (cgroupContent.includes('docker') || cgroupContent.includes('lxc')) {
       IS_RUNNING_IN_DOCKER = true;
       logger.info("Detected running inside Docker via cgroup info");
     }
   } catch (e) {
     logger.warn("Could not read /proc/self/cgroup to detect Docker environment:", e.message);
+  }
+}
+
+/**
+ * Attempts to read content from a Docker secret file.
+ * @param {string} secretPath - The path to the Docker secret file.
+ * @returns {Promise<string|null>} - The content of the secret, or null if not found/readable.
+ */
+async function readDockerSecret(secretPath) {
+  try {
+    const content = await fs.readFile(secretPath, 'utf8');
+    return content.trim();
+  } catch (error) {
+    logger.debug(`Could not read Docker secret from ${secretPath}: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Initializes SSH configuration, prioritizing Docker secrets over passed parameters.
+ * @param {string} paramSshHost - SSH host passed as a function parameter.
+ * @param {string} paramSshUser - SSH user passed as a function parameter.
+ * @param {string} paramSshPassword - SSH password passed as a function parameter.
+ */
+async function initializeSshConfig(paramSshHost, paramSshUser, paramSshPassword) {
+  logger.info("Attempting to initialize SSH configuration...");
+
+  // 1. Try to load from Docker secrets first
+  const secretHost = await readDockerSecret(SSH_SECRET_HOST_PATH);
+  const secretUser = await readDockerSecret(SSH_SECRET_USER_PATH);
+  const secretPassword = await readDockerSecret(SSH_SECRET_PASSWORD_PATH);
+
+  if (secretHost && secretUser && secretPassword) {
+    SSH_HOST_IP = secretHost;
+    SSH_HOST_USER = secretUser;
+    SSH_HOST_PASSWORD = secretPassword;
+    USE_SSH_FOR_HOST_INFO = true;
+    logger.info("SSH details loaded successfully from Docker secrets.");
+  } else if (paramSshHost && paramSshUser && paramSshPassword) {
+    // 2. Fallback to parameters if secrets are not available
+    SSH_HOST_IP = paramSshHost;
+    SSH_HOST_USER = paramSshUser;
+    SSH_HOST_PASSWORD = paramSshPassword;
+    USE_SSH_FOR_HOST_INFO = true;
+    logger.info("SSH details loaded successfully from function parameters.");
+  } else {
+    USE_SSH_FOR_HOST_INFO = false;
+    logger.warn("No SSH details found in Docker secrets or function parameters.");
+  }
+
+  if (USE_SSH_FOR_HOST_INFO) {
+    logger.info(`SSH to host configured: ${SSH_HOST_USER}@${SSH_HOST_IP}`);
   }
 }
 
@@ -319,9 +377,9 @@ async function getHardwareInfo() {
  * Main function to collect all system information.
  * This serves as the single entry point for the chatbot.
  * @param {string} sessionId - The session ID for logging.
- * @param {string} [sshHost=''] - The IP address or hostname of the SSH host.
- * @param {string} [sshUser=''] - The username for SSH authentication.
- * @param {string} [sshPassword=''] - The password for SSH authentication. WARNING: INSECURE.
+ * @param {string} [sshHost=''] - The IP address or hostname of the SSH host (from function parameter).
+ * @param {string} [sshUser=''] - The username for SSH authentication (from function parameter).
+ * @param {string} [sshPassword=''] - The password for SSH authentication (from function parameter). WARNING: INSECURE.
  * @returns {Promise<object>} - A JSON object containing the comprehensive system information.
  */
 async function collectSystemInfo(sessionId, sshHost = '', sshUser = '', sshPassword = '') {
@@ -330,21 +388,8 @@ async function collectSystemInfo(sessionId, sshHost = '', sshUser = '', sshPassw
   // Determine if running in Docker
   await checkIfRunningInDocker();
 
-  // Set SSH configuration based on provided parameters
-  if (sshHost && sshUser && sshPassword) {
-    USE_SSH_FOR_HOST_INFO = true;
-    SSH_HOST_IP = sshHost;
-    SSH_HOST_USER = sshUser;
-    SSH_HOST_PASSWORD = sshPassword; // WARNING: Insecure for production
-    logger.info("SSH details provided. Attempting to collect host info via SSH.");
-  } else {
-    USE_SSH_FOR_HOST_INFO = false;
-    if (IS_RUNNING_IN_DOCKER) {
-      logger.info("No SSH details provided. Attempting to collect host info via chroot /host (Docker host).");
-    } else {
-      logger.info("Not running in Docker and no SSH details. Collecting local system info (assuming this is the target host).");
-    }
-  }
+  // Initialize SSH configuration, prioritizing secrets over parameters
+  await initializeSshConfig(sshHost, sshUser, sshPassword);
 
   const systemInfo = {};
 
