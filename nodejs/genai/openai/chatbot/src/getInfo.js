@@ -16,36 +16,258 @@ let SSH_HOST_USER = '';
 let SSH_HOST_IP = '';
 let SSH_HOST_PASSWORD = ''; // WARNING: Storing and passing passwords directly is INSECURE.
 
-// Docker secret paths
+// Docker secret paths (convention for Docker Swarm/Compose secrets)
 const SSH_SECRET_HOST_PATH = '/run/secrets/ssh_host';
 const SSH_SECRET_USER_PATH = '/run/secrets/ssh_user';
 const SSH_SECRET_PASSWORD_PATH = '/run/secrets/ssh_password';
 
+// Detected OS information for the target host
+let detectedOS = {
+  platform: os.platform(), // 'linux', 'darwin', 'freebsd', etc. (initially container's)
+  type: os.type(), // 'Linux', 'Darwin', 'FreeBSD', etc.
+  distro: 'Unknown', // e.g., 'Ubuntu', 'CentOS', 'macOS'
+  version: 'Unknown',
+  kernel: 'Unknown',
+};
+
 /**
- * Checks if the current process is running inside a Docker container.
- * This is a heuristic check based on the existence of /.dockerenv and/or cgroup info.
+ * Maps common system information commands to their OS-specific variants or preferred tools.
+ * Prioritizes commands that provide structured output (e.g., JSON) if available.
+ * Each key is a conceptual command (e.g., 'os_release_info'), and its value is an object
+ * mapping OS platforms to an array of commands to try, in order of preference.
  */
-async function checkIfRunningInDocker() {
-  try {
-    // Check for the existence of the /.dockerenv file
-    await fs.access('/.dockerenv'); // Checks if file exists and is accessible
-    IS_RUNNING_IN_DOCKER = true;
-    logger.info("Detected running inside Docker via /.dockerenv");
-    return;
-  } catch (e) {
-    // /.dockerenv not found, proceed to cgroup check
+const commandMap = {
+  // General OS release information
+  'os_release_info': {
+    'linux': ['cat /etc/os-release', 'cat /etc/lsb-release', 'cat /etc/redhat-release'],
+    'darwin': ['sw_vers'],
+    'freebsd': ['freebsd-version'],
+    'openbsd': ['sysctl kern.version'], // Similar to uname -a, but more specific for version
+    'netbsd': ['sysctl kern.version'],
+    'sunos': ['cat /etc/release'], // Solaris/illumos
+    'aix': ['oslevel -s'],
+  },
+  // Kernel version and details
+  'kernel_version_info': {
+    'linux': ['uname -a'],
+    'darwin': ['uname -a'],
+    'freebsd': ['uname -a'],
+    'openbsd': ['uname -a'],
+    'netbsd': ['uname -a'],
+    'sunos': ['uname -a'],
+    'aix': ['uname -a'],
+  },
+  // CPU information
+  'cpu_info': {
+    'linux': ['lscpu', 'cat /proc/cpuinfo'],
+    'darwin': ['sysctl -n machdep.cpu.brand_string', 'sysctl -n hw.ncpu'], // Brand string, number of cores
+    'freebsd': ['sysctl -n hw.model', 'sysctl -n hw.ncpu'],
+    'openbsd': ['sysctl -n hw.model', 'sysctl -n hw.ncpu'],
+    'netbsd': ['sysctl -n hw.model', 'sysctl -n hw.ncpu'],
+    'sunos': ['psrinfo -pv'],
+    'aix': ['prtconf | grep "Processor Type"'],
+  },
+  // Memory information
+  'memory_info': {
+    'linux': ['free -h', 'cat /proc/meminfo'],
+    'darwin': ['sysctl -n hw.memsize', 'sysctl -n hw.pagesize'], // Need to calculate total/free
+    'freebsd': ['sysctl -n hw.physmem', 'sysctl -n vm.stats.vm.v_free_pages'],
+    'openbsd': ['sysctl -n hw.physmem'],
+    'netbsd': ['sysctl -n hw.physmem'],
+    'sunos': ['prtconf | grep "Memory size"'],
+    'aix': ['lsattr -El mem0 | grep size'],
+  },
+  // Disk usage and block devices
+  'disk_info': {
+    'linux': ['df -h', 'lsblk -J', 'fdisk -l'], // lsblk -J for JSON
+    'darwin': ['df -h', 'diskutil list -plist'], // plist for structured output
+    'freebsd': ['df -h', 'gpart show'],
+    'openbsd': ['df -h', 'disklabel'],
+    'netbsd': ['df -h', 'disklabel'],
+    'sunos': ['df -h', 'format'],
+    'aix': ['df -g', 'lspv'],
+  },
+  // Running processes
+  'process_info': {
+    'linux': ['ps aux', 'top -bn1 | head -n 20'],
+    'darwin': ['ps aux', 'top -l 1 | head -n 20'],
+    'freebsd': ['ps aux', 'top -b | head -n 20'],
+    'openbsd': ['ps aux', 'top -b | head -n 20'],
+    'netbsd': ['ps aux', 'top -b | head -n 20'],
+    'sunos': ['ps -ef', 'prstat -n 20 1 1'],
+    'aix': ['ps -ef', 'topas -P'],
+  },
+  // Network services (listening ports)
+  'network_services_info': {
+    'linux': ['ss -tulnp', 'netstat -tulnp', 'lsof -i -P -n'], // ss is often preferred
+    'darwin': ['lsof -i -P -n', 'netstat -anv'],
+    'freebsd': ['sockstat -46l', 'netstat -an'],
+    'openbsd': ['sockstat -46l', 'netstat -an'],
+    'netbsd': ['sockstat -46l', 'netstat -an'],
+    'sunos': ['netstat -an', 'fuser -n tcp', 'fuser -n udp'],
+    'aix': ['netstat -an', 'rmsock'],
+  },
+  // Hardware info (lshw, dmidecode)
+  'hardware_info': {
+    'linux': ['lshw -json', 'dmidecode'],
+    'darwin': ['system_profiler SPHardwareDataType -json'], // Structured hardware data
+    // BSDs generally rely on sysctl, dmesg, or specific tools for hardware info
+    'freebsd': ['pciconf -lv', 'dmidecode', 'dmesg | grep "CPU:"'],
+    'openbsd': ['pciconf -lv', 'dmesg | grep "CPU:"'],
+    'netbsd': ['pciconf -lv', 'dmesg | grep "CPU:"'],
+    'sunos': ['prtconf -v'],
+    'aix': ['prtconf -v'],
+  },
+  // Kernel modules/extensions
+  'kernel_modules_info': {
+    'linux': ['lsmod'],
+    'darwin': ['kextstat'], // macOS kernel extensions
+    'freebsd': ['kldstat'],
+    'openbsd': ['sysctl kern.modules'], // Less detailed, but available
+    'netbsd': ['modstat'],
+    'sunos': ['modinfo'],
+    'aix': ['genkex'],
+  },
+  // System control parameters
+  'sysctl_info': {
+    'linux': ['sysctl -a'],
+    'darwin': ['sysctl -a'],
+    'freebsd': ['sysctl -a'],
+    'openbsd': ['sysctl -a'],
+    'netbsd': ['sysctl -a'],
+    'sunos': ['sysdef'], // Different command for system definition
+    'aix': ['lsattr -El sys0'], // System attributes
+  },
+  // Network interface configuration (legacy/modern)
+  'network_interface_config': {
+    'linux': ['ip addr show', 'ifconfig -a'], // ip is preferred
+    'darwin': ['ifconfig -a'],
+    'freebsd': ['ifconfig -a'],
+    'openbsd': ['ifconfig -a'],
+    'netbsd': ['ifconfig -a'],
+    'sunos': ['ifconfig -a'],
+    'aix': ['netstat -in'],
+  },
+  // Package management info (heuristic)
+  'package_manager_info': {
+    'linux': ['dpkg -l', 'rpm -qa', 'yum list installed', 'apt list --installed', 'pacman -Q'],
+    // macOS has Homebrew/MacPorts, but no universal package manager command like apt/rpm
+    // BSDs have their own package managers (pkg, ports), but no single command to list all
+  }
+};
+
+/**
+ * Detects the operating system of the target host.
+ * This function will be called once at the beginning of collectSystemInfo
+ * to set `detectedOS` for subsequent command selections.
+ * @param {boolean} isTargetHost - True if detecting the host OS (via SSH/chroot), false for container OS.
+ */
+async function detectOperatingSystem(isTargetHost) {
+  const currentPlatform = os.platform(); // 'linux', 'darwin', 'freebsd', etc.
+
+  detectedOS.platform = currentPlatform;
+  detectedOS.type = os.type();
+  detectedOS.kernel = await runCommand('uname -r', isTargetHost, currentPlatform); // Get kernel release
+
+  // Try to get more specific distro info
+  if (currentPlatform === 'linux') {
+    const osRelease = await runCommand('cat /etc/os-release', isTargetHost, currentPlatform);
+    if (osRelease) {
+      const idMatch = osRelease.match(/^ID=(.*)$/m);
+      const versionIdMatch = osRelease.match(/^VERSION_ID=(.*)$/m);
+      const prettyNameMatch = osRelease.match(/^PRETTY_NAME="(.*)"$/m);
+
+      if (idMatch && idMatch[1]) detectedOS.distro = idMatch[1].replace(/"/g, '');
+      if (versionIdMatch && versionIdMatch[1]) detectedOS.version = versionIdMatch[1].replace(/"/g, '');
+      if (prettyNameMatch && prettyNameMatch[1]) detectedOS.type = prettyNameMatch[1].replace(/"/g, ''); // Use pretty name for type
+
+      // Specific checks for common distros
+      if (detectedOS.distro.includes('ubuntu') || detectedOS.distro.includes('debian')) {
+        detectedOS.type = 'Debian/Ubuntu Linux';
+      } else if (detectedOS.distro.includes('centos') || detectedOS.distro.includes('fedora') || detectedOS.distro.includes('rhel')) {
+        detectedOS.type = 'Red Hat/CentOS/Fedora Linux';
+      }
+    }
+  } else if (currentPlatform === 'darwin') {
+    const swVers = await runCommand('sw_vers', isTargetHost, currentPlatform);
+    if (swVers) {
+      const productNameMatch = swVers.match(/ProductName:\s*(.*)$/m);
+      const productVersionMatch = swVers.match(/ProductVersion:\s*(.*)$/m);
+      if (productNameMatch && productNameMatch[1]) detectedOS.distro = productNameMatch[1].trim();
+      if (productVersionMatch && productVersionMatch[1]) detectedOS.version = productVersionMatch[1].trim();
+      detectedOS.type = 'macOS';
+    }
+  } else if (currentPlatform.includes('bsd')) { // freebsd, openbsd, netbsd
+    const unameS = await runCommand('uname -s', isTargetHost, currentPlatform);
+    if (unameS) detectedOS.distro = unameS.trim();
+    const unameR = await runCommand('uname -r', isTargetHost, currentPlatform);
+    if (unameR) detectedOS.version = unameR.trim();
+    detectedOS.type = `${detectedOS.distro} Unix`; // e.g., "FreeBSD Unix"
+  } else if (currentPlatform === 'sunos') {
+    detectedOS.type = 'Solaris/Illumos Unix';
+  } else if (currentPlatform === 'aix') {
+    detectedOS.type = 'AIX Unix';
   }
 
-  try {
-    // Check cgroup information for 'docker' or 'lxc'
-    const cgroupContent = await fs.readFile('/proc/self/cgroup', 'utf8');
-    if (cgroupContent.includes('docker') || cgroupContent.includes('lxc')) {
-      IS_RUNNING_IN_DOCKER = true;
-      logger.info("Detected running inside Docker via cgroup info");
+  logger.info(`Detected Target OS: ${JSON.stringify(detectedOS)}`);
+}
+
+
+/**
+ * Executes a shell command.
+ * @param {string} commandKey - The key from `commandMap` representing the desired information.
+ * @param {boolean} [targetHost=false] - If true, attempts to run the command on the host.
+ * @param {string} [overridePlatform=detectedOS.platform] - Allows overriding the detected platform for command selection.
+ * @returns {Promise<string|null>} - The stdout of the command, or null if an error occurs.
+ */
+async function runCommand(commandKey, targetHost = false, overridePlatform = detectedOS.platform) {
+  const commandsToTry = commandMap[commandKey]?.[overridePlatform] || [commandKey]; // Fallback to commandKey if not mapped
+  let executionContext = 'container';
+  let prefix = '';
+
+  if (targetHost) {
+    if (USE_SSH_FOR_HOST_INFO) {
+      prefix = `sshpass -p '${SSH_HOST_PASSWORD}' ssh -o StrictHostKeyChecking=no ${SSH_HOST_USER}@${SSH_HOST_IP} `;
+      executionContext = 'host via SSH';
+    } else if (IS_RUNNING_IN_DOCKER && overridePlatform === 'linux') { // chroot only makes sense for Linux hosts
+      prefix = `chroot ${HOST_CHROOT_PATH} `;
+      executionContext = 'host via chroot';
+    } else if (IS_RUNNING_IN_DOCKER && (overridePlatform === 'darwin' || overridePlatform.includes('bsd') || overridePlatform === 'sunos' || overridePlatform === 'aix')) {
+        logger.warn(`Cannot use chroot for non-Linux host (${overridePlatform}). SSH is required.`);
+        return null; // Cannot gather host info without SSH
+    } else {
+      // Not in Docker and not using SSH, implies the script is running directly on the desired host.
+      executionContext = 'local host';
     }
-  } catch (e) {
-    logger.warn("Could not read /proc/self/cgroup to detect Docker environment:", e.message);
   }
+
+  for (const cmd of commandsToTry) {
+    const finalCommand = `${prefix}${cmd}`;
+    logger.debug(`Attempting to execute (${executionContext}): ${finalCommand}`);
+    try {
+      // Use /bin/bash for proper command parsing and escaping, especially with sshpass
+      const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash', timeout: 10000 }); // 10 sec timeout
+      return stdout.trim();
+    } catch (error) {
+      logger.debug(`Command failed (${executionContext}): "${finalCommand}" - ${error.message}`);
+      if (executionContext === 'host via SSH') {
+        if (error.message.includes('Permission denied')) {
+            logger.error("SSH Permission Denied. Check user, password, and host permissions.");
+            return null; // Stop trying if permission denied
+        } else if (error.message.includes('No route to host') || error.message.includes('Connection refused')) {
+            logger.error("SSH Connection Failed. Check host IP, firewall, and SSH service status.");
+            return null; // Stop trying if connection failed
+        } else if (error.message.includes('sshpass: command not found')) {
+            logger.error("sshpass is not installed in the container. Please install it.");
+            return null; // Stop trying if sshpass is missing
+        }
+      }
+      // Continue to next command in list if current one fails
+    }
+  }
+
+  logger.warn(`All attempts to get info for "${commandKey}" on ${overridePlatform} failed.`);
+  return 'N/A'; // Return N/A if all commands fail
 }
 
 /**
@@ -101,56 +323,6 @@ async function initializeSshConfig(paramSshHost, paramSshUser, paramSshPassword)
 }
 
 /**
- * Executes a shell command.
- * @param {string} command - The shell command to execute.
- * @param {boolean} [targetHost=false] - If true, attempts to run the command on the host.
- * Behavior depends on IS_RUNNING_IN_DOCKER and USE_SSH_FOR_HOST_INFO.
- * @returns {Promise<string|null>} - The stdout of the command, or null if an error occurs.
- */
-async function runCommand(command, targetHost = false) {
-  let finalCommand = command;
-  let executionContext = 'container';
-
-  if (targetHost) {
-    if (USE_SSH_FOR_HOST_INFO) {
-      // Using sshpass for password-based SSH.
-      // WARNING: This method of passing passwords is INSECURE.
-      // Consider SSH key-based authentication with SSH agent forwarding or Docker secrets for production.
-      const escapedCommand = command.replace(/'/g, "'\\''"); // Escape single quotes for shell
-      finalCommand = `sshpass -p '${SSH_HOST_PASSWORD}' ssh -o StrictHostKeyChecking=no ${SSH_HOST_USER}@${SSH_HOST_IP} '${escapedCommand}'`;
-      executionContext = 'host via SSH';
-    } else if (IS_RUNNING_IN_DOCKER) {
-      // Default to chroot if in Docker and no SSH details provided
-      finalCommand = `chroot ${HOST_CHROOT_PATH} ${command}`;
-      executionContext = 'host via chroot';
-    } else {
-      // Not in Docker and not using SSH, implies the script is running directly on the desired host.
-      executionContext = 'local host';
-    }
-  }
-
-  logger.debug(`Executing (${executionContext}): ${finalCommand}`);
-
-  try {
-    // Use /bin/bash for proper command parsing and escaping, especially with sshpass
-    const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash' });
-    return stdout.trim();
-  } catch (error) {
-    logger.error(`Error executing command "${finalCommand}" (${executionContext}): ${error.message}`);
-    if (executionContext === 'host via SSH') {
-      if (error.message.includes('Permission denied')) {
-          logger.error("SSH Permission Denied. Check user, password, and host permissions.");
-      } else if (error.message.includes('No route to host') || error.message.includes('Connection refused')) {
-          logger.error("SSH Connection Failed. Check host IP, firewall, and SSH service status.");
-      } else if (error.message.includes('sshpass: command not found')) {
-          logger.error("sshpass is not installed in the container. Please install it.");
-      }
-    }
-    return null;
-  }
-}
-
-/**
  * Gathers general system information.
  * Note: Node.js `os` module calls reflect the environment where Node.js is running (the container).
  * Commands executed via `runCommand` with `targetHost=true` will attempt to get host info.
@@ -158,31 +330,33 @@ async function runCommand(command, targetHost = false) {
  */
 async function getGeneralInfo() {
   const generalInfo = {
-    hostname: os.hostname(), // Container's hostname
-    os: {
-      platform: os.platform(), // Container's platform
-      type: os.type(), // Container's OS type
-      release: os.release(), // Container's kernel release (container's view)
-      arch: os.arch(), // Container's architecture
-      uptime: os.uptime(), // Container's uptime
-      loadavg: os.loadavg(), // Container's load average
-      os_release: await runCommand('cat /etc/os-release', true), // Host's OS release
-      kernel_version: await runCommand('uname -a', true), // Host's kernel version
+    // Container-specific info (from Node.js os module)
+    container_info: {
+      hostname: os.hostname(),
+      platform: os.platform(),
+      type: os.type(),
+      release: os.release(),
+      arch: os.arch(),
+      uptime: os.uptime(), // in seconds
+      loadavg: os.loadavg(), // 1, 5, and 15 minute load averages
+      cpu_model: os.cpus()[0] ? os.cpus()[0].model : 'N/A',
+      cpu_cores: os.cpus().length,
+      cpu_speed: os.cpus()[0] ? os.cpus()[0].speed : 'N/A', // in MHz
+      total_memory_bytes: os.totalmem(),
+      free_memory_bytes: os.freemem(),
+      total_memory_gb: (os.totalmem() / (1024 ** 3)).toFixed(2),
+      free_memory_gb: (os.freemem() / (1024 ** 3)).toFixed(2),
+      network_interfaces: os.networkInterfaces(),
     },
-    cpu: {
-      model: os.cpus()[0] ? os.cpus()[0].model : 'N/A', // Container's view of CPU
-      cores: os.cpus().length, // Container's view of CPU cores
-      speed: os.cpus()[0] ? os.cpus()[0].speed : 'N/A', // Container's view of CPU speed
-      lscpu_info: await runCommand('lscpu', true), // Host's lscpu info
+    // Host-specific info (gathered via SSH/chroot or locally if not in Docker)
+    host_info: {
+      detected_os: detectedOS,
+      os_release: await runCommand('os_release_info', true),
+      kernel_version: await runCommand('kernel_version_info', true),
+      cpu_details: await runCommand('cpu_info', true),
+      memory_details: await runCommand('memory_info', true),
+      network_interface_config: await runCommand('network_interface_config', true),
     },
-    memory: {
-      total_bytes: os.totalmem(), // Container's memory limit if set, or host's if not
-      free_bytes: os.freemem(), // Container's free memory
-      total_gb: (os.totalmem() / (1024 ** 3)).toFixed(2), // Container's total GB
-      free_gb: (os.freemem() / (1024 ** 3)).toFixed(2), // Container's free GB
-      free_h_info: await runCommand('free -h', true), // Host's free -h info
-    },
-    network_interfaces: os.networkInterfaces(), // Container's network interfaces
     // Add fields to explicitly state the execution context
     is_running_in_docker_container: IS_RUNNING_IN_DOCKER,
     host_info_collection_method: USE_SSH_FOR_HOST_INFO ? 'SSH' : (IS_RUNNING_IN_DOCKER ? 'chroot' : 'local'),
@@ -199,8 +373,7 @@ async function getGeneralInfo() {
  */
 async function getProcessInfo() {
   const processInfo = {
-    all_processes_ps_aux: await runCommand('ps aux', true), // Host's processes
-    top_processes_snapshot: await runCommand('top -bn1 | head -n 20', true), // Host's top processes
+    all_processes: await runCommand('process_info', true), // Host's processes
   };
   return processInfo;
 }
@@ -211,17 +384,24 @@ async function getProcessInfo() {
  */
 async function getDiskInfo() {
   const diskInfo = {
-    filesystem_usage_df_h: await runCommand('df -h', true), // Host's filesystem usage
-    block_devices_lsblk_json: null, // Will try to parse JSON
+    filesystem_usage: await runCommand('disk_info', true), // Host's filesystem usage
+    block_devices_details: null, // Will try to parse JSON/plist if available
   };
 
-  const lsblkOutput = await runCommand('lsblk -J', true); // Host's block devices
+  const lsblkOutput = await runCommand('disk_info', true); // This will try multiple commands
   if (lsblkOutput) {
     try {
-      diskInfo.block_devices_lsblk_json = JSON.parse(lsblkOutput);
+      if (detectedOS.platform === 'linux' && lsblkOutput.includes('{') && lsblkOutput.includes('}')) {
+        diskInfo.block_devices_details = JSON.parse(lsblkOutput);
+      } else if (detectedOS.platform === 'darwin' && lsblkOutput.includes('<plist version')) {
+        // For macOS, diskutil list -plist returns XML, might need an XML parser
+        diskInfo.block_devices_details = lsblkOutput; // Store raw XML for now
+      } else {
+        diskInfo.block_devices_details = lsblkOutput; // Store raw output if not parsable JSON/plist
+      }
     } catch (e) {
-      logger.error('Failed to parse lsblk -J output for host:', e.message);
-      diskInfo.block_devices_lsblk_json = lsblkOutput; // Store raw output if parsing fails
+      logger.error(`Failed to parse disk info output for host (${detectedOS.platform}):`, e.message);
+      diskInfo.block_devices_details = lsblkOutput; // Store raw output if parsing fails
     }
   }
 
@@ -234,22 +414,20 @@ async function getDiskInfo() {
  */
 async function getKernelInfo() {
   const kernelInfo = {
-    kernel_config_sysctl_a: await runCommand('sysctl -a', true), // Host's kernel config
-    loaded_modules_lsmod: await runCommand('lsmod', true), // Host's loaded modules
+    kernel_config_sysctl: await runCommand('sysctl_info', true), // Host's kernel config
+    loaded_modules: await runCommand('kernel_modules_info', true), // Host's loaded modules
   };
   return kernelInfo;
 }
 
 /**
  * Gathers information about network services (listening ports).
- * Requires sudo for full details (PID/Program Name).
+ * Requires sudo for full details (PID/Program Name) on many systems.
  * @returns {Promise<object>} - An object containing network service info.
  */
 async function getNetworkServices() {
   const networkServices = {
-    netstat_tulnp: await runCommand('netstat -tulnp', true), // Host's network services
-    ss_tulnp: await runCommand('ss -tulnp', true), // Host's network services
-    lsof_i_P_n: await runCommand('lsof -i -P -n', true), // Host's network connections
+    listening_ports: await runCommand('network_services_info', true), // Host's network services
   };
   return networkServices;
 }
@@ -265,75 +443,57 @@ async function getIdentifiableServices() {
     web_servers: [],
     other_services: [],
     docker_daemon_status: null,
+    package_info: await runCommand('package_manager_info', true), // Raw package info
   };
 
-  const psAuxOutput = await runCommand('ps aux', true); // Host's processes
-  if (psAuxOutput) {
-    // Check for common database processes
-    if (psAuxOutput.includes('mysqld')) identifiedServices.databases.push('MySQL');
-    if (psAuxOutput.includes('postgres')) identifiedServices.databases.push('PostgreSQL');
-    if (psAuxOutput.includes('mongod')) identifiedServices.databases.push('MongoDB');
-    if (psAuxOutput.includes('oracle')) identifiedServices.databases.push('Oracle');
-    if (psAuxOutput.includes('redis-server')) identifiedServices.databases.push('Redis');
-    if (psAuxOutput.includes('memcached')) identifiedServices.other_services.push('Memcached');
+  const psOutput = await runCommand('process_info', true); // Get process list from host
+  if (psOutput && psOutput !== 'N/A') {
+    // Common database processes
+    if (psOutput.includes('mysqld') || psOutput.includes('mysql')) identifiedServices.databases.push('MySQL');
+    if (psOutput.includes('postgres') || psOutput.includes('pg_ctl')) identifiedServices.databases.push('PostgreSQL');
+    if (psOutput.includes('mongod')) identifiedServices.databases.push('MongoDB');
+    if (psOutput.includes('oracle')) identifiedServices.databases.push('Oracle');
+    if (psOutput.includes('redis-server')) identifiedServices.databases.push('Redis');
+    if (psOutput.includes('memcached')) identifiedServices.other_services.push('Memcached');
 
-    // Check for common web servers
-    if (psAuxOutput.includes('apache2') || psAuxOutput.includes('httpd')) identifiedServices.web_servers.push('Apache HTTP Server');
-    if (psAuxOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx');
+    // Common web servers
+    if (psOutput.includes('apache2') || psOutput.includes('httpd')) identifiedServices.web_servers.push('Apache HTTP Server');
+    if (psOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx');
+    if (psOutput.includes('lighttpd')) identifiedServices.web_servers.push('Lighttpd');
+    if (psOutput.includes('caddy')) identifiedServices.web_servers.push('Caddy');
 
-    // Check for Docker daemon
-    if (psAuxOutput.includes('dockerd')) identifiedServices.docker_daemon_status = 'Running';
+    // Docker daemon status
+    if (psOutput.includes('dockerd')) identifiedServices.docker_daemon_status = 'Running';
     else identifiedServices.docker_daemon_status = 'Not Running (process not found)';
   }
 
-  // Check systemd services (if systemd is used)
-  const systemctlServices = await runCommand('systemctl list-units --type=service --all --no-pager', true); // Host's systemd services
-  if (systemctlServices && systemctlServices !== 'N/A') {
-    if (systemctlServices.includes('mysql.service') || systemctlServices.includes('mariadb.service')) {
-      if (!identifiedServices.databases.includes('MySQL')) identifiedServices.databases.push('MySQL (systemd)');
-    }
-    if (systemctlServices.includes('postgresql.service')) {
-      if (!identifiedServices.databases.includes('PostgreSQL')) identifiedServices.databases.push('PostgreSQL (systemd)');
-    }
-    if (systemctlServices.includes('mongod.service')) {
-      if (!identifiedServices.databases.includes('MongoDB')) identifiedServices.databases.push('MongoDB (systemd)');
-    }
-    if (systemctlServices.includes('redis.service')) {
-      if (!identifiedServices.databases.includes('Redis')) identifiedServices.databases.push('Redis (systemd)');
-    }
-    if (systemctlServices.includes('apache2.service') || systemctlServices.includes('httpd.service')) {
-      if (!identifiedServices.web_servers.includes('Apache HTTP Server')) identifiedServices.web_servers.push('Apache HTTP Server (systemd)');
-    }
-    if (systemctlServices.includes('nginx.service')) {
-      if (!identifiedServices.web_servers.includes('Nginx')) identifiedServices.web_servers.push('Nginx (systemd)');
-    }
-    if (systemctlServices.includes('docker.service')) {
-      if (identifiedServices.docker_daemon_status === 'Not Running (process not found)') {
-        identifiedServices.docker_daemon_status = 'Running (systemd)';
+  // Check systemd services (Linux specific)
+  if (detectedOS.platform === 'linux') {
+    const systemctlServices = await runCommand('systemctl list-units --type=service --all --no-pager', true);
+    if (systemctlServices && systemctlServices !== 'N/A') {
+      if (systemctlServices.includes('mysql.service') || systemctlServices.includes('mariadb.service')) {
+        if (!identifiedServices.databases.includes('MySQL')) identifiedServices.databases.push('MySQL (systemd)');
       }
-    }
-  }
-
-  // Attempt to get installed packages (basic check for common package managers)
-  const dpkgOutput = await runCommand('dpkg -l', true); // Host's dpkg packages
-  if (dpkgOutput && dpkgOutput !== 'N/A') {
-    if (dpkgOutput.includes('mysql-server')) identifiedServices.databases.push('MySQL (package)');
-    if (dpkgOutput.includes('postgresql')) identifiedServices.databases.push('PostgreSQL (package)');
-    if (dpkgOutput.includes('mongodb-org')) identifiedServices.databases.push('MongoDB (package)');
-    if (dpkgOutput.includes('redis-server')) identifiedServices.databases.push('Redis (package)');
-    if (dpkgOutput.includes('apache2')) identifiedServices.web_servers.push('Apache HTTP Server (package)');
-    if (dpkgOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx (package)');
-    if (dpkgOutput.includes('docker-ce')) identifiedServices.other_services.push('Docker Engine (package)');
-  } else {
-    const rpmOutput = await runCommand('rpm -qa', true); // Host's rpm packages
-    if (rpmOutput && rpmOutput !== 'N/A') {
-      if (rpmOutput.includes('mysql-server')) identifiedServices.databases.push('MySQL (package)');
-      if (rpmOutput.includes('postgresql-server')) identifiedServices.databases.push('PostgreSQL (package)');
-      if (rpmOutput.includes('mongodb-org-server')) identifiedServices.databases.push('MongoDB (package)');
-      if (rpmOutput.includes('redis')) identifiedServices.databases.push('Redis (package)');
-      if (rpmOutput.includes('httpd')) identifiedServices.web_servers.push('Apache HTTP Server (package)');
-      if (rpmOutput.includes('nginx')) identifiedServices.web_servers.push('Nginx (package)');
-      if (rpmOutput.includes('docker-ce')) identifiedServices.other_services.push('Docker Engine (package)');
+      if (systemctlServices.includes('postgresql.service')) {
+        if (!identifiedServices.databases.includes('PostgreSQL')) identifiedServices.databases.push('PostgreSQL (systemd)');
+      }
+      if (systemctlServices.includes('mongod.service')) {
+        if (!identifiedServices.databases.includes('MongoDB')) identifiedServices.databases.push('MongoDB (systemd)');
+      }
+      if (systemctlServices.includes('redis.service')) {
+        if (!identifiedServices.databases.includes('Redis')) identifiedServices.databases.push('Redis (systemd)');
+      }
+      if (systemctlServices.includes('apache2.service') || systemctlServices.includes('httpd.service')) {
+        if (!identifiedServices.web_servers.includes('Apache HTTP Server')) identifiedServices.web_servers.push('Apache HTTP Server (systemd)');
+      }
+      if (systemctlServices.includes('nginx.service')) {
+        if (!identifiedServices.web_servers.includes('Nginx')) identifiedServices.web_servers.push('Nginx (systemd)');
+      }
+      if (systemctlServices.includes('docker.service')) {
+        if (identifiedServices.docker_daemon_status === 'Not Running (process not found)') {
+          identifiedServices.docker_daemon_status = 'Running (systemd)';
+        }
+      }
     }
   }
 
@@ -346,29 +506,37 @@ async function getIdentifiableServices() {
 }
 
 /**
- * Gathers detailed hardware information using lshw and dmidecode if available.
+ * Gathers detailed hardware information using lshw, dmidecode, system_profiler etc.
  * These commands often require root privileges.
  * @returns {Promise<object>} - An object containing hardware info.
  */
 async function getHardwareInfo() {
   const hardwareInfo = {
-    lshw_json: null, // Will try to parse JSON
-    dmidecode_info: null,
+    detailed_hardware_info: null, // Will try to parse JSON/plist if available
+    dmi_info: null, // For Linux/BSD dmidecode
   };
 
-  // lshw -json provides structured hardware info
-  const lshwOutput = await runCommand('lshw -json', true); // Host's lshw info
+  const lshwOutput = await runCommand('hardware_info', true);
   if (lshwOutput) {
     try {
-      hardwareInfo.lshw_json = JSON.parse(lshwOutput);
+      if (detectedOS.platform === 'linux' && lshwOutput.includes('{') && lshwOutput.includes('}')) {
+        hardwareInfo.detailed_hardware_info = JSON.parse(lshwOutput);
+      } else if (detectedOS.platform === 'darwin' && lshwOutput.includes('<plist version')) {
+        // For macOS, system_profiler SPHardwareDataType -json returns JSON, not plist
+        hardwareInfo.detailed_hardware_info = JSON.parse(lshwOutput);
+      } else {
+        hardwareInfo.detailed_hardware_info = lshwOutput; // Store raw output
+      }
     } catch (e) {
-      logger.error('Failed to parse lshw -json output for host:', e.message);
-      hardwareInfo.lshw_json = lshwOutput; // Store raw output if parsing fails
+      logger.error(`Failed to parse hardware info output for host (${detectedOS.platform}):`, e.message);
+      hardwareInfo.detailed_hardware_info = lshwOutput; // Store raw output if parsing fails
     }
   }
 
-  // dmidecode provides DMI table contents (BIOS, motherboard, memory, etc.)
-  hardwareInfo.dmidecode_info = await runCommand('dmidecode', true); // Host's dmidecode info
+  // dmidecode is primarily Linux/BSD
+  if (detectedOS.platform === 'linux' || detectedOS.platform.includes('bsd')) {
+    hardwareInfo.dmi_info = await runCommand('dmidecode', true);
+  }
 
   return hardwareInfo;
 }
@@ -390,6 +558,10 @@ async function collectSystemInfo(sessionId, sshHost = '', sshUser = '', sshPassw
 
   // Initialize SSH configuration, prioritizing secrets over parameters
   await initializeSshConfig(sshHost, sshUser, sshPassword);
+
+  // Detect the target host's OS *after* determining if SSH will be used
+  // because the detection commands will be run on the target host.
+  await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !IS_RUNNING_IN_DOCKER);
 
   const systemInfo = {};
 
