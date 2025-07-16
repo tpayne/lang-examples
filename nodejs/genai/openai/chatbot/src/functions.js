@@ -1060,10 +1060,16 @@ async function loadSystemInfoFunctions(sessionId) {
     sessionId,
     'collect_system_info',
     collectSystemInfo,
-    [], // No parameters needed for this top-level function
-    'Collects comprehensive host machine information, including OS, CPU, memory, running processes, network services, identified databases/services, and hardware details. Returns the data in a structured JSON format.',
-    {}, // Empty parameter schema as it takes no direct arguments
-    [], // No required parameters
+    // Updated parameter list to match getInfo.js changes
+    ['sshHost', 'sshUser', 'sshPassword'],
+    'Collects comprehensive host machine information, including OS, CPU, memory, running processes, network services, identified databases/services, and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH or default to the Docker host if no SSH details are provided.',
+    {
+      // Updated parameter schema to include SSH details
+      sshHost: { type: 'string', description: 'Optional: The IP address or hostname of the remote SSH host.' },
+      sshUser: { type: 'string', description: 'Optional: The username for SSH authentication on the remote host.' },
+      sshPassword: { type: 'string', description: 'Optional: The password for SSH authentication on the remote host. WARNING: Passing passwords via parameters is INSECURE for production. Consider SSH keys or Docker secrets for better security.' },
+    },
+    [], // No required parameters, as SSH details are optional and chroot is the default fallback
     true, // needsSession is true
   );
 }
