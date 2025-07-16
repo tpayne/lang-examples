@@ -27,7 +27,7 @@ RUN npm install && npm test
 FROM node:lts-alpine${alpineVersion} AS runner
 
 # Combined apk install and upgrade
-RUN apk add --no-cache memcached supervisor openssl && \
+RUN apk add --no-cache memcached supervisor openssl openssh-client sshpass && \
      apk -U upgrade
 
 EXPOSE 11211
