@@ -1060,16 +1060,17 @@ async function loadSystemInfoFunctions(sessionId) {
     sessionId,
     'collect_system_info',
     collectSystemInfo,
-    // Updated parameter list to match getInfo.js changes
-    ['sshHost', 'sshUser', 'sshPassword'],
-    'Collects comprehensive host machine information, including OS, CPU, memory, running processes, network services, identified databases/services, and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH or default to the Docker host if no SSH details are provided.',
+    // Updated parameter list to use a single sshTarget string
+    ['sshTarget'],
+    'Collects comprehensive host machine information, including OS, CPU, memory, running processes, network services, identified databases/services, and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
     {
-      // Updated parameter schema to include SSH details
-      sshHost: { type: 'string', description: 'Optional: The IP address or hostname of the remote SSH host.' },
-      sshUser: { type: 'string', description: 'Optional: The username for SSH authentication on the remote host.' },
-      sshPassword: { type: 'string', description: 'Optional: The password for SSH authentication on the remote host. WARNING: Passing passwords via parameters is INSECURE for production. Consider SSH keys or Docker secrets for better security.' },
+      // Updated parameter schema for the single sshTarget string
+      sshTarget: {
+        type: 'string',
+        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+      },
     },
-    [], // No required parameters, as SSH details are optional and chroot is the default fallback
+    [], // sshTarget is optional
     true, // needsSession is true
   );
 }

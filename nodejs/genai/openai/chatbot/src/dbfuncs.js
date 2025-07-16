@@ -10,6 +10,10 @@ const net = require('net'); // Node.js built-in net module for TCP diagnostics
 
 const logger = require('./logger'); // Assuming a logger utility exists
 
+const {
+  checkIfRunningInDocker,
+} = require('./utilities');
+
 // Map to store active database connections per session (for potential reuse or proper cleanup)
 const activeConnections = new Map();
 
@@ -129,7 +133,7 @@ function parseJdbcUri(sessionId, uri) {
     const [host, port] = hostPort.split(':');
 
     // Determine host based on Docker environment
-    if (process.env.DOCKER_ENV === 'true') {
+    if (process.env.DOCKER_ENV === 'true' || checkIfRunningInDocker()) {
       // If running inside Docker, connect to the host machine
       config.host = 'host.docker.internal';
       logger.info(`[Session: ${sessionId}] MySQL host set to 'host.docker.internal' for Docker environment.`);

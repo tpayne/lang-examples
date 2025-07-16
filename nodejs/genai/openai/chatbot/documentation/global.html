@@ -170,6 +170,71 @@
 
         
             
+<h4 class="name" id="commandMap"><span class="type-signature">(constant) </span>commandMap<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Maps common system information commands to their OS-specific variants or preferred tools.
+Prioritizes commands that provide structured output (e.g., JSON) if available.
+Each key is a conceptual command (e.g., 'os_release_info'), and its value is an object
+mapping OS platforms to an array of commands to try, in order of preference.
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line38">line 38</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
 <h4 class="name" id="downloadMutexes"><span class="type-signature">(constant) </span>downloadMutexes<span class="type-signature"> :Map.&lt;string, Map.&lt;string, Mutex>></span></h4>
 
 
@@ -1869,6 +1934,95 @@ the existence of the branch.
     
 
     
+    <h4 class="name" id="checkIfRunningInDocker"><span class="type-signature">(async) </span>checkIfRunningInDocker<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Checks if the current process is running inside a Docker container.
+This is a heuristic check based on the existence of /.dockerenv and/or cgroup info.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line19">line 19</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="checkRepoExists"><span class="type-signature">(async) </span>checkRepoExists<span class="signature">(username, repoName)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
     
 
@@ -2321,7 +2475,7 @@ the existence of the repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line36">line 36</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line71">line 71</a>
     </li></ul></dd>
     
 
@@ -2640,7 +2794,7 @@ Uses a temporary directory and ensures thread safety per session.
     
 
     
-    <h4 class="name" id="collectSystemInfo"><span class="type-signature">(async) </span>collectSystemInfo<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
+    <h4 class="name" id="collectSystemInfo"><span class="type-signature">(async) </span>collectSystemInfo<span class="signature">(sessionId, sshTarget<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;object>}</span></h4>
     
 
     
@@ -2673,7 +2827,11 @@ This serves as the single entry point for the chatbot.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -2698,10 +2856,61 @@ This serves as the single entry point for the chatbot.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
             
 
             <td class="description last">The session ID for logging.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>sshTarget</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    ''
+                
+                </td>
+            
+
+            <td class="description last">The SSH target in 'user@hostname' format.</td>
         </tr>
 
     
@@ -2742,7 +2951,7 @@ This serves as the single entry point for the chatbot.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line247">line 247</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line631">line 631</a>
     </li></ul></dd>
     
 
@@ -3328,7 +3537,7 @@ the success or failure of the operation, with results for each file processed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line209">line 209</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line213">line 213</a>
     </li></ul></dd>
     
 
@@ -4781,7 +4990,7 @@ write permissions to it. The path of the created directory is returned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line127">line 127</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line162">line 162</a>
     </li></ul></dd>
     
 
@@ -5128,7 +5337,7 @@ write permissions to it. The path of the created directory is returned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line18">line 18</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line53">line 53</a>
     </li></ul></dd>
     
 
@@ -5450,6 +5659,153 @@ write permissions to it. The path of the created directory is returned.
     
 
     
+    <h4 class="name" id="detectOperatingSystem"><span class="type-signature">(async) </span>detectOperatingSystem<span class="signature">(isTargetHost)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Detects the operating system of the target host.
+This function will be called once at the beginning of collectSystemInfo
+to set `detectedOS` for subsequent command selections.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>isTargetHost</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">True if detecting the host OS (via SSH), false for container OS.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line247">line 247</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="disconnectFromDatabase"><span class="type-signature">(async) </span>disconnectFromDatabase<span class="signature">(sessionId, client, dbType)</span><span class="type-signature"></span></h4>
     
 
@@ -5598,7 +5954,7 @@ Moved this function definition before `connectToDatabase` to resolve `no-use-bef
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line23">line 23</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line27">line 27</a>
     </li></ul></dd>
     
 
@@ -6023,7 +6379,7 @@ Moved this function definition before `connectToDatabase` to resolve `no-use-bef
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line271">line 271</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line275">line 275</a>
     </li></ul></dd>
     
 
@@ -7325,7 +7681,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1085">line 1085</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1092">line 1092</a>
     </li></ul></dd>
     
 
@@ -7897,7 +8253,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line77">line 77</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line465">line 465</a>
     </li></ul></dd>
     
 
@@ -8426,7 +8782,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1076">line 1076</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1083">line 1083</a>
     </li></ul></dd>
     
 
@@ -8492,7 +8848,9 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
 
 
 <div class="description">
-    Gathers general host machine information.
+    Gathers general system information.
+Note: Node.js `os` module calls reflect the environment where Node.js is running (the container).
+Commands executed via `runCommand` with `targetHost=true` will attempt to get host info.
 </div>
 
 
@@ -8536,7 +8894,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line29">line 29</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line404">line 404</a>
     </li></ul></dd>
     
 
@@ -8602,7 +8960,7 @@ Note: OpenAI has a specific response_format parameter for JSON.</td>
 
 
 <div class="description">
-    Gathers detailed hardware information using lshw and dmidecode if available.
+    Gathers detailed hardware information using lshw, dmidecode, system_profiler etc.
 These commands often require root privileges.
 </div>
 
@@ -8647,7 +9005,7 @@ These commands often require root privileges.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line218">line 218</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line593">line 593</a>
     </li></ul></dd>
     
 
@@ -8758,7 +9116,7 @@ This is heuristic-based and might not be exhaustive or perfectly accurate.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line127">line 127</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line520">line 520</a>
     </li></ul></dd>
     
 
@@ -8868,7 +9226,7 @@ This is heuristic-based and might not be exhaustive or perfectly accurate.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line100">line 100</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line495">line 495</a>
     </li></ul></dd>
     
 
@@ -10460,7 +10818,7 @@ This is heuristic-based and might not be exhaustive or perfectly accurate.
 
 <div class="description">
     Gathers information about network services (listening ports).
-Requires sudo for full details (PID/Program Name).
+Requires sudo for full details (PID/Program Name) on many systems.
 </div>
 
 
@@ -10504,7 +10862,7 @@ Requires sudo for full details (PID/Program Name).
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line113">line 113</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line508">line 508</a>
     </li></ul></dd>
     
 
@@ -10664,7 +11022,7 @@ Ensures thread safety using a mutex per session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line202">line 202</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line237">line 237</a>
     </li></ul></dd>
     
 
@@ -10804,7 +11162,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line65">line 65</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line454">line 454</a>
     </li></ul></dd>
     
 
@@ -12182,6 +12540,143 @@ Otherwise, it re-throws the original error.
     
 
     
+    <h4 class="name" id="initializeSshConfig"><span class="type-signature">(async) </span>initializeSshConfig<span class="signature">(sshTarget)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Initializes SSH configuration, prioritizing Docker secrets over passed parameters.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sshTarget</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">SSH target in 'user@hostname' format (from function parameter).</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line347">line 347</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="listBranches"><span class="type-signature">(async) </span>listBranches<span class="signature">(username, repoName)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
     
 
@@ -12759,7 +13254,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line646">line 646</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line650">line 650</a>
     </li></ul></dd>
     
 
@@ -17006,7 +17501,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line715">line 715</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line719">line 719</a>
     </li></ul></dd>
     
 
@@ -17803,7 +18298,7 @@ if it exists before creating it.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line65">line 65</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line100">line 100</a>
     </li></ul></dd>
     
 
@@ -17995,7 +18490,7 @@ This is a simplified parser and may not cover all complex JDBC URI variations.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line60">line 60</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line64">line 64</a>
     </li></ul></dd>
     
 
@@ -18440,6 +18935,165 @@ or null if the route cannot be planned.
     <dd>
         
 <span class="param-type">Promise.&lt;string></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="readDockerSecret"><span class="type-signature">(async) </span>readDockerSecret<span class="signature">(secretPath)</span><span class="type-signature"> &rarr; {Promise.&lt;(string|null)>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Attempts to read content from a Docker secret file.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>secretPath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The path to the Docker secret file.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line333">line 333</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    - The content of the secret, or null if not found/readable.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;(string|null)></span>
 
 
     </dd>
@@ -18940,7 +19594,7 @@ Returns query results for SELECT statements and affected rows for DML statements
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line956">line 956</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line960">line 960</a>
     </li></ul></dd>
     
 
@@ -19027,7 +19681,7 @@ Returns query results for SELECT statements and affected rows for DML statements
     
 
     
-    <h4 class="name" id="runCommand"><span class="type-signature">(async) </span>runCommand<span class="signature">(command)</span><span class="type-signature"> &rarr; {Promise.&lt;(string|null)>}</span></h4>
+    <h4 class="name" id="runCommand"><span class="type-signature">(async) </span>runCommand<span class="signature">(commandKey, targetHost<span class="signature-attributes">opt</span>, overridePlatform<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;(string|null)>}</span></h4>
     
 
     
@@ -19035,8 +19689,7 @@ Returns query results for SELECT statements and affected rows for DML statements
 
 
 <div class="description">
-    Executes a shell command and returns its stdout.
-Handles errors gracefully if the command fails, logging the error.
+    Executes a shell command.
 </div>
 
 
@@ -19060,7 +19713,11 @@ Handles errors gracefully if the command fails, logging the error.
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -19072,7 +19729,7 @@ Handles errors gracefully if the command fails, logging the error.
 
         <tr>
             
-                <td class="name"><code>command</code></td>
+                <td class="name"><code>commandKey</code></td>
             
 
             <td class="type">
@@ -19085,10 +19742,100 @@ Handles errors gracefully if the command fails, logging the error.
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
             
 
-            <td class="description last">The shell command to execute.</td>
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The key from `commandMap` representing the desired information.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>targetHost</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">If true, attempts to run the command on the host.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>overridePlatform</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    detectedOS.platform
+                
+                </td>
+            
+
+            <td class="description last">Allows overriding the detected platform for command selection.</td>
         </tr>
 
     
@@ -19129,7 +19876,7 @@ Handles errors gracefully if the command fails, logging the error.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line15">line 15</a>
+        <a href="getInfo.js.html">getInfo.js</a>, <a href="getInfo.js.html#line174">line 174</a>
     </li></ul></dd>
     
 
@@ -19420,7 +20167,7 @@ be mirrored within the session's temporary directory.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line261">line 261</a>
+        <a href="utilities.js.html">utilities.js</a>, <a href="utilities.js.html#line296">line 296</a>
     </li></ul></dd>
     
 
@@ -20283,7 +21030,7 @@ Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.</t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line505">line 505</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line509">line 509</a>
     </li></ul></dd>
     
 
@@ -20757,7 +21504,7 @@ with a message confirming the change.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line166">line 166</a>
+        <a href="dbfuncs.js.html">dbfuncs.js</a>, <a href="dbfuncs.js.html#line170">line 170</a>
     </li></ul></dd>
     
 
@@ -22470,13 +23217,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectSystemInfo">collectSystemInfo</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectSystemInfo">collectSystemInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Jul 13 2025 19:54:47 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 17 2025 00:46:04 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

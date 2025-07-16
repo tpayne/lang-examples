@@ -331,6 +331,44 @@ Other samples can include things like: -
 * Review the logs of failing deployments and diagnose any issues you can see
 * Fix my failing tomcat deployment after you have reviewed the failing logs
 
+CMDB Functionality
+------------------
+For those interested in getting configuration management information about a machine, the bot does have limited support for 
+service discovery and hardware statistics. By default, this will only support the Docker image you are running in, but it does
+also support running discovery processes via SSH connections (22). For this to work, you will need to ensure SSH is configured
+on your remote hosts and SSH connections can be run from the Docker image to those remote hosts.
+
+To securely store passwords, the bot uses a Docker secrets map to store password details. To create map, do the following.
+
+Create a secrets json file
+
+```json
+{
+  "user1@host1.example.com": "password_for_host1",
+  "user2@192.168.1.10": "password_for_host2",
+  "root@my-server": "root_password"
+}
+```
+
+Then create the secret map.
+
+```bash
+docker swarm init
+docker secret create ssh_password_map ./ssh_passwords.json
+```
+
+Then start Docker using the secrets map.
+
+```bash
+docker run -it --rm \
+  --network=host \
+  --privileged \
+  -v /:/host \
+  --secret ssh_password_map \
+  chatbot:1.0 \
+  ...
+```
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...

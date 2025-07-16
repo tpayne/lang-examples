@@ -5,10 +5,45 @@ const os = require('os');
 const { Mutex } = require('async-mutex'); // Import Mutex
 const logger = require('./logger'); // Assuming you have a logger utility
 
+let IS_RUNNING_IN_DOCKER = -1; // Default value, will be set if running in Docker
+
 // Shared cache for temporary directories per session
 const sessionTempDirs = new Map();
 // Mutex map for protecting the cache per session
 const sessionMutexes = new Map();
+
+/**
+ * Checks if the current process is running inside a Docker container.
+ * This is a heuristic check based on the existence of /.dockerenv and/or cgroup info.
+ */
+async function checkIfRunningInDocker() {
+  if (IS_RUNNING_IN_DOCKER !== -1) {
+    return (IS_RUNNING_IN_DOCKER > 0);
+  }
+  IS_RUNNING_IN_DOCKER = 0;
+  try {
+    // Check for the existence of the /.dockerenv file
+    await fs.access('/.dockerenv'); // Checks if file exists and is accessible
+    IS_RUNNING_IN_DOCKER = 1;
+    logger.info('Detected running inside Docker via /.dockerenv');
+    return (IS_RUNNING_IN_DOCKER > 0); // Indicate that we are running in Docker
+  } catch (e) {
+    // /.dockerenv not found, proceed to cgroup check
+  }
+
+  try {
+    // Check cgroup information for 'docker' or 'lxc'
+    const cgroupContent = await fs.readFile('/proc/self/cgroup', 'utf8');
+    if (cgroupContent.includes('docker') || cgroupContent.includes('lxc')) {
+      IS_RUNNING_IN_DOCKER = 1;
+      logger.info('Detected running inside Docker via cgroup info');
+      return (IS_RUNNING_IN_DOCKER > 0); // Indicate that we are running in Docker
+    }
+  } catch (e) {
+    logger.warn('Could not read /proc/self/cgroup to detect Docker environment:', e.message);
+  }
+  return (IS_RUNNING_IN_DOCKER > 0); // Indicate that we are not running in Docker
+}
 
 /**
  * Recursively deletes a directory.
@@ -351,4 +386,5 @@ module.exports = {
   saveCodeToFile,
   getOrCreateSessionTempDir,
   cleanupSessionTempDir,
+  checkIfRunningInDocker,
 };
