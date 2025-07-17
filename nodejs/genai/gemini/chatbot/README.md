@@ -355,14 +355,21 @@ docker swarm init
 docker secret create ssh_password_map ./ssh_passwords.json
 ```
 
-Then start Docker using the secrets map.
+Then start Docker using the secrets map. This will require running `docker service` using swarm, rather than `docker run`
 
 ```bash
-docker run -it --rm \
-  --network=host \
-  --privileged \
-  -v /:/host \
-  --secret ssh_password_map \
+docker service rm chatbotgemini && \
+docker service create \
+    --name chatbotgemini \
+    -p 8080:5000 \
+    -p 443:8443 \
+    --cap-add SYS_ADMIN \
+    --cap-add SYS_RAWIO \
+    --cap-add NET_ADMIN \
+    --cap-add SYS_PTRACE \
+    --mount type=bind,source=/,target=/host \
+    --secret source=ssh_password_map,target=/run/secrets/ssh_password_map \
+    -e ... \
   chatbot:1.0 \
   ...
 ```
