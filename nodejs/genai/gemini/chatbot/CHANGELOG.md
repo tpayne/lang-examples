@@ -1,4 +1,6 @@
 # Changelog
+## 2025-07-17	(21:21:21-UTC+0000)
+- **Fix**:  update dependency express-rate-limit to v8 (in nodejs/genai/gemini/chatbot/package.json)
 ## 2025-07-13	(19:08:06-UTC+0000)
 - **Other**: Update for os info (in nodejs/genai/gemini/chatbot/documentation/chatbot.js.html)
 - **Other**: Update for os info (in nodejs/genai/gemini/chatbot/documentation/codeReviews.js.html)
