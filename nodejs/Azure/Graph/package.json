@@ -10,6 +10,6 @@
         "node18": "^1.0.0",
         "os": "^0.1.2",
         "properties-reader": "^2.2.0",
-        "express-rate-limit": "^7.5.0"
+        "express-rate-limit": "^8.0.0"
     }
 }
