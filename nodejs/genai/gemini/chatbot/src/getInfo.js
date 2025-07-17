@@ -235,7 +235,7 @@ async function runCommand(commandKey, targetHost = false, overridePlatform = det
 
     let loggableCommand = finalCommand;
     if (USE_SSH_FOR_HOST_INFO) {
-      loggableCommand = finalCommand.replace(/-p '.*?'/, '-p \'********\'');
+      loggableCommand = finalCommand.replace(/-p '.*?'/, '').trim(); // Remove password from the command entirely
     }
     logger.debug(`Attempting to execute (${executionContext}): ${loggableCommand}`);
 
@@ -246,8 +246,8 @@ async function runCommand(commandKey, targetHost = false, overridePlatform = det
       let errorLogCommand = finalCommand;
       let errorMessage = error.message || 'Unknown error';
       if (USE_SSH_FOR_HOST_INFO) {
-        errorLogCommand = finalCommand.replace(/-p '.*?'/, '-p \'********\'');
-        errorMessage = error.message.replace(/-p '.*?'/, '-p \'********\'');
+        errorLogCommand = finalCommand.replace(/-p '.*?'/, '').trim();
+        errorMessage = error.message.replace(/-p '.*?'/, '').trim();
       }
       logger.debug(`Command failed (${executionContext}): "${errorLogCommand}" - ${errorMessage}`);
 
@@ -415,10 +415,10 @@ async function initializeSshConfig(sshTarget) {
     SSH_HOST_USER = userFromParam;
     SSH_HOST_PASSWORD = passwordFromSecretMap;
     USE_SSH_FOR_HOST_INFO = true;
-    logger.info('SSH details loaded successfully from Docker secret map.');
+    logger.info('SSH details loaded successfully.');
   } else {
     USE_SSH_FOR_HOST_INFO = false;
-    logger.warn('No SSH details found in Docker secret map for the provided target.');
+    logger.warn('No SSH details found in Docker for the provided target.');
   }
 
   if (USE_SSH_FOR_HOST_INFO) {
