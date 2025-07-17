@@ -5,6 +5,7 @@
   "main": "./chatbot.js",
   "bin": "./chatbot.js",
   "scripts": {
+    "build": "docker rmi -f chatbotgemini && docker build . --build-arg testbuild=false -t chatbot",
     "test": "run-s test:*",
     "test:gendoc": "npx jsdoc src -d documentation",
     "test:lint": "run-s test:lint:*",

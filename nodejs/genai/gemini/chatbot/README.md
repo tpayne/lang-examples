@@ -329,6 +329,51 @@ Other samples can include things like: -
 * Get me the pod logs for the core-dns ones
 * Are there any issues shown in the pod logs for core-dns ones?
 
+CMDB Functionality
+------------------
+For those interested in getting configuration management information about a machine, the bot does have limited support for 
+service discovery and hardware statistics. By default, this will only support the Docker image you are running in, but it does
+also support running discovery processes via SSH connections (22). For this to work, you will need to ensure SSH is configured
+on your remote hosts and SSH connections can be run from the Docker image to those remote hosts.
+
+To securely store passwords, the bot uses a Docker secrets map to store password details. To create map, do the following.
+
+Create a secrets json file
+
+```json
+{
+  "user1@host1.example.com": "password_for_host1",
+  "user2@192.168.1.10": "password_for_host2",
+  "root@my-server": "root_password"
+}
+```
+
+Then create the secret map.
+
+```bash
+docker swarm init
+docker secret create ssh_password_map ./ssh_passwords.json
+```
+
+Then start Docker using the secrets map. This will require running `docker service` using swarm, rather than `docker run`
+
+```bash
+docker service rm chatbotgemini && \
+docker service create \
+    --name chatbotgemini \
+    -p 8080:5000 \
+    -p 443:8443 \
+    --cap-add SYS_ADMIN \
+    --cap-add SYS_RAWIO \
+    --cap-add NET_ADMIN \
+    --cap-add SYS_PTRACE \
+    --mount type=bind,source=/,target=/host \
+    --secret source=ssh_password_map,target=/run/secrets/ssh_password_map \
+    -e ... \
+  chatbot:1.0 \
+  ...
+```
+
 Cleaning Up
 -----------
 To clean up the installation, do the following...
