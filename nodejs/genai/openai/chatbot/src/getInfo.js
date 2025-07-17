@@ -98,7 +98,7 @@ const commandMap = {
   // Running processes
   process_info: {
     linux: ['ps aux', 'top -bn1 | head -n 20'],
-    darwin: ['ps aux', 'top -l 1 | head -n 20'],
+    darwin: ['ps aux | head -n 75', 'top -l 1 | head -n 20'], // Generally, there are too many processes to show all as AI hits limit
     freebsd: ['ps aux', 'top -b | head -n 20'],
     openbsd: ['ps aux', 'top -b | head -n 20'],
     netbsd: ['ps aux', 'top -b | head -n 20'],
@@ -162,6 +162,37 @@ const commandMap = {
     darwin: ['pkgutil --pkgs', '/opt/homebrew/bin/brew list'], // Homebrew
     // BSDs have their own package managers (pkg, ports), but no single command to list all
   },
+  // Add this new entry for listing all services across different OS types
+  list_all_services: {
+    linux: [
+      'systemctl list-units --type=service --all --no-pager', // For systemd-based Linux (e.g., Ubuntu, CentOS)
+      'rc-service --list', // For OpenRC-based Linux (e.g., Alpine)
+      'rc-status --all', // For OpenRC-based Linux (e.g., Alpine)
+      'service --status-all', // For SysVinit-based Linux
+      'chkconfig --list', // For SysVinit-based Linux (e.g., CentOS/RHEL)
+      'ls /etc/init.d/', // List init scripts
+      'ls /etc/systemd/system/', // List systemd service files
+    ],
+    darwin: [ // For macOS, using launchctl to list user agents and daemons
+      'launchctl list',
+    ],
+    freebsd: [ // For FreeBSD, using service command
+      'service -e', // List all enabled services
+      'service -l', // List all services
+    ],
+    openbsd: [ // For OpenBSD, using rcctl to list services
+      'rcctl ls', // List all services
+    ],
+    netbsd: [ // For NetBSD, using rcorder to list services
+      'rcorder /etc/rc.d/*', // List all services in order
+    ],
+    sunos: [ // For Solaris/Illumos, using svcs to list services
+      'svcs -a', // List all services
+    ],
+    aix: [ // For AIX, using lssrc to list services
+      'lssrc -a', // List all services
+    ],
+  },
 };
 
 /**
@@ -209,7 +240,7 @@ async function runCommand(commandKey, targetHost = false, overridePlatform = det
     logger.debug(`Attempting to execute (${executionContext}): ${loggableCommand}`);
 
     try {
-      const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash', timeout: 10000 });
+      const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash', timeout: 20000, killSignal: 'SIGTERM' });
       return stdout.trim(); // Return on first success
     } catch (error) {
       let errorLogCommand = finalCommand;
@@ -513,6 +544,43 @@ async function getNetworkServices() {
 }
 
 /**
+ * Retrieves services running on the target host.
+ *
+ * This asynchronous function gathers information about various services, including databases,
+ * web servers, and other services, by executing OS-specific commands. It also checks the status
+ * of the Docker daemon if applicable. The results are organized into categories and returned
+ * as an object for further inspection or processing.
+ *
+ * @async
+ * @function getServices
+ * @returns {Promise<Object>} An object containing arrays of identified services categorized as
+ *                            databases, web servers, other services, and the Docker daemon status.
+ */
+async function getServices() {
+  const generalServices = {
+    all_services: [], // Initialize the details property as an empty array
+  };
+
+  // Use the commandMap to get all services information.
+  // Ensure 'detectedOS.platform' has a fallback value to avoid errors if not set.
+  const platform = detectedOS.platform || os.platform(); // Fallback to container's platform if not set
+  // 'detectedOS.platform' ensures the correct OS-specific command(s) are chosen from the commandMap.
+  const allServicesOutput = await runCommand('list_all_services', true, platform);
+
+  if (allServicesOutput && allServicesOutput !== 'N/A') {
+    allServicesOutput.split('\n').forEach((line) => {
+      if (line.trim()) {
+        generalServices.all_services.push(line.trim());
+      }
+    });
+  }
+
+  generalServices.all_services = [...new Set(generalServices.all_services)];
+
+  return generalServices;
+}
+
+/**
  * Attempts to identify running databases and other common services.
  * This is heuristic-based and might not be exhaustive or perfectly accurate.
  * @returns {Promise<object>} - An object containing identified services.
@@ -620,48 +688,87 @@ async function getHardwareInfo() {
 
   return hardwareInfo;
 }
-
 /**
- * Main function to collect all system information.
- * This serves as the single entry point for the chatbot.
+ * Collects general system information except for processes and all services.
+ * This serves as the main entry point for collecting general system info.
  * @param {string} sessionId - The session ID for logging.
  * @param {string} [sshTarget=''] - The SSH target in 'user@hostname' format.
- * @returns {Promise<object>} - A JSON object containing the comprehensive system information.
+ * @returns {Promise<object>} - A JSON object containing the general system information.
  */
-async function collectSystemInfo(sessionId, sshTarget = '') {
-  logger.info(`[Session: ${sessionId}] Starting system information collection.`);
+async function collectGeneralSystemInfo(sessionId, sshTarget = '') {
+  logger.info(`[Session: ${sessionId}] Starting general system information collection.`);
 
-  // Determine if running in Docker
   await checkIfRunningInDocker();
-
-  // Initialize SSH configuration, prioritizing secrets over parameters
   await initializeSshConfig(sshTarget);
-
-  // Detect the target host's OS *after* determining if SSH will be used
-  // because the detection commands will be run on the target host.
   await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
 
   const systemInfo = {};
 
   try {
     systemInfo.general = await getGeneralInfo();
-    systemInfo.processes = await getProcessInfo();
     systemInfo.disk = await getDiskInfo();
     systemInfo.kernel = await getKernelInfo();
     systemInfo.network_services = await getNetworkServices();
     systemInfo.identified_services = await getIdentifiableServices();
     systemInfo.hardware = await getHardwareInfo();
 
-    logger.info(`[Session: ${sessionId}] System information collection completed successfully.`);
+    logger.info(`[Session: ${sessionId}] General system information collection completed successfully.`);
     return systemInfo;
   } catch (error) {
-    logger.error(`[Session: ${sessionId}] Failed to collect system information: ${error.message}`, error);
-    // Return a structured error for the chatbot to handle
-    return { error: 'Failed to collect system information', details: error.message };
+    logger.error(`[Session: ${sessionId}] Failed to collect general system information: ${error.message}`, error);
+    return { error: 'Failed to collect general system information', details: error.message };
   }
 }
 
-// Export the main collection function
+/**
+ * Collects only process information.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} [sshTarget=''] - The SSH target in 'user@hostname' format.
+ * @returns {Promise<object>} - A JSON object containing process information.
+ */
+async function collectProcessInfo(sessionId, sshTarget = '') {
+  logger.info(`[Session: ${sessionId}] Starting process information collection.`);
+
+  await checkIfRunningInDocker();
+  await initializeSshConfig(sshTarget);
+  await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
+
+  try {
+    const processes = await getProcessInfo();
+    logger.info(`[Session: ${sessionId}] Process information collection completed successfully.`);
+    return processes;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to collect process information: ${error.message}`, error);
+    return { error: 'Failed to collect process information', details: error.message };
+  }
+}
+
+/**
+ * Collects only service information (all services).
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} [sshTarget=''] - The SSH target in 'user@hostname' format.
+ * @returns {Promise<object>} - A JSON object containing all services information.
+ */
+async function collectAllServicesInfo(sessionId, sshTarget = '') {
+  logger.info(`[Session: ${sessionId}] Starting all services information collection.`);
+
+  await checkIfRunningInDocker();
+  await initializeSshConfig(sshTarget);
+  await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
+
+  try {
+    const allServices = await getServices();
+    logger.info(`[Session: ${sessionId}] All services information collection completed successfully.`);
+    return allServices;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to collect all services information: ${error.message}`, error);
+    return { error: 'Failed to collect all services information', details: error.message };
+  }
+}
+
+// Export the main collection functions
 module.exports = {
-  collectSystemInfo,
+  collectGeneralSystemInfo,
+  collectProcessInfo,
+  collectAllServicesInfo,
 };

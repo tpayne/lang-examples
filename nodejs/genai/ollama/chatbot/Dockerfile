@@ -5,8 +5,16 @@ ARG testbuild=
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
 # Combined apk install and upgrade
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
-     && apk -U upgrade
+RUN apk add --no-cache \
+     memcached supervisor openssl sshpass openrc \
+     bash \
+     procps \
+     util-linux \
+     iproute2 \
+     dmidecode \
+     openssh-client \
+     xdg-utils && \
+     apk -U upgrade
 
 WORKDIR /source
 

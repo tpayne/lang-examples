@@ -48,7 +48,7 @@ FROM node:lts-alpine${alpineVersion} AS runner
 
 # Combined apk install and upgrade
 RUN apk add --no-cache \
-     memcached supervisor openssl sshpass \
+     memcached supervisor openssl sshpass openrc \
      bash \
      procps \
      util-linux \

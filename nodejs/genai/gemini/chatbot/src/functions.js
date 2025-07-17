@@ -80,7 +80,9 @@ const {
 } = require('./dbfuncs'); // Import the new databaseUtils.js module
 
 const {
-  collectSystemInfo, // Import the system information collector function
+  collectGeneralSystemInfo,
+  collectProcessInfo,
+  collectAllServicesInfo,
 } = require('./getInfo'); // Import the new system-info-collector.js module
 
 /* eslint-disable max-len */
@@ -1058,12 +1060,55 @@ async function loadDatabaseFunctions(sessionId) {
 async function loadSystemInfoFunctions(sessionId) {
   await registerFunction(
     sessionId,
-    'collect_system_info',
-    collectSystemInfo,
-    [], // No parameters needed for this top-level function
-    'Collects comprehensive host machine information, including OS, CPU, memory, running processes, network services, identified databases/services, and hardware details. Returns the data in a structured JSON format.',
-    {}, // Empty parameter schema as it takes no direct arguments
-    [], // No required parameters
+    'collect_general_system_info',
+    collectGeneralSystemInfo,
+    // Updated parameter list to use a single sshTarget string
+    ['sshTarget'],
+    'Collects comprehensive host machine information, including OS, CPU, memory, network sockets, identified databases/services, and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    {
+      // Updated parameter schema for the single sshTarget string
+      sshTarget: {
+        type: 'string',
+        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+      },
+    },
+    [], // sshTarget is optional
+    true, // needsSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'collect_system_process_info',
+    collectProcessInfo,
+    // Updated parameter list to use a single sshTarget string
+    ['sshTarget'],
+    'Collects comprehensive host machine process information. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    {
+      // Updated parameter schema for the single sshTarget string
+      sshTarget: {
+        type: 'string',
+        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+      },
+    },
+    [], // sshTarget is optional
+    true, // needsSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'collect_system_service_info',
+    collectAllServicesInfo,
+    // Updated parameter list to use a single sshTarget string
+    ['sshTarget'],
+    'Collects comprehensive host machine network services and service details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    {
+      // Updated parameter schema for the single sshTarget string
+      sshTarget: {
+        type: 'string',
+        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+      },
+    },
+    [], // sshTarget is optional
     true, // needsSession is true
   );
 }
