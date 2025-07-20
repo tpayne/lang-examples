@@ -71,9 +71,6 @@ async function callKubernetesApi(sessionId, path, method = 'GET', body = null) {
 
     // WARNING: Skipping TLS verification is INSECURE and should ONLY be used for development/testing.
     if (skipTlsVerify) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error(`[Session: ${sessionId}] Skipping TLS verification is not allowed in production mode.`);
-      }
       logger.warn(`[Session: ${sessionId}] Skipping Kubernetes TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
       const insecureAgent = new https.Agent({
         rejectUnauthorized: false,

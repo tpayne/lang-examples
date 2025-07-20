@@ -374,12 +374,20 @@ async function readDockerSecret(secretPath) {
 /**
  * Initializes SSH configuration, prioritizing Docker secrets over passed parameters.
  * @param {string} sshTarget - SSH target in 'user@hostname' format (from function parameter).
+ * @returns {Promise<void|Error>} - Returns void if successful, throws Error if SSH target is provided but not found.
  */
 async function initializeSshConfig(sshTarget) {
-  logger.info('Attempting to initialize SSH configuration...');
+  logger.info(`Attempting to initialize SSH configuration for ${sshTarget}...`);
 
   let userFromParam = '';
   let hostFromParam = '';
+
+  // If sshTarget is not provided or does not contain '@', we cannot proceed with SSH
+  if (!sshTarget || (sshTarget && !sshTarget.includes('@'))) {
+    logger.warn('No valid sshTarget provided. SSH will not be used for host info.');
+    USE_SSH_FOR_HOST_INFO = false;
+    return;
+  }
 
   if (sshTarget) {
     const parts = sshTarget.split('@');
@@ -387,7 +395,7 @@ async function initializeSshConfig(sshTarget) {
       [userFromParam, hostFromParam] = parts;
     } else {
       logger.warn(`Invalid sshTarget format: "${sshTarget}". Expected 'user@hostname'.`);
-      return; // Exit if format is invalid
+      throw new Error(`Invalid sshTarget format: "${sshTarget}". Expected 'user@hostname'.`);
     }
   }
 
@@ -397,7 +405,12 @@ async function initializeSshConfig(sshTarget) {
     try {
       const secretMapContent = await readDockerSecret(SSH_PASSWORD_MAP_SECRET_PATH);
       if (secretMapContent) {
-        const passwordMap = JSON.parse(secretMapContent);
+        let passwordMap = {};
+        try {
+          passwordMap = JSON.parse(secretMapContent);
+        } catch (jsonErr) {
+          logger.error(`SSH password map secret is not valid JSON: ${jsonErr.message}`);
+        }
         passwordFromSecretMap = passwordMap[`${userFromParam}@${hostFromParam}`];
         if (passwordFromSecretMap) {
           logger.info(`Password found in Docker secret map for ${userFromParam}@${hostFromParam}.`);
@@ -416,9 +429,12 @@ async function initializeSshConfig(sshTarget) {
     SSH_HOST_PASSWORD = passwordFromSecretMap;
     USE_SSH_FOR_HOST_INFO = true;
     logger.info('SSH details loaded successfully.');
-  } else {
+  } else if (userFromParam && hostFromParam) {
     USE_SSH_FOR_HOST_INFO = false;
     logger.warn('No SSH details found in Docker for the provided target.');
+    throw new Error(`No SSH password found for target "${userFromParam}@${hostFromParam}".`);
+  } else {
+    USE_SSH_FOR_HOST_INFO = false;
   }
 
   if (USE_SSH_FOR_HOST_INFO) {
@@ -699,7 +715,13 @@ async function collectGeneralSystemInfo(sessionId, sshTarget = '') {
   logger.info(`[Session: ${sessionId}] Starting general system information collection.`);
 
   await checkIfRunningInDocker();
-  await initializeSshConfig(sshTarget);
+  try {
+    await initializeSshConfig(sshTarget);
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to get ssh info ${error.message}`, error);
+    return { error: 'Failed to get ssh info ', details: error.message };
+  }
+
   await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
 
   const systemInfo = {};
@@ -730,7 +752,13 @@ async function collectProcessInfo(sessionId, sshTarget = '') {
   logger.info(`[Session: ${sessionId}] Starting process information collection.`);
 
   await checkIfRunningInDocker();
-  await initializeSshConfig(sshTarget);
+  try {
+    await initializeSshConfig(sshTarget);
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to get ssh info ${error.message}`, error);
+    return { error: 'Failed to get ssh info ', details: error.message };
+  }
+
   await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
 
   try {
@@ -753,7 +781,13 @@ async function collectAllServicesInfo(sessionId, sshTarget = '') {
   logger.info(`[Session: ${sessionId}] Starting all services information collection.`);
 
   await checkIfRunningInDocker();
-  await initializeSshConfig(sshTarget);
+  try {
+    await initializeSshConfig(sshTarget);
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to get ssh info ${error.message}`, error);
+    return { error: 'Failed to get ssh info ', details: error.message };
+  }
+
   await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
 
   try {

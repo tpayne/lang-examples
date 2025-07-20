@@ -403,3 +403,4 @@ FodyWeavers.xsd
 .DS_Store
 **/target/
 .config/
+**/testbot.sh
