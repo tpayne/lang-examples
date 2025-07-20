@@ -30,8 +30,14 @@
 const net = require('net');
 // Import the 'os' module to get operating system specific information, like network interfaces
 const os = require('os');
-// Import the logger module as per the getInfo.js pattern
+// Import the logger module
+// Import dns for reverse lookups and util to promisify dns.reverse
+const dns = require('dns');
+const util = require('util');
 const logger = require('./logger'); // Assumes logger.js is in the same directory or adjust path
+
+// Promisify dns.reverse for async/await usage
+const reversePromise = util.promisify(dns.reverse);
 
 /**
  * Automatically determines the base IP address of the local network.
@@ -75,83 +81,121 @@ function getNetworkBaseIp(sessionId) {
  * @param {number} endRange - The ending last octet of the IP range (e.g., 254).
  * @param {number} port - The SSH port to check (default: 22).
  * @param {number} timeout - Connection timeout in milliseconds (default: 1000).
- * @returns {Promise&lt;string[]>} A promise that resolves to an array of IPs with open SSH ports.
+ * @returns {Promise&lt;Array&lt;{ip: string, hostname: string | null}>>} A promise that resolves to an array of objects
+ * with IP addresses and their corresponding hostnames (or null if not found) for open SSH ports.
  */
 async function scanNetworkForSSH(sessionId, baseIp, startRange = 1, endRange = 254, port = 22, timeout = 1000) {
   logger.info(`[Session: ${sessionId}] Starting SSH network scan for ${baseIp}.0/${startRange}-${endRange} on port ${port} with timeout ${timeout}ms.`);
   const openHosts = [];
-  const promises = []; // Array to hold all connection promises
-  let baseIpProvided = !!baseIp; // Check if baseIp is provided
 
-  if (!baseIpProvided) {
+  let effectiveBaseIp = baseIp;
+  if (!effectiveBaseIp) {
     logger.debug(`[Session: ${sessionId}] No base IP provided. Attempting to auto-detect...`);
-    baseIpProvided = getNetworkBaseIp(sessionId);
-    if (!baseIpProvided) {
+    effectiveBaseIp = getNetworkBaseIp(sessionId);
+    if (!effectiveBaseIp) {
       logger.error(`[Session: ${sessionId}] Unable to determine base IP address. Exiting scan.`);
-      return openHosts; // Return empty array if no base IP found
+      return openHosts;
     }
   }
 
-  for (let i = startRange; i &lt;= endRange; i += 1) { // Changed i++ to i += 1
-    const ip = `${baseIp}.${i}`;
+  const connectionPromises = [];
 
-    // Create a promise for each IP check and add it to the array
-    promises.push(new Promise((resolve) => {
+  for (let i = startRange; i &lt;= endRange; i += 1) {
+    const ip = `${effectiveBaseIp}.${i}`;
+
+    connectionPromises.push(new Promise((resolve) => {
       const socket = new net.Socket();
-      let connected = false;
+      let resolved = false; // Flag to ensure promise is resolved only once
+      let bannerHostname = null;
 
-      // Set a timeout for the connection attempt
+      // Helper to resolve the promise
+      const finishConnection = (success, hostname = null) => {
+        if (!resolved) {
+          resolved = true;
+          socket.destroy(); // Ensure socket is closed
+          resolve({ ip, success, bannerHostname: hostname });
+        }
+      };
+
       socket.setTimeout(timeout);
 
-      // Event listener for successful connection
+      // On successful connection
       socket.on('connect', () => {
-        connected = true;
-        logger.debug(`[Session: ${sessionId}] SSH port ${port} open on ${ip}`);
-        socket.destroy(); // Close the socket immediately after connection
-        resolve(true);
+        logger.debug(`[Session: ${sessionId}] SSH port ${port} open on ${ip}. Waiting for banner...`);
+        // Do not resolve yet, wait for banner data or subsequent timeout/error
       });
 
-      // Event listener for connection timeout
+      // On data received (expecting banner)
+      socket.on('data', (data) => {
+        const banner = data.toString().split('\n')[0]; // Get the first line
+        // Use array destructuring as per ESLint's 'prefer-destructuring' rule
+        // The first element of the array is the full match, the second is the first capturing group.
+        // Use || [] to handle cases where match() returns null (no match found)
+        const [, capturedHostname] = banner.match(/^SSH-2\.0-\S+\s(\S+)/) || [];
+
+        if (capturedHostname) { // Check if the captured group is not undefined/null
+          bannerHostname = capturedHostname;
+          logger.debug(`[Session: ${sessionId}] Found banner hostname for ${ip}: ${bannerHostname}`);
+        }
+        finishConnection(true, bannerHostname); // Resolve with success and captured banner hostname
+      });
+
+      // On timeout
       socket.on('timeout', () => {
-        if (!connected) {
-          logger.debug(`[Session: ${sessionId}] Connection to ${ip}:${port} timed out.`);
-          socket.destroy(); // Destroy the socket
-          resolve(false);
-        }
+        logger.debug(`[Session: ${sessionId}] Connection to ${ip}:${port} timed out.`);
+        finishConnection(false); // Resolve as failure
       });
 
-      // Event listener for connection errors (e.g., host unreachable, connection refused)
+      // On error
       socket.on('error', (err) => {
-        if (!connected) { // Prevent multiple resolutions
-          logger.debug(`[Session: ${sessionId}] Error connecting to ${ip}:${port}: ${err.message}`);
-          socket.destroy(); // Destroy the socket
-          resolve(false);
-        }
+        logger.debug(`[Session: ${sessionId}] Error connecting to ${ip}:${port}: ${err.message}`);
+        finishConnection(false); // Resolve as failure
       });
 
-      // Attempt to connect to the target IP and port
+      // Attempt to connect
       socket.connect(port, ip);
     }));
   }
 
-  // Await all promises concurrently
-  const results = await Promise.all(promises);
+  // Await all connection and banner-read promises concurrently
+  const connectionResults = await Promise.all(connectionPromises);
 
-  // Process results to populate openHosts
-  for (let i = 0; i &lt; results.length; i += 1) { // Changed i++ to i += 1
-    if (results[i]) { // If the promise resolved to true (connection open)
-      openHosts.push(`${baseIp}.${startRange + i}`); // Reconstruct IP based on original range and index
-    }
-  }
+  const hostnameResolutionTasks = connectionResults
+    .filter((result) => result.success) // Only process successfully connected IPs
+    .map(async (result) => {
+      let hostname = null;
+      try {
+        const dnsHostnames = await reversePromise(result.ip);
+        hostname = dnsHostnames[0] || null; // Prefer DNS hostname
+        if (hostname) {
+          logger.debug(`[Session: ${sessionId}] Resolved hostname via DNS for ${result.ip}: ${hostname}`);
+        } else {
+          logger.debug(`[Session: ${sessionId}] No DNS hostname for ${result.ip}.`);
+        }
+      } catch (err) {
+        logger.debug(`[Session: ${sessionId}] DNS error for ${result.ip}: ${err.message}`);
+      }
+
+      // Fallback to banner hostname if DNS lookup failed
+      if (!hostname &amp;&amp; result.bannerHostname) {
+        hostname = result.bannerHostname;
+        logger.debug(`[Session: ${sessionId}] Falling back to banner hostname for ${result.ip}: ${hostname}`);
+      }
+
+      return { ip: result.ip, hostname };
+    });
+
+  const resolvedHosts = await Promise.all(hostnameResolutionTasks);
+  openHosts.push(...resolvedHosts); // Add all resolved hosts to openHosts
 
   logger.info(`\n[Session: ${sessionId}] Scan complete!`);
   if (openHosts.length > 0) {
     logger.info(`[Session: ${sessionId}] Machines with SSH (port ${port}) open:`);
-    openHosts.forEach((host) => logger.info(`[Session: ${sessionId}] - ${host}`));
+    openHosts.forEach((host) => logger.info(`[Session: ${sessionId}] - ${host.ip}${host.hostname ? ` (${host.hostname})` : ''}`));
   } else {
     logger.info(`[Session: ${sessionId}] No machines with SSH (port ${port}) open found in the specified range.`);
   }
-  return openHosts; // Consistent return
+  return openHosts;
 }
 
 // Export the main scanning function and the IP detection function
@@ -174,7 +218,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Jul 20 2025 16:35:14 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sun Jul 20 2025 17:05:11 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
