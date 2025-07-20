@@ -57,7 +57,6 @@ function getNetworkBaseIp(sessionId) {
  * with IP addresses and their corresponding hostnames (or null if not found) for open SSH ports.
  */
 async function scanNetworkForSSH(sessionId, baseIp, startRange = 1, endRange = 254, port = 22, timeout = 1000) {
-  logger.info(`[Session: ${sessionId}] Starting SSH network scan for ${baseIp}.0/${startRange}-${endRange} on port ${port} with timeout ${timeout}ms.`);
   const openHosts = [];
 
   let effectiveBaseIp = baseIp;
@@ -69,6 +68,8 @@ async function scanNetworkForSSH(sessionId, baseIp, startRange = 1, endRange = 2
       return openHosts;
     }
   }
+
+  logger.info(`[Session: ${sessionId}] Starting SSH network scan for ${effectiveBaseIp}.0/${startRange}-${endRange} on port ${port} with timeout ${timeout}ms.`);
 
   const connectionPromises = [];
 

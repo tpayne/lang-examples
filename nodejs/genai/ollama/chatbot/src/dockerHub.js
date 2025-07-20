@@ -25,7 +25,7 @@ async function authenticateDockerHub(username, password) {
     const errorMessage = error.response
       ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
       : error.message;
-    logger.error(`Failed to authenticate with Docker Hub: ${errorMessage}`, error);
+    logger.error(`Failed to authenticate with Docker Hub for user ${username}: ${errorMessage}`, error);
     throw new Error(`Docker Hub authentication failed: ${errorMessage}`);
   }
 }
