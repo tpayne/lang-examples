@@ -85,6 +85,10 @@ const {
   collectAllServicesInfo,
 } = require('./getInfo'); // Import the new system-info-collector.js module
 
+const {
+  scanNetworkForSSH,
+} = require('./sshscan'); // Import the SSH scanning function
+
 /* eslint-disable max-len */
 
 /**
@@ -1058,6 +1062,38 @@ async function loadDatabaseFunctions(sessionId) {
  * @param {string} sessionId - The unique identifier for the session.
  */
 async function loadSystemInfoFunctions(sessionId) {
+  await registerFunction(
+    sessionId,
+    'scan_network_for_ssh',
+    scanNetworkForSSH,
+    ['baseIp', 'startRange', 'endRange', 'port', 'timeout'],
+    'Scans a network range for hosts with SSH (port 22 by default) open. Returns a list of reachable SSH targets in the format "ip:port". Useful for discovering available SSH endpoints on a subnet.',
+    {
+      baseIp: {
+        type: 'string',
+        description: 'The base IP address of the subnet to scan (e.g., "192.168.1").',
+      },
+      startRange: {
+        type: 'number',
+        description: 'The starting value for the last octet in the IP range (default: 1).',
+      },
+      endRange: {
+        type: 'number',
+        description: 'The ending value for the last octet in the IP range (default: 254).',
+      },
+      port: {
+        type: 'number',
+        description: 'The port to scan for SSH (default: 22).',
+      },
+      timeout: {
+        type: 'number',
+        description: 'Timeout in milliseconds for each connection attempt (default: 1000).',
+      },
+    },
+    [], // Only baseIp is strictly required, others have defaults
+    true, // needsSession is true
+  );
+
   await registerFunction(
     sessionId,
     'collect_general_system_info',
