@@ -83,6 +83,7 @@ const {
   collectGeneralSystemInfo,
   collectProcessInfo,
   collectAllServicesInfo,
+  testSshConnect,
 } = require('./getInfo'); // Import the new system-info-collector.js module
 
 const {
@@ -1101,6 +1102,24 @@ async function loadSystemInfoFunctions(sessionId) {
     // Updated parameter list to use a single sshTarget string
     ['sshTarget'],
     'Collects comprehensive host machine information, including OS, CPU, memory, network sockets, identified databases/services, and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    {
+      // Updated parameter schema for the single sshTarget string
+      sshTarget: {
+        type: 'string',
+        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+      },
+    },
+    [], // sshTarget is optional
+    true, // needsSession is true
+  );
+
+  await registerFunction(
+    sessionId,
+    'test_ssh_connect',
+    testSshConnect,
+    // Updated parameter list to use a single sshTarget string
+    ['sshTarget'],
+    'Perform a test connection only to a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found. Returns a success message if works.',
     {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
