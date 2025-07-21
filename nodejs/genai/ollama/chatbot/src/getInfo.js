@@ -146,6 +146,15 @@ const commandMap = {
     sunos: ['sysdef'], // Different command for system definition
     aix: ['lsattr -El sys0'], // System attributes
   },
+  hostname: {
+    linux: ['hostname', 'uname -n'],
+    darwin: ['hostname', 'uname -n'],
+    freebsd: ['hostname', 'uname -n'],
+    openbsd: ['hostname', 'uname -n'],
+    netbsd: ['hostname', 'uname -n'],
+    sunos: ['hostname', 'uname -n'],
+    aix: ['hostname', 'uname -n'],
+  },
   // Network interface configuration (legacy/modern)
   network_interface_config: {
     linux: ['ip addr show', 'ifconfig -a'], // ip is preferred
@@ -519,25 +528,28 @@ async function getGeneralInfo() {
 
   const generalInfo = {
     // Container-specific info (from Node.js os module)
-    container_info: {
-      hostname: os.hostname(),
-      platform: os.platform(),
-      type: os.type(),
-      release: os.release(),
-      arch: os.arch(),
-      uptime: os.uptime(), // in seconds
-      loadavg: os.loadavg(), // 1, 5, and 15 minute load averages
-      cpu_model: os.cpus()[0] ? os.cpus()[0].model : 'N/A',
-      cpu_cores: os.cpus().length,
-      cpu_speed: os.cpus()[0] ? os.cpus()[0].speed : 'N/A', // in MHz
-      total_memory_bytes: os.totalmem(),
-      free_memory_bytes: os.freemem(),
-      total_memory_gb: (os.totalmem() / (1024 ** 3)).toFixed(2),
-      free_memory_gb: (os.freemem() / (1024 ** 3)).toFixed(2),
-      network_interfaces: os.networkInterfaces(),
-    },
+    container_info: (checkIfRunningInDocker())
+      ? {
+        hostname: os.hostname(),
+        platform: os.platform(),
+        type: os.type(),
+        release: os.release(),
+        arch: os.arch(),
+        uptime: os.uptime(), // in seconds
+        loadavg: os.loadavg(), // 1, 5, and 15 minute load averages
+        cpu_model: os.cpus()[0] ? os.cpus()[0].model : 'N/A',
+        cpu_cores: os.cpus().length,
+        cpu_speed: os.cpus()[0] ? os.cpus()[0].speed : 'N/A', // in MHz
+        total_memory_bytes: os.totalmem(),
+        free_memory_bytes: os.freemem(),
+        total_memory_gb: (os.totalmem() / (1024 ** 3)).toFixed(2),
+        free_memory_gb: (os.freemem() / (1024 ** 3)).toFixed(2),
+        network_interfaces: os.networkInterfaces(),
+      }
+      : {},
     // Host-specific info (gathered via SSH or locally if not in Docker)
     host_info: {
+      hostname: await runCommand('hostname', true),
       detected_os: detectedOS,
       os_release: await runCommand('os_release_info', true),
       kernel_version: await runCommand('kernel_version_info', true),
@@ -764,14 +776,15 @@ async function getHardwareInfo() {
 
   return hardwareInfo;
 }
+
 /**
- * Collects general system information except for processes and all services.
+ * Collects basic system information except for processes and all services.
  * This serves as the main entry point for collecting general system info.
  * @param {string} sessionId - The session ID for logging.
  * @param {string} [sshTarget=''] - The SSH target in 'user@hostname' format.
  * @returns {Promise<object>} - A JSON object containing the general system information.
  */
-async function collectGeneralSystemInfo(sessionId, sshTarget = '') {
+async function collectBasicSystemInfo(sessionId, sshTarget = '') {
   logger.info(`[Session: ${sessionId}] Starting general system information collection.`);
 
   await checkIfRunningInDocker();
@@ -788,16 +801,47 @@ async function collectGeneralSystemInfo(sessionId, sshTarget = '') {
 
   try {
     systemInfo.general = await getGeneralInfo();
-    systemInfo.disk = await getDiskInfo();
-    systemInfo.kernel = await getKernelInfo();
-    systemInfo.network_services = await getNetworkServices();
-    systemInfo.identified_services = await getIdentifiableServices();
     systemInfo.hardware = await getHardwareInfo();
 
     logger.info(`[Session: ${sessionId}] General system information collection completed successfully.`);
     return systemInfo;
   } catch (error) {
     logger.error(`[Session: ${sessionId}] Failed to collect general system information: ${error.message}`, error);
+    return { error: 'Failed to collect general system information', details: error.message };
+  }
+}
+
+/**
+ * Collects detailed system information except for processes and all services.
+ * This serves as the main entry point for collecting general system info.
+ * @param {string} sessionId - The session ID for logging.
+ * @param {string} [sshTarget=''] - The SSH target in 'user@hostname' format.
+ * @returns {Promise<object>} - A JSON object containing the general system information.
+ */
+async function collectDetailedSystemInfo(sessionId, sshTarget = '') {
+  logger.info(`[Session: ${sessionId}] Starting general system information collection.`);
+
+  await checkIfRunningInDocker();
+  try {
+    await initializeSshConfig(sshTarget);
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to get ssh info ${error.message}`, error);
+    return { error: 'Failed to get ssh info ', details: error.message };
+  }
+
+  await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
+
+  const systemInfo = {};
+
+  try {
+    systemInfo.disk = await getDiskInfo();
+    systemInfo.kernel = await getKernelInfo();
+    systemInfo.network_services = await getNetworkServices();
+
+    logger.info(`[Session: ${sessionId}] Additional system information collection completed successfully.`);
+    return systemInfo;
+  } catch (error) {
+    logger.error(`[Session: ${sessionId}] Failed to collect additional system information: ${error.message}`, error);
     return { error: 'Failed to collect general system information', details: error.message };
   }
 }
@@ -851,9 +895,11 @@ async function collectAllServicesInfo(sessionId, sshTarget = '') {
   await detectOperatingSystem(USE_SSH_FOR_HOST_INFO || !(checkIfRunningInDocker()));
 
   try {
-    const allServices = await getServices();
+    const serviceInfo = {};
+    serviceInfo.all_services = await getServices();
+    serviceInfo.identifiable_services = await getIdentifiableServices();
     logger.info(`[Session: ${sessionId}] All services information collection completed successfully.`);
-    return allServices;
+    return serviceInfo;
   } catch (error) {
     logger.error(`[Session: ${sessionId}] Failed to collect all services information: ${error.message}`, error);
     return { error: 'Failed to collect all services information', details: error.message };
@@ -862,7 +908,8 @@ async function collectAllServicesInfo(sessionId, sshTarget = '') {
 
 // Export the main collection functions
 module.exports = {
-  collectGeneralSystemInfo,
+  collectBasicSystemInfo,
+  collectDetailedSystemInfo,
   collectProcessInfo,
   collectAllServicesInfo,
   testSshConnect,
