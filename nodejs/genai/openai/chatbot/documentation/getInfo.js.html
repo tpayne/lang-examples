@@ -471,6 +471,66 @@ async function initializeSshConfig(sshTarget) {
 }
 
 /**
+ * Tests SSH connectivity for a given sshTarget ('user@host').
+ * Checks:
+ *   1. Format is correct ('user@host')
+ *   2. Password exists in Docker secret for this target
+ *   3. SSH connection can be established (using sshpass)
+ * Returns true if all checks pass, otherwise throws an Error with the reason.
+ * @param {string} sessiondId - Session ID for logging purposes.
+ * @param {string} sshTarget - SSH target in 'user@hostname' format.
+ * @returns {Promise&lt;boolean>} - Resolves true if connection is successful.
+ * @throws {Error} - If any check fails, with a descriptive message.
+ */
+async function testSshConnect(sessiondId, sshTarget) {
+  logger.info(`Testing SSH connectivity for ${sessiondId} to ${sshTarget}...`);
+
+  // 1. Validate format
+  if (!sshTarget || typeof sshTarget !== 'string' || !sshTarget.includes('@')) {
+    throw new Error('Invalid sshTarget format specified. Expected "user@hostname".');
+  }
+  const [user, host] = sshTarget.split('@');
+  if (!user || !host) {
+    throw new Error('Invalid sshTarget format. Expected "user@hostname".');
+  }
+
+  // 2. Check password in Docker secret
+  const secretMapContent = await readDockerSecret(SSH_PASSWORD_MAP_SECRET_PATH);
+  if (!secretMapContent) {
+    throw new Error('Could not read Docker secret for SSH password map.');
+  }
+  let passwordMap;
+  try {
+    passwordMap = JSON.parse(secretMapContent);
+  } catch (e) {
+    throw new Error('SSH password map secret is not valid JSON.');
+  }
+  const password = passwordMap[`${user}@${host}`];
+  if (!password) {
+    throw new Error(`No SSH password found for target "${user}@${host}".`);
+  }
+
+  try {
+    await checkIfRunningInDocker();
+    await initializeSshConfig(sshTarget);
+  } catch (error) {
+    logger.warn(`SSH initialization failed: ${error.message}`);
+  }
+
+  // 3. Test SSH connection (non-interactive, no command, just exit)
+  try {
+    await runCommand('linux_platform', true);
+    logger.info(`SSH connection to ${user}@${host} successful.`);
+    return true;
+  } catch (err) {
+    let msg = err &amp;&amp; err.message ? err.message : String(err);
+    // Hide password in error message
+    msg = msg.replace(/-p '.*?'/, "-p '***'");
+    throw new Error(`SSH connection test failed: ${msg}`);
+  }
+}
+
+/**
  * Gathers general system information.
  * Note: Node.js `os` module calls reflect the environment where Node.js is running (the container).
  * Commands executed via `runCommand` with `targetHost=true` will attempt to get host info.
@@ -833,6 +893,7 @@ module.exports = {
   collectGeneralSystemInfo,
   collectProcessInfo,
   collectAllServicesInfo,
+  testSshConnect,
 };
 </code></pre>
         </article>
