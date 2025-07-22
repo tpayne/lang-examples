@@ -1102,12 +1102,12 @@ async function loadSystemInfoFunctions(sessionId) {
     collectBasicSystemInfo,
     // Updated parameter list to use a single sshTarget string
     ['sshTarget'],
-    'Collects basic host machine information, including OS, CPU, memory and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    'Collects basic host machine information, including OS, CPU, memory and hardware details. Returns the data in a structured JSON format. Can target a remote host via SSH with the username and password looked up from a Docker secret map if the username is not specified. Defaults to the Docker host if no SSH target is provided or password is not found.',
     {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1120,12 +1120,12 @@ async function loadSystemInfoFunctions(sessionId) {
     collectDetailedSystemInfo,
     // Updated parameter list to use a single sshTarget string
     ['sshTarget'],
-    'Collects additional host machine information, including disk, kernal and network socket details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    'Collects additional host machine information, including disk, kernal and network socket details. Returns the data in a structured JSON format. Can target a remote host via SSH with the username and password looked up from a Docker secret map if the username is not specified. Defaults to the Docker host if no SSH target is provided or password is not found.',
     {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1138,12 +1138,12 @@ async function loadSystemInfoFunctions(sessionId) {
     testSshConnect,
     // Updated parameter list to use a single sshTarget string
     ['sshTarget'],
-    'Perform a test connection only to a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found. Returns a success message if works.',
+    'Perform a test connection only to a remote host via SSH, with the username and password looked up from a Docker secret map if the username is not specified. Defaults to the Docker host if no SSH target is provided or password is not found. Returns a success message if works.',
     {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1156,12 +1156,12 @@ async function loadSystemInfoFunctions(sessionId) {
     collectProcessInfo,
     // Updated parameter list to use a single sshTarget string
     ['sshTarget'],
-    'Collects comprehensive host machine process information. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    'Collects comprehensive host machine process information. Returns the data in a structured JSON format. Can target a remote host via SSH with the username and password looked up from a Docker secret map if the username is not specified. Defaults to the Docker host if no SSH target is provided or password is not found.',
     {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1174,12 +1174,12 @@ async function loadSystemInfoFunctions(sessionId) {
     collectAllServicesInfo,
     // Updated parameter list to use a single sshTarget string
     ['sshTarget'],
-    'Collects comprehensive host machine network services, identified databases/services and service details. Returns the data in a structured JSON format. Can target a remote host via SSH using "user@hostname" format, with the password looked up from a Docker secret map. Defaults to the Docker host if no SSH target is provided or password is not found.',
+    'Collects comprehensive host machine network services, identified databases/services and service details. Returns the data in a structured JSON format. Can target a remote host via SSH with the username and password looked up from a Docker secret map if the username is not specified. Defaults to the Docker host if no SSH target is provided or password is not found.',
     {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target in "user@hostname" format (e.g., "admin@192.168.1.100"). The password for this target will be looked up from a Docker secret map.',
+        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional

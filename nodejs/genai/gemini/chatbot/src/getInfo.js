@@ -382,7 +382,8 @@ async function readDockerSecret(secretPath) {
 
 /**
  * Initializes SSH configuration, prioritizing Docker secrets over passed parameters.
- * @param {string} sshTarget - SSH target in 'user@hostname' format (from function parameter).
+ * If no username is specified, attempts to get one from the Docker secret that matches the machine name provided.
+ * @param {string} sshTarget - SSH target in 'user@hostname' or 'hostname' format.
  * @returns {Promise<void|Error>} - Returns void if successful, throws Error if SSH target is provided but not found.
  */
 async function initializeSshConfig(sshTarget) {
@@ -391,26 +392,31 @@ async function initializeSshConfig(sshTarget) {
   let userFromParam = '';
   let hostFromParam = '';
 
-  // If sshTarget is not provided or does not contain '@', we cannot proceed with SSH
-  if (!sshTarget || (sshTarget && !sshTarget.includes('@'))) {
-    logger.warn('No valid sshTarget provided. SSH will not be used for host info.');
+  // If sshTarget is not provided, we cannot proceed with SSH
+  if (!sshTarget) {
+    logger.error('No sshTarget provided. SSH will not be used for host info.');
     USE_SSH_FOR_HOST_INFO = false;
-    return;
+    throw new Error('No sshTarget provided. SSH configuration cannot proceed.');
   }
 
-  if (sshTarget) {
+  // Parse sshTarget: if it contains '@', split into user and host; else, only host is provided
+  if (sshTarget.includes('@')) {
     const parts = sshTarget.split('@');
     if (parts.length === 2) {
       [userFromParam, hostFromParam] = parts;
     } else {
-      logger.warn(`Invalid sshTarget format: "${sshTarget}". Expected 'user@hostname'.`);
-      throw new Error(`Invalid sshTarget format: "${sshTarget}". Expected 'user@hostname'.`);
+      logger.warn(`Invalid sshTarget format: "${sshTarget}". Expected 'user@hostname' or 'hostname'.`);
+      throw new Error(`Invalid sshTarget format: "${sshTarget}". Expected 'user@hostname' or 'hostname'.`);
     }
+  } else {
+    hostFromParam = sshTarget;
   }
 
-  // 1. Try to load password from Docker secret map
+  // Try to load password from Docker secret map
   let passwordFromSecretMap = null;
-  if (userFromParam && hostFromParam) {
+  let usernameFromSecretMap = null;
+
+  if (hostFromParam) {
     try {
       const secretMapContent = await readDockerSecret(SSH_PASSWORD_MAP_SECRET_PATH);
       if (secretMapContent) {
@@ -420,28 +426,56 @@ async function initializeSshConfig(sshTarget) {
         } catch (jsonErr) {
           logger.error(`SSH password map secret is not valid JSON: ${jsonErr.message}`);
         }
-        passwordFromSecretMap = passwordMap[`${userFromParam}@${hostFromParam}`];
-        if (passwordFromSecretMap) {
-          logger.info(`Password found in Docker secret map for ${userFromParam}@${hostFromParam}.`);
+
+        if (userFromParam) {
+          // Username specified: look for user@host
+          passwordFromSecretMap = passwordMap[`${userFromParam}@${hostFromParam}`];
+          if (passwordFromSecretMap) {
+            usernameFromSecretMap = userFromParam;
+            logger.info(`Password found in Docker secret map for ${userFromParam}@${hostFromParam}.`);
+          } else {
+            logger.warn(`No password found in Docker secret map for key: ${userFromParam}@${hostFromParam}.`);
+          }
         } else {
-          logger.warn(`No password found in Docker secret map for key: ${userFromParam}@${hostFromParam}.`);
+          // No username specified: try to find any username for this host
+          const foundEntry = Object.entries(passwordMap).find(([key, val]) => {
+            const [user, host] = key.split('@');
+            return host === hostFromParam && user && val;
+          });
+          if (foundEntry) {
+            [usernameFromSecretMap, hostFromParam] = foundEntry[0].split('@');
+            [, passwordFromSecretMap] = foundEntry;
+            logger.info(`Username "${usernameFromSecretMap}" and password found in Docker secret map for host ${hostFromParam}.`);
+          } else {
+            logger.warn(`No username found in Docker secret map for host: ${hostFromParam}.`);
+          }
         }
       }
     } catch (e) {
       logger.error(`Failed to parse SSH password map secret: ${e.message}`);
+      throw new Error(`Failed to parse SSH password map secret: ${e.message}`);
     }
   }
 
-  if (userFromParam && hostFromParam && passwordFromSecretMap) {
+  if (userFromParam && hostFromParam) {
+    if (!passwordFromSecretMap) {
+      USE_SSH_FOR_HOST_INFO = false;
+      throw new Error(`No SSH password found for target "${userFromParam}@${hostFromParam}".`);
+    }
     SSH_HOST_IP = hostFromParam;
     SSH_HOST_USER = userFromParam;
     SSH_HOST_PASSWORD = passwordFromSecretMap;
     USE_SSH_FOR_HOST_INFO = true;
     logger.info('SSH details loaded successfully.');
-  } else if (userFromParam && hostFromParam) {
+  } else if (usernameFromSecretMap && hostFromParam && passwordFromSecretMap) {
+    SSH_HOST_IP = hostFromParam;
+    SSH_HOST_USER = usernameFromSecretMap;
+    SSH_HOST_PASSWORD = passwordFromSecretMap;
+    USE_SSH_FOR_HOST_INFO = true;
+    logger.info(`SSH details loaded successfully from secret for ${SSH_HOST_USER}@${SSH_HOST_IP}.`);
+  } else if (hostFromParam && !usernameFromSecretMap) {
     USE_SSH_FOR_HOST_INFO = false;
-    logger.warn('No SSH details found in Docker for the provided target.');
-    throw new Error(`No SSH password found for target "${userFromParam}@${hostFromParam}".`);
+    throw new Error(`No username exists for machine "${hostFromParam}" in Docker secret map.`);
   } else {
     USE_SSH_FOR_HOST_INFO = false;
   }
@@ -452,14 +486,14 @@ async function initializeSshConfig(sshTarget) {
 }
 
 /**
- * Tests SSH connectivity for a given sshTarget ('user@host').
+ * Tests SSH connectivity for a given sshTarget ('user@host' or 'host').
  * Checks:
- *   1. Format is correct ('user@host')
- *   2. Password exists in Docker secret for this target
+ *   1. Format is correct ('user@host' or 'host')
+ *   2. Username and password exist in Docker secret for this target
  *   3. SSH connection can be established (using sshpass)
  * Returns true if all checks pass, otherwise throws an Error with the reason.
  * @param {string} sessiondId - Session ID for logging purposes.
- * @param {string} sshTarget - SSH target in 'user@hostname' format.
+ * @param {string} sshTarget - SSH target in 'user@hostname' or 'hostname' format.
  * @returns {Promise<boolean>} - Resolves true if connection is successful.
  * @throws {Error} - If any check fails, with a descriptive message.
  */
@@ -467,15 +501,27 @@ async function testSshConnect(sessiondId, sshTarget) {
   logger.info(`Testing SSH connectivity for ${sessiondId} to ${sshTarget}...`);
 
   // 1. Validate format
-  if (!sshTarget || typeof sshTarget !== 'string' || !sshTarget.includes('@')) {
-    throw new Error('Invalid sshTarget format specified. Expected "user@hostname".');
-  }
-  const [user, host] = sshTarget.split('@');
-  if (!user || !host) {
-    throw new Error('Invalid sshTarget format. Expected "user@hostname".');
+  if (!sshTarget || typeof sshTarget !== 'string') {
+    throw new Error('Invalid sshTarget specified. Expected "user@hostname" or "hostname".');
   }
 
-  // 2. Check password in Docker secret
+  let user = '';
+  let host = '';
+
+  if (sshTarget.includes('@')) {
+    const parts = sshTarget.split('@');
+    if (parts.length === 2) {
+      const [userPart, hostPart] = parts;
+      user = userPart;
+      host = hostPart;
+    } else {
+      throw new Error('Invalid sshTarget format. Expected "user@hostname" or "hostname".');
+    }
+  } else {
+    host = sshTarget;
+  }
+
+  // 2. Check username and password in Docker secret
   const secretMapContent = await readDockerSecret(SSH_PASSWORD_MAP_SECRET_PATH);
   if (!secretMapContent) {
     throw new Error('Could not read Docker secret for SSH password map.');
@@ -486,22 +532,41 @@ async function testSshConnect(sessiondId, sshTarget) {
   } catch (e) {
     throw new Error('SSH password map secret is not valid JSON.');
   }
-  const password = passwordMap[`${user}@${host}`];
-  if (!password) {
-    throw new Error(`No SSH password found for target "${user}@${host}".`);
+
+  let password = null;
+  let foundUser = user;
+
+  if (user) {
+    password = passwordMap[`${user}@${host}`];
+    if (!password) {
+      throw new Error(`No SSH password found for target "${user}@${host}".`);
+    }
+  } else {
+    // No username specified: try to find any username for this host
+    const foundEntry = Object.entries(passwordMap).find(([key, val]) => {
+      const [entryUser, entryHost] = key.split('@');
+      return entryHost === host && entryUser && val;
+    });
+    if (foundEntry) {
+      [foundUser, host] = foundEntry[0].split('@');
+      [, password] = foundEntry;
+    } else {
+      throw new Error(`No username exists for machine "${host}" in Docker secret map.`);
+    }
   }
 
   try {
     await checkIfRunningInDocker();
-    await initializeSshConfig(sshTarget);
+    await initializeSshConfig(foundUser ? `${foundUser}@${host}` : host);
   } catch (error) {
     logger.warn(`SSH initialization failed: ${error.message}`);
+    throw error;
   }
 
   // 3. Test SSH connection (non-interactive, no command, just exit)
   try {
     await runCommand('linux_platform', true);
-    logger.info(`SSH connection to ${user}@${host} successful.`);
+    logger.info(`SSH connection to ${foundUser}@${host} successful.`);
     return true;
   } catch (err) {
     let msg = err && err.message ? err.message : String(err);
@@ -759,7 +824,8 @@ async function getHardwareInfo() {
         hardwareInfo.detailed_hardware_info = JSON.parse(lshwOutput);
       } else if (detectedOS.platform === 'darwin' && lshwOutput.includes('{') && lshwOutput.includes('}')) {
         // For macOS, system_profiler SPHardwareDataType -json returns JSON
-        hardwareInfo.detailed_hardware_info = JSON.parse(lshwOutput);
+        const parsedOutput = JSON.parse(lshwOutput);
+        hardwareInfo.detailed_hardware_info = parsedOutput;
       } else {
         hardwareInfo.detailed_hardware_info = lshwOutput; // Store raw output
       }
