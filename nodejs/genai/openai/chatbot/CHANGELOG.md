@@ -1,4 +1,6 @@
 # Changelog
+## 2025-07-23	(21:47:17-UTC+0000)
+- **Other**: Update databaseChat.md (in nodejs/genai/openai/chatbot/samples/databaseChat.md)
 ## 2025-07-23	(19:53:16-UTC+0000)
 - **Other**: Create cmdbDiscover.md (in nodejs/genai/openai/chatbot/samples/cmdbDiscover.md)
 ## 2025-07-22	(17:31:48-UTC+0000)
