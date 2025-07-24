@@ -1127,9 +1127,9 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
 
     const fileProcessingPromises = filesToProcess.map(async (relativeFilePath) => {
       const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
-      let AdoDestPath;
+      let adoDestPath;
       const fileResult = {
-        file: relativeFilePath, success: false, message: 'Processing...', AdoPath: null,
+        file: relativeFilePath, success: false, message: 'Processing...', adoPath: null,
       };
 
       let shouldProcessFile = true;
@@ -1140,13 +1140,13 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
         if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || (relativeFilePathNormalized === cleanRepoDirNameNormalized)) {
           const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName);
           const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath);
-          AdoDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
+          adoDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
         } else {
           shouldProcessFile = false;
           logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified repoDirName "${cleanRepoDirName}" scope.`);
         }
       } else {
-        AdoDestPath = relativeFilePath;
+        adoDestPath = relativeFilePath;
       }
 
       if (!shouldProcessFile) {
@@ -1155,27 +1155,27 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
         return fileResult;
       }
 
-      AdoDestPath = AdoDestPath.replace(/\\/g, '/');
-      if (AdoDestPath.startsWith('/')) AdoDestPath = AdoDestPath.substring(1);
+      adoDestPath = adoDestPath.replace(/\\/g, '/');
+      if (adoDestPath.startsWith('/')) adoDestPath = adoDestPath.substring(1);
 
-      if (AdoDestPath === '.' || AdoDestPath === '' || AdoDestPath === '/') {
+      if (adoDestPath === '.' || adoDestPath === '' || adoDestPath === '/') {
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
         fileResult.success = true;
         fileResult.message = 'Skipped commit for root or empty path.';
-        fileResult.AdoPath = AdoDestPath;
+        fileResult.adoPath = adoDestPath;
         return fileResult;
       }
 
       logger.debug(`Processing file: ${relativeFilePath}`);
       logger.debug(`  Full local path: ${fullLocalFilePath}`);
-      logger.debug(`  Azure DevOps destination path: ${AdoDestPath}`);
+      logger.debug(`  Azure DevOps destination path: ${adoDestPath}`);
 
       try {
         const localContent = await fs.promises.readFile(fullLocalFilePath);
         const localBase64Content = localContent.toString('base64');
         let currentItem = null;
 
-        const getItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(AdoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
+        const getItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(adoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
         try {
           const getItemResponse = await superagent
             .get(getItemUrl)
@@ -1185,23 +1185,23 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
           if (getItemResponse.status === 200) {
             currentItem = getItemResponse.body;
             if (currentItem.content === localBase64Content) {
-              logger.info(`Content of file "${AdoDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
+              logger.info(`Content of file "${adoDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
               fileResult.success = true;
               fileResult.message = 'Content identical, skipped commit.';
-              fileResult.AdoPath = AdoDestPath;
+              fileResult.adoPath = adoDestPath;
               return fileResult;
             }
           }
         } catch (getItemError) {
           if (getItemError.status !== 404) {
-            logger.warn(`Error checking existing file "${AdoDestPath}": ${getItemError.message}`);
+            logger.warn(`Error checking existing file "${adoDestPath}": ${getItemError.message}`);
           }
         }
         // Push the change to the changes array (declared outside the map function)
         changes.push({
           changeType: currentItem ? 2 : 1,
           item: {
-            path: AdoDestPath,
+            path: adoDestPath,
           },
           newContent: {
             content: localContent.toString('utf8'),
@@ -1211,13 +1211,13 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
 
         fileResult.success = true;
         fileResult.message = currentItem ? 'Scheduled for update' : 'Scheduled for addition';
-        fileResult.AdoPath = AdoDestPath;
+        fileResult.adoPath = adoDestPath;
         return fileResult;
       } catch (fileReadError) {
         logger.error(`Error reading local file ${fullLocalFilePath}: ${fileReadError.message}`);
         fileResult.success = false;
         fileResult.message = `Failed to read local file: ${fileReadError.message}`;
-        fileResult.AdoPath = AdoDestPath;
+        fileResult.adoPath = adoDestPath;
         return fileResult;
       }
     });
