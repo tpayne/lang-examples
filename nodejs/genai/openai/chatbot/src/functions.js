@@ -2,6 +2,22 @@ const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 const logger = require('./logger');
 
 const {
+  checkBranchExists,
+  checkRepoExists,
+  commitFiles,
+  createBranch,
+  createGithubPullRequest,
+  createRepo,
+  fetchRepoContentsRecursive,
+  listBranches,
+  listCommitHistory,
+  listDirectoryContents,
+  listGitHubActions,
+  listPublicRepos,
+  switchBranch,
+} = require('./gitFunctions'); // Assuming gitFunctions.js now contains the Azo functions
+
+const {
   checkAzoBranchExists,
   checkAzoRepoExists,
   commitAzoFiles,
@@ -15,7 +31,7 @@ const {
   listAzoPipelines,
   listAzoRepos,
   switchAzoBranch,
-} = require('./gitFunctions'); // Assuming gitFunctions.js now contains the Azo functions
+} = require('./azoFunctions'); // Assuming gitFunctions.js now contains the Azo functions
 
 const {
   codeReviews,
@@ -671,7 +687,6 @@ async function loadAzoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'branchName'],
   );
 }
-
 
 /**
  * Registers the Google Maps Directions API function with the function registry.

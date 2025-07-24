@@ -12,7 +12,7 @@ const {
 
 // Azure DevOps specific constants - these would ideally come from environment variables or configuration
 const AZURE_DEVOPS_API_VERSION = '7.1-preview.1'; // Or newer
-const AZURE_DEVOPS_PAT = process.env.AZURE_DEVOPS_PAT; // Personal Access Token
+const { AZURE_DEVOPS_PAT } = process.env; // Personal Access Token
 const USER_AGENT = 'AIBot-AzureDevOps'; // Custom user agent
 
 /**
@@ -61,7 +61,7 @@ function handleNotFoundError(error, context = '') {
   const isNotFound = (error.response && error.response.status === 404) || error.message.includes('Not Found');
   if (isNotFound) {
     throw new Error(
-      `Resource Not Found ${context}: Please check the provided details (organization, project, repository, path, branch).`
+      `Resource Not Found ${context}: Please check the provided details (organization, project, repository, path, branch).`,
     );
   }
   throw error;
@@ -74,7 +74,7 @@ function handleNotFoundError(error, context = '') {
  * @param {string} [context=''] Optional context for the error message.
  * @throws {Error} Custom error detailing the Azure DevOps API error.
  */
-async function handleAzureDevOpsApiError(response, context = '') {
+async function handleAzureDevopsApiError(response, context = '') {
   logger.error(
     `Azure DevOps API Error ${context} (status):`,
     response.status,
@@ -201,11 +201,8 @@ const BINARY_EXTENSIONS = new Set([
  * @param {string} repoName The name of the repository.
  * @param {string} repoDirName The current path being fetched within the repository.
  * @param {string} branchName The branch name to fetch from.
- * @param {string} [initialRepoDirName=repoDirName] The original path from the first call to this function.
  * @param {string} [localDestPath=null] Optional local destination path.
  * @param {boolean} [skipBinaryFiles=true] Whether to skip downloading files likely to be binary.
- * @param {number} [retryCount=0] Internal retry counter.
- * @param {number} [maxRetries=3] Maximum number of retries for API requests.
  */
 async function fetchAzoRepoContentsRecursive(
   sessionId,
@@ -214,11 +211,8 @@ async function fetchAzoRepoContentsRecursive(
   repoName,
   repoDirName,
   branchName,
-  initialRepoDirName = repoDirName,
   localDestPath = null,
   skipBinaryFiles = true,
-  retryCount = 0,
-  maxRetries = 3,
 ) {
   let baseLocalDestPath;
   if (localDestPath) {
@@ -251,7 +245,8 @@ async function fetchAzoRepoContentsRecursive(
         response,
         ` for repository ${organization}/${project}/${repoName} at path "${repoDirName}"`,
       );
-      return { success: false, message: `Azure DevOps API error: HTTP ${response.status} for ${apiUrl}` };
+      // This line will not be reached as handleNotFoundError throws
+      // return { success: false, message: `Azure DevOps API error: HTTP ${response.status} for ${apiUrl}` };
     }
 
     const items = response.body.value; // Azure DevOps responses often have a 'value' array
@@ -260,53 +255,51 @@ async function fetchAzoRepoContentsRecursive(
       // This case might happen if querying for a single file directly
       logger.warn(`Expected an array of items from Azure DevOps API for path "${repoDirName}", but received: ${typeof items} [Session: ${sessionId}]`);
       if (items && items.gitItemType === 'File' && items.url) { // Check for single file
-          const filePath = path.join(baseLocalDestPath, items.path);
+        const filePath = path.join(baseLocalDestPath, items.path);
 
-          if (skipBinaryFiles) {
-              const extension = path.extname(items.path).toLowerCase();
-              if (BINARY_EXTENSIONS.has(extension)) {
-                  logger.info(`Skipping potential binary single file: "${items.path}" (Extension: ${extension}) [Session: ${sessionId}]`);
-                  return { success: true, message: `Skipped potential binary single file at path "${repoDirName}"` };
-              }
+        if (skipBinaryFiles) {
+          const extension = path.extname(items.path).toLowerCase();
+          if (BINARY_EXTENSIONS.has(extension)) {
+            logger.info(`Skipping potential binary single file: "${items.path}" (Extension: ${extension}) [Session: ${sessionId}]`);
+            return { success: true, message: `Skipped potential binary single file at path "${repoDirName}"` };
+          }
+        }
+
+        try {
+          const parentDir = path.dirname(filePath);
+          if (parentDir !== baseLocalDestPath && parentDir !== os.tmpdir()) {
+            if (parentDir.startsWith(baseLocalDestPath)) {
+              logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
+              await mkdir(parentDir);
+            } else {
+              logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
+              throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
+            }
+          } else {
+            logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
           }
 
-          try {
-              const parentDir = path.dirname(filePath);
-              if (parentDir !== baseLocalDestPath && parentDir !== os.tmpdir()) {
-                  if (parentDir.startsWith(baseLocalDestPath)) {
-                      logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
-                      await mkdir(parentDir);
-                  } else {
-                      logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
-                      throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
-                  }
-              } else {
-                  logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
-              }
-
-              // Use the new Azure DevOps specific download function
-              await downloadAzoFile(sessionId, organization, project, repoName, items.path, branchName, filePath);
-              return { success: true, message: `Processed single item at path "${repoDirName}"` };
-          } catch (error) {
-              const errorMessage = error.message || error;
-              const errorDetails = error.response ? `Status: ${error.response.status}, Text: ${error.response.text}` : 'No response details';
-              logger.error(
-                  `Error downloading single file "${items.path}" "${filePath}" [Session: ${sessionId}]: `
-                  + `${errorMessage} - ${errorDetails}`,
-                  error,
-              );
-              return {
-                  success: false,
-                  message: `Error downloading single file "${items.path}": ${errorMessage} - ${errorDetails}`,
-              };
-          }
+          // Use the new Azure DevOps specific download function
+          await downloadAzoFile(sessionId, organization, project, repoName, items.path, branchName, filePath);
+          return { success: true, message: `Processed single item at path "${repoDirName}"` };
+        } catch (error) {
+          const errorMessage = error.message || error;
+          const errorDetails = error.response ? `Status: ${error.response.status}, Text: ${error.response.text}` : 'No response details';
+          logger.error(
+            `Error downloading single file "${items.path}" "${filePath}" [Session: ${sessionId}]: `
+            + `${errorMessage} - ${errorDetails}`,
+            error,
+          );
+          throw new Error(
+            `Error downloading single file "${items.path}": ${errorMessage} - ${errorDetails}`,
+          );
+        }
       }
       return { success: true, message: `Processed non-file single item at path "${repoDirName}"` };
     }
 
-
-    for (const item of items) {
-      // item.path from Azure DevOps API is usually the full path from repo root
+    // Refactor to use Promise.all for concurrent downloads
+    const downloadPromises = items.map(async (item) => {
       const currentLocalPath = path.join(baseLocalDestPath, item.path);
 
       if (item.gitItemType === 'File') {
@@ -314,7 +307,7 @@ async function fetchAzoRepoContentsRecursive(
           const extension = path.extname(item.path).toLowerCase();
           if (BINARY_EXTENSIONS.has(extension)) {
             logger.info(`Skipping potential binary file: "${item.path}" (Extension: ${extension}) [Session: ${sessionId}]`);
-            continue;
+            return null; // Return null to indicate skipping
           }
         }
         try {
@@ -325,8 +318,8 @@ async function fetchAzoRepoContentsRecursive(
             logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
             throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
           }
-          // Use the new Azure DevOps specific download function
           await downloadAzoFile(sessionId, organization, project, repoName, item.path, branchName, currentLocalPath);
+          return { success: true, message: `Downloaded file "${item.path}"` };
         } catch (error) {
           const errorMessage = error.message || error;
           const errorDetails = error.response
@@ -337,23 +330,25 @@ async function fetchAzoRepoContentsRecursive(
             + `${errorMessage} - ${errorDetails}`,
             error,
           );
-          return {
-            success: false,
-            message: `Error downloading file "${item.path}": ${errorMessage} - ${errorDetails}`,
-          };
+          throw new Error(
+            `Error downloading file "${item.path}": ${errorMessage} - ${errorDetails}`,
+          );
         }
       } else if (item.gitItemType === 'Folder') {
-        // Recursive call is handled by recursionLevel=Full in the initial API call for Azure DevOps
-        // So, no need for a separate recursive call here for subdirectories IF recursionLevel=Full is used.
-        // If recursionLevel=OneLevel was used, then a recursive call would be needed.
         logger.debug(`Found folder: ${item.path}. Content should be included by recursionLevel=Full.`);
-      } else {
-        logger.warn(`Unknown item type "${item.gitItemType}" for item: ${item.path} [Session: ${sessionId}]`);
+        return { success: true, message: `Processed folder "${item.path}"` };
       }
-    }
+      logger.warn(`Unknown item type "${item.gitItemType}" for item: ${item.path} [Session: ${sessionId}]`);
+      return { success: false, message: `Unknown item type "${item.gitItemType}" for item: ${item.path}` };
+    });
+
+    const downloadResults = await Promise.all(downloadPromises);
+    const successfulDownloads = downloadResults.filter((result) => result !== null);
+
     return {
       success: true,
       message: `Successfully processed directory "${repoDirName}"`,
+      downloadResults: successfulDownloads,
     };
   } catch (error) {
     const errorMessage = error.message || error;
@@ -371,9 +366,8 @@ async function fetchAzoRepoContentsRecursive(
           ? (error.response.body.message || JSON.stringify(error.response.body))
           : `Failed to download repo contents. Status: ${error.response.status}`,
       );
-    } else {
-      throw error;
     }
+    throw error;
   }
 }
 
@@ -396,10 +390,15 @@ async function listAzoRepos(organization, project) {
     if (response.status === 200) {
       return response.body.value.map((repo) => repo.name);
     }
-    await handleAzureDevOpsApiError(response, `listing repos for ${organization}/${project}`);
+    // If status is not 200, an error is thrown by handleAzureDevopsApiError
+    await handleAzureDevopsApiError(response, `listing repos for ${organization}/${project}`);
+    // This line is unreachable, but added for consistent-return if the linter requires it
+    return [];
   } catch (error) {
     logger.error('Error listing repos (exception - Azure DevOps):', organization, project, error);
     handleNotFoundError(error, ` for organization "${organization}" and project "${project}"`);
+    // This line is unreachable, but added for consistent-return if the linter requires it
+    throw error;
   }
 }
 
@@ -427,10 +426,12 @@ async function getAzoDefaultBranch(organization, project, repoName) {
       logger.debug(`Default branch for ${organization}/${project}/${repoName} is: ${branchName}`);
       return branchName;
     }
-    await handleAzureDevOpsApiError(response, `getting default branch for ${organization}/${project}/${repoName}`);
+    await handleAzureDevopsApiError(response, `getting default branch for ${organization}/${project}/${repoName}`);
+    return ''; // Unreachable, but for consistent-return
   } catch (error) {
     logger.error('Error getting default branch (exception - Azure DevOps):', organization, project, repoName, error);
     handleNotFoundError(error, ` for repository ${organization}/${project}/${repoName}`);
+    throw error; // Unreachable, but for consistent-return
   }
 }
 
@@ -453,12 +454,14 @@ async function listAzoBranches(organization, project, repoName) {
 
     if (response.status === 200) {
       // Azure DevOps returns refs like { "name": "refs/heads/main", ... }
-      return response.body.value.map((ref) => ref.name.startsWith('refs/heads/') ? ref.name.substring('refs/heads/'.length) : ref.name);
+      return response.body.value.map((ref) => (ref.name.startsWith('refs/heads/') ? ref.name.substring('refs/heads/'.length) : ref.name));
     }
-    await handleAzureDevOpsApiError(response, `listing branches for ${organization}/${project}/${repoName}`);
+    await handleAzureDevopsApiError(response, `listing branches for ${organization}/${project}/${repoName}`);
+    return []; // Unreachable, but for consistent-return
   } catch (error) {
     logger.error('Error listing branches (exception - Azure DevOps):', organization, project, repoName, error);
     handleNotFoundError(error, ` for repository ${organization}/${project}/${repoName}`);
+    throw error; // Unreachable, but for consistent-return
   }
 }
 
@@ -470,7 +473,7 @@ async function listAzoBranches(organization, project, repoName) {
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository.
  * @param {string} repoDirName The path to the file or directory within the repository.
- * @returns {Promise<Array<{ commitId: string, comment: string, author: { name: string, email: string, date: string } }>>}
+ * @returns {Promise<Array<{ sha: string, message: string, author: string, date: string }>>}
  * Array of commit history objects.
  * @throws {Error} If API requests fail or file/directory not found.
  */
@@ -485,13 +488,13 @@ async function listAzoCommitHistory(organization, project, repoName, repoDirName
       .set('User-Agent', USER_AGENT);
 
     if (contentsResponse.status === 200 && (!contentsResponse.body || contentsResponse.body.count === 0)) {
-        throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
+      throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
     }
   } catch (contentsError) {
     logger.error('Error fetching path contents (exception - Azure DevOps):', organization, project, repoName, repoDirName, contentsError);
     // Re-throw if it's a 404 or other network issue
     if (contentsError.response && contentsError.response.status === 404) {
-        throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
+      throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
     }
     throw contentsError; // Re-throw other errors
   }
@@ -512,10 +515,12 @@ async function listAzoCommitHistory(organization, project, repoName, repoDirName
         date: commit.author.date,
       }));
     }
-    await handleAzureDevOpsApiError(commitResponse, `listing commit history for "${repoDirName}" in "${organization}/${project}/${repoName}"`);
+    await handleAzureDevopsApiError(commitResponse, `listing commit history for "${repoDirName}" in "${organization}/${project}/${repoName}"`);
+    return []; // Unreachable, but for consistent-return
   } catch (error) {
     logger.error('Error listing commit history (exception - Azure DevOps):', organization, project, repoName, repoDirName, error);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${organization}/${project}/${repoName}"`);
+    throw error; // Unreachable, but for consistent-return
   }
 }
 
@@ -571,7 +576,8 @@ async function listAzoDirectoryContents(
         logger.warn(`Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`);
         return [];
       }
-      logger.warn(`Expected array of contents for "${repoDirName}" on branch "${effectiveBranchName}", but received unexpected type: ${response.body ? response.body.gitItemType : typeof response.body}`);
+      logger.warn(`Expected array of contents for "${repoDirName}" on branch `
+        + `"${effectiveBranchName}", but received unexpected type: ${response.body ? response.body.gitItemType : typeof response.body}`);
       throw new Error(`Unexpected response type for "${repoDirName}" on branch "${effectiveBranchName}".`);
     }
 
@@ -583,7 +589,8 @@ async function listAzoDirectoryContents(
       return [];
     }
 
-    for (const item of contents) {
+    // Refactor to use Array.prototype.map for processing items
+    contents.forEach((item) => {
       // Azure DevOps item.path is the full path from repo root
       if (item.gitItemType === 'File') {
         results.push({
@@ -597,10 +604,6 @@ async function listAzoDirectoryContents(
           type: 'dir',
           path: item.path,
         });
-        // If recursive, and we requested OneLevel, we'd make nested calls.
-        // But with recursionLevel=Full, the API already returns all nested items.
-        // So, if recursionLevel=Full was used, we don't need to recursively call.
-        // The current loop processes all items already fetched.
       } else {
         results.push({
           name: path.basename(item.path),
@@ -608,11 +611,11 @@ async function listAzoDirectoryContents(
           path: item.path,
         });
       }
-    }
+    });
     return results;
   } catch (error) {
     const status = (error.response && error.response.status) || 'N/A';
-    const errorMessage = (error.response && error.response.body && error.response.body.message) || error.message || error;
+    const errorMessage = (error.response && error.response.body && (error.response.body.message || error.response.body.value)) || error.message || error;
     logger.error(
       `Error listing directory contents for "${organization}/${project}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}" [Status: ${status}]: ${errorMessage}`,
       error,
@@ -625,14 +628,13 @@ async function listAzoDirectoryContents(
           ` for path "${repoDirName}" on branch "${effectiveBranchName}" in "${organization}/${project}/${repoName}"`,
         );
       } else {
-        handleAzureDevOpsApiError(
+        handleAzureDevopsApiError(
           error.response,
           ` listing contents for "${organization}/${project}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}"`,
         );
       }
-    } else {
-      throw error;
     }
+    throw error; // Ensure an error is always thrown on failure paths
   }
 }
 
@@ -676,7 +678,8 @@ async function createAzoPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleAzureDevOpsApiError(response, `creating pull request for ${organization}/${project}/${repoName}`);
+    await handleAzureDevopsApiError(response, `creating pull request for ${organization}/${project}/${repoName}`);
+    return {}; // Unreachable, but for consistent-return
   } catch (error) {
     logger.error(`Error creating pull request (exception - Azure DevOps):, ${error.message}`);
     if (error.response) {
@@ -685,9 +688,8 @@ async function createAzoPullRequest(
         throw new Error('Not Found: Check organization, project, repo and branch names.');
       }
       throw new Error(error.response.body.message || 'Failed to create PR');
-    } else {
-      throw error;
     }
+    throw error;
   }
 }
 
@@ -706,15 +708,7 @@ async function createAzoPullRequest(
  */
 async function listAzoPipelines(organization, project, repoName, statusFilter = 'inProgress') {
   // First, get the repository ID from its name
-  let repoId = repoName; // Placeholder, assuming repoName works, but ID is preferred
-
-  // In a real scenario, you'd make a call to get the repo ID if 'repoName' wasn't guaranteed to be the ID:
-  // const repoDetails = await checkAzoRepoExists(organization, project, repoName);
-  // if (repoDetails.exists) {
-  //   repoId = repoDetails.id;
-  // } else {
-  //   throw new Error(`Repository '${repoName}' not found in project '${project}'.`);
-  // }
+  const repoId = repoName; // Placeholder, assuming repoName works, but ID is preferred
 
   const urlRuns = `https://dev.azure.com/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&repositoryType=TfsGit&statusFilter=${statusFilter}&api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
@@ -729,9 +723,8 @@ async function listAzoPipelines(organization, project, repoName, statusFilter = 
       return [];
     }
 
-    const pipelineJobs = [];
-    for (const build of builds) {
-      // For detailed job information, you usually need to fetch the timeline of a build
+    // Refactor to use Promise.all for concurrent timeline fetching
+    const pipelineJobsPromises = builds.map(async (build) => {
       const urlTimeline = `https://dev.azure.com/${organization}/${project}/_apis/build/builds/${build.id}/timeline?api-version=${AZURE_DEVOPS_API_VERSION}`;
       const timelineResponse = await superagent
         .get(urlTimeline)
@@ -739,13 +732,12 @@ async function listAzoPipelines(organization, project, repoName, statusFilter = 
         .set('User-Agent', USER_AGENT);
 
       const timeline = timelineResponse.body.records;
+      const jobsForBuild = [];
 
       if (timeline) {
         timeline.forEach((record) => {
-          // A record can be a phase, job, task. Filter for 'job' type.
-          // And check its state (e.g., 'inProgress', 'queued', 'completed', 'failed')
           if (record.type === 'Job' && (record.state === 'inProgress' || record.state === 'queued' || record.state === 'pending')) {
-            pipelineJobs.push({
+            jobsForBuild.push({
               buildId: build.id,
               buildNumber: build.buildNumber,
               definitionName: build.definition ? build.definition.name : 'N/A',
@@ -757,8 +749,14 @@ async function listAzoPipelines(organization, project, repoName, statusFilter = 
           }
         });
       }
-    }
-    return pipelineJobs;
+      return jobsForBuild;
+    });
+
+    const allPipelineJobsArrays = await Promise.all(pipelineJobsPromises);
+    // Flatten the array of arrays into a single array
+    const allPipelineJobs = [].concat(...allPipelineJobsArrays);
+
+    return allPipelineJobs;
   } catch (error) {
     logger.error(`Error listing Azure DevOps Pipelines (exception): ${organization} ${project} ${repoName} ${statusFilter} ${error}`);
     if (error.response) {
@@ -767,9 +765,8 @@ async function listAzoPipelines(organization, project, repoName, statusFilter = 
         throw new Error('Not Found: Check organization, project, and repo names.');
       }
       throw new Error(error.response.body.message || 'Failed to list pipelines');
-    } else {
-      throw error;
     }
+    throw error;
   }
 }
 
@@ -784,12 +781,11 @@ const DEFAULT_DESCRIPTION = 'Repository created by AIBot';
  * @param {string} repoName - The name of the repository to be created.
  * @param {string} [description=DEFAULT_DESCRIPTION] - A brief description
  * of the repository. Defaults to 'Repository created by AIBot'.
- * @param {boolean} [isPublic=false] - Whether the repository should be public.
  * @returns {Promise<Object>} - A promise that resolves to an object indicating
  * the success or failure of the operation.
  * @throws {Error} - Throws an error if the API request fails.
  */
-async function createAzoRepo(organization, project, repoName, description = DEFAULT_DESCRIPTION, isPublic = false) {
+async function createAzoRepo(organization, project, repoName, description = DEFAULT_DESCRIPTION) {
   // To create a repo, we need the project ID. We can get it by querying projects.
   // Or, if the project parameter is the project name, we can use that in the URL.
   // Assuming 'project' is the project name for simplicity in URL.
@@ -817,7 +813,7 @@ async function createAzoRepo(organization, project, repoName, description = DEFA
         // isPublic property is often not directly supported at creation for Azure DevOps Git,
         // it's usually managed at the project level or security settings. Omitting for now.
         // description: description, // Description can be set, but often not directly in this creation body for git repos.
-                                 // Can be updated via PATCH later.
+        // Can be updated via PATCH later.
       });
 
     if (response.status === 200 || response.status === 201) {
@@ -825,7 +821,7 @@ async function createAzoRepo(organization, project, repoName, description = DEFA
     }
     return { success: false, status: response.status, message: response.body.message || response.body.value };
   } catch (error) {
-    const message = error.response && error.response.body && (error.response.body.message || error.response.body.value)
+    const message = error.response && error.response.body && ((error.response.body.message || error.response.body.value))
       ? (error.response.body.message || error.response.body.value)
       : error.message || 'Repository creation failed';
 
@@ -834,7 +830,6 @@ async function createAzoRepo(organization, project, repoName, description = DEFA
   }
 }
 
-
 /**
  * Checks if an Azure DevOps Git repository exists.
  *
@@ -842,7 +837,7 @@ async function createAzoRepo(organization, project, repoName, description = DEFA
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository to check.
- * @returns {Promise<{ exists: boolean, status: number, id?: string }>}
+ * @returns {Promise<{ exists: boolean, status: number, id: string }>}
  * A promise that resolves to an object indicating the existence of the repository and its ID.
  * @throws {Error} Throws an error if the API request fails for reasons other than 404.
  */
@@ -877,7 +872,7 @@ async function checkAzoRepoExists(organization, project, repoName) {
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository to check.
  * @param {string} branchName The name of the branch to check.
- * @returns {Promise<{ exists: boolean, status: number, ref?: string }>}
+ * @returns {Promise<{ exists: boolean, status: number, ref: string }>}
  * A promise that resolves to an object indicating the existence of the branch and its full ref name.
  * @throws {Error} Throws an error if the API request fails for reasons other than 404.
  */
@@ -1009,7 +1004,7 @@ async function createAzoBranch(organization, project, repoName, branchName, base
     }
     return { success: false, status: response.status, message: response.body.message || response.body.value };
   } catch (error) {
-    const message = (error.response && error.response.body && (error.response.body.message || error.response.body.value)) || error.message || 'Creation failed';
+    const message = (error.response && error.response.body && ((error.response.body.message || error.response.body.value))) || error.message || 'Creation failed';
     const status = (error.response && error.response.status) || 'Unknown status';
     logger.error(`Error creating branch (exception - Azure DevOps): ${message} [Status: ${status}]`, error);
     throw new Error(`Failed to create branch: ${message} [Status: ${status}]`);
@@ -1027,19 +1022,30 @@ const walkDir = async (dir, rootDir = dir) => {
   let files = [];
   const entries = await fs.promises.readdir(dir, { withFileTypes: true });
 
-  for (const entry of entries) {
+  const filePromises = entries.map(async (entry) => {
     const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files = files.concat(await walkDir(fullPath, rootDir));
-    } else if (entry.isFile()) {
-      const relativePath = path.relative(rootDir, fullPath);
-      files.push(relativePath);
+    try {
+      if (entry.isDirectory()) {
+        return await walkDir(fullPath, rootDir);
+      } if (entry.isFile()) {
+        const relativePath = path.relative(rootDir, fullPath);
+        return [relativePath];
+      }
+      return [];
+    } catch (err) {
+      logger.error(`Error processing entry "${entry.name}" in directory "${dir}": ${err.message}`);
+      return [];
     }
-  }
+  });
+
+  const nestedFiles = await Promise.all(filePromises);
+  files = files.concat(...nestedFiles);
   return files;
 };
 
-const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms));
+const delay = (ms) => new Promise((resolve) => {
+  setTimeout(resolve, ms); // Correctly resolves the promise after the delay
+});
 
 /**
  * Commits files to an Azure DevOps Git repository, including files in subdirectories.
@@ -1066,15 +1072,19 @@ const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms));
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitAzoFiles(sessionId, organization, project, repoName, repoDirName = null, branchName = '', maxRetries = 3) {
-  logger.debug(`commitAzoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirName}, branchName=${branchName}`);
+async function commitAzoFiles(sessionId, organization, project, repoName, repoDirNameParam = null, branchName = '', maxRetries = 3) {
+  logger.debug(`commitAzoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirNameParam}, branchName=${branchName}`);
 
   if (!sessionId || typeof sessionId !== 'string') throw new Error('Invalid session ID');
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
   if (!repoName || typeof repoName !== 'string') throw new Error('Invalid repository name');
-  if (repoDirName !== undefined && repoDirName !== null && typeof repoDirName !== 'string') throw new Error('Invalid repoDirName type');
-  if (repoDirName === '') repoDirName = null;
+  if (repoDirNameParam !== undefined && repoDirNameParam !== null && typeof repoDirNameParam !== 'string') throw new Error('Invalid repoDirName type');
+
+  // Use a local variable instead of reassigning the parameter
+  const cleanRepoDirName = (repoDirNameParam === '' || repoDirNameParam === null)
+    ? null
+    : repoDirNameParam.replace(/^\/|\/$/g, '');
 
   let effectiveBranchName = branchName;
   if (!effectiveBranchName) {
@@ -1087,7 +1097,6 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
     }
   }
 
-  const cleanRepoDirName = (repoDirName && repoDirName !== '/') ? repoDirName.replace(/^\/|\/$/g, '') : null;
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
 
   if (!currentDirectoryPath) {
@@ -1097,7 +1106,7 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
   try {
     const filesToProcess = await walkDir(currentDirectoryPath);
     const changes = []; // Array to hold Azure DevOps Git Change objects
-    const results = [];
+    const results = []; // This will now hold results from individual file processing
 
     if (filesToProcess.length === 0) {
       logger.info('No files found in the session temporary directory to upload.');
@@ -1115,18 +1124,20 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
       throw new Error(`Branch '${effectiveBranchName}' not found in repository '${repoName}'. Cannot commit files.`);
     }
     const latestCommitId = refResponse.body.value[0].objectId;
-    const oldRefObjectId = latestCommitId;
 
-    for (const relativeFilePath of filesToProcess) {
+    const fileProcessingPromises = filesToProcess.map(async (relativeFilePath) => {
       const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
-      let azoDestPath; // This name is kept for consistency with original file's logic
+      let azoDestPath;
+      const fileResult = {
+        file: relativeFilePath, success: false, message: 'Processing...', azoPath: null,
+      };
 
       let shouldProcessFile = true;
-      if (cleanRepoDirName) {
-        const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/');
-        const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/');
+      const cleanRepoDirNameNormalized = cleanRepoDirName ? cleanRepoDirName.replace(/\\/g, '/') : null;
+      const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/');
 
-        if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || relativeFilePathNormalized === cleanRepoDirNameNormalized) {
+      if (cleanRepoDirNameNormalized) {
+        if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || (relativeFilePathNormalized === cleanRepoDirNameNormalized)) {
           const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName);
           const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath);
           azoDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
@@ -1139,8 +1150,9 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
       }
 
       if (!shouldProcessFile) {
-        results.push({ file: relativeFilePath, success: true, message: `Skipped: Outside repoDirName "${cleanRepoDirName}" scope.`, azoPath: null });
-        continue;
+        fileResult.success = true;
+        fileResult.message = `Skipped: Outside repoDirName "${cleanRepoDirName}" scope.`;
+        return fileResult;
       }
 
       azoDestPath = azoDestPath.replace(/\\/g, '/');
@@ -1148,8 +1160,10 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
 
       if (azoDestPath === '.' || azoDestPath === '' || azoDestPath === '/') {
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
-        results.push({ file: relativeFilePath, success: true, message: 'Skipped commit for root or empty path.', azoPath: azoDestPath });
-        continue;
+        fileResult.success = true;
+        fileResult.message = 'Skipped commit for root or empty path.';
+        fileResult.azoPath = azoDestPath;
+        return fileResult;
       }
 
       logger.debug(`Processing file: ${relativeFilePath}`);
@@ -1157,11 +1171,10 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
       logger.debug(`  Azure DevOps destination path: ${azoDestPath}`);
 
       try {
-        const localContent = await fs.promises.readFile(fullLocalFilePath); // Read as Buffer for base64
+        const localContent = await fs.promises.readFile(fullLocalFilePath);
         const localBase64Content = localContent.toString('base64');
         let currentItem = null;
 
-        // Try to get the existing file content to compare
         const getItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(azoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
         try {
           const getItemResponse = await superagent
@@ -1171,42 +1184,52 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
 
           if (getItemResponse.status === 200) {
             currentItem = getItemResponse.body;
-            // Azure DevOps item.content is already base64 encoded for includeContent=true
             if (currentItem.content === localBase64Content) {
               logger.info(`Content of file "${azoDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
-              results.push({ file: relativeFilePath, success: true, message: 'Content identical, skipped commit.', azoPath: azoDestPath });
-              continue;
+              fileResult.success = true;
+              fileResult.message = 'Content identical, skipped commit.';
+              fileResult.azoPath = azoDestPath;
+              return fileResult;
             }
           }
         } catch (getItemError) {
-          if (getItemError.status !== 404) { // 404 means file doesn't exist, which is fine
+          if (getItemError.status !== 404) {
             logger.warn(`Error checking existing file "${azoDestPath}": ${getItemError.message}`);
           }
         }
-
+        // Push the change to the changes array (declared outside the map function)
         changes.push({
-          changeType: currentItem ? 2 : 1, // 1: Add, 2: Edit, 4: Delete. Use 1 for Add, 2 for Edit
+          changeType: currentItem ? 2 : 1,
           item: {
             path: azoDestPath,
           },
           newContent: {
-            content: localContent.toString('utf8'), // Azure DevOps takes raw string content for simple changes
-            contentType: 0, // 0 for RawText, 1 for Base64Encoded
+            content: localContent.toString('utf8'),
+            contentType: 0,
           },
-          // For edits, we might need original content for conflict resolution in complex scenarios
-          // But for simple file-level changes via Push API, usually not required like GitHub's SHA.
         });
 
-        results.push({ file: relativeFilePath, success: true, message: currentItem ? 'Scheduled for update' : 'Scheduled for addition', azoPath: azoDestPath });
-
+        fileResult.success = true;
+        fileResult.message = currentItem ? 'Scheduled for update' : 'Scheduled for addition';
+        fileResult.azoPath = azoDestPath;
+        return fileResult;
       } catch (fileReadError) {
         logger.error(`Error reading local file ${fullLocalFilePath}: ${fileReadError.message}`);
-        results.push({ file: relativeFilePath, success: false, message: `Failed to read local file: ${fileReadError.message}`, azoPath: azoDestPath });
+        fileResult.success = false;
+        fileResult.message = `Failed to read local file: ${fileReadError.message}`;
+        fileResult.azoPath = azoDestPath;
+        return fileResult;
       }
-    }
+    });
+
+    // Wait for all file processing promises to resolve
+    const individualFileResults = await Promise.all(fileProcessingPromises);
+    results.push(...individualFileResults); // Accumulate all results
 
     if (changes.length === 0) {
-      return { success: true, message: 'No new or changed files to commit.', status: 200, results };
+      return {
+        success: true, message: 'No new or changed files to commit.', status: 200, results,
+      };
     }
 
     // Now, create the Git Push
@@ -1217,13 +1240,13 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
       refUpdates: [
         {
           name: `refs/heads/${effectiveBranchName}`,
-          oldObjectId: oldRefObjectId,
+          oldObjectId: latestCommitId,
         },
       ],
       commits: [
         {
           comment: commitMessage,
-          changes: changes,
+          changes,
         },
       ],
     };
@@ -1232,13 +1255,16 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
     let currentPushRetry = 0;
     let lastPushError = null;
 
+    // eslint-disable-next-line no-await-in-loop
     while (currentPushRetry <= maxRetries && !pushSuccess) {
       try {
         if (currentPushRetry > 0) {
           logger.info(`Retrying push for ${organization}/${project}/${repoName} on branch ${effectiveBranchName} (Attempt ${currentPushRetry}/${maxRetries})`);
+          // eslint-disable-next-line no-await-in-loop
           await delay(1000 * currentPushRetry);
         }
 
+        // eslint-disable-next-line no-await-in-loop
         const pushResponse = await superagent
           .post(pushUrl)
           .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -1248,11 +1274,12 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
         if (pushResponse.status === 200 || pushResponse.status === 201) {
           logger.info(`Successfully pushed changes to ${organization}/${project}/${repoName} on branch ${effectiveBranchName}.`);
           pushSuccess = true;
-        } else if (pushResponse.status === 409 || pushResponse.status === 400 && pushResponse.body.message.includes('A push to the default branch is not allowed')) {
+        } else if (pushResponse.status === 409 || (pushResponse.status === 400 && pushResponse.body.message.includes('A push to the default branch is not allowed'))) {
           // Conflict or branch policy issue, need to re-fetch latest commit and retry
           logger.warn(`Conflict or policy error (409/400) when pushing: ${organization}/${project}/${repoName}. Re-fetching latest ref...`);
           lastPushError = new Error(`Push conflict or policy: ${pushResponse.body.message || 'Unknown conflict'}`);
 
+          // eslint-disable-next-line no-await-in-loop
           const reFetchRefResponse = await superagent
             .get(refUrl)
             .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -1271,15 +1298,15 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
           break; // Exit retry loop for other errors
         }
       } catch (pushError) {
-        const errorMessage = (pushError.response && pushError.response.body && (pushError.response.body.message || pushError.response.body.value)) || pushError.message;
+        const errorMessage = (pushError.response && pushError.response.body && ((pushError.response.body.message || pushError.response.body.value))) || pushError.message;
         const status = (pushError.response && pushError.response.status) || 'N/A';
         logger.error(`Exception during push for ${organization}/${project}/${repoName} [Status: ${status}]: ${errorMessage}`, pushError);
         lastPushError = new Error(`Push failed: ${errorMessage}`);
         // If it's a transient error that could be retried, don't break, let the loop continue
-        if (status === 429 || status >= 500 && status < 600) { // Rate limit or server error
-             // continue loop
+        if ((status === 429) || (status >= 500 && status < 600)) { // Rate limit or server error
+          // continue loop
         } else {
-            break; // For other client-side or persistent errors, break
+          break; // For other client-side or persistent errors, break
         }
       }
       currentPushRetry += 1;
@@ -1289,10 +1316,12 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
       throw new Error(`Failed to commit files after ${maxRetries} retries: ${lastPushError ? lastPushError.message : 'Unknown error'}`);
     }
 
-    // Mark all individual results as success if the overall push was successful
-    results.forEach(r => {
+    // eslint-disable-next-line no-param-reassign
+    results.forEach((r) => {
       if (r.message.startsWith('Scheduled for')) {
+        // eslint-disable-next-line no-param-reassign
         r.success = true;
+        // eslint-disable-next-line no-param-reassign
         r.message = r.message.replace('Scheduled for', 'Successfully');
       }
     });
@@ -1302,7 +1331,6 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
       results,
       message: 'All selected files processed and committed successfully.',
     };
-
   } catch (error) {
     logger.error(
       `Error processing directory or committing files (exception - Azure DevOps): ${organization}/${project}/${repoName} - `
