@@ -15,23 +15,23 @@ const {
   listGitHubActions,
   listPublicRepos,
   switchBranch,
-} = require('./gitFunctions'); // Assuming gitFunctions.js now contains the Azo functions
+} = require('./gitFunctions');
 
 const {
-  checkAzoBranchExists,
-  checkAzoRepoExists,
-  commitAzoFiles,
-  createAzoBranch,
-  createAzoPullRequest,
-  createAzoRepo,
-  fetchAzoRepoContentsRecursive,
-  listAzoBranches,
-  listAzoCommitHistory,
-  listAzoDirectoryContents,
-  listAzoPipelines,
-  listAzoRepos,
-  switchAzoBranch,
-} = require('./azoFunctions'); // Assuming gitFunctions.js now contains the Azo functions
+  checkAdoBranchExists,
+  checkAdoRepoExists,
+  commitAdoFiles,
+  createAdoBranch,
+  createAdoPullRequest,
+  createAdoRepo,
+  fetchAdoRepoContentsRecursive,
+  listAdoBranches,
+  listAdoCommitHistory,
+  listAdoDirectoryContents,
+  listAdoPipelines,
+  listAdoRepos,
+  switchAdoBranch,
+} = require('./adoFunctions'); // Assuming gitFunctions.js now contains the Ado functions
 
 const {
   codeReviews,
@@ -484,11 +484,11 @@ async function loadGitHub(sessionId) {
  * Registers the Azure DevOps (ADO) Git functions with the function registry.
  * @param {string} sessionId The unique identifier for the session.
  */
-async function loadAzoIntegration(sessionId) {
+async function loadAdoIntegration(sessionId) {
   await registerFunction(
     sessionId,
-    'create_azo_repo',
-    createAzoRepo,
+    'create_ado_repo',
+    createAdoRepo,
     ['organization', 'project', 'repoName', 'description', 'isPublic'],
     'Create an Azure DevOps (ADO) Git repository under a specified organization and project.',
     {
@@ -503,8 +503,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'switch_azo_branch',
-    switchAzoBranch,
+    'switch_ado_branch',
+    switchAdoBranch,
     ['organization', 'project', 'repoName', 'branchName'],
     'Switch the default branch in an Azure DevOps (ADO) Git repository.',
     {
@@ -518,8 +518,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'commit_azo_files',
-    commitAzoFiles,
+    'commit_ado_files',
+    commitAdoFiles,
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
     'Upload, push, load or commit files from the session temporary directory to a specified Azure DevOps (ADO) Git repository, maintaining directory structure.',
     {
@@ -535,8 +535,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'create_azo_pull_request',
-    createAzoPullRequest,
+    'create_ado_pull_request',
+    createAdoPullRequest,
     ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
     'Create a pull request on a given Azure DevOps (ADO) Git repository.',
     {
@@ -553,8 +553,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'fetch_azo_repo_contents',
-    fetchAzoRepoContentsRecursive,
+    'fetch_ado_repo_contents',
+    fetchAdoRepoContentsRecursive,
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
     'Fetch or download the contents of an Azure DevOps (ADO) Git repository.',
     {
@@ -570,8 +570,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'list_azo_pipelines',
-    listAzoPipelines,
+    'list_ado_pipelines',
+    listAdoPipelines,
     ['organization', 'project', 'repoName', 'statusFilter'],
     'Lists Azure DevOps (ADO) Pipelines (builds) running or queued in a specified repository.',
     {
@@ -585,8 +585,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'list_azo_repos',
-    listAzoRepos,
+    'list_ado_repos',
+    listAdoRepos,
     ['organization', 'project'],
     'Lists repositories for a given Azure DevOps (ADO) organization and project.',
     {
@@ -598,8 +598,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'list_azo_branches',
-    listAzoBranches,
+    'list_ado_branches',
+    listAdoBranches,
     ['organization', 'project', 'repoName'],
     'Lists branches for a given Azure DevOps (ADO) Git repository.',
     {
@@ -612,8 +612,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'list_azo_commit_history',
-    listAzoCommitHistory,
+    'list_ado_commit_history',
+    listAdoCommitHistory,
     ['organization', 'project', 'repoName', 'repoDirName'],
     'Lists commit history for a file or directory in an Azure DevOps (ADO) Git repository.',
     {
@@ -627,8 +627,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'list_azo_directory_contents',
-    listAzoDirectoryContents,
+    'list_ado_directory_contents',
+    listAdoDirectoryContents,
     ['organization', 'project', 'repoName', 'branchName', 'repoDirName', 'recursive'],
     'Lists the contents of a directory in an Azure DevOps (ADO) Git repository on a specific branch. Defaults to the root and recursive scan.',
     {
@@ -644,8 +644,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'check_azo_branch_exists',
-    checkAzoBranchExists,
+    'check_ado_branch_exists',
+    checkAdoBranchExists,
     ['organization', 'project', 'repoName', 'branchName'],
     'Check if an Azure DevOps (ADO) Git branch exists in a specified repository.',
     {
@@ -659,8 +659,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'check_azo_repo_exists',
-    checkAzoRepoExists,
+    'check_ado_repo_exists',
+    checkAdoRepoExists,
     ['organization', 'project', 'repoName'],
     'Check if an Azure DevOps (ADO) Git repository exists under a given organization and project.',
     {
@@ -673,8 +673,8 @@ async function loadAzoIntegration(sessionId) {
 
   await registerFunction(
     sessionId,
-    'create_azo_branch',
-    createAzoBranch,
+    'create_ado_branch',
+    createAdoBranch,
     ['organization', 'project', 'repoName', 'branchName', 'baseBranch'],
     'Create a new branch in an Azure DevOps (ADO) Git repository based on an existing branch.',
     {
@@ -1440,7 +1440,7 @@ async function loadIntegrations(sessionId) {
   // New ADO integration loading
   if (process.env.AZURE_DEVOPS_PAT) {
     logger.info(`Loading Azure DevOps (ADO) integration for session: ${sessionId}`);
-    await loadAzoIntegration(sessionId);
+    await loadAdoIntegration(sessionId);
   } else {
     logger.info(`Azure DevOps (ADO) integration not loaded for session: ${sessionId}. AZURE_DEVOPS_PAT not set.`);
   }
