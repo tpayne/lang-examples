@@ -100,10 +100,10 @@ async function handleAzureDevopsApiError(response, context = '') {
  * @param {string} branchName The branch name to download from.
  * @param {string} localFilePath The local path to save the file.
  */
-async function downloadAzoFile(sessionId, organization, project, repoName, filePath, branchName, localFilePath) {
+async function downloadAdoFile(sessionId, organization, project, repoName, filePath, branchName, localFilePath) {
   // We need to resolve repoName to repo ID first if not already done.
   // For simplicity here, assuming repoName can be used directly or ID is resolved elsewhere.
-  // In a real scenario, you'd likely call checkAzoRepoExists or similar to get the ID.
+  // In a real scenario, you'd likely call checkAdoRepoExists or similar to get the ID.
   const repoId = repoName; // Placeholder: In practice, resolve to actual ID
 
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(filePath)}&versionDescriptor.version=${encodeURIComponent(branchName)}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
@@ -204,7 +204,7 @@ const BINARY_EXTENSIONS = new Set([
  * @param {string} [localDestPath=null] Optional local destination path.
  * @param {boolean} [skipBinaryFiles=true] Whether to skip downloading files likely to be binary.
  */
-async function fetchAzoRepoContentsRecursive(
+async function fetchAdoRepoContentsRecursive(
   sessionId,
   organization,
   project,
@@ -280,7 +280,7 @@ async function fetchAzoRepoContentsRecursive(
           }
 
           // Use the new Azure DevOps specific download function
-          await downloadAzoFile(sessionId, organization, project, repoName, items.path, branchName, filePath);
+          await downloadAdoFile(sessionId, organization, project, repoName, items.path, branchName, filePath);
           return { success: true, message: `Processed single item at path "${repoDirName}"` };
         } catch (error) {
           const errorMessage = error.message || error;
@@ -318,7 +318,7 @@ async function fetchAzoRepoContentsRecursive(
             logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
             throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
           }
-          await downloadAzoFile(sessionId, organization, project, repoName, item.path, branchName, currentLocalPath);
+          await downloadAdoFile(sessionId, organization, project, repoName, item.path, branchName, currentLocalPath);
           return { success: true, message: `Downloaded file "${item.path}"` };
         } catch (error) {
           const errorMessage = error.message || error;
@@ -353,7 +353,7 @@ async function fetchAzoRepoContentsRecursive(
   } catch (error) {
     const errorMessage = error.message || error;
     logger.error(
-      'Error in fetchAzoRepoContentsRecursive (exception - Azure DevOps): '
+      'Error in fetchAdoRepoContentsRecursive (exception - Azure DevOps): '
       + `${repoDirName} [Session: ${sessionId}]: ${errorMessage}`,
       error,
     );
@@ -379,7 +379,7 @@ async function fetchAzoRepoContentsRecursive(
  * @returns {Promise<string[]>} Array of repository names.
  * @throws {Error} If API request fails or project is not found.
  */
-async function listAzoRepos(organization, project) {
+async function listAdoRepos(organization, project) {
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
@@ -411,7 +411,7 @@ async function listAzoRepos(organization, project) {
  * @returns {Promise<string>} The name of the default branch (e.g., 'main').
  * @throws {Error} If the API request fails or the repository is not found.
  */
-async function getAzoDefaultBranch(organization, project, repoName) {
+async function getAdoDefaultBranch(organization, project, repoName) {
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
@@ -444,7 +444,7 @@ async function getAzoDefaultBranch(organization, project, repoName) {
  * @returns {Promise<string[]>} Array of branch names.
  * @throws {Error} If API request fails or repository is not found.
  */
-async function listAzoBranches(organization, project, repoName) {
+async function listAdoBranches(organization, project, repoName) {
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/&api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
@@ -477,7 +477,7 @@ async function listAzoBranches(organization, project, repoName) {
  * Array of commit history objects.
  * @throws {Error} If API requests fail or file/directory not found.
  */
-async function listAzoCommitHistory(organization, project, repoName, repoDirName) {
+async function listAdoCommitHistory(organization, project, repoName, repoDirName) {
   // First, verify that the file or directory exists by querying the items API.
   const contentsUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
@@ -539,7 +539,7 @@ async function listAzoCommitHistory(organization, project, repoName, repoDirName
  * empty array if the directory is empty.
  * @throws {Error} If API request fails (e.g., repo/path not found, authentication, rate limit).
  */
-async function listAzoDirectoryContents(
+async function listAdoDirectoryContents(
   organization,
   project,
   repoName,
@@ -551,7 +551,7 @@ async function listAzoDirectoryContents(
 
   if (!effectiveBranchName) {
     try {
-      effectiveBranchName = await getAzoDefaultBranch(organization, project, repoName);
+      effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
       logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
     } catch (error) {
       logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
@@ -651,7 +651,7 @@ async function listAzoDirectoryContents(
  * @returns {Promise<object>} Azure DevOps API response for the created PR.
  * @throws {Error} If API request fails, repo/branches not found, or validation errors.
  */
-async function createAzoPullRequest(
+async function createAdoPullRequest(
   organization,
   project,
   repoName,
@@ -706,7 +706,7 @@ async function createAzoPullRequest(
  * Array of running/queued Azure DevOps Pipeline job details.
  * @throws {Error} If API request fails or repository/project/organization not found.
  */
-async function listAzoPipelines(organization, project, repoName, statusFilter = 'inProgress') {
+async function listAdoPipelines(organization, project, repoName, statusFilter = 'inProgress') {
   // First, get the repository ID from its name
   const repoId = repoName; // Placeholder, assuming repoName works, but ID is preferred
 
@@ -785,7 +785,7 @@ const DEFAULT_DESCRIPTION = 'Repository created by AIBot';
  * the success or failure of the operation.
  * @throws {Error} - Throws an error if the API request fails.
  */
-async function createAzoRepo(organization, project, repoName, description = DEFAULT_DESCRIPTION) {
+async function createAdoRepo(organization, project, repoName, description = DEFAULT_DESCRIPTION) {
   // To create a repo, we need the project ID. We can get it by querying projects.
   // Or, if the project parameter is the project name, we can use that in the URL.
   // Assuming 'project' is the project name for simplicity in URL.
@@ -841,7 +841,7 @@ async function createAzoRepo(organization, project, repoName, description = DEFA
  * A promise that resolves to an object indicating the existence of the repository and its ID.
  * @throws {Error} Throws an error if the API request fails for reasons other than 404.
  */
-async function checkAzoRepoExists(organization, project, repoName) {
+async function checkAdoRepoExists(organization, project, repoName) {
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
@@ -876,7 +876,7 @@ async function checkAzoRepoExists(organization, project, repoName) {
  * A promise that resolves to an object indicating the existence of the branch and its full ref name.
  * @throws {Error} Throws an error if the API request fails for reasons other than 404.
  */
-async function checkAzoBranchExists(organization, project, repoName, branchName) {
+async function checkAdoBranchExists(organization, project, repoName, branchName) {
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${branchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
@@ -914,7 +914,7 @@ async function checkAzoBranchExists(organization, project, repoName, branchName)
  * @returns {Promise<Object>} A promise that resolves to an object indicating success.
  * @throws {Error} Throws an error if the API request fails.
  */
-const switchAzoBranch = async (organization, project, repoName, branchName) => {
+const switchAdoBranch = async (organization, project, repoName, branchName) => {
   try {
     const response = await superagent
       .patch(`https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`)
@@ -949,7 +949,7 @@ const switchAzoBranch = async (organization, project, repoName, branchName) => {
  * @returns {Promise<Object>} A promise that resolves to an object indicating success or failure.
  * @throws {Error} Throws an error if the API request fails.
  */
-async function createAzoBranch(organization, project, repoName, branchName, baseBranch = 'main') {
+async function createAdoBranch(organization, project, repoName, branchName, baseBranch = 'main') {
   const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
@@ -959,7 +959,7 @@ async function createAzoBranch(organization, project, repoName, branchName, base
   if (!baseBranch || typeof baseBranch !== 'string') throw new Error('Invalid base branch name');
 
   try {
-    const resp = await checkAzoBranchExists(organization, project, repoName, branchName);
+    const resp = await checkAdoBranchExists(organization, project, repoName, branchName);
     if (resp.exists) {
       return { success: true, message: 'Branch already exists' };
     }
@@ -996,7 +996,7 @@ async function createAzoBranch(organization, project, repoName, branchName, base
 
     if (response.status === 200) { // Azure DevOps typically returns 200 for ref updates
       // Optionally try to switch default branch if desired (similar to GitHub version)
-      const switchRes = await switchAzoBranch(organization, project, repoName, branchName);
+      const switchRes = await switchAdoBranch(organization, project, repoName, branchName);
       if (switchRes.success) {
         return { success: true, message: 'Branch created and context switched' };
       }
@@ -1059,7 +1059,7 @@ const delay = (ms) => new Promise((resolve) => {
  * temporary directory are considered and committed to the root and its subdirectories.
  *
  * @async
- * @function commitAzoFiles
+ * @function commitAdoFiles
  * @param {string} sessionId - The unique identifier for the session.
  * @param {string} organization - The Azure DevOps organization name.
  * @param {string} project - The Azure DevOps project name.
@@ -1072,8 +1072,8 @@ const delay = (ms) => new Promise((resolve) => {
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitAzoFiles(sessionId, organization, project, repoName, repoDirNameParam = null, branchName = '', maxRetries = 3) {
-  logger.debug(`commitAzoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirNameParam}, branchName=${branchName}`);
+async function commitAdoFiles(sessionId, organization, project, repoName, repoDirNameParam = null, branchName = '', maxRetries = 3) {
+  logger.debug(`commitAdoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirNameParam}, branchName=${branchName}`);
 
   if (!sessionId || typeof sessionId !== 'string') throw new Error('Invalid session ID');
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
@@ -1089,7 +1089,7 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
   let effectiveBranchName = branchName;
   if (!effectiveBranchName) {
     try {
-      effectiveBranchName = await getAzoDefaultBranch(organization, project, repoName);
+      effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
       logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
     } catch (error) {
       logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
@@ -1127,9 +1127,9 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
 
     const fileProcessingPromises = filesToProcess.map(async (relativeFilePath) => {
       const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
-      let azoDestPath;
+      let AdoDestPath;
       const fileResult = {
-        file: relativeFilePath, success: false, message: 'Processing...', azoPath: null,
+        file: relativeFilePath, success: false, message: 'Processing...', AdoPath: null,
       };
 
       let shouldProcessFile = true;
@@ -1140,13 +1140,13 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
         if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || (relativeFilePathNormalized === cleanRepoDirNameNormalized)) {
           const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName);
           const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath);
-          azoDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
+          AdoDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
         } else {
           shouldProcessFile = false;
           logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified repoDirName "${cleanRepoDirName}" scope.`);
         }
       } else {
-        azoDestPath = relativeFilePath;
+        AdoDestPath = relativeFilePath;
       }
 
       if (!shouldProcessFile) {
@@ -1155,27 +1155,27 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
         return fileResult;
       }
 
-      azoDestPath = azoDestPath.replace(/\\/g, '/');
-      if (azoDestPath.startsWith('/')) azoDestPath = azoDestPath.substring(1);
+      AdoDestPath = AdoDestPath.replace(/\\/g, '/');
+      if (AdoDestPath.startsWith('/')) AdoDestPath = AdoDestPath.substring(1);
 
-      if (azoDestPath === '.' || azoDestPath === '' || azoDestPath === '/') {
+      if (AdoDestPath === '.' || AdoDestPath === '' || AdoDestPath === '/') {
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
         fileResult.success = true;
         fileResult.message = 'Skipped commit for root or empty path.';
-        fileResult.azoPath = azoDestPath;
+        fileResult.AdoPath = AdoDestPath;
         return fileResult;
       }
 
       logger.debug(`Processing file: ${relativeFilePath}`);
       logger.debug(`  Full local path: ${fullLocalFilePath}`);
-      logger.debug(`  Azure DevOps destination path: ${azoDestPath}`);
+      logger.debug(`  Azure DevOps destination path: ${AdoDestPath}`);
 
       try {
         const localContent = await fs.promises.readFile(fullLocalFilePath);
         const localBase64Content = localContent.toString('base64');
         let currentItem = null;
 
-        const getItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(azoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
+        const getItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(AdoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
         try {
           const getItemResponse = await superagent
             .get(getItemUrl)
@@ -1185,23 +1185,23 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
           if (getItemResponse.status === 200) {
             currentItem = getItemResponse.body;
             if (currentItem.content === localBase64Content) {
-              logger.info(`Content of file "${azoDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
+              logger.info(`Content of file "${AdoDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
               fileResult.success = true;
               fileResult.message = 'Content identical, skipped commit.';
-              fileResult.azoPath = azoDestPath;
+              fileResult.AdoPath = AdoDestPath;
               return fileResult;
             }
           }
         } catch (getItemError) {
           if (getItemError.status !== 404) {
-            logger.warn(`Error checking existing file "${azoDestPath}": ${getItemError.message}`);
+            logger.warn(`Error checking existing file "${AdoDestPath}": ${getItemError.message}`);
           }
         }
         // Push the change to the changes array (declared outside the map function)
         changes.push({
           changeType: currentItem ? 2 : 1,
           item: {
-            path: azoDestPath,
+            path: AdoDestPath,
           },
           newContent: {
             content: localContent.toString('utf8'),
@@ -1211,13 +1211,13 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
 
         fileResult.success = true;
         fileResult.message = currentItem ? 'Scheduled for update' : 'Scheduled for addition';
-        fileResult.azoPath = azoDestPath;
+        fileResult.AdoPath = AdoDestPath;
         return fileResult;
       } catch (fileReadError) {
         logger.error(`Error reading local file ${fullLocalFilePath}: ${fileReadError.message}`);
         fileResult.success = false;
         fileResult.message = `Failed to read local file: ${fileReadError.message}`;
-        fileResult.azoPath = azoDestPath;
+        fileResult.AdoPath = AdoDestPath;
         return fileResult;
       }
     });
@@ -1342,17 +1342,17 @@ async function commitAzoFiles(sessionId, organization, project, repoName, repoDi
 }
 
 module.exports = {
-  checkAzoBranchExists,
-  checkAzoRepoExists,
-  commitAzoFiles,
-  createAzoBranch,
-  createAzoPullRequest,
-  createAzoRepo,
-  fetchAzoRepoContentsRecursive,
-  listAzoBranches,
-  listAzoCommitHistory,
-  listAzoDirectoryContents,
-  listAzoPipelines,
-  listAzoRepos,
-  switchAzoBranch,
+  checkAdoBranchExists,
+  checkAdoRepoExists,
+  commitAdoFiles,
+  createAdoBranch,
+  createAdoPullRequest,
+  createAdoRepo,
+  fetchAdoRepoContentsRecursive,
+  listAdoBranches,
+  listAdoCommitHistory,
+  listAdoDirectoryContents,
+  listAdoPipelines,
+  listAdoRepos,
+  switchAdoBranch,
 };
