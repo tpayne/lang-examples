@@ -2,20 +2,20 @@ const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
 const logger = require('./logger');
 
 const {
-  checkBranchExists,
-  checkRepoExists,
-  commitFiles,
-  createBranch,
-  createGithubPullRequest,
-  fetchRepoContentsRecursive,
-  listBranches,
-  listCommitHistory,
-  listDirectoryContents,
-  listGitHubActions,
-  listPublicRepos,
-  switchBranch,
-  createRepo, // Ensure createRepo is imported
-} = require('./gitFunctions');
+  checkAzoBranchExists,
+  checkAzoRepoExists,
+  commitAzoFiles,
+  createAzoBranch,
+  createAzoPullRequest,
+  createAzoRepo,
+  fetchAzoRepoContentsRecursive,
+  listAzoBranches,
+  listAzoCommitHistory,
+  listAzoDirectoryContents,
+  listAzoPipelines,
+  listAzoRepos,
+  switchAzoBranch,
+} = require('./gitFunctions'); // Assuming gitFunctions.js now contains the Azo functions
 
 const {
   codeReviews,
@@ -463,6 +463,215 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
   );
 }
+
+/**
+ * Registers the Azure DevOps (ADO) Git functions with the function registry.
+ * @param {string} sessionId The unique identifier for the session.
+ */
+async function loadAzoIntegration(sessionId) {
+  await registerFunction(
+    sessionId,
+    'create_azo_repo',
+    createAzoRepo,
+    ['organization', 'project', 'repoName', 'description', 'isPublic'],
+    'Create an Azure DevOps Git repository under a specified organization and project.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository to be created.' },
+      description: { type: 'string', description: 'The description of the repository (optional). Defaults if not provided.' },
+      isPublic: { type: 'boolean', description: 'Is the repository public (true) or private (false) (optional). Defaults to private if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'switch_azo_branch',
+    switchAzoBranch,
+    ['organization', 'project', 'repoName', 'branchName'],
+    'Switch the default branch in an Azure DevOps Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository.' },
+      branchName: { type: 'string', description: 'The branch name to switch to as the new default.' },
+    },
+    ['organization', 'project', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'commit_azo_files',
+    commitAzoFiles,
+    ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
+    'Upload, push, load or commit files from the session temporary directory to a specified Azure DevOps Git repository, maintaining directory structure.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The base directory in the Azure DevOps repository to commit files into (optional). Defaults to the repository root if not provided.' },
+      branchName: { type: 'string', description: 'The name of the branch to commit to (optional). Defaults to the repository\'s default branch if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_azo_pull_request',
+    createAzoPullRequest,
+    ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+    'Create a pull request on a given Azure DevOps Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      title: { type: 'string', description: 'The Pull Request title.' },
+      sourceBranch: { type: 'string', description: 'The source branch name.' },
+      targetBranch: { type: 'string', description: 'The target branch name.' },
+      body: { type: 'string', description: 'The description or body of the pull request (optional).' },
+    },
+    ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'fetch_azo_repo_contents',
+    fetchAzoRepoContentsRecursive,
+    ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
+    'Fetch or download the contents of an Azure DevOps Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The Azure DevOps repository path to start download at (optional). Defaults to the repository root if not provided.' },
+      branchName: { type: 'string', description: 'The name of the branch to fetch contents from (optional). Defaults to the repository\'s default branch if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_azo_pipelines',
+    listAzoPipelines,
+    ['organization', 'project', 'repoName', 'statusFilter'],
+    'Lists Azure DevOps Pipelines (builds) running or queued in a specified repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      statusFilter: { type: 'string', description: 'The status to filter pipelines by (e.g., "inProgress", "queued", "completed", "failed") (optional). Defaults to "inProgress" if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_azo_repos',
+    listAzoRepos,
+    ['organization', 'project'],
+    'Lists repositories for a given Azure DevOps organization and project.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+    },
+    ['organization', 'project'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_azo_branches',
+    listAzoBranches,
+    ['organization', 'project', 'repoName'],
+    'Lists branches for a given Azure DevOps Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_azo_commit_history',
+    listAzoCommitHistory,
+    ['organization', 'project', 'repoName', 'repoDirName'],
+    'Lists commit history for a file or directory in an Azure DevOps Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The file or directory path within the repository.' },
+    },
+    ['organization', 'project', 'repoName', 'repoDirName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_azo_directory_contents',
+    listAzoDirectoryContents,
+    ['organization', 'project', 'repoName', 'branchName', 'repoDirName', 'recursive'],
+    'Lists the contents of a directory in an Azure DevOps Git repository on a specific branch. Defaults to the root and recursive scan.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to the repository\'s default branch if not provided.' },
+      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' },
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'check_azo_branch_exists',
+    checkAzoBranchExists,
+    ['organization', 'project', 'repoName', 'branchName'],
+    'Check if an Azure DevOps Git branch exists in a specified repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository to check.' },
+      branchName: { type: 'string', description: 'The name of the branch to check.' },
+    },
+    ['organization', 'project', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'check_azo_repo_exists',
+    checkAzoRepoExists,
+    ['organization', 'project', 'repoName'],
+    'Check if an Azure DevOps Git repository exists under a given organization and project.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository to check.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_azo_branch',
+    createAzoBranch,
+    ['organization', 'project', 'repoName', 'branchName', 'baseBranch'],
+    'Create a new branch in an Azure DevOps Git repository based on an existing branch.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      branchName: { type: 'string', description: 'The name of the new branch to be created.' },
+      baseBranch: { type: 'string', description: 'The name of the existing branch to base the new branch on (optional). Defaults to the repository\'s default branch.' },
+    },
+    ['organization', 'project', 'repoName', 'branchName'],
+  );
+}
+
 
 /**
  * Registers the Google Maps Directions API function with the function registry.
@@ -1213,6 +1422,14 @@ async function loadIntegrations(sessionId) {
     await loadCodeReviews(sessionId);
   }
 
+  // New ADO integration loading
+  if (process.env.AZURE_DEVOPS_PAT) {
+    logger.info(`Loading Azure DevOps (ADO) integration for session: ${sessionId}`);
+    await loadAzoIntegration(sessionId);
+  } else {
+    logger.info(`Azure DevOps (ADO) integration not loaded for session: ${sessionId}. AZURE_DEVOPS_PAT not set.`);
+  }
+
   if (process.env.DOSA_API_KEY && process.env.DOSA_API_SECRET
         && process.env.DOSA_AUTH_TENANT_ID
         && process.env.DOSA_CLIENT_ID) {
@@ -1220,7 +1437,7 @@ async function loadIntegrations(sessionId) {
     await loadDosa(sessionId);
   }
 
-  if (process.env.Maps_API_KEY) {
+  if (process.env.MAPS_API_KEY) {
     logger.info(`Loading Google Maps integration for session: ${sessionId}`);
     await loadMappingFunctions(sessionId);
   }
