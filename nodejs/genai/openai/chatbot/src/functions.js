@@ -490,7 +490,7 @@ async function loadAzoIntegration(sessionId) {
     'create_azo_repo',
     createAzoRepo,
     ['organization', 'project', 'repoName', 'description', 'isPublic'],
-    'Create an Azure DevOps Git repository under a specified organization and project.',
+    'Create an Azure DevOps (ADO) Git repository under a specified organization and project.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -506,7 +506,7 @@ async function loadAzoIntegration(sessionId) {
     'switch_azo_branch',
     switchAzoBranch,
     ['organization', 'project', 'repoName', 'branchName'],
-    'Switch the default branch in an Azure DevOps Git repository.',
+    'Switch the default branch in an Azure DevOps (ADO) Git repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -521,7 +521,7 @@ async function loadAzoIntegration(sessionId) {
     'commit_azo_files',
     commitAzoFiles,
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
-    'Upload, push, load or commit files from the session temporary directory to a specified Azure DevOps Git repository, maintaining directory structure.',
+    'Upload, push, load or commit files from the session temporary directory to a specified Azure DevOps (ADO) Git repository, maintaining directory structure.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -538,7 +538,7 @@ async function loadAzoIntegration(sessionId) {
     'create_azo_pull_request',
     createAzoPullRequest,
     ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
-    'Create a pull request on a given Azure DevOps Git repository.',
+    'Create a pull request on a given Azure DevOps (ADO) Git repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -556,7 +556,7 @@ async function loadAzoIntegration(sessionId) {
     'fetch_azo_repo_contents',
     fetchAzoRepoContentsRecursive,
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
-    'Fetch or download the contents of an Azure DevOps Git repository.',
+    'Fetch or download the contents of an Azure DevOps (ADO) Git repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -573,7 +573,7 @@ async function loadAzoIntegration(sessionId) {
     'list_azo_pipelines',
     listAzoPipelines,
     ['organization', 'project', 'repoName', 'statusFilter'],
-    'Lists Azure DevOps Pipelines (builds) running or queued in a specified repository.',
+    'Lists Azure DevOps (ADO) Pipelines (builds) running or queued in a specified repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -588,7 +588,7 @@ async function loadAzoIntegration(sessionId) {
     'list_azo_repos',
     listAzoRepos,
     ['organization', 'project'],
-    'Lists repositories for a given Azure DevOps organization and project.',
+    'Lists repositories for a given Azure DevOps (ADO) organization and project.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -601,7 +601,7 @@ async function loadAzoIntegration(sessionId) {
     'list_azo_branches',
     listAzoBranches,
     ['organization', 'project', 'repoName'],
-    'Lists branches for a given Azure DevOps Git repository.',
+    'Lists branches for a given Azure DevOps (ADO) Git repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -615,7 +615,7 @@ async function loadAzoIntegration(sessionId) {
     'list_azo_commit_history',
     listAzoCommitHistory,
     ['organization', 'project', 'repoName', 'repoDirName'],
-    'Lists commit history for a file or directory in an Azure DevOps Git repository.',
+    'Lists commit history for a file or directory in an Azure DevOps (ADO) Git repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -630,7 +630,7 @@ async function loadAzoIntegration(sessionId) {
     'list_azo_directory_contents',
     listAzoDirectoryContents,
     ['organization', 'project', 'repoName', 'branchName', 'repoDirName', 'recursive'],
-    'Lists the contents of a directory in an Azure DevOps Git repository on a specific branch. Defaults to the root and recursive scan.',
+    'Lists the contents of a directory in an Azure DevOps (ADO) Git repository on a specific branch. Defaults to the root and recursive scan.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -647,7 +647,7 @@ async function loadAzoIntegration(sessionId) {
     'check_azo_branch_exists',
     checkAzoBranchExists,
     ['organization', 'project', 'repoName', 'branchName'],
-    'Check if an Azure DevOps Git branch exists in a specified repository.',
+    'Check if an Azure DevOps (ADO) Git branch exists in a specified repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -662,7 +662,7 @@ async function loadAzoIntegration(sessionId) {
     'check_azo_repo_exists',
     checkAzoRepoExists,
     ['organization', 'project', 'repoName'],
-    'Check if an Azure DevOps Git repository exists under a given organization and project.',
+    'Check if an Azure DevOps (ADO) Git repository exists under a given organization and project.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -676,7 +676,7 @@ async function loadAzoIntegration(sessionId) {
     'create_azo_branch',
     createAzoBranch,
     ['organization', 'project', 'repoName', 'branchName', 'baseBranch'],
-    'Create a new branch in an Azure DevOps Git repository based on an existing branch.',
+    'Create a new branch in an Azure DevOps (ADO) Git repository based on an existing branch.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
