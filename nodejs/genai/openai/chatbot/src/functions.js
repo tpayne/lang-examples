@@ -35,6 +35,7 @@ const {
 
 const {
   codeReviews,
+  adoCodeReviews,
   cleanupSession: cleanupCodeReviewSession, // Import cleanup for code reviews
 } = require('./codeReviews');
 
@@ -253,6 +254,25 @@ async function loadCodeReviews(sessionId) {
       branchName: { type: 'string', description: 'The name of the branch to review.' },
     },
     ['username', 'repoName', 'repoDirName'],
+    true,
+  );
+}
+
+async function loadAdoCodeReviews(sessionId) {
+  await registerFunction(
+    sessionId,
+    'ado_file_review',
+    adoCodeReviews,
+    ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
+    'Review files in a given Azure DevOps repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The Azure DevOps repository name.' },
+      repoDirName: { type: 'string', description: 'The Azure DevOps repository path to start download at.' },
+      branchName: { type: 'string', description: 'The name of the branch to review.' },
+    },
+    ['organization', 'project', 'repoName', 'repoDirName'],
     true,
   );
 }
@@ -1441,6 +1461,8 @@ async function loadIntegrations(sessionId) {
   if (process.env.AZURE_DEVOPS_PAT) {
     logger.info(`Loading Azure DevOps (ADO) integration for session: ${sessionId}`);
     await loadAdoIntegration(sessionId);
+    logger.info(`Loading Azure DevOps (ADO) code review integration for session: ${sessionId}`);
+    await loadAdoCodeReviews(sessionId);
   } else {
     logger.info(`Azure DevOps (ADO) integration not loaded for session: ${sessionId}. AZURE_DEVOPS_PAT not set.`);
   }
