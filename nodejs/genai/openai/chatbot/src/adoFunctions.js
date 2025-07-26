@@ -1093,78 +1093,140 @@ const delay = (ms) => new Promise((resolve) => {
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitAdoFiles(sessionId, organization, project, repoName, repoDirNameParam = null, branchName = '', maxRetries = 3) {
-  logger.debug(`commitAdoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirNameParam}, branchName=${branchName}`);
+async function commitAdoFiles(
+  sessionId,
+  organization,
+  project,
+  repoName,
+  repoDirNameParam = null,
+  branchName = '',
+  maxRetries = 3,
+) {
+  logger.debug(
+    `commitAdoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirNameParam}, branchName=${branchName}`,
+  );
 
+  // --- Validate inputs ---
   if (!sessionId || typeof sessionId !== 'string') throw new Error('Invalid session ID');
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
   if (!repoName || typeof repoName !== 'string') throw new Error('Invalid repository name');
-  if (repoDirNameParam !== undefined && repoDirNameParam !== null && typeof repoDirNameParam !== 'string') throw new Error('Invalid repoDirName type');
+  if (
+    repoDirNameParam !== undefined
+    && repoDirNameParam !== null
+    && typeof repoDirNameParam !== 'string'
+  ) throw new Error('Invalid repoDirName type');
 
-  // Use a local variable instead of reassigning the parameter
-  const cleanRepoDirName = (repoDirNameParam === '' || repoDirNameParam === null)
+  // Clean up the repo‐dir parameter
+  const cleanRepoDirName = repoDirNameParam === '' || repoDirNameParam === null
     ? null
     : repoDirNameParam.replace(/^\/|\/$/g, '');
 
+  // --- Determine branch ---
   let effectiveBranchName = branchName;
   if (!effectiveBranchName) {
     try {
-      effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
-      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
-    } catch (error) {
-      logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
-      throw new Error(`Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`);
+      effectiveBranchName = await getAdoDefaultBranch(
+        organization,
+        project,
+        repoName,
+      );
+      logger.info(
+        `No branch specified, using default branch: "${effectiveBranchName}"`,
+      );
+    } catch (err) {
+      logger.error(
+        `Failed to get default branch for ${organization}/${project}/${repoName}: ${err.message}`,
+      );
+      throw new Error(
+        `Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`,
+      );
     }
   }
 
+  // --- Prepare temp directory & file list ---
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
-
   if (!currentDirectoryPath) {
-    throw new Error(`Temporary directory not found for session: ${sessionId}. Please ensure files were downloaded or a session directory was created first.`);
+    throw new Error(
+      `Temporary directory not found for session: ${sessionId}.`,
+    );
+  }
+  const filesToProcess = await walkDir(currentDirectoryPath);
+  if (filesToProcess.length === 0) {
+    logger.info(
+      'No files found in the session temporary directory to upload.',
+    );
+    return {
+      success: true,
+      message:
+        'No files found in the session temporary directory to upload',
+      status: 200,
+    };
   }
 
-  try {
-    const filesToProcess = await walkDir(currentDirectoryPath);
-    const changes = []; // Array to hold Azure DevOps Git Change objects
-    const results = []; // This will now hold results from individual file processing
+  // --- Get latest commit of target branch ---
+  const refUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const refResponse = await superagent
+    .get(refUrl)
+    .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+    .set('User-Agent', USER_AGENT);
 
-    if (filesToProcess.length === 0) {
-      logger.info('No files found in the session temporary directory to upload.');
-      return { success: true, message: 'No files found in the session temporary directory to upload', status: 200 };
-    }
+  if (!refResponse.body.value || refResponse.body.value.length === 0) {
+    throw new Error(
+      `Branch '${effectiveBranchName}' not found in repository '${repoName}'.`,
+    );
+  }
+  const latestCommitId = refResponse.body.value[0].objectId;
 
-    // Get the latest commit and tree for the target branch
-    const refUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
-    const refResponse = await superagent
-      .get(refUrl)
-      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-      .set('User-Agent', USER_AGENT);
+  const changes = [];
+  const results = [];
 
-    if (!refResponse.body.value || refResponse.body.value.length === 0) {
-      throw new Error(`Branch '${effectiveBranchName}' not found in repository '${repoName}'. Cannot commit files.`);
-    }
-    const latestCommitId = refResponse.body.value[0].objectId;
-
-    const fileProcessingPromises = filesToProcess.map(async (relativeFilePath) => {
-      const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
+  // --- Process each file ---
+  const fileProcessingPromises = filesToProcess.map(
+    async (relativeFilePath) => {
+      const fullLocalFilePath = path.join(
+        currentDirectoryPath,
+        relativeFilePath,
+      );
       let adoDestPath;
       const fileResult = {
-        file: relativeFilePath, success: false, message: 'Processing...', adoPath: null,
+        file: relativeFilePath,
+        success: false,
+        message: 'Processing...',
+        adoPath: null,
       };
 
+      // Determine if file sits under repoDirName
       let shouldProcessFile = true;
-      const cleanRepoDirNameNormalized = cleanRepoDirName ? cleanRepoDirName.replace(/\\/g, '/') : null;
-      const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/');
+      const cleanRepoDirNormalized = cleanRepoDirName
+        ? cleanRepoDirName.replace(/\\/g, '/')
+        : null;
+      const relativeNormalized = relativeFilePath.replace(/\\/g, '/');
 
-      if (cleanRepoDirNameNormalized) {
-        if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || (relativeFilePathNormalized === cleanRepoDirNameNormalized)) {
-          const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName);
-          const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath);
-          adoDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
+      if (cleanRepoDirNormalized) {
+        if (
+          relativeNormalized.startsWith(
+            `${cleanRepoDirNormalized}/`,
+          )
+          || relativeNormalized === cleanRepoDirNormalized
+        ) {
+          const repoRootInTemp = path.join(
+            currentDirectoryPath,
+            cleanRepoDirName,
+          );
+          const relativeToRoot = path.relative(
+            repoRootInTemp,
+            fullLocalFilePath,
+          );
+          adoDestPath = path.join(
+            cleanRepoDirName,
+            relativeToRoot,
+          );
         } else {
           shouldProcessFile = false;
-          logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified repoDirName "${cleanRepoDirName}" scope.`);
+          logger.debug(
+            `Skipping "${relativeFilePath}" outside "${cleanRepoDirName}" scope.`,
+          );
         }
       } else {
         adoDestPath = relativeFilePath;
@@ -1172,194 +1234,238 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
 
       if (!shouldProcessFile) {
         fileResult.success = true;
-        fileResult.message = `Skipped: Outside repoDirName "${cleanRepoDirName}" scope.`;
+        fileResult.message = `Skipped: outside repoDirName "${cleanRepoDirName}"`;
         return fileResult;
       }
 
-      adoDestPath = adoDestPath.replace(/\\/g, '/');
-      if (adoDestPath.startsWith('/')) adoDestPath = adoDestPath.substring(1);
+      // Normalize to forward‐slashes and strip any leading slashes,
+      // then build absolute ADO path
+      const normalized = adoDestPath
+        .replace(/\\/g, '/')
+        .replace(/^\/+/, '');
+      const absoluteAdoPath = `/${normalized}`;
 
-      if (adoDestPath === '.' || adoDestPath === '' || adoDestPath === '/') {
-        logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
+      if (normalized === '' || normalized === '.') {
+        logger.debug(
+          `Skipping commit for "${relativeFilePath}" (resolves to repo root).`,
+        );
         fileResult.success = true;
         fileResult.message = 'Skipped commit for root or empty path.';
-        fileResult.adoPath = adoDestPath;
+        fileResult.adoPath = absoluteAdoPath;
         return fileResult;
       }
 
       logger.debug(`Processing file: ${relativeFilePath}`);
-      logger.debug(`  Full local path: ${fullLocalFilePath}`);
-      logger.debug(`  Azure DevOps destination path: ${adoDestPath}`);
+      logger.debug(` → Local path: ${fullLocalFilePath}`);
+      logger.debug(` → ADO path: ${absoluteAdoPath}`);
 
       try {
-        const localContent = await fs.promises.readFile(fullLocalFilePath);
-        const localBase64Content = localContent.toString('base64');
+        const buffer = await fs.promises.readFile(fullLocalFilePath);
+        const localBase64 = buffer.toString('base64');
         let currentItem = null;
 
-        const getItemUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(adoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
+        // Check if file already exists on the branch
+        const getItemUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(
+          absoluteAdoPath,
+        )}&versionDescriptor.version=${encodeURIComponent(
+          effectiveBranchName,
+        )}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
+
         try {
-          const getItemResponse = await superagent
+          const getItemResp = await superagent
             .get(getItemUrl)
-            .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+            .set(
+              'Authorization',
+              `Basic ${encodePat(AZURE_DEVOPS_PAT)}`,
+            )
             .set('User-Agent', USER_AGENT);
 
-          if (getItemResponse.status === 200) {
-            currentItem = getItemResponse.body;
-            if (currentItem.content === localBase64Content) {
-              logger.info(`Content of file "${adoDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
+          if (getItemResp.status === 200) {
+            currentItem = getItemResp.body;
+            if (currentItem.content === localBase64) {
+              logger.info(
+                `Identical content for "${absoluteAdoPath}". Skipping.`,
+              );
               fileResult.success = true;
               fileResult.message = 'Content identical, skipped commit.';
-              fileResult.adoPath = adoDestPath;
+              fileResult.adoPath = absoluteAdoPath;
               return fileResult;
             }
           }
-        } catch (getItemError) {
-          if (getItemError.status !== 404) {
-            logger.warn(`Error checking existing file "${adoDestPath}": ${getItemError.message}`);
+        } catch (getErr) {
+          if (getErr.status !== 404) {
+            logger.warn(
+              `Error checking existing file "${absoluteAdoPath}": ${getErr.message}`,
+            );
           }
         }
-        // Push the change to the changes array (declared outside the map function)
+
+        // Schedule add or edit
         changes.push({
-          changeType: currentItem ? 2 : 1,
-          item: {
-            path: adoDestPath,
-          },
+          changeType: currentItem ? 'edit' : 'add',
+          item: { path: absoluteAdoPath },
           newContent: {
-            content: localContent.toString('utf8'),
-            contentType: 0,
+            content: buffer.toString('utf8'),
+            contentType: 'rawText',
           },
         });
 
         fileResult.success = true;
-        fileResult.message = currentItem ? 'Scheduled for update' : 'Scheduled for addition';
-        fileResult.adoPath = adoDestPath;
+        fileResult.message = currentItem
+          ? 'Scheduled for update'
+          : 'Scheduled for addition';
+        fileResult.adoPath = absoluteAdoPath;
         return fileResult;
-      } catch (fileReadError) {
-        logger.error(`Error reading local file ${fullLocalFilePath}: ${fileReadError.message}`);
+      } catch (readErr) {
+        logger.error(
+          `Error reading file ${fullLocalFilePath}: ${readErr.message}`,
+        );
         fileResult.success = false;
-        fileResult.message = `Failed to read local file: ${fileReadError.message}`;
-        fileResult.adoPath = adoDestPath;
+        fileResult.message = `Failed to read file: ${readErr.message}`;
+        fileResult.adoPath = absoluteAdoPath;
         return fileResult;
       }
-    });
+    },
+  );
 
-    // Wait for all file processing promises to resolve
-    const individualFileResults = await Promise.all(fileProcessingPromises);
-    results.push(...individualFileResults); // Accumulate all results
+  // --- Wait for file scans & gather results ---
+  const individualFileResults = await Promise.all(
+    fileProcessingPromises,
+  );
+  results.push(...individualFileResults);
 
-    if (changes.length === 0) {
-      return {
-        success: true, message: 'No new or changed files to commit.', status: 200, results,
-      };
-    }
-
-    // Now, create the Git Push
-    const pushUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/pushes?api-version=${AZURE_DEVOPS_API_VERSION}`;
-    const commitMessage = `Automated commit from AIBot - ${changes.length} file(s) changed`;
-
-    const pushBody = {
-      refUpdates: [
-        {
-          name: `refs/heads/${effectiveBranchName}`,
-          oldObjectId: latestCommitId,
-        },
-      ],
-      commits: [
-        {
-          comment: commitMessage,
-          changes,
-        },
-      ],
-    };
-
-    let pushSuccess = false;
-    let currentPushRetry = 0;
-    let lastPushError = null;
-
-    // eslint-disable-next-line no-await-in-loop
-    while (currentPushRetry <= maxRetries && !pushSuccess) {
-      try {
-        if (currentPushRetry > 0) {
-          logger.info(`Retrying push for ${organization}/${project}/${repoName} on branch ${effectiveBranchName} (Attempt ${currentPushRetry}/${maxRetries})`);
-          // eslint-disable-next-line no-await-in-loop
-          await delay(1000 * currentPushRetry);
-        }
-
-        // eslint-disable-next-line no-await-in-loop
-        const pushResponse = await superagent
-          .post(pushUrl)
-          .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-          .set('User-Agent', USER_AGENT)
-          .send(pushBody);
-
-        if (pushResponse.status === 200 || pushResponse.status === 201) {
-          logger.info(`Successfully pushed changes to ${organization}/${project}/${repoName} on branch ${effectiveBranchName}.`);
-          pushSuccess = true;
-        } else if (pushResponse.status === 409 || (pushResponse.status === 400 && pushResponse.body.message.includes('A push to the default branch is not allowed'))) {
-          // Conflict or branch policy issue, need to re-fetch latest commit and retry
-          logger.warn(`Conflict or policy error (409/400) when pushing: ${organization}/${project}/${repoName}. Re-fetching latest ref...`);
-          lastPushError = new Error(`Push conflict or policy: ${pushResponse.body.message || 'Unknown conflict'}`);
-
-          // eslint-disable-next-line no-await-in-loop
-          const reFetchRefResponse = await superagent
-            .get(refUrl)
-            .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-            .set('User-Agent', USER_AGENT);
-
-          if (reFetchRefResponse.status === 200 && reFetchRefResponse.body.value && reFetchRefResponse.body.value.length > 0) {
-            pushBody.refUpdates[0].oldObjectId = reFetchRefResponse.body.value[0].objectId; // Update oldObjectId for retry
-            logger.debug(`Re-fetched new oldObjectId: ${pushBody.refUpdates[0].oldObjectId}. Retrying push.`);
-          } else {
-            logger.error(`Failed to re-fetch ref after push conflict for ${organization}/${project}/${repoName}.`);
-            lastPushError = new Error(`Failed to re-fetch ref after push conflict: ${reFetchRefResponse.body.message || 'Unknown re-fetch error'}`);
-            break; // Exit retry loop
-          }
-        } else {
-          lastPushError = new Error(pushResponse.body.message || pushResponse.body.value || 'Unknown error during push');
-          break; // Exit retry loop for other errors
-        }
-      } catch (pushError) {
-        const errorMessage = (pushError.response && pushError.response.body && ((pushError.response.body.message || pushError.response.body.value))) || pushError.message;
-        const status = (pushError.response && pushError.response.status) || 'N/A';
-        logger.error(`Exception during push for ${organization}/${project}/${repoName} [Status: ${status}]: ${errorMessage}`, pushError);
-        lastPushError = new Error(`Push failed: ${errorMessage}`);
-        // If it's a transient error that could be retried, don't break, let the loop continue
-        if ((status === 429) || (status >= 500 && status < 600)) { // Rate limit or server error
-          // continue loop
-        } else {
-          break; // For other client-side or persistent errors, break
-        }
-      }
-      currentPushRetry += 1;
-    }
-
-    if (!pushSuccess) {
-      throw new Error(`Failed to commit files after ${maxRetries} retries: ${lastPushError ? lastPushError.message : 'Unknown error'}`);
-    }
-
-    // eslint-disable-next-line no-param-reassign
-    results.forEach((r) => {
-      if (r.message.startsWith('Scheduled for')) {
-        // eslint-disable-next-line no-param-reassign
-        r.success = true;
-        // eslint-disable-next-line no-param-reassign
-        r.message = r.message.replace('Scheduled for', 'Successfully');
-      }
-    });
-
+  if (changes.length === 0) {
     return {
       success: true,
+      message: 'No new or changed files to commit.',
+      status: 200,
       results,
-      message: 'All selected files processed and committed successfully.',
     };
-  } catch (error) {
-    logger.error(
-      `Error processing directory or committing files (exception - Azure DevOps): ${organization}/${project}/${repoName} - `
-      + `${error.message}`,
-      error,
-    );
-    throw new Error(`Failed to process files for commit: ${error.message}`);
   }
+
+  // --- Build and send the push ---
+  const pushUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/pushes?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const pushBody = {
+    refUpdates: [
+      {
+        name: `refs/heads/${effectiveBranchName}`,
+        oldObjectId: latestCommitId,
+      },
+    ],
+    commits: [
+      {
+        comment: `Automated commit from AIBot – ${changes.length} file(s)`,
+        changes,
+      },
+    ],
+  };
+
+  let pushSuccess = false;
+  let currentPushRetry = 0;
+  let lastPushError = null;
+
+  while (currentPushRetry <= maxRetries && !pushSuccess) {
+    try {
+      if (currentPushRetry > 0) {
+        logger.info(
+          `Retrying push (attempt ${currentPushRetry}/${maxRetries})…`,
+        );
+        await delay(1000 * currentPushRetry);
+      }
+
+      const pushResp = await superagent
+        .post(pushUrl)
+        .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+        .set('User-Agent', USER_AGENT)
+        .send(pushBody);
+
+      if ([200, 201].includes(pushResp.status)) {
+        logger.info(
+          `Successfully pushed changes to ${effectiveBranchName}.`,
+        );
+        pushSuccess = true;
+      } else if (
+        pushResp.status === 409
+        || (pushResp.status === 400
+          && pushResp.body.message.includes(
+            'A push to the default branch is not allowed',
+          ))
+      ) {
+        // branch policy / conflict: re-fetch and retry
+        logger.warn(
+          'Conflict or policy error; re-fetching ref and retrying…',
+        );
+        lastPushError = new Error(pushResp.body.message || 'Conflict');
+        const refRefresh = await superagent
+          .get(refUrl)
+          .set(
+            'Authorization',
+            `Basic ${encodePat(AZURE_DEVOPS_PAT)}`,
+          )
+          .set('User-Agent', USER_AGENT);
+        if (
+          refRefresh.status === 200
+          && (refRefresh.body && refRefresh.body.value && refRefresh.body.value.length > 0)
+        ) {
+          pushBody.refUpdates[0].oldObjectId = refRefresh.body.value[0].objectId;
+        } else {
+          lastPushError = new Error(
+            `Failed to re-fetch ref: ${refRefresh.body.message || 'unknown'}`,
+          );
+          break;
+        }
+      } else {
+        lastPushError = new Error(
+          pushResp.body.message || 'Unknown push error',
+        );
+        break;
+      }
+    } catch (pushErr) {
+      const status = (pushErr.response && pushErr.response.status) || 'N/A';
+      const msg = ((pushErr.response && pushErr.response.body && pushErr.response.body.message)
+        || (pushErr.response && pushErr.response.body && pushErr.response.body.value))
+        || pushErr.message;
+      logger.error(
+        `Push exception [${status}]: ${msg}`,
+        pushErr,
+      );
+      lastPushError = new Error(`Push failed: ${msg}`);
+      if (
+        status === 429
+        || (status >= 500 && status < 600)
+      ) {
+        // allow retry
+      } else {
+        break;
+      }
+    } finally {
+      currentPushRetry += 1;
+    }
+  }
+
+  if (!pushSuccess) {
+    throw new Error(
+      `Failed to commit files after ${maxRetries} retries: ${lastPushError.message}`,
+    );
+  }
+
+  // Mark scheduled changes as successful
+  results.forEach((r) => {
+    if (r.message.startsWith('Scheduled for')) {
+      r.success = true;
+      r.message = r.message.replace(
+        'Scheduled for',
+        'Successfully',
+      );
+    }
+  });
+
+  return {
+    success: true,
+    results,
+    message:
+      'All selected files processed and committed successfully.',
+  };
 }
 
 module.exports = {
