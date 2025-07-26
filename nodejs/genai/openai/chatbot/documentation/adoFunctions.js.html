@@ -243,148 +243,117 @@ async function fetchAdoRepoContentsRecursive(
   localDestPath = null,
   skipBinaryFiles = true,
 ) {
-  let baseLocalDestPath;
-  if (localDestPath) {
-    baseLocalDestPath = localDestPath;
-  } else {
-    baseLocalDestPath = await getOrCreateSessionTempDir(sessionId);
-  }
+  let baseLocalDestPath = localDestPath
+    ? localDestPath
+    : await getOrCreateSessionTempDir(sessionId);
 
-  // Azure DevOps Git Items API: /{organization}/{project}/_apis/git/repositories/{repositoryId}/items
-  // RecursionLevel=Full gets all items recursively from the specified path.
-  const apiUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&amp;versionDescriptor.version=${encodeURIComponent(branchName)}&amp;recursionLevel=Full&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const apiUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
+    + `?path=${encodeURIComponent(repoDirName)}`
+    + `&amp;versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + `&amp;recursionLevel=Full`
+    + `&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     logger.debug(`Fetching repo contents from Azure DevOps API URL: ${apiUrl} [Session: ${sessionId}]`);
 
-    const request = superagent.get(apiUrl);
-    request.set('User-Agent', USER_AGENT);
+    const request = superagent.get(apiUrl)
+      .set('User-Agent', USER_AGENT);
+
     if (AZURE_DEVOPS_PAT) {
       request.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
     }
 
     const response = await request;
-
     if (response.status !== 200) {
       logger.error(
         `Azure DevOps API error for path "${repoDirName}" [Session: ${sessionId}]: HTTP `
-        + `${response.status} - ${response.text}`,
+        + `${response.status} - ${response.text}`
       );
       handleNotFoundError(
         response,
-        ` for repository ${organization}/${project}/${repoName} at path "${repoDirName}"`,
+        ` for repository ${organization}/${project}/${repoName} at path "${repoDirName}"`
       );
-      // This line will not be reached as handleNotFoundError throws
-      // return { success: false, message: `Azure DevOps API error: HTTP ${response.status} for ${apiUrl}` };
     }
 
-    const items = response.body.value; // Azure DevOps responses often have a 'value' array
-
+    const items = response.body.value;
+    // Single-item response
     if (!Array.isArray(items)) {
-      // This case might happen if querying for a single file directly
-      logger.warn(`Expected an array of items from Azure DevOps API for path "${repoDirName}", but received: ${typeof items} [Session: ${sessionId}]`);
-      if (items &amp;&amp; items.gitItemType === 'File' &amp;&amp; items.url) { // Check for single file
-        const filePath = path.join(baseLocalDestPath, items.path);
+      const single = items;
+      if (single.isFolder) {
+        return { success: true, message: `Processed single folder at path "${repoDirName}"` };
+      }
 
-        if (skipBinaryFiles) {
-          const extension = path.extname(items.path).toLowerCase();
-          if (BINARY_EXTENSIONS.has(extension)) {
-            logger.info(`Skipping potential binary single file: "${items.path}" (Extension: ${extension}) [Session: ${sessionId}]`);
-            return { success: true, message: `Skipped potential binary single file at path "${repoDirName}"` };
-          }
-        }
-
-        try {
-          const parentDir = path.dirname(filePath);
-          if (parentDir !== baseLocalDestPath &amp;&amp; parentDir !== os.tmpdir()) {
-            if (parentDir.startsWith(baseLocalDestPath)) {
-              logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
-              await mkdir(parentDir);
-            } else {
-              logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
-              throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
-            }
-          } else {
-            logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
-          }
-
-          // Use the new Azure DevOps specific download function
-          await downloadAdoFile(sessionId, organization, project, repoName, items.path, branchName, filePath);
-          return { success: true, message: `Processed single item at path "${repoDirName}"` };
-        } catch (error) {
-          const errorMessage = error.message || error;
-          const errorDetails = error.response ? `Status: ${error.response.status}, Text: ${error.response.text}` : 'No response details';
-          logger.error(
-            `Error downloading single file "${items.path}" "${filePath}" [Session: ${sessionId}]: `
-            + `${errorMessage} - ${errorDetails}`,
-            error,
-          );
-          throw new Error(
-            `Error downloading single file "${items.path}": ${errorMessage} - ${errorDetails}`,
-          );
+      // It's a file
+      if (skipBinaryFiles) {
+        const ext = path.extname(single.path).toLowerCase();
+        if (BINARY_EXTENSIONS.has(ext)) {
+          logger.info(`Skipping binary single file: "${single.path}" (Extension: ${ext}) [Session: ${sessionId}]`);
+          return { success: true, message: `Skipped potential binary single file at path "${repoDirName}"` };
         }
       }
-      return { success: true, message: `Processed non-file single item at path "${repoDirName}"` };
+
+      const destFile = path.join(baseLocalDestPath, single.path);
+      const parentDir = path.dirname(destFile);
+
+      if (
+        parentDir !== baseLocalDestPath &amp;&amp;
+        parentDir !== os.tmpdir() &amp;&amp;
+        parentDir.startsWith(baseLocalDestPath)
+      ) {
+        logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
+        await mkdir(parentDir);
+      }
+
+      await downloadAdoFile(
+        sessionId, organization, project, repoName,
+        single.path, branchName, destFile
+      );
+      return { success: true, message: `Downloaded single file at path "${repoDirName}"` };
     }
 
-    // Refactor to use Promise.all for concurrent downloads
+    // Batch download for directories
     const downloadPromises = items.map(async (item) => {
-      const currentLocalPath = path.join(baseLocalDestPath, item.path);
+      const localPath = path.join(baseLocalDestPath, item.path);
 
-      if (item.gitItemType === 'File') {
-        if (skipBinaryFiles) {
-          const extension = path.extname(item.path).toLowerCase();
-          if (BINARY_EXTENSIONS.has(extension)) {
-            logger.info(`Skipping potential binary file: "${item.path}" (Extension: ${extension}) [Session: ${sessionId}]`);
-            return null; // Return null to indicate skipping
-          }
+      if (!item.isFolder) {
+        // file case
+        const ext = path.extname(item.path).toLowerCase();
+        if (skipBinaryFiles &amp;&amp; BINARY_EXTENSIONS.has(ext)) {
+          logger.info(`Skipping binary file: "${item.path}" (Extension: ${ext}) [Session: ${sessionId}]`);
+          return null;
         }
-        try {
-          const parentDir = path.dirname(currentLocalPath);
-          if (parentDir.startsWith(baseLocalDestPath)) {
-            await mkdir(parentDir);
-          } else {
-            logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
-            throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
-          }
-          await downloadAdoFile(sessionId, organization, project, repoName, item.path, branchName, currentLocalPath);
-          return { success: true, message: `Downloaded file "${item.path}"` };
-        } catch (error) {
-          const errorMessage = error.message || error;
-          const errorDetails = error.response
-            ? `Status: ${error.response.status}, Text: ${error.response.text}`
-            : 'No response details';
-          logger.error(
-            `Error downloading file "${item.path}" [Session: ${sessionId}]: `
-            + `${errorMessage} - ${errorDetails}`,
-            error,
-          );
-          throw new Error(
-            `Error downloading file "${item.path}": ${errorMessage} - ${errorDetails}`,
-          );
+
+        const parentDir = path.dirname(localPath);
+        if (!parentDir.startsWith(baseLocalDestPath)) {
+          throw new Error(`Attempted to create directory outside base temp dir: ${parentDir}`);
         }
-      } else if (item.gitItemType === 'Folder') {
-        logger.debug(`Found folder: ${item.path}. Content should be included by recursionLevel=Full.`);
-        return { success: true, message: `Processed folder "${item.path}"` };
+        await mkdir(parentDir);
+
+        await downloadAdoFile(
+          sessionId, organization, project, repoName,
+          item.path, branchName, localPath
+        );
+        return { success: true, message: `Downloaded file "${item.path}"` };
       }
-      logger.warn(`Unknown item type "${item.gitItemType}" for item: ${item.path} [Session: ${sessionId}]`);
-      return { success: false, message: `Unknown item type "${item.gitItemType}" for item: ${item.path}` };
+
+      // folder case
+      logger.debug(`Found folder: ${item.path}. Content handled by recursionLevel=Full.`);
+      return { success: true, message: `Processed folder "${item.path}"` };
     });
 
-    const downloadResults = await Promise.all(downloadPromises);
-    const successfulDownloads = downloadResults.filter((result) => result !== null);
+    const results = await Promise.all(downloadPromises);
+    const downloadResults = results.filter(r => r !== null);
 
     return {
       success: true,
       message: `Successfully processed directory "${repoDirName}"`,
-      downloadResults: successfulDownloads,
+      downloadResults
     };
   } catch (error) {
-    const errorMessage = error.message || error;
+    const msg = error.message || error;
     logger.error(
-      'Error in fetchAdoRepoContentsRecursive (exception - Azure DevOps): '
-      + `${repoDirName} [Session: ${sessionId}]: ${errorMessage}`,
-      error,
+      `Error in fetchAdoRepoContentsRecursive: ${repoDirName} [Session: ${sessionId}]: ${msg}`,
+      error
     );
     if (error.response) {
       if (error.response.status === 404) {
@@ -393,7 +362,7 @@ async function fetchAdoRepoContentsRecursive(
       throw new Error(
         error.response.body
           ? (error.response.body.message || JSON.stringify(error.response.body))
-          : `Failed to download repo contents. Status: ${error.response.status}`,
+          : `Failed to download repo contents. Status: ${error.response.status}`
       );
     }
     throw error;
@@ -860,76 +829,96 @@ async function createAdoRepo(organization, project, repoName, description = DEFA
 }
 
 /**
- * Checks if an Azure DevOps Git repository exists.
- *
+ * Checks if a branch exists in an Azure DevOps repository.
  * @async
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
- * @param {string} repoName The name of the repository to check.
- * @returns {Promise&lt;{ exists: boolean, status: number, id: string }>}
- * A promise that resolves to an object indicating the existence of the repository and its ID.
- * @throws {Error} Throws an error if the API request fails for reasons other than 404.
+ * @param {string} repoName The Azure DevOps repository name.
+ * @param {string} branchName The name of the branch to check.
+ * @returns {Promise&lt;AdoSuccessResponse>}
  */
-async function checkAdoRepoExists(organization, project, repoName) {
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+async function checkAdoBranchExists(org, proj, repo, branch) {
+  const url = `${ADO_BASEURI}/${org}/${proj}/_apis/git/repositories/${repo}/refs`
+              + `?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
-  if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
-  if (!project || typeof project !== 'string') throw new Error('Invalid project name');
-  if (!repoName || typeof repoName !== 'string') throw new Error('Invalid repository name');
+  logger.debug(`[checkAdoBranchExists] Checking branch existence: org=${org}, proj=${proj}, repo=${repo}, branch=${branch}, url=${url}`);
 
   try {
-    const response = await superagent
+    const res = await superagent
       .get(url)
-      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-      .set('User-Agent', USER_AGENT);
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', `application/json;api-version=${AZURE_DEVOPS_API_VERSION}`)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
 
-    return { exists: true, status: response.status, id: response.body.id };
-  } catch (error) {
-    if (error.status === 404) {
-      return { exists: false, status: 404 };
+    logger.debug(`[checkAdoBranchExists] Response status: ${res.status}, body: ${JSON.stringify(res.body)}`);
+
+    if (res.status !== 200) {
+      throw new Error(`Unexpected status ${res.status}`);
     }
-    logger.error('Error checking repository existence (exception - Azure DevOps):', organization, project, repoName, error);
-    throw new Error(`Failed to check repository existence: ${error.message}`);
+
+    const fullRefName = `refs/heads/${branch}`;
+    const match = res.body.value.find((r) => r.name === fullRefName);
+
+    const exists = Boolean(match);
+    logger.debug(`[checkAdoBranchExists] Branch '${branch}' exists: ${exists}`);
+
+    return exists
+      ? { success: true, branch: match }
+      : { success: false, message: `Branch '${branch}' not found.` };
+  } catch (err) {
+    logger.error(`[checkAdoBranchExists] Error: ${err.message}`, err);
+    throw new Error(`Failed to check branch existence: ${err.message}`);
   }
 }
 
 /**
- * Checks if an Azure DevOps Git branch exists in a specified repository.
- *
+ * Checks if an Azure DevOps repository exists.
  * @async
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
- * @param {string} repoName The name of the repository to check.
- * @param {string} branchName The name of the branch to check.
- * @returns {Promise&lt;{ exists: boolean, status: number, ref: string }>}
- * A promise that resolves to an object indicating the existence of the branch and its full ref name.
- * @throws {Error} Throws an error if the API request fails for reasons other than 404.
+ * @param {string} repoName The Azure DevOps repository name.
+ * @returns {Promise&lt;AdoSuccessResponse>}
  */
-async function checkAdoBranchExists(organization, project, repoName, branchName) {
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${branchName}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
-
-  if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
-  if (!project || typeof project !== 'string') throw new Error('Invalid project name');
-  if (!repoName || typeof repoName !== 'string') throw new Error('Invalid repository name');
-  if (!branchName || typeof branchName !== 'string') throw new Error('Invalid branch name');
+async function checkAdoRepoExists(organization, project, repoName) {
+  const apiUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
-    const response = await superagent
-      .get(url)
-      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-      .set('User-Agent', USER_AGENT);
+    const request = superagent.get(apiUrl);
+    request.set('User-Agent', USER_AGENT);
+    if (AZURE_DEVOPS_PAT) {
+      request.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
+    }
 
-    if (response.status === 200 &amp;&amp; response.body.value &amp;&amp; response.body.value.length > 0) {
-      return { exists: true, status: response.status, ref: response.body.value[0].name };
+    const response = await request;
+
+    if (response.status === 200) {
+      return { success: true };
     }
-    return { exists: false, status: 404 };
+    handleNotFoundError(response, `repository ${organization}/${project}/${repoName}`);
+    return { success: false, message: `Repository '${repoName}' does not exist or is inaccessible.` };
   } catch (error) {
-    if (error.status === 404) {
-      return { exists: false, status: 404 };
-    }
-    logger.error('Error checking branch existence (exception - Azure DevOps):', organization, project, repoName, branchName, error);
-    throw new Error(`Failed to check branch existence: ${error.message}`);
+    const errorMessage = error.message || error;
+    logger.error(`Error checking ADO repo existence: ${errorMessage}`, error);
+    throw new Error(`Failed to check repository existence: ${errorMessage}`);
   }
+}
+
+/**
+ * Fetches the Git repository object so we can grab its GUID.
+ */
+async function getRepoByName(org, project, repoName) {
+  const url = `${ADO_BASEURI}/${org}/${project}/_apis/git/repositories/${encodeURIComponent(repoName)}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+
+  const res = await superagent
+    .get(url)
+    .set('User-Agent', USER_AGENT)
+    .set('Accept', `application/json;api-version=${AZURE_DEVOPS_API_VERSION}`)
+    .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
+
+  if (res.status !== 200) {
+    throw new Error(`Unable to fetch repo '${repoName}' (${res.status}): ${res.text}`);
+  }
+  return res.body;
 }
 
 /**
@@ -944,26 +933,49 @@ async function checkAdoBranchExists(organization, project, repoName, branchName)
  * @throws {Error} Throws an error if the API request fails.
  */
 const switchAdoBranch = async (organization, project, repoName, branchName) => {
-  try {
-    const response = await superagent
-      .patch(`${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`)
-      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-      .set('User-Agent', USER_AGENT)
-      .send({
-        defaultBranch: `refs/heads/${branchName}`, // Azure DevOps expects full ref name
-      });
+  logger.debug(`[switchAdoBranch] Start: ${organization}/${project}/${repoName} → ${branchName}`);
 
-    if ([200].includes(response.status)) {
-      return {
-        success: true,
-        message: `Default branch changed to "${branchName}" in repository "${organization}/${project}/${repoName}".`,
-      };
-    }
-    return { success: false, status: response.status, message: response.body.message || response.body.value };
-  } catch (error) {
-    logger.error(`Error processing switch branch (exception - Azure DevOps): ${organization}/${project}/${repoName} - ${error.message}`);
-    throw new Error(`Error processing switch branch: ${error.message}`);
+  const { success, branch } = await checkAdoBranchExists(organization, project, repoName, branchName);
+  if (!success || !branch) {
+    logger.warn(`[switchAdoBranch] Branch '${branchName}' does not exist in '${repoName}'.`);
+    return {
+      success: false,
+      message: `Branch '${branchName}' not found in '${repoName}'.`,
+    };
   }
+
+  const repo = await getRepoByName(organization, project, repoName);
+  logger.debug(`[switchAdoBranch] Repo GUID: ${repo.id}`);
+
+  const patchUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repo.id}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const payload = { defaultBranch: `refs/heads/${branchName}` };
+
+  logger.debug(`[switchAdoBranch] PATCH ${patchUrl}`);
+  logger.debug(`[switchAdoBranch] Payload: ${JSON.stringify(payload)}`);
+
+  const res = await superagent
+    .patch(patchUrl)
+    .set('User-Agent', USER_AGENT)
+    .set('Accept', `application/json;api-version=${AZURE_DEVOPS_API_VERSION}`)
+    .set('Content-Type', 'application/json')
+    .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+    .send(payload);
+
+  logger.debug(`[switchAdoBranch] Response ${res.status}: ${JSON.stringify(res.body)}`);
+
+  if (res.status === 200) {
+    return {
+      success: true,
+      message: `Default branch set to '${branchName}' in '${repoName}'.`,
+    };
+  }
+
+  // Any other status is a failure
+  return {
+    success: false,
+    status: res.status,
+    message: (res.body &amp;&amp; res.body.message) || res.text,
+  };
 };
 
 /**
@@ -1378,6 +1390,7 @@ module.exports = {
   createAdoPullRequest,
   createAdoRepo,
   fetchAdoRepoContentsRecursive,
+  getAdoDefaultBranch,
   listAdoBranches,
   listAdoCommitHistory,
   listAdoDirectoryContents,
@@ -1395,13 +1408,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Jul 26 2025 00:48:30 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Jul 26 2025 13:50:22 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

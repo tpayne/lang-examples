@@ -1,7 +1,7 @@
 const { Mutex } = require('async-mutex'); // Ensure Mutex is imported
 const logger = require('./logger');
 const { fetchRepoContentsRecursive, switchBranch } = require('./gitFunctions');
-const { fetchAdoRepoContentsRecursive, switchAdoBranch } = require('./adoFunctions'); // Import ADO functions
+const { fetchAdoRepoContentsRecursive, getAdoDefaultBranch, switchAdoBranch } = require('./adoFunctions'); // Import ADO functions
 const { readFilesInDirectory, getOrCreateSessionTempDir, cleanupSessionTempDir } = require('./utilities');
 
 const sessionMutexes = new Map();
@@ -108,8 +108,18 @@ async function adoCodeReviews(sessionId, organization, project, repoName, repoDi
   try {
     // if the branchName is provided, switch to that branch
     // before fetching the repo contents.
-    if (branchName) {
-      const resp = await switchAdoBranch(organization, project, repoName, branchName);
+    let effectiveBranchName = branchName;
+    if (!effectiveBranchName) {
+      try {
+        effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
+        logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
+      } catch (error) {
+        logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
+        throw new Error(`Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`);
+      }
+    }
+    if (effectiveBranchName) {
+      const resp = await switchAdoBranch(organization, project, repoName, effectiveBranchName);
       if (!resp.success) {
         return {
           success: false,
@@ -119,7 +129,7 @@ async function adoCodeReviews(sessionId, organization, project, repoName, repoDi
     }
 
     tmpDir = await getOrCreateSessionTempDir(sessionId);
-    logger.info(`Starting code review for Azure DevOps repo: ${organization}/${project}/${repoName}/${repoDirName} on branch ${branchName} [Session: ${sessionId}]`);
+    logger.info(`Starting code review for Azure DevOps repo: ${organization}/${project}/${repoName}/${repoDirName} on branch ${effectiveBranchName} [Session: ${sessionId}]`);
 
     const response = await fetchAdoRepoContentsRecursive(
       sessionId,
@@ -127,7 +137,8 @@ async function adoCodeReviews(sessionId, organization, project, repoName, repoDi
       project,
       repoName,
       repoDirName,
-      branchName,
+      effectiveBranchName || 'main', // Use 'main' as default branch if branchName is not provided
+      repoDirName,
       tmpDir,
       true, // skipBinaryFiles
     );
