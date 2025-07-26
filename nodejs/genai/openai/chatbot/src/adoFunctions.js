@@ -14,6 +14,7 @@ const {
 const AZURE_DEVOPS_API_VERSION = '7.1-preview.1'; // Or newer
 const { AZURE_DEVOPS_PAT } = process.env; // Personal Access Token
 const USER_AGENT = 'AIBot-AzureDevOps'; // Custom user agent
+const ADO_BASEURI = 'https://dev.azure.com';
 
 /**
  * Encodes a Personal Access Token for Basic Authentication.
@@ -106,7 +107,7 @@ async function downloadAdoFile(sessionId, organization, project, repoName, fileP
   // In a real scenario, you'd likely call checkAdoRepoExists or similar to get the ID.
   const repoId = repoName; // Placeholder: In practice, resolve to actual ID
 
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(filePath)}&versionDescriptor.version=${encodeURIComponent(branchName)}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(filePath)}&versionDescriptor.version=${encodeURIComponent(branchName)}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
 
   const downloadMutex = getDownloadMutex(sessionId, url);
   const release = await downloadMutex.acquire();
@@ -223,7 +224,7 @@ async function fetchAdoRepoContentsRecursive(
 
   // Azure DevOps Git Items API: /{organization}/{project}/_apis/git/repositories/{repositoryId}/items
   // RecursionLevel=Full gets all items recursively from the specified path.
-  const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&versionDescriptor.version=${encodeURIComponent(branchName)}&recursionLevel=Full&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const apiUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&versionDescriptor.version=${encodeURIComponent(branchName)}&recursionLevel=Full&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     logger.debug(`Fetching repo contents from Azure DevOps API URL: ${apiUrl} [Session: ${sessionId}]`);
@@ -380,7 +381,7 @@ async function fetchAdoRepoContentsRecursive(
  * @throws {Error} If API request fails or project is not found.
  */
 async function listAdoRepos(organization, project) {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
       .get(url)
@@ -412,7 +413,7 @@ async function listAdoRepos(organization, project) {
  * @throws {Error} If the API request fails or the repository is not found.
  */
 async function getAdoDefaultBranch(organization, project, repoName) {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
       .get(url)
@@ -445,7 +446,7 @@ async function getAdoDefaultBranch(organization, project, repoName) {
  * @throws {Error} If API request fails or repository is not found.
  */
 async function listAdoBranches(organization, project, repoName) {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/&api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
       .get(url)
@@ -479,7 +480,7 @@ async function listAdoBranches(organization, project, repoName) {
  */
 async function listAdoCommitHistory(organization, project, repoName, repoDirName) {
   // First, verify that the file or directory exists by querying the items API.
-  const contentsUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const contentsResponse = await superagent
@@ -499,7 +500,7 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
     throw contentsError; // Re-throw other errors
   }
 
-  const commitsUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const commitResponse = await superagent
@@ -561,7 +562,7 @@ async function listAdoDirectoryContents(
 
   const cleanRepoDirName = repoDirName.replace(/^\/+|\/+$/g, '');
   const recursionLevel = recursive ? 'Full' : 'OneLevel';
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(cleanRepoDirName)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&recursionLevel=${recursionLevel}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(cleanRepoDirName)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&recursionLevel=${recursionLevel}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     logger.debug(`Listing contents from Azure DevOps API URL: ${url}`);
@@ -660,7 +661,7 @@ async function createAdoPullRequest(
   targetBranch,
   body = '',
 ) {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/pullrequests?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/pullrequests?api-version=${AZURE_DEVOPS_API_VERSION}`;
   const postData = {
     title,
     description: body,
@@ -710,7 +711,7 @@ async function listAdoPipelines(organization, project, repoName, statusFilter = 
   // First, get the repository ID from its name
   const repoId = repoName; // Placeholder, assuming repoName works, but ID is preferred
 
-  const urlRuns = `https://dev.azure.com/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&repositoryType=TfsGit&statusFilter=${statusFilter}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const urlRuns = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&repositoryType=TfsGit&statusFilter=${statusFilter}&api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const runsResponse = await superagent
       .get(urlRuns)
@@ -725,7 +726,7 @@ async function listAdoPipelines(organization, project, repoName, statusFilter = 
 
     // Refactor to use Promise.all for concurrent timeline fetching
     const pipelineJobsPromises = builds.map(async (build) => {
-      const urlTimeline = `https://dev.azure.com/${organization}/${project}/_apis/build/builds/${build.id}/timeline?api-version=${AZURE_DEVOPS_API_VERSION}`;
+      const urlTimeline = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds/${build.id}/timeline?api-version=${AZURE_DEVOPS_API_VERSION}`;
       const timelineResponse = await superagent
         .get(urlTimeline)
         .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -789,7 +790,7 @@ async function createAdoRepo(organization, project, repoName, description = DEFA
   // To create a repo, we need the project ID. We can get it by querying projects.
   // Or, if the project parameter is the project name, we can use that in the URL.
   // Assuming 'project' is the project name for simplicity in URL.
-  const url = `https://dev.azure.com/${organization}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!repoName || typeof repoName !== 'string' || repoName.length < 1) {
     throw new Error('Invalid repository name: must be a non-empty string.');
@@ -842,7 +843,7 @@ async function createAdoRepo(organization, project, repoName, description = DEFA
  * @throws {Error} Throws an error if the API request fails for reasons other than 404.
  */
 async function checkAdoRepoExists(organization, project, repoName) {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
@@ -877,7 +878,7 @@ async function checkAdoRepoExists(organization, project, repoName) {
  * @throws {Error} Throws an error if the API request fails for reasons other than 404.
  */
 async function checkAdoBranchExists(organization, project, repoName, branchName) {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${branchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${branchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
@@ -917,7 +918,7 @@ async function checkAdoBranchExists(organization, project, repoName, branchName)
 const switchAdoBranch = async (organization, project, repoName, branchName) => {
   try {
     const response = await superagent
-      .patch(`https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`)
+      .patch(`${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`)
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
       .set('User-Agent', USER_AGENT)
       .send({
@@ -950,7 +951,7 @@ const switchAdoBranch = async (organization, project, repoName, branchName) => {
  * @throws {Error} Throws an error if the API request fails.
  */
 async function createAdoBranch(organization, project, repoName, branchName, baseBranch = 'main') {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
@@ -969,7 +970,7 @@ async function createAdoBranch(organization, project, repoName, branchName, base
 
   try {
     // Get the SHA of the base branch
-    const baseBranchRefUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${baseBranch}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+    const baseBranchRefUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${baseBranch}&api-version=${AZURE_DEVOPS_API_VERSION}`;
     const baseBranchResponse = await superagent
       .get(baseBranchRefUrl)
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -1114,7 +1115,7 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
     }
 
     // Get the latest commit and tree for the target branch
-    const refUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+    const refUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
     const refResponse = await superagent
       .get(refUrl)
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -1175,7 +1176,7 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
         const localBase64Content = localContent.toString('base64');
         let currentItem = null;
 
-        const getItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(adoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
+        const getItemUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(adoDestPath)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
         try {
           const getItemResponse = await superagent
             .get(getItemUrl)
@@ -1233,7 +1234,7 @@ async function commitAdoFiles(sessionId, organization, project, repoName, repoDi
     }
 
     // Now, create the Git Push
-    const pushUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repoName}/pushes?api-version=${AZURE_DEVOPS_API_VERSION}`;
+    const pushUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/pushes?api-version=${AZURE_DEVOPS_API_VERSION}`;
     const commitMessage = `Automated commit from AIBot - ${changes.length} file(s) changed`;
 
     const pushBody = {
