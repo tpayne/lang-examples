@@ -193,6 +193,23 @@ const BINARY_EXTENSIONS = new Set([
 ]);
 
 /**
+ * Exception thrown when a folder is detected at a specified path during a fetch operation.
+ *
+ * @class FolderFetchError
+ * @extends Error
+ * @param {string} path - The path where the folder was detected.
+ * @property {string} name - The name of the error ('FolderFetchError').
+ * @property {string} path - The path where the folder was detected.
+ */
+class FolderFetchError extends Error {
+  constructor(folderPath) {
+    super(`Detected folder at path "${folderPath}"`);
+    this.name = 'FolderFetchError';
+    this.folderPath = folderPath;
+  }
+}
+
+/**
  * Recursively fetches files and directories from an Azure DevOps Git repository for a specific session.
  * Optionally skips potential binary files based on extension.
  *
@@ -205,6 +222,7 @@ const BINARY_EXTENSIONS = new Set([
  * @param {string} [localDestPath=null] Optional local destination path.
  * @param {boolean} [skipBinaryFiles=true] Whether to skip downloading files likely to be binary.
  */
+
 async function fetchAdoRepoContentsRecursive(
   sessionId,
   organization,
@@ -217,136 +235,102 @@ async function fetchAdoRepoContentsRecursive(
 ) {
   const baseLocalDestPath = localDestPath || await getOrCreateSessionTempDir(sessionId);
 
-  const apiUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
+  const handleSingleFile = async (filePath) => {
+    const destFile = path.join(baseLocalDestPath, filePath);
+    const parentDir = path.dirname(destFile);
+    if (
+      parentDir !== baseLocalDestPath
+      && parentDir !== os.tmpdir()
+      && parentDir.startsWith(baseLocalDestPath)
+    ) {
+      await mkdir(parentDir, { recursive: true });
+    }
+    await downloadAdoFile(
+      sessionId,
+      organization,
+      project,
+      repoName,
+      filePath,
+      branchName,
+      destFile,
+    );
+    return { success: true, message: `Downloaded file at "${filePath}"` };
+  };
+
+  // Probe single item (no recursion)
+  const probeUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
     + `?path=${encodeURIComponent(repoDirName)}`
+    + `&versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + '&recursionLevel=None'
+    + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
+
+  try {
+    logger.debug(`Single-item probe: ${probeUrl} [Session: ${sessionId}]`);
+    const probeReq = superagent.get(probeUrl).set('User-Agent', USER_AGENT);
+    if (AZURE_DEVOPS_PAT) probeReq.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
+    const probeRes = await probeReq;
+
+    const single = probeRes.body.value;
+    if (!Array.isArray(single)) {
+      if (single.isFolder) {
+        throw new FolderFetchError(repoDirName);
+      }
+      const ext = path.extname(single.path).toLowerCase();
+      if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
+        logger.info(`Skipping binary file: "${single.path}" [Session: ${sessionId}]`);
+        return { success: true, message: `Skipped binary file at "${single.path}"` };
+      }
+      return handleSingleFile(single.path);
+    }
+  } catch (err) {
+    const isFolderProbe = err instanceof FolderFetchError
+      || (err.response && err.response.status === 400 && err.response.text.includes('recursionLevel'));
+
+    if (!isFolderProbe && (!err.response || err.response.status !== 404)) {
+      logger.error(`Error in single-item probe: ${err.message}`, err);
+      throw err;
+    }
+    if (err.response && err.response.status === 404) {
+      throw new Error('Not Found: verify organization, project, repo and path names.');
+    }
+    // Fall through to directory fetch
+  }
+
+  // Directory fetch with scopePath & recursionLevel=Full
+  const dirUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
+    + `?scopePath=${encodeURIComponent(repoDirName)}`
     + `&versionDescriptor.version=${encodeURIComponent(branchName)}`
     + '&recursionLevel=Full'
     + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
-  try {
-    logger.debug(`Fetching repo contents from Azure DevOps API URL: ${apiUrl} [Session: ${sessionId}]`);
+  logger.debug(`Directory fetch: ${dirUrl} [Session: ${sessionId}]`);
+  const dirReq = superagent.get(dirUrl).set('User-Agent', USER_AGENT);
+  if (AZURE_DEVOPS_PAT) dirReq.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
+  const dirRes = await dirReq;
 
-    const request = superagent.get(apiUrl)
-      .set('User-Agent', USER_AGENT);
-
-    if (AZURE_DEVOPS_PAT) {
-      request.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
-    }
-
-    const response = await request;
-    if (response.status !== 200) {
-      logger.error(
-        `Azure DevOps API error for path "${repoDirName}" [Session: ${sessionId}]: HTTP `
-        + `${response.status} - ${response.text}`,
-      );
-      handleNotFoundError(
-        response,
-        ` for repository ${organization}/${project}/${repoName} at path "${repoDirName}"`,
-      );
-    }
-
-    const items = response.body.value;
-    // Single-item response
-    if (!Array.isArray(items)) {
-      const single = items;
-      if (single.isFolder) {
-        return { success: true, message: `Processed single folder at path "${repoDirName}"` };
-      }
-
-      // It's a file
-      if (skipBinaryFiles) {
-        const ext = path.extname(single.path).toLowerCase();
-        if (BINARY_EXTENSIONS.has(ext)) {
-          logger.info(`Skipping binary single file: "${single.path}" (Extension: ${ext}) [Session: ${sessionId}]`);
-          return { success: true, message: `Skipped potential binary single file at path "${repoDirName}"` };
-        }
-      }
-
-      const destFile = path.join(baseLocalDestPath, single.path);
-      const parentDir = path.dirname(destFile);
-
-      if (
-        parentDir !== baseLocalDestPath
-        && parentDir !== os.tmpdir()
-        && parentDir.startsWith(baseLocalDestPath)
-      ) {
-        logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
-        await mkdir(parentDir);
-      }
-
-      await downloadAdoFile(
-        sessionId,
-        organization,
-        project,
-        repoName,
-        single.path,
-        branchName,
-        destFile,
-      );
-      return { success: true, message: `Downloaded single file at path "${repoDirName}"` };
-    }
-
-    // Batch download for directories
-    const downloadPromises = items.map(async (item) => {
-      const localPath = path.join(baseLocalDestPath, item.path);
-
-      if (!item.isFolder) {
-        // file case
-        const ext = path.extname(item.path).toLowerCase();
-        if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
-          logger.info(`Skipping binary file: "${item.path}" (Extension: ${ext}) [Session: ${sessionId}]`);
-          return null;
-        }
-
-        const parentDir = path.dirname(localPath);
-        if (!parentDir.startsWith(baseLocalDestPath)) {
-          throw new Error(`Attempted to create directory outside base temp dir: ${parentDir}`);
-        }
-        await mkdir(parentDir);
-
-        await downloadAdoFile(
-          sessionId,
-          organization,
-          project,
-          repoName,
-          item.path,
-          branchName,
-          localPath,
-        );
-        return { success: true, message: `Downloaded file "${item.path}"` };
-      }
-
-      // folder case
-      logger.debug(`Found folder: ${item.path}. Content handled by recursionLevel=Full.`);
-      return { success: true, message: `Processed folder "${item.path}"` };
-    });
-
-    const results = await Promise.all(downloadPromises);
-    const downloadResults = results.filter((r) => r !== null);
-
-    return {
-      success: true,
-      message: `Successfully processed directory "${repoDirName}"`,
-      downloadResults,
-    };
-  } catch (error) {
-    const msg = error.message || error;
-    logger.error(
-      `Error in fetchAdoRepoContentsRecursive: ${repoDirName} [Session: ${sessionId}]: ${msg}`,
-      error,
-    );
-    if (error.response) {
-      if (error.response.status === 404) {
-        throw new Error('Not Found: Check organization, project, repo and directory names.');
-      }
-      throw new Error(
-        error.response.body
-          ? (error.response.body.message || JSON.stringify(error.response.body))
-          : `Failed to download repo contents. Status: ${error.response.status}`,
-      );
-    }
-    throw error;
+  if (dirRes.status !== 200) {
+    throw new Error(`Failed directory fetch. Status ${dirRes.status}: ${dirRes.text}`);
   }
+
+  const items = dirRes.body.value;
+  const downloadResults = await Promise.all(items.map(async (item) => {
+    if (item.isFolder) {
+      logger.debug(`Skipped folder placeholder: "${item.path}"`);
+      return { success: true, message: `Folder: "${item.path}"` };
+    }
+    const ext = path.extname(item.path).toLowerCase();
+    if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
+      logger.info(`Skipping binary file: "${item.path}" [Session: ${sessionId}]`);
+      return null;
+    }
+    return handleSingleFile(item.path);
+  }));
+
+  return {
+    success: true,
+    message: `Processed directory "${repoDirName}"`,
+    downloadResults: downloadResults.filter((r) => r),
+  };
 }
 
 /**
@@ -821,16 +805,12 @@ async function checkAdoBranchExists(org, proj, repo, branch) {
   const url = `${ADO_BASEURI}/${org}/${proj}/_apis/git/repositories/${repo}/refs`
               + `?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
-  logger.debug(`[checkAdoBranchExists] Checking branch existence: org=${org}, proj=${proj}, repo=${repo}, branch=${branch}, url=${url}`);
-
   try {
     const res = await superagent
       .get(url)
       .set('User-Agent', USER_AGENT)
       .set('Accept', `application/json;api-version=${AZURE_DEVOPS_API_VERSION}`)
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
-
-    logger.debug(`[checkAdoBranchExists] Response status: ${res.status}, body: ${JSON.stringify(res.body)}`);
 
     if (res.status !== 200) {
       throw new Error(`Unexpected status ${res.status}`);
@@ -840,7 +820,6 @@ async function checkAdoBranchExists(org, proj, repo, branch) {
     const match = res.body.value.find((r) => r.name === fullRefName);
 
     const exists = Boolean(match);
-    logger.debug(`[checkAdoBranchExists] Branch '${branch}' exists: ${exists}`);
 
     return exists
       ? { success: true, branch: match }
@@ -913,8 +892,6 @@ async function getRepoByName(org, project, repoName) {
  * @throws {Error} Throws an error if the API request fails.
  */
 const switchAdoBranch = async (organization, project, repoName, branchName) => {
-  logger.debug(`[switchAdoBranch] Start: ${organization}/${project}/${repoName} → ${branchName}`);
-
   const { success, branch } = await checkAdoBranchExists(organization, project, repoName, branchName);
   if (!success || !branch) {
     logger.warn(`[switchAdoBranch] Branch '${branchName}' does not exist in '${repoName}'.`);
@@ -925,13 +902,9 @@ const switchAdoBranch = async (organization, project, repoName, branchName) => {
   }
 
   const repo = await getRepoByName(organization, project, repoName);
-  logger.debug(`[switchAdoBranch] Repo GUID: ${repo.id}`);
 
   const patchUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repo.id}?api-version=${AZURE_DEVOPS_API_VERSION}`;
   const payload = { defaultBranch: `refs/heads/${branchName}` };
-
-  logger.debug(`[switchAdoBranch] PATCH ${patchUrl}`);
-  logger.debug(`[switchAdoBranch] Payload: ${JSON.stringify(payload)}`);
 
   const res = await superagent
     .patch(patchUrl)
@@ -940,8 +913,6 @@ const switchAdoBranch = async (organization, project, repoName, branchName) => {
     .set('Content-Type', 'application/json')
     .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
     .send(payload);
-
-  logger.debug(`[switchAdoBranch] Response ${res.status}: ${JSON.stringify(res.body)}`);
 
   if (res.status === 200) {
     return {
@@ -1117,10 +1088,18 @@ async function commitAdoFiles(
     && typeof repoDirNameParam !== 'string'
   ) throw new Error('Invalid repoDirName type');
 
+  const repo = await getRepoByName(organization, project, repoName);
+  if (!repo || !repo.id) {
+    throw new Error(`Repository "${repoName}" not found in project "${project}" of organization "${organization}".`);
+  }
+
   // Clean up the repo‐dir parameter
-  const cleanRepoDirName = repoDirNameParam === '' || repoDirNameParam === null
-    ? null
-    : repoDirNameParam.replace(/^\/|\/$/g, '');
+  let cleanRepoDirName = repoDirNameParam;
+  if (cleanRepoDirName === undefined || cleanRepoDirName === null || cleanRepoDirName === '' || cleanRepoDirName === '/') {
+    cleanRepoDirName = null;
+  } else {
+    cleanRepoDirName = repoDirNameParam.replace(/^\/+|\/+$/g, '');
+  }
 
   // --- Determine branch ---
   let effectiveBranchName = branchName;
@@ -1201,8 +1180,21 @@ async function commitAdoFiles(
       const cleanRepoDirNormalized = cleanRepoDirName
         ? cleanRepoDirName.replace(/\\/g, '/')
         : null;
-      const relativeNormalized = relativeFilePath.replace(/\\/g, '/');
 
+      // normalize forward‐slashes
+      let relativeNormalized = relativeFilePath.replace(/\\/g, '/');
+
+      // AUTO‐STRIP: drop leading "repoName/" if no explicit repoDirNameParam
+      if (!cleanRepoDirName) {
+        const parts = relativeNormalized.split('/');
+        if (parts[0] === repoName) {
+          parts.shift();
+          relativeNormalized = parts.join('/');
+          logger.debug(
+            `Auto‐stripped leading '${repoName}/'; now '${relativeNormalized}'`,
+          );
+        }
+      }
       if (cleanRepoDirNormalized) {
         if (
           relativeNormalized.startsWith(
@@ -1229,30 +1221,49 @@ async function commitAdoFiles(
           );
         }
       } else {
-        adoDestPath = relativeFilePath;
+        adoDestPath = relativeNormalized;
       }
+      let absoluteAdoPath = null;
 
       if (!shouldProcessFile) {
         fileResult.success = true;
         fileResult.message = `Skipped: outside repoDirName "${cleanRepoDirName}"`;
+        // Normalize to forward‐slashes and strip any leading slashes,
+        // then build absolute ADO path
+        let normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
+        // If normalized is empty (e.g. repoDirName was "/" or ""), use the filename
+        if (!normalized || normalized === '.' || normalized === '/') {
+          normalized = path.basename(relativeFilePath);
+        }
+        absoluteAdoPath = `/${normalized}`;
+
+        if (normalized === '' || normalized === '.' || absoluteAdoPath === '/') {
+          logger.debug(
+            `Skipping commit for "${relativeFilePath}" (resolves to repo root or empty path).`,
+          );
+          fileResult.success = true;
+          fileResult.message = 'Skipped commit for root or empty path.';
+          fileResult.adoPath = absoluteAdoPath;
+          return fileResult;
+        }
+        fileResult.adoPath = absoluteAdoPath;
         return fileResult;
       }
 
-      // Normalize to forward‐slashes and strip any leading slashes,
-      // then build absolute ADO path
-      const normalized = adoDestPath
-        .replace(/\\/g, '/')
-        .replace(/^\/+/, '');
-      const absoluteAdoPath = `/${normalized}`;
-
-      if (normalized === '' || normalized === '.') {
-        logger.debug(
-          `Skipping commit for "${relativeFilePath}" (resolves to repo root).`,
-        );
-        fileResult.success = true;
-        fileResult.message = 'Skipped commit for root or empty path.';
-        fileResult.adoPath = absoluteAdoPath;
-        return fileResult;
+      // Always set absoluteAdoPath for files to be processed
+      if (cleanRepoDirName) {
+        // If we have a cleanRepoDirName, adoDestPath is already set above
+        let normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
+        if (!normalized || normalized === '.' || normalized === '/') {
+          normalized = path.basename(relativeFilePath);
+        }
+        absoluteAdoPath = `/${normalized}`;
+      } else {
+        let normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
+        if (!normalized || normalized === '.' || normalized === '/') {
+          normalized = path.basename(relativeFilePath);
+        }
+        absoluteAdoPath = `/${normalized}`;
       }
 
       logger.debug(`Processing file: ${relativeFilePath}`);
@@ -1344,8 +1355,11 @@ async function commitAdoFiles(
   }
 
   // --- Build and send the push ---
-  const pushUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/pushes?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  // Preview endpoint is broken, so we use the standard push endpoint
+  const pushUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repo.name}/pushes?api-version=7.0`;
+
   const pushBody = {
+    repository: { id: repo.id, name: repo.name },
     refUpdates: [
       {
         name: `refs/heads/${effectiveBranchName}`,
@@ -1360,109 +1374,123 @@ async function commitAdoFiles(
     ],
   };
 
-  let pushSuccess = false;
-  let currentPushRetry = 0;
-  let lastPushError = null;
+  // Refactor retry logic to avoid await in loop
+  async function tryPushWithRetries() {
+    let attempt = 0;
+    let pushSuccess = false;
+    let lastPushError = null;
+    let updatedPushBody = { ...pushBody };
 
-  while (currentPushRetry <= maxRetries && !pushSuccess) {
-    try {
-      if (currentPushRetry > 0) {
-        logger.info(
-          `Retrying push (attempt ${currentPushRetry}/${maxRetries})…`,
-        );
-        await delay(1000 * currentPushRetry);
-      }
+    while (attempt <= maxRetries && !pushSuccess) {
+      try {
+        if (attempt > 0) {
+          logger.info(
+            `Retrying push (attempt ${attempt}/${maxRetries})…`,
+          );
+          // eslint-disable-next-line no-await-in-loop
+          await delay(1000 * attempt);
+        }
 
-      const pushResp = await superagent
-        .post(pushUrl)
-        .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-        .set('User-Agent', USER_AGENT)
-        .send(pushBody);
+        // eslint-disable-next-line no-await-in-loop
+        const pushResp = await superagent
+          .post(pushUrl)
+          .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+          .set('User-Agent', USER_AGENT)
+          .send(updatedPushBody);
 
-      if ([200, 201].includes(pushResp.status)) {
-        logger.info(
-          `Successfully pushed changes to ${effectiveBranchName}.`,
-        );
-        pushSuccess = true;
-      } else if (
-        pushResp.status === 409
-        || (pushResp.status === 400
-          && pushResp.body.message.includes(
-            'A push to the default branch is not allowed',
-          ))
-      ) {
-        // branch policy / conflict: re-fetch and retry
-        logger.warn(
-          'Conflict or policy error; re-fetching ref and retrying…',
-        );
-        lastPushError = new Error(pushResp.body.message || 'Conflict');
-        const refRefresh = await superagent
-          .get(refUrl)
-          .set(
-            'Authorization',
-            `Basic ${encodePat(AZURE_DEVOPS_PAT)}`,
-          )
-          .set('User-Agent', USER_AGENT);
-        if (
-          refRefresh.status === 200
-          && (refRefresh.body && refRefresh.body.value && refRefresh.body.value.length > 0)
+        if ([200, 201].includes(pushResp.status)) {
+          logger.info(
+            `Successfully pushed changes to ${effectiveBranchName}.`,
+          );
+          pushSuccess = true;
+        } else if (
+          pushResp.status === 409
+          || (pushResp.status === 400
+            && pushResp.body.message.includes(
+              'A push to the default branch is not allowed',
+            ))
         ) {
-          pushBody.refUpdates[0].oldObjectId = refRefresh.body.value[0].objectId;
+          // branch policy / conflict: re-fetch and retry
+          logger.warn(
+            'Conflict or policy error; re-fetching ref and retrying…',
+          );
+          lastPushError = new Error(pushResp.body.message || 'Conflict');
+          // eslint-disable-next-line no-await-in-loop
+          const refRefresh = await superagent
+            .get(refUrl)
+            .set(
+              'Authorization',
+              `Basic ${encodePat(AZURE_DEVOPS_PAT)}`,
+            )
+            .set('User-Agent', USER_AGENT);
+          if (
+            refRefresh.status === 200
+            && (refRefresh.body && refRefresh.body.value && refRefresh.body.value.length > 0)
+          ) {
+            updatedPushBody = {
+              ...updatedPushBody,
+              refUpdates: [
+                {
+                  ...updatedPushBody.refUpdates[0],
+                  oldObjectId: refRefresh.body.value[0].objectId,
+                },
+              ],
+            };
+          } else {
+            lastPushError = new Error(
+              `Failed to re-fetch ref: ${refRefresh.body.message || 'unknown'}`,
+            );
+            break;
+          }
         } else {
           lastPushError = new Error(
-            `Failed to re-fetch ref: ${refRefresh.body.message || 'unknown'}`,
+            pushResp.body.message || 'Unknown push error',
           );
           break;
         }
-      } else {
-        lastPushError = new Error(
-          pushResp.body.message || 'Unknown push error',
-        );
-        break;
+      } catch (pushErr) {
+        const status = (pushErr.response && pushErr.response.status) || 'N/A';
+        const msg = (pushErr.response && pushErr.response.body && (pushErr.response.body.message || pushErr.response.body.value))
+          || pushErr.message;
+        logger.error(`Push exception [${status}]: ${msg}`);
+
+        lastPushError = new Error(`Push failed: ${msg}`);
+        if (
+          status === 429
+          || (status >= 500 && status < 600)
+        ) {
+          // allow retry
+        } else {
+          break;
+        }
       }
-    } catch (pushErr) {
-      const status = (pushErr.response && pushErr.response.status) || 'N/A';
-      const msg = ((pushErr.response && pushErr.response.body && pushErr.response.body.message)
-        || (pushErr.response && pushErr.response.body && pushErr.response.body.value))
-        || pushErr.message;
-      logger.error(
-        `Push exception [${status}]: ${msg}`,
-        pushErr,
+      attempt += 1;
+    }
+
+    if (!pushSuccess) {
+      throw new Error(
+        `Failed to commit files after ${maxRetries} retries: ${lastPushError && lastPushError.message ? lastPushError.message : ''}`,
       );
-      lastPushError = new Error(`Push failed: ${msg}`);
-      if (
-        status === 429
-        || (status >= 500 && status < 600)
-      ) {
-        // allow retry
-      } else {
-        break;
-      }
-    } finally {
-      currentPushRetry += 1;
     }
   }
 
-  if (!pushSuccess) {
-    throw new Error(
-      `Failed to commit files after ${maxRetries} retries: ${lastPushError.message}`,
-    );
-  }
+  await tryPushWithRetries();
 
-  // Mark scheduled changes as successful
-  results.forEach((r) => {
-    if (r.message.startsWith('Scheduled for')) {
-      r.success = true;
-      r.message = r.message.replace(
-        'Scheduled for',
-        'Successfully',
-      );
+  // Mark scheduled changes as successful (avoid assignment to parameter)
+  const updatedResults = results.map((r) => {
+    if (typeof r.message === 'string' && r.message.startsWith('Scheduled for')) {
+      return {
+        ...r,
+        success: true,
+        message: r.message.replace('Scheduled for', 'Successfully'),
+      };
     }
+    return r;
   });
 
   return {
     success: true,
-    results,
+    results: updatedResults,
     message:
       'All selected files processed and committed successfully.',
   };

@@ -118,14 +118,19 @@ async function adoCodeReviews(sessionId, organization, project, repoName, repoDi
         throw new Error(`Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`);
       }
     }
-    if (effectiveBranchName) {
-      const resp = await switchAdoBranch(organization, project, repoName, effectiveBranchName);
-      if (!resp.success) {
-        return {
-          success: false,
-          message: resp.message,
-        };
+    try {
+      if (effectiveBranchName) {
+        const resp = await switchAdoBranch(organization, project, repoName, effectiveBranchName);
+        if (!resp.success) {
+          return {
+            success: false,
+            message: resp.message,
+          };
+        }
       }
+    } catch (error) {
+      logger.error(`Failed to switch to branch "${effectiveBranchName}" for ${organization}/${project}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to switch to branch "${effectiveBranchName}" for repository "${organization}/${project}/${repoName}". Please ensure the branch exists.`);
     }
 
     tmpDir = await getOrCreateSessionTempDir(sessionId);
