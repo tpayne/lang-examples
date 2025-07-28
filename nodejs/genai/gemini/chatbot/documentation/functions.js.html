@@ -35,6 +35,7 @@ const {
   commitFiles,
   createBranch,
   createGithubPullRequest,
+  createRepo,
   fetchRepoContentsRecursive,
   listBranches,
   listCommitHistory,
@@ -42,11 +43,27 @@ const {
   listGitHubActions,
   listPublicRepos,
   switchBranch,
-  createRepo, // Ensure createRepo is imported
 } = require('./gitFunctions');
 
 const {
+  checkAdoBranchExists,
+  checkAdoRepoExists,
+  commitAdoFiles,
+  createAdoBranch,
+  createAdoPullRequest,
+  createAdoRepo,
+  fetchAdoRepoContentsRecursive,
+  listAdoBranches,
+  listAdoCommitHistory,
+  listAdoDirectoryContents,
+  listAdoPipelines,
+  listAdoRepos,
+  switchAdoBranch,
+} = require('./adoFunctions'); // Assuming gitFunctions.js now contains the Ado functions
+
+const {
   codeReviews,
+  adoCodeReviews,
   cleanupSession: cleanupCodeReviewSession, // Import cleanup for code reviews
 } = require('./codeReviews');
 
@@ -265,6 +282,25 @@ async function loadCodeReviews(sessionId) {
       branchName: { type: 'string', description: 'The name of the branch to review.' },
     },
     ['username', 'repoName', 'repoDirName'],
+    true,
+  );
+}
+
+async function loadAdoCodeReviews(sessionId) {
+  await registerFunction(
+    sessionId,
+    'ado_file_review',
+    adoCodeReviews,
+    ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
+    'Review files in a given Azure DevOps repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The Azure DevOps repository name.' },
+      repoDirName: { type: 'string', description: 'The Azure DevOps repository path to start download at.' },
+      branchName: { type: 'string', description: 'The name of the branch to review.' },
+    },
+    ['organization', 'project', 'repoName', 'repoDirName'],
     true,
   );
 }
@@ -489,6 +525,213 @@ async function loadGitHub(sessionId) {
       recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' }, // Clarified description
     },
     ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
+  );
+}
+
+/**
+ * Registers the Azure DevOps (ADO) Git functions with the function registry.
+ * @param {string} sessionId The unique identifier for the session.
+ */
+async function loadAdoIntegration(sessionId) {
+  await registerFunction(
+    sessionId,
+    'create_ado_repo',
+    createAdoRepo,
+    ['organization', 'project', 'repoName', 'isPublic'],
+    'Create an Azure DevOps (ADO) Git repository under a specified organization and project.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository to be created.' },
+      isPublic: { type: 'boolean', description: 'Is the repository public (true) or private (false) (optional). Defaults to private if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'switch_ado_branch',
+    switchAdoBranch,
+    ['organization', 'project', 'repoName', 'branchName'],
+    'Switch the default branch in an Azure DevOps (ADO) Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository.' },
+      branchName: { type: 'string', description: 'The branch name to switch to as the new default.' },
+    },
+    ['organization', 'project', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'commit_ado_files',
+    commitAdoFiles,
+    ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
+    'Upload, push, load or commit files from the session temporary directory to a specified Azure DevOps (ADO) Git repository, maintaining directory structure.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The base directory in the Azure DevOps repository to commit files into (optional). Defaults to the repository root if not provided.' },
+      branchName: { type: 'string', description: 'The name of the branch to commit to (optional). Defaults to the repository\'s default branch if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_ado_pull_request',
+    createAdoPullRequest,
+    ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+    'Create a pull request on a given Azure DevOps (ADO) Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      title: { type: 'string', description: 'The Pull Request title.' },
+      sourceBranch: { type: 'string', description: 'The source branch name.' },
+      targetBranch: { type: 'string', description: 'The target branch name.' },
+      body: { type: 'string', description: 'The description or body of the pull request (optional).' },
+    },
+    ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'fetch_ado_repo_contents',
+    fetchAdoRepoContentsRecursive,
+    ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
+    'Fetch or download the contents of an Azure DevOps (ADO) Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The Azure DevOps repository path to start download at (optional). Defaults to the repository root if not provided.' },
+      branchName: { type: 'string', description: 'The name of the branch to fetch contents from (optional). Defaults to the repository\'s default branch if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+    true,
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_ado_pipelines',
+    listAdoPipelines,
+    ['organization', 'project', 'repoName', 'statusFilter'],
+    'Lists Azure DevOps (ADO) Pipelines (builds) running or queued in a specified repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      statusFilter: { type: 'string', description: 'The status to filter pipelines by (e.g., "inProgress", "queued", "completed", "failed") (optional). Defaults to "inProgress" if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_ado_repos',
+    listAdoRepos,
+    ['organization', 'project'],
+    'Lists repositories for a given Azure DevOps (ADO) organization and project.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+    },
+    ['organization', 'project'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_ado_branches',
+    listAdoBranches,
+    ['organization', 'project', 'repoName'],
+    'Lists branches for a given Azure DevOps (ADO) Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_ado_commit_history',
+    listAdoCommitHistory,
+    ['organization', 'project', 'repoName', 'repoDirName'],
+    'Lists commit history for a file or directory in an Azure DevOps (ADO) Git repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: { type: 'string', description: 'The file or directory path within the repository.' },
+    },
+    ['organization', 'project', 'repoName', 'repoDirName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_ado_directory_contents',
+    listAdoDirectoryContents,
+    ['organization', 'project', 'repoName', 'branchName', 'repoDirName', 'recursive'],
+    'Lists the contents of a directory in an Azure DevOps (ADO) Git repository on a specific branch. Defaults to the root and recursive scan.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to the repository\'s default branch if not provided.' },
+      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' },
+      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'check_ado_branch_exists',
+    checkAdoBranchExists,
+    ['organization', 'project', 'repoName', 'branchName'],
+    'Check if an Azure DevOps (ADO) Git branch exists in a specified repository.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository to check.' },
+      branchName: { type: 'string', description: 'The name of the branch to check.' },
+    },
+    ['organization', 'project', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'check_ado_repo_exists',
+    checkAdoRepoExists,
+    ['organization', 'project', 'repoName'],
+    'Check if an Azure DevOps (ADO) Git repository exists under a given organization and project.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository to check.' },
+    },
+    ['organization', 'project', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_ado_branch',
+    createAdoBranch,
+    ['organization', 'project', 'repoName', 'branchName', 'baseBranch'],
+    'Create a new branch in an Azure DevOps (ADO) Git repository based on an existing branch.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      branchName: { type: 'string', description: 'The name of the new branch to be created.' },
+      baseBranch: { type: 'string', description: 'The name of the existing branch to base the new branch on (optional). Defaults to the repository\'s default branch.' },
+    },
+    ['organization', 'project', 'repoName', 'branchName'],
   );
 }
 
@@ -1241,6 +1484,16 @@ async function loadIntegrations(sessionId) {
     await loadCodeReviews(sessionId);
   }
 
+  // New ADO integration loading
+  if (process.env.AZURE_DEVOPS_PAT) {
+    logger.info(`Loading Azure DevOps (ADO) integration for session: ${sessionId}`);
+    await loadAdoIntegration(sessionId);
+    logger.info(`Loading Azure DevOps (ADO) code review integration for session: ${sessionId}`);
+    await loadAdoCodeReviews(sessionId);
+  } else {
+    logger.info(`Azure DevOps (ADO) integration not loaded for session: ${sessionId}. AZURE_DEVOPS_PAT not set.`);
+  }
+
   if (process.env.DOSA_API_KEY &amp;&amp; process.env.DOSA_API_SECRET
         &amp;&amp; process.env.DOSA_AUTH_TENANT_ID
         &amp;&amp; process.env.DOSA_CLIENT_ID) {
@@ -1248,7 +1501,7 @@ async function loadIntegrations(sessionId) {
     await loadDosa(sessionId);
   }
 
-  if (process.env.Maps_API_KEY) {
+  if (process.env.MAPS_API_KEY) {
     logger.info(`Loading Google Maps integration for session: ${sessionId}`);
     await loadMappingFunctions(sessionId);
   }
@@ -1302,13 +1555,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeGenAI">initializeGenAI</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeGenAI">initializeGenAI</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Jul 22 2025 18:20:39 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jul 28 2025 17:22:18 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -1,4 +1,32 @@
-const path = require('path');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: adoFunctions.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: adoFunctions.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { Mutex } = require('async-mutex');
@@ -28,7 +56,7 @@ function encodePat(pat) {
 /**
  * Manages mutexes for download URLs per session to prevent concurrent downloads
  * of the same file.
- * @type {Map<string, Map<string, Mutex>>}
+ * @type {Map&lt;string, Map&lt;string, Mutex>>}
  */
 const downloadMutexes = new Map();
 
@@ -59,7 +87,7 @@ function getDownloadMutex(sessionId, downloadUrl) {
  * @throws {Error} Modified error for "Not Found" or the original.
  */
 function handleNotFoundError(error, context = '') {
-  const isNotFound = (error.response && error.response.status === 404) || error.message.includes('Not Found');
+  const isNotFound = (error.response &amp;&amp; error.response.status === 404) || error.message.includes('Not Found');
   if (isNotFound) {
     throw new Error(
       `Resource Not Found ${context}: Please check the provided details (organization, project, repository, path, branch).`,
@@ -83,9 +111,9 @@ async function handleAzureDevopsApiError(response, context = '') {
     response.body,
   );
   let errorMessage = `Azure DevOps API Error ${context}: ${response.status} - ${response.statusText}`;
-  if (response.body && response.body.message) {
+  if (response.body &amp;&amp; response.body.message) {
     errorMessage += ` - ${response.body.message}`;
-  } else if (response.body && response.body.value) { // Azure DevOps often puts error in 'value'
+  } else if (response.body &amp;&amp; response.body.value) { // Azure DevOps often puts error in 'value'
     errorMessage += ` - ${response.body.value}`;
   }
   throw new Error(errorMessage);
@@ -107,7 +135,7 @@ async function downloadAdoFile(sessionId, organization, project, repoName, fileP
   // In a real scenario, you'd likely call checkAdoRepoExists or similar to get the ID.
   const repoId = repoName; // Placeholder: In practice, resolve to actual ID
 
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(filePath)}&versionDescriptor.version=${encodeURIComponent(branchName)}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(filePath)}&amp;versionDescriptor.version=${encodeURIComponent(branchName)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}&amp;download=true`;
 
   const downloadMutex = getDownloadMutex(sessionId, url);
   const release = await downloadMutex.acquire();
@@ -139,7 +167,7 @@ async function downloadAdoFile(sessionId, organization, project, repoName, fileP
     if (Buffer.isBuffer(response.body)) {
       logger.debug(`Downloading file: ${url} to ${localFilePath} [Session: ${sessionId}]`);
       const stats = await fs.promises.stat(localFilePath).catch(() => null);
-      if (stats && stats.isDirectory()) {
+      if (stats &amp;&amp; stats.isDirectory()) {
         logger.warn(`Skipping download: ${localFilePath} is a directory.`);
       } else {
         await fs.promises.writeFile(localFilePath, response.body);
@@ -240,8 +268,8 @@ async function fetchAdoRepoContentsRecursive(
     const parentDir = path.dirname(destFile);
     if (
       parentDir !== baseLocalDestPath
-      && parentDir !== os.tmpdir()
-      && parentDir.startsWith(baseLocalDestPath)
+      &amp;&amp; parentDir !== os.tmpdir()
+      &amp;&amp; parentDir.startsWith(baseLocalDestPath)
     ) {
       await mkdir(parentDir, { recursive: true });
     }
@@ -260,9 +288,9 @@ async function fetchAdoRepoContentsRecursive(
   // Probe single item (no recursion)
   const probeUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
     + `?path=${encodeURIComponent(repoDirName)}`
-    + `&versionDescriptor.version=${encodeURIComponent(branchName)}`
-    + '&recursionLevel=None'
-    + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
+    + `&amp;versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + '&amp;recursionLevel=None'
+    + `&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     logger.debug(`Single-item probe: ${probeUrl} [Session: ${sessionId}]`);
@@ -276,7 +304,7 @@ async function fetchAdoRepoContentsRecursive(
         throw new FolderFetchError(repoDirName);
       }
       const ext = path.extname(single.path).toLowerCase();
-      if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
+      if (skipBinaryFiles &amp;&amp; BINARY_EXTENSIONS.has(ext)) {
         logger.info(`Skipping binary file: "${single.path}" [Session: ${sessionId}]`);
         return { success: true, message: `Skipped binary file at "${single.path}"` };
       }
@@ -284,24 +312,24 @@ async function fetchAdoRepoContentsRecursive(
     }
   } catch (err) {
     const isFolderProbe = err instanceof FolderFetchError
-      || (err.response && err.response.status === 400 && err.response.text.includes('recursionLevel'));
+      || (err.response &amp;&amp; err.response.status === 400 &amp;&amp; err.response.text.includes('recursionLevel'));
 
-    if (!isFolderProbe && (!err.response || err.response.status !== 404)) {
+    if (!isFolderProbe &amp;&amp; (!err.response || err.response.status !== 404)) {
       logger.error(`Error in single-item probe: ${err.message}`, err);
       throw err;
     }
-    if (err.response && err.response.status === 404) {
+    if (err.response &amp;&amp; err.response.status === 404) {
       throw new Error('Not Found: verify organization, project, repo and path names.');
     }
     // Fall through to directory fetch
   }
 
-  // Directory fetch with scopePath & recursionLevel=Full
+  // Directory fetch with scopePath &amp; recursionLevel=Full
   const dirUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
     + `?scopePath=${encodeURIComponent(repoDirName)}`
-    + `&versionDescriptor.version=${encodeURIComponent(branchName)}`
-    + '&recursionLevel=Full'
-    + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
+    + `&amp;versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + '&amp;recursionLevel=Full'
+    + `&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   logger.debug(`Directory fetch: ${dirUrl} [Session: ${sessionId}]`);
   const dirReq = superagent.get(dirUrl).set('User-Agent', USER_AGENT);
@@ -319,7 +347,7 @@ async function fetchAdoRepoContentsRecursive(
       return { success: true, message: `Folder: "${item.path}"` };
     }
     const ext = path.extname(item.path).toLowerCase();
-    if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
+    if (skipBinaryFiles &amp;&amp; BINARY_EXTENSIONS.has(ext)) {
       logger.info(`Skipping binary file: "${item.path}" [Session: ${sessionId}]`);
       return null;
     }
@@ -338,7 +366,7 @@ async function fetchAdoRepoContentsRecursive(
  * @async
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
- * @returns {Promise<string[]>} Array of repository names.
+ * @returns {Promise&lt;string[]>} Array of repository names.
  * @throws {Error} If API request fails or project is not found.
  */
 async function listAdoRepos(organization, project) {
@@ -370,7 +398,7 @@ async function listAdoRepos(organization, project) {
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository.
- * @returns {Promise<string>} The name of the default branch (e.g., 'main').
+ * @returns {Promise&lt;string>} The name of the default branch (e.g., 'main').
  * @throws {Error} If the API request fails or the repository is not found.
  */
 async function getAdoDefaultBranch(organization, project, repoName) {
@@ -381,7 +409,7 @@ async function getAdoDefaultBranch(organization, project, repoName) {
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
       .set('User-Agent', USER_AGENT);
 
-    if (response.status === 200 && response.body.defaultBranch) {
+    if (response.status === 200 &amp;&amp; response.body.defaultBranch) {
       // Azure DevOps defaultBranch is like "refs/heads/main"
       const branchFullName = response.body.defaultBranch;
       const branchName = branchFullName.startsWith('refs/heads/') ? branchFullName.substring('refs/heads/'.length) : branchFullName;
@@ -403,11 +431,11 @@ async function getAdoDefaultBranch(organization, project, repoName) {
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository.
- * @returns {Promise<string[]>} Array of branch names.
+ * @returns {Promise&lt;string[]>} Array of branch names.
  * @throws {Error} If API request fails or repository is not found.
  */
 async function listAdoBranches(organization, project, repoName) {
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const response = await superagent
       .get(url)
@@ -435,13 +463,13 @@ async function listAdoBranches(organization, project, repoName) {
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository.
  * @param {string} repoDirName The path to the file or directory within the repository.
- * @returns {Promise<Array<{ sha: string, message: string, author: string, date: string }>>}
+ * @returns {Promise&lt;Array&lt;{ sha: string, message: string, author: string, date: string }>>}
  * Array of commit history objects.
  * @throws {Error} If API requests fail or file/directory not found.
  */
 async function listAdoCommitHistory(organization, project, repoName, repoDirName) {
   // First, verify that the file or directory exists by querying the items API.
-  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const contentsResponse = await superagent
@@ -449,19 +477,19 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
       .set('User-Agent', USER_AGENT);
 
-    if (contentsResponse.status === 200 && (!contentsResponse.body || contentsResponse.body.count === 0)) {
+    if (contentsResponse.status === 200 &amp;&amp; (!contentsResponse.body || contentsResponse.body.count === 0)) {
       throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
     }
   } catch (contentsError) {
     logger.error('Error fetching path contents (exception - Azure DevOps):', organization, project, repoName, repoDirName, contentsError);
     // Re-throw if it's a 404 or other network issue
-    if (contentsError.response && contentsError.response.status === 404) {
+    if (contentsError.response &amp;&amp; contentsError.response.status === 404) {
       throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
     }
     throw contentsError; // Re-throw other errors
   }
 
-  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(repoDirName)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(repoDirName)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const commitResponse = await superagent
@@ -496,7 +524,7 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
  * @param {string} [repoDirName=''] Optional path to the directory within the repo.
  * @param {boolean} [recursive=true] Optional recursive scan. Defaults to true.
  *
- * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
+ * @returns {Promise&lt;Array&lt;{ name: string, type: string, path: string }>>}
  * A promise that resolves to an array of directory content objects. Returns an
  * empty array if the directory is empty.
  * @throws {Error} If API request fails (e.g., repo/path not found, authentication, rate limit).
@@ -523,7 +551,7 @@ async function listAdoDirectoryContents(
 
   const cleanRepoDirName = repoDirName.replace(/^\/+|\/+$/g, '');
   const recursionLevel = recursive ? 'Full' : 'OneLevel';
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(cleanRepoDirName)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&recursionLevel=${recursionLevel}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(cleanRepoDirName)}&amp;versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&amp;recursionLevel=${recursionLevel}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     logger.debug(`Listing contents from Azure DevOps API URL: ${url}`);
@@ -534,7 +562,7 @@ async function listAdoDirectoryContents(
       .set('User-Agent', USER_AGENT);
 
     if (!response.body || !Array.isArray(response.body.value)) {
-      if (response.body && response.body.gitItemType === 'File') {
+      if (response.body &amp;&amp; response.body.gitItemType === 'File') {
         logger.warn(`Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`);
         return [];
       }
@@ -576,8 +604,8 @@ async function listAdoDirectoryContents(
     });
     return results;
   } catch (error) {
-    const status = (error.response && error.response.status) || 'N/A';
-    const errorMessage = (error.response && error.response.body && (error.response.body.message || error.response.body.value)) || error.message || error;
+    const status = (error.response &amp;&amp; error.response.status) || 'N/A';
+    const errorMessage = (error.response &amp;&amp; error.response.body &amp;&amp; (error.response.body.message || error.response.body.value)) || error.message || error;
     logger.error(
       `Error listing directory contents for "${organization}/${project}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}" [Status: ${status}]: ${errorMessage}`,
       error,
@@ -610,7 +638,7 @@ async function listAdoDirectoryContents(
  * @param {string} sourceBranch The branch to merge from (e.g., 'feature-branch').
  * @param {string} targetBranch The branch to merge into (e.g., 'main').
  * @param {string} [body=''] Optional description of the pull request.
- * @returns {Promise<object>} Azure DevOps API response for the created PR.
+ * @returns {Promise&lt;object>} Azure DevOps API response for the created PR.
  * @throws {Error} If API request fails, repo/branches not found, or validation errors.
  */
 async function createAdoPullRequest(
@@ -663,7 +691,7 @@ async function createAdoPullRequest(
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository.
  * @param {string} [statusFilter='inProgress'] Status to filter builds (e.g., 'inProgress', 'queued', 'completed').
- * @returns {Promise<Array<{ buildId: number, buildNumber: string, definitionName: string,
+ * @returns {Promise&lt;Array&lt;{ buildId: number, buildNumber: string, definitionName: string,
  * jobName: string, status: string, url: string, startTime: string }>>}
  * Array of running/queued Azure DevOps Pipeline job details.
  * @throws {Error} If API request fails or repository/project/organization not found.
@@ -672,7 +700,7 @@ async function listAdoPipelines(organization, project, repoName, statusFilter = 
   // First, get the repository ID from its name
   const repoId = repoName; // Placeholder, assuming repoName works, but ID is preferred
 
-  const urlRuns = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&repositoryType=TfsGit&statusFilter=${statusFilter}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const urlRuns = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&amp;repositoryType=TfsGit&amp;statusFilter=${statusFilter}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
   try {
     const runsResponse = await superagent
       .get(urlRuns)
@@ -698,7 +726,7 @@ async function listAdoPipelines(organization, project, repoName, statusFilter = 
 
       if (timeline) {
         timeline.forEach((record) => {
-          if (record.type === 'Job' && (record.state === 'inProgress' || record.state === 'queued' || record.state === 'pending')) {
+          if (record.type === 'Job' &amp;&amp; (record.state === 'inProgress' || record.state === 'queued' || record.state === 'pending')) {
             jobsForBuild.push({
               buildId: build.id,
               buildNumber: build.buildNumber,
@@ -739,7 +767,7 @@ async function listAdoPipelines(organization, project, repoName, statusFilter = 
  * @param {string} organization - The Azure DevOps organization name.
  * @param {string} project - The Azure DevOps project name.
  * @param {string} repoName - The name of the repository to be created.
- * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
  * the success or failure of the operation.
  * @throws {Error} - Throws an error if the API request fails.
  */
@@ -760,8 +788,8 @@ async function createAdoRepo(org, project, repoName) {
       throw new Error(`Failed to create: ${res.body.message || res.body.value}`);
     }
   } catch (error) {
-    const msg = (error.response && error.response.body && error.response.body.message)
-          || (error.response && error.response.body && error.response.body.value)
+    const msg = (error.response &amp;&amp; error.response.body &amp;&amp; error.response.body.message)
+          || (error.response &amp;&amp; error.response.body &amp;&amp; error.response.body.value)
           || error.message;
     logger.error(`Error creating repo: ${org}/${project}, ${repoName} – ${msg}`);
     throw new Error(`Failed to create repository: ${msg}`);
@@ -779,7 +807,7 @@ async function createAdoRepo(org, project, repoName) {
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The Azure DevOps repository name.
  * @param {string} branchName The name of the branch to check.
- * @returns {Promise<AdoSuccessResponse>}
+ * @returns {Promise&lt;AdoSuccessResponse>}
  */
 async function checkAdoBranchExists(org, proj, repo, branch) {
   const url = `${ADO_BASEURI}/${org}/${proj}/_apis/git/repositories/${repo}/refs`
@@ -816,7 +844,7 @@ async function checkAdoBranchExists(org, proj, repo, branch) {
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The Azure DevOps repository name.
- * @returns {Promise<AdoSuccessResponse>}
+ * @returns {Promise&lt;AdoSuccessResponse>}
  */
 async function checkAdoRepoExists(organization, project, repoName) {
   const apiUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
@@ -868,7 +896,7 @@ async function getRepoByName(org, project, repoName) {
  * @param {string} project The Azure DevOps project name.
  * @param {string} repoName The name of the repository.
  * @param {string} branchName The name of the branch to set as the new default branch.
- * @returns {Promise<Object>} A promise that resolves to an object indicating success.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object indicating success.
  * @throws {Error} Throws an error if the API request fails.
  */
 const switchAdoBranch = async (organization, project, repoName, branchName) => {
@@ -905,7 +933,7 @@ const switchAdoBranch = async (organization, project, repoName, branchName) => {
   return {
     success: false,
     status: res.status,
-    message: (res.body && res.body.message) || res.text,
+    message: (res.body &amp;&amp; res.body.message) || res.text,
   };
 };
 
@@ -918,7 +946,7 @@ const switchAdoBranch = async (organization, project, repoName, branchName) => {
  * @param {string} repoName The name of the repository where the branch will be created.
  * @param {string} branchName The name of the new branch to be created.
  * @param {string} baseBranch The name of the existing branch to base the new branch on (e.g., 'main').
- * @returns {Promise<Object>} A promise that resolves to an object indicating success or failure.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object indicating success or failure.
  * @throws {Error} Throws an error if the API request fails.
  */
 async function createAdoBranch(organization, project, repoName, branchName, baseBranch = 'main') {
@@ -941,7 +969,7 @@ async function createAdoBranch(organization, project, repoName, branchName, base
 
   try {
     // Get the SHA of the base branch
-    const baseBranchRefUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${baseBranch}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+    const baseBranchRefUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${baseBranch}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
     const baseBranchResponse = await superagent
       .get(baseBranchRefUrl)
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -976,8 +1004,8 @@ async function createAdoBranch(organization, project, repoName, branchName, base
     }
     return { success: false, status: response.status, message: response.body.message || response.body.value };
   } catch (error) {
-    const message = (error.response && error.response.body && ((error.response.body.message || error.response.body.value))) || error.message || 'Creation failed';
-    const status = (error.response && error.response.status) || 'Unknown status';
+    const message = (error.response &amp;&amp; error.response.body &amp;&amp; ((error.response.body.message || error.response.body.value))) || error.message || 'Creation failed';
+    const status = (error.response &amp;&amp; error.response.status) || 'Unknown status';
     logger.error(`Error creating branch (exception - Azure DevOps): ${message} [Status: ${status}]`, error);
     throw new Error(`Failed to create branch: ${message} [Status: ${status}]`);
   }
@@ -988,7 +1016,7 @@ async function createAdoBranch(organization, project, repoName, branchName, base
  * @async
  * @param {string} dir The directory to start walking from.
  * @param {string} [rootDir=dir] The original root directory for calculating relative paths.
- * @returns {Promise<string[]>} A promise that resolves to an array of relative file paths.
+ * @returns {Promise&lt;string[]>} A promise that resolves to an array of relative file paths.
  */
 const walkDir = async (dir, rootDir = dir) => {
   let files = [];
@@ -1040,7 +1068,7 @@ const delay = (ms) => new Promise((resolve) => {
  * where files will be committed.
  * @param {string} [branchName=''] - The branch to commit to.
  * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
- * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * @returns {Promise&lt;Object>} - A promise that resolves to an object indicating
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
@@ -1064,8 +1092,8 @@ async function commitAdoFiles(
   if (!repoName || typeof repoName !== 'string') throw new Error('Invalid repository name');
   if (
     repoDirNameParam !== undefined
-    && repoDirNameParam !== null
-    && typeof repoDirNameParam !== 'string'
+    &amp;&amp; repoDirNameParam !== null
+    &amp;&amp; typeof repoDirNameParam !== 'string'
   ) throw new Error('Invalid repoDirName type');
 
   const repo = await getRepoByName(organization, project, repoName);
@@ -1103,7 +1131,7 @@ async function commitAdoFiles(
     }
   }
 
-  // --- Prepare temp directory & file list ---
+  // --- Prepare temp directory &amp; file list ---
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
   if (!currentDirectoryPath) {
     throw new Error(
@@ -1124,7 +1152,7 @@ async function commitAdoFiles(
   }
 
   // --- Get latest commit of target branch ---
-  const refUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const refUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
   const refResponse = await superagent
     .get(refUrl)
     .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
@@ -1258,9 +1286,9 @@ async function commitAdoFiles(
         // Check if file already exists on the branch
         const getItemUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(
           absoluteAdoPath,
-        )}&versionDescriptor.version=${encodeURIComponent(
+        )}&amp;versionDescriptor.version=${encodeURIComponent(
           effectiveBranchName,
-        )}&includeContent=true&api-version=${AZURE_DEVOPS_API_VERSION}`;
+        )}&amp;includeContent=true&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
         try {
           const getItemResp = await superagent
@@ -1319,7 +1347,7 @@ async function commitAdoFiles(
     },
   );
 
-  // --- Wait for file scans & gather results ---
+  // --- Wait for file scans &amp; gather results ---
   const individualFileResults = await Promise.all(
     fileProcessingPromises,
   );
@@ -1361,7 +1389,7 @@ async function commitAdoFiles(
     let lastPushError = null;
     let updatedPushBody = { ...pushBody };
 
-    while (attempt <= maxRetries && !pushSuccess) {
+    while (attempt &lt;= maxRetries &amp;&amp; !pushSuccess) {
       try {
         if (attempt > 0) {
           logger.info(
@@ -1386,7 +1414,7 @@ async function commitAdoFiles(
         } else if (
           pushResp.status === 409
           || (pushResp.status === 400
-            && pushResp.body.message.includes(
+            &amp;&amp; pushResp.body.message.includes(
               'A push to the default branch is not allowed',
             ))
         ) {
@@ -1405,7 +1433,7 @@ async function commitAdoFiles(
             .set('User-Agent', USER_AGENT);
           if (
             refRefresh.status === 200
-            && (refRefresh.body && refRefresh.body.value && refRefresh.body.value.length > 0)
+            &amp;&amp; (refRefresh.body &amp;&amp; refRefresh.body.value &amp;&amp; refRefresh.body.value.length > 0)
           ) {
             updatedPushBody = {
               ...updatedPushBody,
@@ -1429,15 +1457,15 @@ async function commitAdoFiles(
           break;
         }
       } catch (pushErr) {
-        const status = (pushErr.response && pushErr.response.status) || 'N/A';
-        const msg = (pushErr.response && pushErr.response.body && (pushErr.response.body.message || pushErr.response.body.value))
+        const status = (pushErr.response &amp;&amp; pushErr.response.status) || 'N/A';
+        const msg = (pushErr.response &amp;&amp; pushErr.response.body &amp;&amp; (pushErr.response.body.message || pushErr.response.body.value))
           || pushErr.message;
         logger.error(`Push exception [${status}]: ${msg}`);
 
         lastPushError = new Error(`Push failed: ${msg}`);
         if (
           status === 429
-          || (status >= 500 && status < 600)
+          || (status >= 500 &amp;&amp; status &lt; 600)
         ) {
           // allow retry
         } else {
@@ -1449,7 +1477,7 @@ async function commitAdoFiles(
 
     if (!pushSuccess) {
       throw new Error(
-        `Failed to commit files after ${maxRetries} retries: ${lastPushError && lastPushError.message ? lastPushError.message : ''}`,
+        `Failed to commit files after ${maxRetries} retries: ${lastPushError &amp;&amp; lastPushError.message ? lastPushError.message : ''}`,
       );
     }
   }
@@ -1458,7 +1486,7 @@ async function commitAdoFiles(
 
   // Mark scheduled changes as successful (avoid assignment to parameter)
   const updatedResults = results.map((r) => {
-    if (typeof r.message === 'string' && r.message.startsWith('Scheduled for')) {
+    if (typeof r.message === 'string' &amp;&amp; r.message.startsWith('Scheduled for')) {
       return {
         ...r,
         success: true,
@@ -1492,3 +1520,26 @@ module.exports = {
   listAdoRepos,
   switchAdoBranch,
 };
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Jul 28 2025 17:22:27 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
