@@ -733,6 +733,72 @@ async function listAdoPipelines(organization, project, repoName, statusFilter = 
 }
 
 /**
+ * Fetches the Git repository object so we can grab its GUID.
+ */
+async function getRepoByName(org, project, repoName) {
+  const url = `${ADO_BASEURI}/${org}/${project}/_apis/git/repositories/${encodeURIComponent(repoName)}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+
+  const res = await superagent
+    .get(url)
+    .set('User-Agent', USER_AGENT)
+    .set('Accept', `application/json;api-version=${AZURE_DEVOPS_API_VERSION}`)
+    .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
+
+  if (res.status !== 200) {
+    throw new Error(`Unable to fetch repo '${repoName}' (${res.status}): ${res.text}`);
+  }
+  return res.body;
+}
+
+/**
+ * Creates an initial commit record for the repo.
+ *
+ * @async
+ * @param {string} organization - The Azure DevOps organization name.
+ * @param {string} project - The Azure DevOps project name.
+ * @param {string} repoName - The name of the repository to be created.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function bootstrapMainBranch(organization, project, repoName) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/pushes?api-version=7.0`;
+  const repo = await getRepoByName(organization, project, repoName);
+
+  const body = {
+    repository: { id: repo.id, name: repo.name },
+    refUpdates: [{
+      name: 'refs/heads/main',
+      oldObjectId: '0000000000000000000000000000000000000000',
+    }],
+    commits: [{
+      comment: 'Initial commit',
+      changes: [{
+        changeType: 'add',
+        item: { path: '/README.md' },
+        newContent: {
+          content: '# Welcome',
+          contentType: 'rawtext',
+        },
+      }],
+    }],
+  };
+
+  try {
+    const resp = await superagent
+      .post(url)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT)
+      .send(body);
+
+    return resp.body;
+  } catch (error) {
+    logger.error(`Error bootstrapping main branch: ${error.message}`);
+    throw new Error(`Failed to bootstrap main branch: ${error.message}`);
+  }
+}
+
+/**
  * Creates an Azure DevOps Git repository.
  *
  * @async
@@ -765,6 +831,13 @@ async function createAdoRepo(org, project, repoName) {
           || error.message;
     logger.error(`Error creating repo: ${org}/${project}, ${repoName} – ${msg}`);
     throw new Error(`Failed to create repository: ${msg}`);
+  }
+  // 2) Bootstrap main branch
+  try {
+    await bootstrapMainBranch(org, project, repoName);
+  } catch (error) {
+    logger.error(`Error bootstrapping main branch for repo: ${org}/${project}/${repoName} – ${error.message}`);
+    throw new Error(`Failed to bootstrap main branch: ${error.message}`);
   }
   return {
     success: true,
@@ -843,24 +916,6 @@ async function checkAdoRepoExists(organization, project, repoName) {
 }
 
 /**
- * Fetches the Git repository object so we can grab its GUID.
- */
-async function getRepoByName(org, project, repoName) {
-  const url = `${ADO_BASEURI}/${org}/${project}/_apis/git/repositories/${encodeURIComponent(repoName)}?api-version=${AZURE_DEVOPS_API_VERSION}`;
-
-  const res = await superagent
-    .get(url)
-    .set('User-Agent', USER_AGENT)
-    .set('Accept', `application/json;api-version=${AZURE_DEVOPS_API_VERSION}`)
-    .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
-
-  if (res.status !== 200) {
-    throw new Error(`Unable to fetch repo '${repoName}' (${res.status}): ${res.text}`);
-  }
-  return res.body;
-}
-
-/**
  * Switches the default branch of an Azure DevOps Git repository.
  *
  * @async
@@ -928,7 +983,7 @@ async function createAdoBranch(organization, project, repoName, branchName, base
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
   if (!repoName || typeof repoName !== 'string') throw new Error('Invalid repository name');
   if (!branchName || typeof branchName !== 'string') throw new Error('Invalid branch name');
-  if (!baseBranch || typeof baseBranch !== 'string') throw new Error('Invalid base branch name');
+  const base = baseBranch.trim() || 'main';
 
   try {
     const resp = await checkAdoBranchExists(organization, project, repoName, branchName);
@@ -941,7 +996,7 @@ async function createAdoBranch(organization, project, repoName, branchName, base
 
   try {
     // Get the SHA of the base branch
-    const baseBranchRefUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${baseBranch}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+    const baseBranchRefUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${base}&api-version=${AZURE_DEVOPS_API_VERSION}`;
     const baseBranchResponse = await superagent
       .get(baseBranchRefUrl)
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
