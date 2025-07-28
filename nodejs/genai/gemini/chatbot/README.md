@@ -145,6 +145,12 @@ For example, you can do things like - using this verbage - into the tool: -
 
 Although, this support is dependent on the capabilities of the AI, so verbage may have to change.
 
+Similar support for use with Azure DevOps (ADO) has also been added for the above. To make use of it, you need to create an ADO PAT token and export it into the environment using: -
+
+* AZURE_DEVOPS_PAT
+
+You will need to indicate to the bot you are using ADO, not GitHub when making requests.
+
 Automated Code Reviews
 ----------------------
 As part of interactions with GitHub, a capability was added that allows automated code reviews of all or part of a GitHub repo. This is based on the AIs capability to review code and suggest improvements based on your questions.
