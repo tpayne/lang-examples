@@ -28,7 +28,6 @@ const {
   listAdoBranches,
   listAdoCommitHistory,
   listAdoDirectoryContents,
-  listAdoPipelines,
   listAdoRepos,
   switchAdoBranch,
 } = require('./adoFunctions'); // Assuming gitFunctions.js now contains the Ado functions
@@ -113,6 +112,7 @@ const {
   deleteAdoPipeline,
   getAdoPipelineRunLogs,
   listAdoPipelineRuns,
+  listAdoPipelines,
   listAdoProjects,
   runAdoPipeline,
 } = require('./adoPipelines'); // Import the ADO pipeline functions
@@ -719,7 +719,7 @@ async function loadAdoIntegration(sessionId) {
     sessionId,
     'list_ado_projects',
     listAdoProjects,
-    [],
+    ['organization'],
     'Fetches a list of Azure DevOps projects.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },

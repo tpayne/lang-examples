@@ -94,7 +94,87 @@ async function adoApiRequest(method, url, data = null) {
 }
 
 /**
+ * Lists running or queued Azure DevOps Pipelines builds and their jobs.
+ * This is a significant re-write from GitHub Actions.
+ * @async
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The Azure DevOps project name.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [statusFilter='all'] Status to filter builds (e.g., 'inProgress', 'queued', 'completed').
+ * @returns {Promise<Array<{ buildId: number, buildNumber: string, definitionName: string,
+ * jobName: string, status: string, url: string, startTime: string }>>}
+ * Array of running/queued Azure DevOps Pipeline job details.
+ * @throws {Error} If API request fails or repository/project/organization not found.
+ */
+async function listAdoPipelines(organization, project, repoName, statusFilter = 'all') {
+  // First, get the repository ID from its name
+  const repo = await getRepoByName(organization, project, repoName);
+  const repoId = repo.id;
+
+  const urlRuns = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&repositoryType=TfsGit&statusFilter=${statusFilter}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  try {
+    const runsResponse = await superagent
+      .get(urlRuns)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT);
+
+    const builds = runsResponse.body.value;
+
+    if (!builds || builds.length === 0) {
+      return [];
+    }
+
+    // Refactor to use Promise.all for concurrent timeline fetching
+    const pipelineJobsPromises = builds.map(async (build) => {
+      const urlTimeline = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds/${build.id}/timeline?api-version=${AZURE_DEVOPS_API_VERSION}`;
+      const timelineResponse = await superagent
+        .get(urlTimeline)
+        .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+        .set('User-Agent', USER_AGENT);
+
+      const timeline = timelineResponse.body.records;
+      const jobsForBuild = [];
+
+      if (timeline) {
+        timeline.forEach((record) => {
+          if (record.type === 'Job' && (record.state !== 'completed')) {
+            jobsForBuild.push({
+              buildId: build.id,
+              buildNumber: build.buildNumber,
+              definitionName: build.definition ? build.definition.name : 'N/A',
+              jobName: record.name,
+              status: record.state,
+              url: record.url, // URL specific to this timeline record
+              startTime: record.startTime,
+            });
+          }
+        });
+      }
+      return jobsForBuild;
+    });
+
+    const allPipelineJobsArrays = await Promise.all(pipelineJobsPromises);
+    // Flatten the array of arrays into a single array
+    const allPipelineJobs = [].concat(...allPipelineJobsArrays);
+
+    return allPipelineJobs;
+  } catch (error) {
+    logger.error(`Error listing Azure DevOps Pipelines (exception): ${organization} ${project} ${repoName} ${statusFilter} ${error}`);
+    if (error.response) {
+      logger.error(`Error listing pipelines (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check organization, project, and repo names.');
+      }
+      throw new Error(error.response.body.message || 'Failed to list pipelines');
+    }
+    throw error;
+  }
+}
+
+/**
  * Fetches a list of Azure DevOps projects.
+ * @async
+ * @param {string} organization - The name of the Azure DevOps organization.
  * @returns {Promise<Array>} A list of project objects.
  */
 async function listAdoProjects(organization) {
@@ -116,9 +196,7 @@ async function listAdoProjects(organization) {
 async function createAdoPipeline(organization, project, repoName, yamlPath = 'azure-pipelines.yml') {
   logger.info(`Creating Azure DevOps pipeline in project ${project} for repository ${repoName} using YAML at ${yamlPath}`);
   const id = await getprojectByName(organization, project);
-  logger.debug(`Project ID for ${project} is ${id}`);
   const url = `${ADO_BASEURI}/${organization}/${id}/_apis/pipelines`;
-  logger.debug(`Pipeline creation URL: ${url}`);
   const repo = await getRepoByName(organization, project, repoName);
 
   const pipelineDefinition = {
@@ -201,5 +279,6 @@ module.exports = {
   getAdoPipelineRunLogs,
   listAdoPipelineRuns,
   listAdoProjects,
+  listAdoPipelines,
   runAdoPipeline,
 };
