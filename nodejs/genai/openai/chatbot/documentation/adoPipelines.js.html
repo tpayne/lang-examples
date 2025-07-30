@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: sshscan.js</title>
+    <title>JSDoc: Source: adoPipelines.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: sshscan.js</h1>
+    <h1 class="page-title">Source: adoPipelines.js</h1>
 
     
 
@@ -26,182 +26,210 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>// Import the 'net' module for network operations
-const net = require('net');
-// Import the 'os' module to get operating system specific information, like network interfaces
-const os = require('os');
-// Import the logger module
-// Import dns for reverse lookups and util to promisify dns.reverse
-const dns = require('dns');
-const util = require('util');
-const logger = require('./logger'); // Assumes logger.js is in the same directory or adjust path
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const logger = require('./logger');
 
-// Promisify dns.reverse for async/await usage
-const reversePromise = util.promisify(dns.reverse);
+const { getRepoByName } = require('./adoFunctions');
+
+// Azure DevOps specific constants - these would ideally come from environment variables or configuration
+const AZURE_DEVOPS_API_VERSION = '7.1'; // API version
+const { AZURE_DEVOPS_PAT } = process.env; // Personal Access Token
+const USER_AGENT = 'AIBot-AzureDevOps'; // Custom user agent
+const ADO_BASEURI = 'https://dev.azure.com';
 
 /**
- * Automatically determines the base IP address of the local network.
- * It looks for a non-internal IPv4 address.
- * @param {string} sessionId - A unique ID for the current scanning session (for logging).
- * @returns {string|null} The base IP address (e.g., '192.168.1') or null if not found.
+ * Encodes a Personal Access Token for Basic Authentication.
+ * @param {string} pat The Azure DevOps Personal Access Token.
+ * @returns {string} Base64 encoded string for the Authorization header.
  */
-function getNetworkBaseIp(sessionId) {
-  logger.info(`[Session: ${sessionId}] Attempting to determine network base IP automatically.`);
-  const interfaces = os.networkInterfaces();
-  let foundBaseIp = null;
-
-  // Use Object.keys() and .some() for safer iteration with early exit capability
-  Object.keys(interfaces).some((interfaceName) => {
-    const addresses = interfaces[interfaceName];
-    // Use .some() for array iteration with early exit capability
-    addresses.some((addr) => {
-      // Check for IPv4, not internal (loopback), and a common private IP range
-      if (addr.family === 'IPv4' &amp;&amp; !addr.internal) {
-        // Prioritize common private network ranges
-        if (addr.address.startsWith('192.168.') || addr.address.startsWith('10.') || addr.address.startsWith('172.16.')) {
-          const parts = addr.address.split('.');
-          if (parts.length === 4) {
-            foundBaseIp = `${parts[0]}.${parts[1]}.${parts[2]}`;
-            return true; // Return true to stop the inner .some() loop
-          }
-        }
-      }
-      return false; // Return false to continue to the next address in the inner loop
-    });
-    return !!foundBaseIp; // Return true to stop the outer .some() loop if foundBaseIp is set
-  });
-  return foundBaseIp;
+function encodePat(pat) {
+  return Buffer.from(`:${pat}`).toString('base64');
 }
 
 /**
- * Scans a given IP range for machines with an open SSH port.
- * @param {string} sessionId - A unique ID for the current scanning session (for logging).
- * @param {string} baseIp - The base IP address (e.g., '192.168.1').
- * @param {number} startRange - The starting last octet of the IP range (e.g., 1).
- * @param {number} endRange - The ending last octet of the IP range (e.g., 254).
- * @param {number} port - The SSH port to check (default: 22).
- * @param {number} timeout - Connection timeout in milliseconds (default: 1000).
- * @returns {Promise&lt;Array&lt;{ip: string, hostname: string | null}>>} A promise that resolves to an array of objects
- * with IP addresses and their corresponding hostnames (or null if not found) for open SSH ports.
+ * Retrieves the Azure DevOps project ID by its name within a specified organization.
+ *
+ * @async
+ * @function
+ * @param {string} organization - The name of the Azure DevOps organization.
+ * @param {string} projectName - The name of the project to search for.
+ * @returns {Promise&lt;string>} The ID of the matching project.
+ * @throws {Error} If the project is not found or if an error occurs during the API request.
  */
-async function scanNetworkForSSH(sessionId, baseIp, startRange = 1, endRange = 254, port = 22, timeout = 1000) {
-  const openHosts = [];
+async function getprojectByName(organization, projectName) {
+  const url = `${ADO_BASEURI}/${organization}/_apis/projects`;
+  logger.debug(`Retrieving project ID for project "${projectName}" in organization "${organization}"`);
 
-  let effectiveBaseIp = baseIp;
-  if (!effectiveBaseIp) {
-    logger.debug(`[Session: ${sessionId}] No base IP provided. Attempting to auto-detect...`);
-    effectiveBaseIp = getNetworkBaseIp(sessionId);
-    if (!effectiveBaseIp) {
-      logger.error(`[Session: ${sessionId}] Unable to determine base IP address. Exiting scan.`);
-      return openHosts;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT)
+      .query({ 'api-version': AZURE_DEVOPS_API_VERSION });
+
+    const match = response.body.value.find((p) => p.name.toLowerCase() === projectName.toLowerCase());
+
+    if (!match) {
+      throw new Error(`Project "${projectName}" not found in organization "${organization}".`);
     }
+
+    return match.id;
+  } catch (error) {
+    logger.error(`Error retrieving project ID: ${error.message}`);
+    if (error.response) {
+      logger.error('Response status:', error.response.status);
+      logger.error('Response body:', error.response.text);
+    }
+    throw error;
   }
-
-  logger.info(`[Session: ${sessionId}] Starting SSH network scan for ${effectiveBaseIp}.0/${startRange}-${endRange} on port ${port} with timeout ${timeout}ms.`);
-
-  const connectionPromises = [];
-
-  for (let i = startRange; i &lt;= endRange; i += 1) {
-    const ip = `${effectiveBaseIp}.${i}`;
-
-    connectionPromises.push(new Promise((resolve) => {
-      const socket = new net.Socket();
-      let resolved = false; // Flag to ensure promise is resolved only once
-      let bannerHostname = null;
-
-      // Helper to resolve the promise
-      const finishConnection = (success, hostname = null) => {
-        if (!resolved) {
-          resolved = true;
-          socket.destroy(); // Ensure socket is closed
-          resolve({ ip, success, bannerHostname: hostname });
-        }
-      };
-
-      socket.setTimeout(timeout);
-
-      // On successful connection
-      socket.on('connect', () => {
-        logger.debug(`[Session: ${sessionId}] SSH port ${port} open on ${ip}. Waiting for banner...`);
-        // Do not resolve yet, wait for banner data or subsequent timeout/error
-      });
-
-      // On data received (expecting banner)
-      socket.on('data', (data) => {
-        const banner = data.toString().split('\n')[0]; // Get the first line
-        // Use array destructuring as per ESLint's 'prefer-destructuring' rule
-        // The first element of the array is the full match, the second is the first capturing group.
-        // Use || [] to handle cases where match() returns null (no match found)
-        const [, capturedHostname] = banner.match(/^SSH-2\.0-\S+\s(\S+)/) || [];
-
-        if (capturedHostname) { // Check if the captured group is not undefined/null
-          bannerHostname = capturedHostname;
-          logger.debug(`[Session: ${sessionId}] Found banner hostname for ${ip}: ${bannerHostname}`);
-        }
-        finishConnection(true, bannerHostname); // Resolve with success and captured banner hostname
-      });
-
-      // On timeout
-      socket.on('timeout', () => {
-        logger.debug(`[Session: ${sessionId}] Connection to ${ip}:${port} timed out.`);
-        finishConnection(false); // Resolve as failure
-      });
-
-      // On error
-      socket.on('error', (err) => {
-        logger.debug(`[Session: ${sessionId}] Error connecting to ${ip}:${port}: ${err.message}`);
-        finishConnection(false); // Resolve as failure
-      });
-
-      // Attempt to connect
-      socket.connect(port, ip);
-    }));
-  }
-
-  // Await all connection and banner-read promises concurrently
-  const connectionResults = await Promise.all(connectionPromises);
-
-  const hostnameResolutionTasks = connectionResults
-    .filter((result) => result.success) // Only process successfully connected IPs
-    .map(async (result) => {
-      let hostname = null;
-      try {
-        const dnsHostnames = await reversePromise(result.ip);
-        hostname = dnsHostnames[0] || null; // Prefer DNS hostname
-        if (hostname) {
-          logger.debug(`[Session: ${sessionId}] Resolved hostname via DNS for ${result.ip}: ${hostname}`);
-        } else {
-          logger.debug(`[Session: ${sessionId}] No DNS hostname for ${result.ip}.`);
-        }
-      } catch (err) {
-        logger.debug(`[Session: ${sessionId}] DNS error for ${result.ip}: ${err.message}`);
-      }
-
-      // Fallback to banner hostname if DNS lookup failed
-      if (!hostname &amp;&amp; result.bannerHostname) {
-        hostname = result.bannerHostname;
-        logger.debug(`[Session: ${sessionId}] Falling back to banner hostname for ${result.ip}: ${hostname}`);
-      }
-
-      return { ip: result.ip, hostname };
-    });
-
-  const resolvedHosts = await Promise.all(hostnameResolutionTasks);
-  openHosts.push(...resolvedHosts); // Add all resolved hosts to openHosts
-
-  logger.info(`\n[Session: ${sessionId}] Scan complete!`);
-  if (openHosts.length > 0) {
-    logger.info(`[Session: ${sessionId}] Machines with SSH (port ${port}) open:`);
-    openHosts.forEach((host) => logger.info(`[Session: ${sessionId}] - ${host.ip}${host.hostname ? ` (${host.hostname})` : ''}`));
-  } else {
-    logger.info(`[Session: ${sessionId}] No machines with SSH (port ${port}) open found in the specified range.`);
-  }
-  return openHosts;
 }
 
-// Export the main scanning function and the IP detection function
+/**
+ * Makes an authenticated request to the Azure DevOps API.
+ * @param {string} method HTTP method (GET, POST, etc.).
+ * @param {string} url The API endpoint URL.
+ * @param {object} [data] Request body for POST/PUT requests.
+ * @returns {Promise&lt;object>} The response body.
+ * @throws {Error} If the request fails.
+ */
+async function adoApiRequest(method, url, data = null) {
+  if (!AZURE_DEVOPS_PAT) {
+    throw new Error('AZURE_DEVOPS_PAT environment variable is not set.');
+  }
+
+  logger.debug(`Making ${method} request to Azure DevOps API: ${url}`);
+
+  try {
+    const request = superagent(method, url)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT)
+      .set('Content-Type', 'application/json')
+      .query({ 'api-version': AZURE_DEVOPS_API_VERSION });
+
+    if (data) request.send(data);
+
+    const response = await request;
+    return response.body;
+  } catch (error) {
+    logger.error(`Azure DevOps API request failed: ${error.message}`);
+    logger.error(`Request URL: ${url}`);
+    if (error.response) {
+      logger.error(`Response status: ${error.response.status}`);
+      logger.error(`Response body: ${error.response.text}`);
+    }
+    throw new Error(`Failed to communicate with Azure DevOps: ${error.message}`);
+  }
+}
+
+/**
+ * Fetches a list of Azure DevOps projects.
+ * @returns {Promise&lt;Array>} A list of project objects.
+ */
+async function listAdoProjects(organization) {
+  const url = `${ADO_BASEURI}/${organization}/_apis/projects`;
+  logger.info(`Fetching Azure DevOps projects from ${url}`);
+  return adoApiRequest('GET', url);
+}
+
+/**
+ * Creates a new Azure DevOps pipeline in the specified project using a YAML definition.
+ *
+ * @async
+ * @param {string} organization - The name of the Azure DevOps organization.
+ * @param {string} project - The ID or name of the Azure DevOps project.
+ * @param {string} repoName - The name of the repository containing the pipeline YAML file.
+ * @param {string} [yamlPath='azure-pipelines.yml'] - The path to the YAML file defining the pipeline (default is 'azure-pipelines.yml').
+ * @returns {Promise&lt;Object>} The response from the Azure DevOps API after creating the pipeline.
+ */
+async function createAdoPipeline(organization, project, repoName, yamlPath = 'azure-pipelines.yml') {
+  logger.info(`Creating Azure DevOps pipeline in project ${project} for repository ${repoName} using YAML at ${yamlPath}`);
+  const id = await getprojectByName(organization, project);
+  logger.debug(`Project ID for ${project} is ${id}`);
+  const url = `${ADO_BASEURI}/${organization}/${id}/_apis/pipelines`;
+  logger.debug(`Pipeline creation URL: ${url}`);
+  const repo = await getRepoByName(organization, project, repoName);
+
+  const pipelineDefinition = {
+    name: 'Generated Pipeline',
+    folder: '\\',
+    configuration: {
+      type: 'yaml',
+      path: yamlPath,
+      repository: {
+        id: repo.id,
+        name: repoName,
+        type: 'azureReposGit',
+      },
+    },
+  };
+  logger.info(`Creating pipeline in project ${project}`);
+  return adoApiRequest('POST', url, pipelineDefinition);
+}
+
+/**
+ * Triggers a new run for an Azure DevOps pipeline.
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline to run.
+ * @param {object} [runParameters] Optional parameters for the pipeline run (e.g., variables, branch).
+ * @returns {Promise&lt;object>} The queued pipeline run object.
+ */
+async function runAdoPipeline(organization, project, pipelineId, runParameters = {}) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs`;
+  logger.info(`Running pipeline ${pipelineId} in ${project}`);
+  return adoApiRequest('POST', url, runParameters);
+}
+
+/**
+ * Retrieves logs for a specific pipeline run in Azure DevOps.
+ * This function retrieves a list of log entries; to get the full content of a specific log file,
+ * a subsequent call to the specific log URL might be needed.
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline.
+ * @param {number} runId The ID of the pipeline run.
+ * @returns {Promise&lt;Array>} An array of log entries for the pipeline run.
+ */
+async function getAdoPipelineRunLogs(organization, project, pipelineId, runId) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs/${runId}/logs`;
+  logger.info(`Fetching logs for run ${runId} of pipeline ${pipelineId}`);
+  return adoApiRequest('GET', url);
+}
+
+/**
+ * Fetches a list of runs for a specific Azure DevOps pipeline.
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline.
+ * @returns {Promise&lt;Array>} A list of pipeline run objects.
+ */
+async function listAdoPipelineRuns(organization, project, pipelineId) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs`;
+  logger.info(`Fetching runs for pipeline ${pipelineId}`);
+  return adoApiRequest('GET', url);
+}
+
+/**
+ * Deletes an Azure DevOps pipeline (build definition).
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline to delete.
+ * @returns {Promise&lt;void>} A promise that resolves upon successful deletion.
+ */
+async function deleteAdoPipeline(organization, project, pipelineId) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/build/definitions/${pipelineId}`;
+  logger.info(`Deleting pipeline ${pipelineId}`);
+  await adoApiRequest('DELETE', url);
+  return { message: `Pipeline ${pipelineId} deleted successfully.` };
+}
+
 module.exports = {
-  scanNetworkForSSH,
+  createAdoPipeline,
+  deleteAdoPipeline,
+  getAdoPipelineRunLogs,
+  listAdoPipelineRuns,
+  listAdoProjects,
+  runAdoPipeline,
 };
 </code></pre>
         </article>

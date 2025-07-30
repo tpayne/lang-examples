@@ -1545,5 +1545,6 @@ module.exports = {
   listAdoDirectoryContents,
   listAdoPipelines,
   listAdoRepos,
+  getRepoByName,
   switchAdoBranch,
 };
