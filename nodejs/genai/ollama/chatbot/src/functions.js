@@ -28,7 +28,6 @@ const {
   listAdoBranches,
   listAdoCommitHistory,
   listAdoDirectoryContents,
-  listAdoPipelines,
   listAdoRepos,
   switchAdoBranch,
 } = require('./adoFunctions'); // Assuming gitFunctions.js now contains the Ado functions
@@ -107,6 +106,16 @@ const {
 const {
   scanNetworkForSSH,
 } = require('./sshscan'); // Import the SSH scanning function
+
+const {
+  createAdoPipeline,
+  deleteAdoPipeline,
+  getAdoPipelineRunLogs,
+  listAdoPipelineRuns,
+  listAdoPipelines,
+  listAdoProjects,
+  runAdoPipeline,
+} = require('./adoPipelines'); // Import the ADO pipeline functions
 
 /* eslint-disable max-len */
 
@@ -592,7 +601,7 @@ async function loadAdoIntegration(sessionId) {
     'list_ado_pipelines',
     listAdoPipelines,
     ['organization', 'project', 'repoName', 'statusFilter'],
-    'Lists Azure DevOps (ADO) Pipelines (builds) running or queued in a specified repository.',
+    'Lists Azure DevOps (ADO) Pipelines and builds that ran in a specified repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -704,6 +713,97 @@ async function loadAdoIntegration(sessionId) {
       baseBranch: { type: 'string', description: 'The name of the existing branch to base the new branch on (optional). Defaults to the repository\'s default branch.' },
     },
     ['organization', 'project', 'repoName', 'branchName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_ado_projects',
+    listAdoProjects,
+    ['organization'],
+    'Fetches a list of Azure DevOps projects.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+    },
+    ['organization'],
+  );
+
+  // New function: create_ado_pipeline
+  await registerFunction(
+    sessionId,
+    'create_ado_pipeline',
+    createAdoPipeline,
+    ['organization', 'project', 'repoName', 'yamlPath'],
+    'Creates a new Azure DevOps pipeline (build definition).',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The project ID or name.' },
+      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
+      yamlPath: { type: 'string', description: 'The path to the YAML file defining the pipeline (default is "azure-pipelines.yml".' },
+    },
+    ['organization', 'project', 'repoName', 'yamlPath'],
+  );
+
+  // New function: run_ado_pipeline
+  await registerFunction(
+    sessionId,
+    'run_ado_pipeline',
+    runAdoPipeline,
+    ['organization', 'project', 'pipelineId', 'runParameters'],
+    'Triggers a new run for an Azure DevOps pipeline.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The project ID or name.' },
+      pipelineId: { type: 'number', description: 'The ID of the pipeline to run.' },
+      branchName: { type: 'string', description: 'The name of branch to use.' },
+      runParameters: { type: 'object', description: 'Optional parameters for the pipeline run (e.g., variables, branch).' },
+    },
+    ['organization', 'project', 'pipelineId'],
+  );
+
+  // New function: get_ado_pipeline_run_logs
+  await registerFunction(
+    sessionId,
+    'get_ado_pipeline_run_logs',
+    getAdoPipelineRunLogs,
+    ['organization', 'project', 'pipelineId', 'runId'],
+    'Retrieves logs for a specific pipeline run in Azure DevOps. This function retrieves a list of log entries; to get the full content of a specific log file, a subsequent call to the specific log URL might be needed.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The project ID or name.' },
+      pipelineId: { type: 'number', description: 'The ID of the pipeline.' },
+      runId: { type: 'number', description: 'The ID of the pipeline run.' },
+    },
+    ['organization', 'project', 'pipelineId', 'runId'],
+  );
+
+  // New function: list_ado_pipeline_runs
+  await registerFunction(
+    sessionId,
+    'list_ado_pipeline_runs',
+    listAdoPipelineRuns,
+    ['organization', 'project', 'pipelineId'],
+    'Fetches a list of runs for a specific Azure DevOps pipeline.',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The Azure DevOps project ID or name.' },
+      pipelineId: { type: 'number', description: 'The ID of the pipeline.' },
+    },
+    ['organization', 'project', 'pipelineId'],
+  );
+
+  // New function: delete_ado_pipeline
+  await registerFunction(
+    sessionId,
+    'delete_ado_pipeline',
+    deleteAdoPipeline,
+    ['organization', 'project', 'pipelineId'],
+    'Deletes an Azure DevOps pipeline (build definition).',
+    {
+      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      project: { type: 'string', description: 'The project ID or name.' },
+      pipelineId: { type: 'number', description: 'The ID of the pipeline to delete.' },
+    },
+    ['organization', 'project', 'pipelineId'],
   );
 }
 

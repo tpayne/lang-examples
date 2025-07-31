@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: adoPipelines.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: adoPipelines.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
+const logger = require('./logger');
+
+const { getRepoByName } = require('./adoFunctions');
+
+// Azure DevOps specific constants - these would ideally come from environment variables or configuration
+const AZURE_DEVOPS_API_VERSION = '7.1'; // API version
+const { AZURE_DEVOPS_PAT } = process.env; // Personal Access Token
+const USER_AGENT = 'AIBot-AzureDevOps'; // Custom user agent
+const ADO_BASEURI = 'https://dev.azure.com';
+
+/**
+ * Encodes a Personal Access Token for Basic Authentication.
+ * @param {string} pat The Azure DevOps Personal Access Token.
+ * @returns {string} Base64 encoded string for the Authorization header.
+ */
+function encodePat(pat) {
+  return Buffer.from(`:${pat}`).toString('base64');
+}
+
+/**
+ * Retrieves the Azure DevOps project ID by its name within a specified organization.
+ *
+ * @async
+ * @function
+ * @param {string} organization - The name of the Azure DevOps organization.
+ * @param {string} projectName - The name of the project to search for.
+ * @returns {Promise&lt;string>} The ID of the matching project.
+ * @throws {Error} If the project is not found or if an error occurs during the API request.
+ */
+async function getprojectByName(organization, projectName) {
+  const url = `${ADO_BASEURI}/${organization}/_apis/projects`;
+  logger.debug(`Retrieving project ID for project "${projectName}" in organization "${organization}"`);
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT)
+      .query({ 'api-version': AZURE_DEVOPS_API_VERSION });
+
+    const match = response.body.value.find((p) => p.name.toLowerCase() === projectName.toLowerCase());
+
+    if (!match) {
+      throw new Error(`Project "${projectName}" not found in organization "${organization}".`);
+    }
+
+    return match.id;
+  } catch (error) {
+    logger.error(`Error retrieving project ID: ${error.message}`);
+    if (error.response) {
+      logger.error('Response status:', error.response.status);
+      logger.error('Response body:', error.response.text);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Makes an authenticated request to the Azure DevOps API.
+ * @param {string} method HTTP method (GET, POST, etc.).
+ * @param {string} url The API endpoint URL.
+ * @param {object} [data] Request body for POST/PUT requests.
+ * @returns {Promise&lt;object>} The response body.
+ * @throws {Error} If the request fails.
+ */
+async function adoApiRequest(method, url, data = null) {
+  if (!AZURE_DEVOPS_PAT) {
+    throw new Error('AZURE_DEVOPS_PAT environment variable is not set.');
+  }
+
+  logger.debug(`Making ${method} request to Azure DevOps API: ${url}`);
+
+  try {
+    const request = superagent(method, url)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT)
+      .set('Content-Type', 'application/json')
+      .query({ 'api-version': AZURE_DEVOPS_API_VERSION });
+
+    if (data) request.send(data);
+
+    const response = await request;
+    return response.body;
+  } catch (error) {
+    logger.error(`Azure DevOps API request failed: ${error.message}`);
+    logger.error(`Request URL: ${url}`);
+    if (error.response) {
+      logger.error(`Response status: ${error.response.status}`);
+      logger.error(`Response body: ${error.response.text}`);
+    }
+    throw new Error(`Failed to communicate with Azure DevOps: ${error.message}`);
+  }
+}
+
+/**
+ * Lists running or queued Azure DevOps Pipelines builds and their jobs.
+ * This is a significant re-write from GitHub Actions.
+ * @async
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The Azure DevOps project name.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [statusFilter='all'] Status to filter builds (e.g., 'inProgress', 'queued', 'completed').
+ * @returns {Promise&lt;Array&lt;{ buildId: number, buildNumber: string, definitionName: string,
+ * jobName: string, status: string, url: string, startTime: string }>>}
+ * Array of running/queued Azure DevOps Pipeline job details.
+ * @throws {Error} If API request fails or repository/project/organization not found.
+ */
+async function listAdoPipelines(organization, project, repoName, statusFilter = 'all') {
+  // First, get the repository ID from its name
+  const repo = await getRepoByName(organization, project, repoName);
+  const repoId = repo.id;
+
+  const urlRuns = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds?repositoryId=${repoId}&amp;repositoryType=TfsGit&amp;statusFilter=${statusFilter}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
+  try {
+    const runsResponse = await superagent
+      .get(urlRuns)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT);
+
+    const builds = runsResponse.body.value;
+    if (!builds || builds.length === 0) {
+      // No builds found, try to return pipeline definitions for the repo
+      const pipelinesUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines?repositoryId=${repoId}&amp;repositoryType=azureReposGit&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
+      try {
+        const pipelinesResponse = await superagent
+          .get(pipelinesUrl)
+          .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+          .set('User-Agent', USER_AGENT);
+
+        const pipelines = pipelinesResponse.body.value || [];
+
+        if (pipelines.length === 0) {
+          return []; // No pipelines found
+        }
+        // Normalize pipeline definitions into a similar structure
+        return pipelines.map((pipeline) => ({
+          buildId: null,
+          buildNumber: null,
+          definitionName: pipeline.name || 'Unnamed Pipeline',
+          jobName: null,
+          status: 'no runs',
+          url: pipeline.url || null,
+          startTime: null,
+        }));
+      } catch (pipelineError) {
+        logger.error(`Error fetching pipeline definitions: ${pipelineError}`);
+        throw new Error('Unable to fetch pipeline definitions as fallback.');
+      }
+    }
+
+    // Refactor to use Promise.all for concurrent timeline fetching
+    const pipelineJobsPromises = builds.map(async (build) => {
+      const urlTimeline = `${ADO_BASEURI}/${organization}/${project}/_apis/build/builds/${build.id}/timeline?api-version=${AZURE_DEVOPS_API_VERSION}`;
+      const timelineResponse = await superagent
+        .get(urlTimeline)
+        .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+        .set('User-Agent', USER_AGENT);
+
+      const timeline = timelineResponse.body.records;
+      const jobsForBuild = [];
+
+      if (timeline) {
+        timeline.forEach((record) => {
+          if (
+            record.type === 'Job'
+            &amp;&amp; (record.state !== 'completed')
+            &amp;&amp; (
+              statusFilter === 'all'
+              || (typeof statusFilter === 'string' &amp;&amp; record.state &amp;&amp; record.state.toLowerCase() === statusFilter.toLowerCase())
+            )
+          ) {
+            jobsForBuild.push({
+              buildId: build.id,
+              buildNumber: build.buildNumber,
+              definitionName: build.definition ? build.definition.name : 'N/A',
+              jobName: record.name,
+              status: record.state,
+              url: record.url, // URL specific to this timeline record
+              startTime: record.startTime,
+            });
+          }
+        });
+      }
+      return jobsForBuild;
+    });
+
+    const allPipelineJobsArrays = await Promise.all(pipelineJobsPromises);
+    // Flatten the array of arrays into a single array
+    const allPipelineJobs = [].concat(...allPipelineJobsArrays);
+    // If a specific statusFilter is provided (not 'all'), filter builds by build.status
+    let filteredBuilds = builds;
+    if (statusFilter !== 'all') {
+      filteredBuilds = builds.filter(
+        (build) => build.result
+          &amp;&amp; build.result.toLowerCase() === statusFilter.toLowerCase(),
+      );
+    }
+
+    if (allPipelineJobs.length === 0) {
+      // Return filtered builds if no jobs found
+      return filteredBuilds;
+    }
+    return allPipelineJobs;
+  } catch (error) {
+    logger.error(`Error listing Azure DevOps Pipelines (exception): ${organization} ${project} ${repoName} ${statusFilter} ${error}`);
+    if (error.response) {
+      logger.error(`Error listing pipelines (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check organization, project, and repo names.');
+      }
+      throw new Error(error.response.body.message || 'Failed to list pipelines');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Fetches a list of Azure DevOps projects.
+ * @async
+ * @param {string} organization - The name of the Azure DevOps organization.
+ * @returns {Promise&lt;Array>} A list of project objects.
+ */
+async function listAdoProjects(organization) {
+  const url = `${ADO_BASEURI}/${organization}/_apis/projects`;
+  logger.info(`Fetching Azure DevOps projects from ${url}`);
+  return adoApiRequest('GET', url);
+}
+
+/**
+ * Creates a new Azure DevOps pipeline in the specified project using a YAML definition.
+ *
+ * @async
+ * @param {string} organization - The name of the Azure DevOps organization.
+ * @param {string} project - The ID or name of the Azure DevOps project.
+ * @param {string} repoName - The name of the repository containing the pipeline YAML file.
+ * @param {string} [yamlPath='azure-pipelines.yml'] - The path to the YAML file defining the pipeline (default is 'azure-pipelines.yml').
+ * @returns {Promise&lt;Object>} The response from the Azure DevOps API after creating the pipeline.
+ */
+async function createAdoPipeline(organization, project, repoName, yamlPath = 'azure-pipelines.yml') {
+  logger.info(`Creating Azure DevOps pipeline in project ${project} for repository ${repoName} using YAML at ${yamlPath}`);
+  const id = await getprojectByName(organization, project);
+  const url = `${ADO_BASEURI}/${organization}/${id}/_apis/pipelines`;
+  const repo = await getRepoByName(organization, project, repoName);
+
+  const pipelineDefinition = {
+    name: 'Generated Pipeline',
+    folder: '\\',
+    configuration: {
+      type: 'yaml',
+      path: yamlPath,
+      repository: {
+        id: repo.id,
+        name: repoName,
+        type: 'azureReposGit',
+      },
+    },
+  };
+  logger.info(`Creating pipeline in project ${project}`);
+  return adoApiRequest('POST', url, pipelineDefinition);
+}
+
+/**
+ * Triggers a new run for an Azure DevOps pipeline with robust error handling.
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline to run.
+ * @param {string} branch The branch containing the YAML file. Defaults to 'main'.
+ * @param {object} [userParameters] Optional parameters for the pipeline run (e.g., variables, branch).
+ * @returns {Promise&lt;object>} The queued pipeline run object or error details.
+ */
+async function runAdoPipeline(organization, project, pipelineId, branch = 'main', userParameters = {}) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs`;
+
+  const runParameters = Object.keys(userParameters).length > 0
+    ? userParameters
+    : {
+      resources: {
+        repositories: {
+          self: {
+            refName: `refs/heads/${branch}`,
+          },
+        },
+      },
+    };
+
+  try {
+    logger.info(`Triggering pipeline ${pipelineId} on branch '${branch}' in project '${project}'`);
+    return await adoApiRequest('POST', url, runParameters);
+  } catch (error) {
+    logger.error('Pipeline trigger failed:', {
+      status: error &amp;&amp; error.status,
+      url,
+      message: error &amp;&amp; error.message,
+      details: (error &amp;&amp; error.responseBody) || error,
+    });
+
+    return {
+      error: 'Pipeline trigger failed',
+      details: (error &amp;&amp; error.message) || 'Unknown error occurred',
+      diagnostics: error,
+    };
+  }
+}
+
+/**
+ * Retrieves logs for a specific pipeline run in Azure DevOps.
+ * This function retrieves a list of log entries; to get the full content of a specific log file,
+ * a subsequent call to the specific log URL might be needed.
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline.
+ * @param {number} runId The ID of the pipeline run.
+ * @returns {Promise&lt;Array>} An array of log entries for the pipeline run.
+ */
+async function getAdoPipelineRunLogs(organization, project, pipelineId, runId) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs/${runId}/logs`;
+  logger.info(`Fetching logs for run ${runId} of pipeline ${pipelineId}`);
+  return adoApiRequest('GET', url);
+}
+
+/**
+ * Fetches a list of runs for a specific Azure DevOps pipeline.
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline.
+ * @returns {Promise&lt;Array>} A list of pipeline run objects.
+ */
+async function listAdoPipelineRuns(organization, project, pipelineId) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs`;
+  logger.info(`Fetching runs for pipeline ${pipelineId}`);
+  return adoApiRequest('GET', url);
+}
+
+/**
+ * Deletes an Azure DevOps pipeline (build definition).
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The project ID or name.
+ * @param {number} pipelineId The ID of the pipeline to delete.
+ * @returns {Promise&lt;void>} A promise that resolves upon successful deletion.
+ */
+async function deleteAdoPipeline(organization, project, pipelineId) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/build/definitions/${pipelineId}`;
+  logger.info(`Deleting pipeline ${pipelineId}`);
+  await adoApiRequest('DELETE', url);
+  return { message: `Pipeline ${pipelineId} deleted successfully.` };
+}
+
+module.exports = {
+  createAdoPipeline,
+  deleteAdoPipeline,
+  getAdoPipelineRunLogs,
+  listAdoPipelineRuns,
+  listAdoProjects,
+  listAdoPipelines,
+  runAdoPipeline,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 31 2025 22:43:49 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
