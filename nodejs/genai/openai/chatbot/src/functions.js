@@ -601,7 +601,7 @@ async function loadAdoIntegration(sessionId) {
     'list_ado_pipelines',
     listAdoPipelines,
     ['organization', 'project', 'repoName', 'statusFilter'],
-    'Lists Azure DevOps (ADO) Pipelines (builds) running or queued in a specified repository.',
+    'Lists Azure DevOps (ADO) Pipelines and builds that ran in a specified repository.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
@@ -754,6 +754,7 @@ async function loadAdoIntegration(sessionId) {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The project ID or name.' },
       pipelineId: { type: 'number', description: 'The ID of the pipeline to run.' },
+      branchName: { type: 'string', description: 'The name of branch to use.' },
       runParameters: { type: 'object', description: 'Optional parameters for the pipeline run (e.g., variables, branch).' },
     },
     ['organization', 'project', 'pipelineId'],
