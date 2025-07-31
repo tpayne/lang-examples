@@ -238,6 +238,39 @@ class FolderFetchError extends Error {
 }
 
 /**
+ * Retrieves the default branch name for a given Azure DevOps Git repository.
+ * @async
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The Azure DevOps project name.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise&lt;string>} The name of the default branch (e.g., 'main').
+ * @throws {Error} If the API request fails or the repository is not found.
+ */
+async function getAdoDefaultBranch(organization, project, repoName) {
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200 &amp;&amp; response.body.defaultBranch) {
+      // Azure DevOps defaultBranch is like "refs/heads/main"
+      const branchFullName = response.body.defaultBranch;
+      const branchName = branchFullName.startsWith('refs/heads/') ? branchFullName.substring('refs/heads/'.length) : branchFullName;
+      logger.debug(`Default branch for ${organization}/${project}/${repoName} is: ${branchName}`);
+      return branchName;
+    }
+    await handleAzureDevopsApiError(response, `getting default branch for ${organization}/${project}/${repoName}`);
+    return ''; // Unreachable, but for consistent-return
+  } catch (error) {
+    logger.error('Error getting default branch (exception - Azure DevOps):', organization, project, repoName, error);
+    handleNotFoundError(error, ` for repository ${organization}/${project}/${repoName}`);
+    throw error; // Unreachable, but for consistent-return
+  }
+}
+
+/**
  * Recursively fetches files and directories from an Azure DevOps Git repository for a specific session.
  * Optionally skips potential binary files based on extension.
  *
@@ -263,6 +296,18 @@ async function fetchAdoRepoContentsRecursive(
 ) {
   const baseLocalDestPath = localDestPath || await getOrCreateSessionTempDir(sessionId);
 
+  let effectiveBranchName = branchName;
+
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
+  }
+
   const handleSingleFile = async (filePath) => {
     const destFile = path.join(baseLocalDestPath, filePath);
     const parentDir = path.dirname(destFile);
@@ -279,16 +324,17 @@ async function fetchAdoRepoContentsRecursive(
       project,
       repoName,
       filePath,
-      branchName,
+      effectiveBranchName,
       destFile,
     );
     return { success: true, message: `Downloaded file at "${filePath}"` };
   };
 
-  // Probe single item (no recursion)
+  // 🕵️‍♀️ Single-item probe with safer parsing
   const probeUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
     + `?path=${encodeURIComponent(repoDirName)}`
     + `&amp;versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + '&amp;versionDescriptor.versionType=branch' // 👈 Required!
     + '&amp;recursionLevel=None'
     + `&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
@@ -298,18 +344,25 @@ async function fetchAdoRepoContentsRecursive(
     if (AZURE_DEVOPS_PAT) probeReq.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
     const probeRes = await probeReq;
 
-    const single = probeRes.body.value;
-    if (!Array.isArray(single)) {
-      if (single.isFolder) {
-        throw new FolderFetchError(repoDirName);
-      }
-      const ext = path.extname(single.path).toLowerCase();
-      if (skipBinaryFiles &amp;&amp; BINARY_EXTENSIONS.has(ext)) {
-        logger.info(`Skipping binary file: "${single.path}" [Session: ${sessionId}]`);
-        return { success: true, message: `Skipped binary file at "${single.path}"` };
-      }
-      return handleSingleFile(single.path);
+    const single = Array.isArray(probeRes.body.value)
+      ? probeRes.body.value[0]
+      : probeRes.body;
+
+    if (!single || !single.path) {
+      throw new Error(`Could not locate "${repoDirName}" on branch "${effectiveBranchName}"`);
     }
+
+    if (single.isFolder) {
+      throw new FolderFetchError(repoDirName);
+    }
+
+    const ext = path.extname(single.path).toLowerCase();
+    if (skipBinaryFiles &amp;&amp; BINARY_EXTENSIONS.has(ext)) {
+      logger.info(`Skipping binary file: "${single.path}" [Session: ${sessionId}]`);
+      return { success: true, message: `Skipped binary file at "${single.path}"` };
+    }
+
+    return handleSingleFile(single.path);
   } catch (err) {
     const isFolderProbe = err instanceof FolderFetchError
       || (err.response &amp;&amp; err.response.status === 400 &amp;&amp; err.response.text.includes('recursionLevel'));
@@ -318,16 +371,17 @@ async function fetchAdoRepoContentsRecursive(
       logger.error(`Error in single-item probe: ${err.message}`, err);
       throw err;
     }
+
     if (err.response &amp;&amp; err.response.status === 404) {
       throw new Error('Not Found: verify organization, project, repo and path names.');
     }
-    // Fall through to directory fetch
+
+    // 👇 Fallback to directory fetch
   }
 
-  // Directory fetch with scopePath &amp; recursionLevel=Full
   const dirUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
     + `?scopePath=${encodeURIComponent(repoDirName)}`
-    + `&amp;versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + `&amp;versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}`
     + '&amp;recursionLevel=Full'
     + `&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
@@ -346,11 +400,13 @@ async function fetchAdoRepoContentsRecursive(
       logger.debug(`Skipped folder placeholder: "${item.path}"`);
       return { success: true, message: `Folder: "${item.path}"` };
     }
+
     const ext = path.extname(item.path).toLowerCase();
     if (skipBinaryFiles &amp;&amp; BINARY_EXTENSIONS.has(ext)) {
       logger.info(`Skipping binary file: "${item.path}" [Session: ${sessionId}]`);
       return null;
     }
+
     return handleSingleFile(item.path);
   }));
 
@@ -389,39 +445,6 @@ async function listAdoRepos(organization, project) {
     handleNotFoundError(error, ` for organization "${organization}" and project "${project}"`);
     // This line is unreachable, but added for consistent-return if the linter requires it
     throw error;
-  }
-}
-
-/**
- * Retrieves the default branch name for a given Azure DevOps Git repository.
- * @async
- * @param {string} organization The Azure DevOps organization name.
- * @param {string} project The Azure DevOps project name.
- * @param {string} repoName The name of the repository.
- * @returns {Promise&lt;string>} The name of the default branch (e.g., 'main').
- * @throws {Error} If the API request fails or the repository is not found.
- */
-async function getAdoDefaultBranch(organization, project, repoName) {
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}?api-version=${AZURE_DEVOPS_API_VERSION}`;
-  try {
-    const response = await superagent
-      .get(url)
-      .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
-      .set('User-Agent', USER_AGENT);
-
-    if (response.status === 200 &amp;&amp; response.body.defaultBranch) {
-      // Azure DevOps defaultBranch is like "refs/heads/main"
-      const branchFullName = response.body.defaultBranch;
-      const branchName = branchFullName.startsWith('refs/heads/') ? branchFullName.substring('refs/heads/'.length) : branchFullName;
-      logger.debug(`Default branch for ${organization}/${project}/${repoName} is: ${branchName}`);
-      return branchName;
-    }
-    await handleAzureDevopsApiError(response, `getting default branch for ${organization}/${project}/${repoName}`);
-    return ''; // Unreachable, but for consistent-return
-  } catch (error) {
-    logger.error('Error getting default branch (exception - Azure DevOps):', organization, project, repoName, error);
-    handleNotFoundError(error, ` for repository ${organization}/${project}/${repoName}`);
-    throw error; // Unreachable, but for consistent-return
   }
 }
 
@@ -468,8 +491,11 @@ async function listAdoBranches(organization, project, repoName) {
  * @throws {Error} If API requests fail or file/directory not found.
  */
 async function listAdoCommitHistory(organization, project, repoName, repoDirName) {
-  // First, verify that the file or directory exists by querying the items API.
-  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(repoDirName)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
+  // Normalize the path; fallback to root if empty or invalid
+  const targetPath = (typeof repoDirName === 'string' &amp;&amp; repoDirName.trim() !== '') ? repoDirName.trim() : '/';
+
+  // Verify that the file or directory exists
+  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(targetPath)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const contentsResponse = await superagent
@@ -478,18 +504,18 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
       .set('User-Agent', USER_AGENT);
 
     if (contentsResponse.status === 200 &amp;&amp; (!contentsResponse.body || contentsResponse.body.count === 0)) {
-      throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
+      throw new Error(`The path "${targetPath}" in "${organization}/${project}/${repoName}" does not exist.`);
     }
   } catch (contentsError) {
-    logger.error('Error fetching path contents (exception - Azure DevOps):', organization, project, repoName, repoDirName, contentsError);
-    // Re-throw if it's a 404 or other network issue
+    logger.error('Error fetching path contents (exception - Azure DevOps):', organization, project, repoName, targetPath, contentsError);
     if (contentsError.response &amp;&amp; contentsError.response.status === 404) {
-      throw new Error(`The path "${repoDirName}" in "${organization}/${project}/${repoName}" does not exist.`);
+      throw new Error(`The path "${targetPath}" in "${organization}/${project}/${repoName}" does not exist.`);
     }
-    throw contentsError; // Re-throw other errors
+    throw contentsError;
   }
 
-  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(repoDirName)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
+  // Fetch the commit history
+  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(targetPath)}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const commitResponse = await superagent
@@ -505,12 +531,13 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
         date: commit.author.date,
       }));
     }
-    await handleAzureDevopsApiError(commitResponse, `listing commit history for "${repoDirName}" in "${organization}/${project}/${repoName}"`);
-    return []; // Unreachable, but for consistent-return
+
+    await handleAzureDevopsApiError(commitResponse, `listing commit history for "${targetPath}" in "${organization}/${project}/${repoName}"`);
+    return [];
   } catch (error) {
-    logger.error('Error listing commit history (exception - Azure DevOps):', organization, project, repoName, repoDirName, error);
-    handleNotFoundError(error, ` for path "${repoDirName}" in "${organization}/${project}/${repoName}"`);
-    throw error; // Unreachable, but for consistent-return
+    logger.error('Error listing commit history (exception - Azure DevOps):', organization, project, repoName, targetPath, error);
+    handleNotFoundError(error, ` for path "${targetPath}" in "${organization}/${project}/${repoName}"`);
+    throw error;
   }
 }
 
@@ -1050,6 +1077,7 @@ const delay = (ms) => new Promise((resolve) => {
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
+// eslint-disable-next-line no-unused-vars
 async function commitAdoFiles(
   sessionId,
   organization,
@@ -1063,7 +1091,6 @@ async function commitAdoFiles(
     `commitAdoFiles called with: sessionId=${sessionId}, org=${organization}, project=${project}, repoName=${repoName}, repoDirName=${repoDirNameParam}, branchName=${branchName}`,
   );
 
-  // --- Validate inputs ---
   if (!sessionId || typeof sessionId !== 'string') throw new Error('Invalid session ID');
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
   if (!project || typeof project !== 'string') throw new Error('Invalid project name');
@@ -1079,7 +1106,6 @@ async function commitAdoFiles(
     throw new Error(`Repository "${repoName}" not found in project "${project}" of organization "${organization}".`);
   }
 
-  // Clean up the repo‐dir parameter
   let cleanRepoDirName = repoDirNameParam;
   if (cleanRepoDirName === undefined || cleanRepoDirName === null || cleanRepoDirName === '' || cleanRepoDirName === '/') {
     cleanRepoDirName = null;
@@ -1087,7 +1113,6 @@ async function commitAdoFiles(
     cleanRepoDirName = repoDirNameParam.replace(/^\/+|\/+$/g, '');
   }
 
-  // --- Determine branch ---
   let effectiveBranchName = branchName;
   if (!effectiveBranchName) {
     try {
@@ -1109,7 +1134,6 @@ async function commitAdoFiles(
     }
   }
 
-  // --- Prepare temp directory &amp; file list ---
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
   if (!currentDirectoryPath) {
     throw new Error(
@@ -1129,7 +1153,6 @@ async function commitAdoFiles(
     };
   }
 
-  // --- Get latest commit of target branch ---
   const refUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?filter=heads/${effectiveBranchName}&amp;api-version=${AZURE_DEVOPS_API_VERSION}`;
   const refResponse = await superagent
     .get(refUrl)
@@ -1146,7 +1169,6 @@ async function commitAdoFiles(
   const changes = [];
   const results = [];
 
-  // --- Process each file ---
   const fileProcessingPromises = filesToProcess.map(
     async (relativeFilePath) => {
       const fullLocalFilePath = path.join(
@@ -1161,96 +1183,73 @@ async function commitAdoFiles(
         adoPath: null,
       };
 
-      // Determine if file sits under repoDirName
-      let shouldProcessFile = true;
       const cleanRepoDirNormalized = cleanRepoDirName
         ? cleanRepoDirName.replace(/\\/g, '/')
         : null;
 
-      // normalize forward‐slashes
       let relativeNormalized = relativeFilePath.replace(/\\/g, '/');
 
-      // AUTO‐STRIP: drop leading "repoName/" if no explicit repoDirNameParam
       if (!cleanRepoDirName) {
         const parts = relativeNormalized.split('/');
         if (parts[0] === repoName) {
           parts.shift();
           relativeNormalized = parts.join('/');
           logger.debug(
-            `Auto‐stripped leading '${repoName}/'; now '${relativeNormalized}'`,
+            `Auto-stripped leading '${repoName}/'; now '${relativeNormalized}'`,
           );
         }
       }
+
       if (cleanRepoDirNormalized) {
         if (
-          relativeNormalized.startsWith(
+          !relativeNormalized.startsWith(
             `${cleanRepoDirNormalized}/`,
           )
-          || relativeNormalized === cleanRepoDirNormalized
+          &amp;&amp; relativeNormalized !== cleanRepoDirNormalized
         ) {
-          const repoRootInTemp = path.join(
-            currentDirectoryPath,
-            cleanRepoDirName,
-          );
-          const relativeToRoot = path.relative(
-            repoRootInTemp,
-            fullLocalFilePath,
-          );
-          adoDestPath = path.join(
-            cleanRepoDirName,
-            relativeToRoot,
-          );
-        } else {
-          shouldProcessFile = false;
           logger.debug(
             `Skipping "${relativeFilePath}" outside "${cleanRepoDirName}" scope.`,
           );
+          fileResult.success = true;
+          fileResult.message = `Skipped: outside repoDirName "${cleanRepoDirName}"`;
+          return fileResult;
         }
+        const repoRootInTemp = path.join(
+          currentDirectoryPath,
+          cleanRepoDirName,
+        );
+        const relativeToRoot = path.relative(
+          repoRootInTemp,
+          fullLocalFilePath,
+        );
+        adoDestPath = path.join(
+          cleanRepoDirName,
+          relativeToRoot,
+        );
       } else {
         adoDestPath = relativeNormalized;
       }
-      let absoluteAdoPath = null;
 
-      if (!shouldProcessFile) {
-        fileResult.success = true;
-        fileResult.message = `Skipped: outside repoDirName "${cleanRepoDirName}"`;
-        // Normalize to forward‐slashes and strip any leading slashes,
-        // then build absolute ADO path
-        let normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
-        // If normalized is empty (e.g. repoDirName was "/" or ""), use the filename
-        if (!normalized || normalized === '.' || normalized === '/') {
-          normalized = path.basename(relativeFilePath);
-        }
-        absoluteAdoPath = `/${normalized}`;
-
-        if (normalized === '' || normalized === '.' || absoluteAdoPath === '/') {
-          logger.debug(
-            `Skipping commit for "${relativeFilePath}" (resolves to repo root or empty path).`,
-          );
-          fileResult.success = true;
-          fileResult.message = 'Skipped commit for root or empty path.';
-          fileResult.adoPath = absoluteAdoPath;
-          return fileResult;
-        }
-        fileResult.adoPath = absoluteAdoPath;
+      if (typeof adoDestPath !== 'string') {
+        logger.error(`Logic error: adoDestPath is not a string for file "${relativeFilePath}"`);
+        fileResult.success = false;
+        fileResult.message = 'Internal logic error';
         return fileResult;
       }
 
-      // Always set absoluteAdoPath for files to be processed
-      if (cleanRepoDirName) {
-        // If we have a cleanRepoDirName, adoDestPath is already set above
-        let normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
-        if (!normalized || normalized === '.' || normalized === '/') {
-          normalized = path.basename(relativeFilePath);
-        }
-        absoluteAdoPath = `/${normalized}`;
-      } else {
-        let normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
-        if (!normalized || normalized === '.' || normalized === '/') {
-          normalized = path.basename(relativeFilePath);
-        }
-        absoluteAdoPath = `/${normalized}`;
+      const normalized = adoDestPath.replace(/\\/g, '/').replace(/^\/+/, '');
+
+      if (!normalized || normalized === '.' || normalized === '/') {
+        logger.debug(
+          `Skipping commit for "${relativeFilePath}" (resolves to repo root or empty path).`,
+        );
+        fileResult.success = true;
+        fileResult.message = 'Skipped commit for root or empty path.';
+        fileResult.adoPath = `/${normalized}`;
+        return fileResult;
       }
+      const absoluteAdoPath = `/${normalized}`;
+      fileResult.adoPath = absoluteAdoPath;
 
       logger.debug(`Processing file: ${relativeFilePath}`);
       logger.debug(` → Local path: ${fullLocalFilePath}`);
@@ -1261,7 +1260,6 @@ async function commitAdoFiles(
         const localBase64 = buffer.toString('base64');
         let currentItem = null;
 
-        // Check if file already exists on the branch
         const getItemUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(
           absoluteAdoPath,
         )}&amp;versionDescriptor.version=${encodeURIComponent(
@@ -1297,7 +1295,6 @@ async function commitAdoFiles(
           }
         }
 
-        // Schedule add or edit
         changes.push({
           changeType: currentItem ? 'edit' : 'add',
           item: { path: absoluteAdoPath },
@@ -1325,7 +1322,6 @@ async function commitAdoFiles(
     },
   );
 
-  // --- Wait for file scans &amp; gather results ---
   const individualFileResults = await Promise.all(
     fileProcessingPromises,
   );
@@ -1340,8 +1336,6 @@ async function commitAdoFiles(
     };
   }
 
-  // --- Build and send the push ---
-  // Preview endpoint is broken, so we use the standard push endpoint
   const pushUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repo.name}/pushes?api-version=7.0`;
 
   const pushBody = {
@@ -1360,7 +1354,6 @@ async function commitAdoFiles(
     ],
   };
 
-  // Refactor retry logic to avoid await in loop
   async function tryPushWithRetries() {
     let attempt = 0;
     let pushSuccess = false;
@@ -1396,7 +1389,6 @@ async function commitAdoFiles(
               'A push to the default branch is not allowed',
             ))
         ) {
-          // branch policy / conflict: re-fetch and retry
           logger.warn(
             'Conflict or policy error; re-fetching ref and retrying…',
           );
@@ -1462,7 +1454,6 @@ async function commitAdoFiles(
 
   await tryPushWithRetries();
 
-  // Mark scheduled changes as successful (avoid assignment to parameter)
   const updatedResults = results.map((r) => {
     if (typeof r.message === 'string' &amp;&amp; r.message.startsWith('Scheduled for')) {
       return {
@@ -1514,7 +1505,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Thu Jul 31 2025 22:43:49 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Aug 01 2025 00:27:06 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -265,11 +265,12 @@ async function createAdoPipeline(organization, project, repoName, yamlPath = 'az
  * @param {string} organization The Azure DevOps organization name.
  * @param {string} project The project ID or name.
  * @param {number} pipelineId The ID of the pipeline to run.
+ * @param {string} repoName The name of the repository containing the pipeline YAML file.
  * @param {string} branch The branch containing the YAML file. Defaults to 'main'.
  * @param {object} [userParameters] Optional parameters for the pipeline run (e.g., variables, branch).
  * @returns {Promise<object>} The queued pipeline run object or error details.
  */
-async function runAdoPipeline(organization, project, pipelineId, branch = 'main', userParameters = {}) {
+async function runAdoPipeline(organization, project, pipelineId, repoName, branch = 'main', userParameters = {}) {
   const url = `${ADO_BASEURI}/${organization}/${project}/_apis/pipelines/${pipelineId}/runs`;
 
   const runParameters = Object.keys(userParameters).length > 0
@@ -279,13 +280,14 @@ async function runAdoPipeline(organization, project, pipelineId, branch = 'main'
         repositories: {
           self: {
             refName: `refs/heads/${branch}`,
+            repository: repoName, // ✅ Explicit repo reference
           },
         },
       },
     };
 
   try {
-    logger.info(`Triggering pipeline ${pipelineId} on branch '${branch}' in project '${project}'`);
+    logger.info(`Triggering pipeline ${pipelineId} on branch '${branch}' using repo '${repoName}' in project '${project}'`);
     return await adoApiRequest('POST', url, runParameters);
   } catch (error) {
     logger.error('Pipeline trigger failed:', {

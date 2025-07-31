@@ -748,16 +748,17 @@ async function loadAdoIntegration(sessionId) {
     sessionId,
     'run_ado_pipeline',
     runAdoPipeline,
-    ['organization', 'project', 'pipelineId', 'runParameters'],
+    ['organization', 'project', 'pipelineId', 'repoName', 'branchName', 'userParameters'],
     'Triggers a new run for an Azure DevOps pipeline.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The project ID or name.' },
       pipelineId: { type: 'number', description: 'The ID of the pipeline to run.' },
+      repoName: { type: 'string', description: 'The name of the repository where the pipeline will be run.' },
       branchName: { type: 'string', description: 'The name of branch to use.' },
-      runParameters: { type: 'object', description: 'Optional parameters for the pipeline run (e.g., variables, branch).' },
+      userParameters: { type: 'object', description: 'Optional parameters for the pipeline run (e.g., variables, branch).' },
     },
-    ['organization', 'project', 'pipelineId'],
+    ['organization', 'project', 'pipelineId', 'repoName'],
   );
 
   // New function: get_ado_pipeline_run_logs
