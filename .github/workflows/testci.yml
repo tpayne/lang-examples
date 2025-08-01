@@ -2,7 +2,8 @@ name: Build images and Test for CI process
 on:
   push:
   pull_request:
-
+  workflow_dispatch:
+  
 concurrency:
   group: ${{ github.ref }}CiTest
   cancel-in-progress: true
