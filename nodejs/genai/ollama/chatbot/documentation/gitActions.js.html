@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: mappingFunctions.js</title>
+    <title>JSDoc: Source: gitActions.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: mappingFunctions.js</h1>
+    <h1 class="page-title">Source: gitActions.js</h1>
 
     
 
@@ -27,173 +27,263 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>const superagent = require('superagent');
-const dotenv = require('dotenv');
-const logger = require('./logger'); // Assuming you have a logger module
+const AdmZip = require('adm-zip');
+const logger = require('./logger');
 
-dotenv.config(); // Load environment variables from .env file
+// GitHub Actions specific constants - these would ideally come from environment variables or configuration
+const GITHUB_API_URL = 'https://api.github.com';
+const GITHUB_API_VERSION = '2022-11-28';
+const USER_AGENT = 'AIBot';
+const githubToken = process.env.GITHUB_TOKEN;
 
 /**
- * Generates an HTTP link to the Google Maps website for a given route.
- * Note: This link is for displaying the route on the Google Maps website/app,
- * not for embedding or using the Directions API result directly.
- *
- * @param {object} params - The original parameters used for the planRoute API call.
- * @param {string} params.origin - The starting point.
- * @param {string} params.destination - The ending point.
- * @param {string[]} [params.waypoints] - Optional array of intermediate locations.
- * @param {string} [params.mode] - Optional mode of transport (e.g., "driving", "walking").
- * @returns {string} The constructed Google Maps URL.
+ * Lists all workflows in a given GitHub repository.
+ * @param {string} username - The username of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @returns {Promise&lt;any>} - A promise that resolves with the list of workflows.
  */
-async function generateGoogleMapsLink(params) {
-  const baseUrl = 'https://www.google.com/maps/dir/?api=1';
-  const queryParts = [];
 
-  // Add origin and destination - URL encode them to handle spaces and special characters
-  if (params.origin) {
-    queryParts.push(`origin=${encodeURIComponent(params.origin)}`);
+async function listGithubWorkflows(username, repoName) {
+  try {
+    const url = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/workflows`;
+    logger.debug(`Listing GitHub workflows for ${username}/${repoName} at ${url}`);
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION);
+
+    return response.body;
+  } catch (err) {
+    logger.error(`Failed to list GitHub workflows for ${username}/${repoName}: ${err.message}`);
+    if (err.response) {
+      logger.error(`GitHub API response: ${err.response.text}`);
+      if (err.response.status === 404) {
+        throw new Error('Not Found: Check user and repo names.');
+      }
+      if (err.response.body &amp;&amp; err.response.body.errors &amp;&amp; err.response.body.errors.length > 0) {
+        throw new Error(err.response.body.errors[0].message);
+      }
+      throw new Error(err.response.body.message || 'Failed to list GitHub workflows');
+    } else {
+      throw err;
+    }
   }
-  if (params.destination) {
-    queryParts.push(`destination=${encodeURIComponent(params.destination)}`);
-  }
-
-  // Add waypoints if they exist - URL encode each one
-  if (params.waypoints &amp;&amp; params.waypoints.length > 0) {
-    const encodedWaypoints = params.waypoints.map((wp) => encodeURIComponent(wp)).join('|');
-    queryParts.push(`waypoints=${encodedWaypoints}`);
-  }
-
-  // Add mode if specified (optional)
-  if (params.mode) {
-    // Google Maps URL uses different mode names sometimes,
-    // mapping Directions API modes to URL modes if necessary.
-    let mapMode = params.mode;
-    if (mapMode === 'bicycling') mapMode = 'bicycling'; // Same
-    if (mapMode === 'transit') mapMode = 'transit'; // Same
-    if (mapMode === 'walking') mapMode = 'walking'; // Same
-    // 'driving' is the default and doesn't usually need to be specified,
-    // but adding it doesn't hurt.
-    if (mapMode === 'driving') mapMode = 'driving';
-
-    queryParts.push(`travelmode=${mapMode}`);
-  }
-
-  // Join all parts with '&amp;'
-  return `${baseUrl}&amp;${queryParts.join('&amp;')}`;
 }
 
 /**
- * @typedef {object} DirectionsParameters
- * @property {string} origin - The starting point for the directions request.
- * @property {string} destination - The ending point for the directions request.
- * @property {string[]} [waypoints] - An array of intermediate locations to include
- * in the route.
- * @property {string} [mode] - Specifies the mode of transport. (e.g., "driving",
- * "walking", "bicycling", "transit")
- * @property {string} [language] - The language to use for the results.
- * @property {string} [units] - Specifies the unit system to use. (e.g., "metric",
- * "imperial")
- * @property {boolean} [alternatives] - If true, more than one route may be returned.
- * @property {string} [avoid] - Indicates features to avoid. (e.g., "tolls", "highways",
- * "ferries", "indoor")
- * @property {string} [transit_mode] - Specifies the desired modes of transit. (e.g.,
- * "bus", "subway", "train", "tram", "rail")
- * @property {string} [transit_routing_preference] - Specifies preferences for transit
- * routes. (e.g., "less_walking", "fewer_transfers")
- * @property {string} [departure_time] - The desired time of departure. Can be a
- * timestamp or "now".
- * @property {string} [arrival_time] - The desired time of arrival (for transit).
- * Can be a timestamp.
- * @property {string} [traffic_model] - Specifies the assumptions to use when calculating
- * time in traffic. (e.g., "best_guess", "optimistic", "pessimistic")
- * @property {boolean} [optimizeWaypoints] - If true and waypoints are provided, the
- * API will attempt to reorder the waypoints to minimize the total travel time.
+ * Dispatches a 'workflow_dispatch' event to trigger a workflow.
+ * @param {string} username - The username of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @param {string} workflowId - The ID or file name of the workflow to trigger.
+ * @param {string} ref - The Git reference (branch, tag, or SHA).
+ * @param {object} inputs - The inputs for the workflow_dispatch event.
+ * @returns {Promise&lt;any>} - A promise that resolves with the API response.
  */
+async function createGithubWorkflowDispatch(username, repoName, workflowId, ref, inputs) {
+  try {
+    const url = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/workflows/${workflowId}/dispatches`;
+    logger.debug(`Triggering GitHub workflow ${workflowId} with inputs: ${JSON.stringify(inputs)}, for url ${url}`);
+    const payload = inputs ? { ref, inputs } : { ref };
+    const response = await superagent
+      .post(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .send(payload);
+
+    return response.body;
+  } catch (err) {
+    logger.error(`Failed to list GitHub workflows for ${username}/${repoName}: ${err.message}`);
+    if (err.response) {
+      logger.error(`GitHub API response: ${err.response.text}`);
+      if (err.response.status === 404) {
+        throw new Error('Not Found: Check user and repo names.');
+      }
+      if (err.response.body &amp;&amp; err.response.body.errors &amp;&amp; err.response.body.errors.length > 0) {
+        throw new Error(err.response.body.errors[0].message);
+      }
+      throw new Error(err.response.body.message || 'Failed to list GitHub workflows');
+    } else {
+      throw err;
+    }
+  }
+}
 
 /**
- * Plans a route between multiple points using the Google Maps Directions API.
- *
- * @async
- * @function planRoute
- * @param {string} sessionId - The unique identifier for the session (if
- * needed for logging or context).
- * @param {DirectionsParameters} params - An object containing the parameters
- * for the directions request.
- * @returns {Promise&lt;object|null>} A promise that resolves to the route data
- * (object) in JSON format,
- * or null if the route cannot be planned.
- * @throws {Error} If there is an error during the API call or if the API key is
- * missing.
+ * Lists all workflow runs for a given GitHub repository.
+ * @param {string} username - The username of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @returns {Promise&lt;any>} - A promise that resolves with the list of workflow runs.
  */
-async function planRoute(sessionId, params) {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY; // Ensure your API key is in your .env file
-  if (!apiKey) {
-    logger.error(`Google Maps API Key not found in environment variables [Session: ${sessionId}]`);
-    throw new Error('Google Maps API Key is not configured.');
-  }
-
-  const apiUrl = 'https://maps.googleapis.com/maps/api/directions/json';
-
-  // Construct the query parameters
-  const queryParams = {
-    origin: params.origin,
-    destination: params.destination,
-    key: apiKey,
-  };
-
-  // Add optional parameters if they exist
-  if (params.waypoints &amp;&amp; params.waypoints.length > 0) {
-    // Join waypoints with '|' for the API
-    queryParams.waypoints = params.waypoints.join('|');
-    if (params.optimizeWaypoints) {
-      queryParams.waypoints = `optimize:true|${queryParams.waypoints}`;
-    }
-  }
-  if (params.mode) queryParams.mode = params.mode;
-  if (params.language) queryParams.language = params.language;
-  if (params.units) queryParams.units = params.units;
-  if (params.alternatives !== undefined) queryParams.alternatives = params.alternatives;
-  if (params.avoid) queryParams.avoid = params.avoid;
-  if (params.transit_mode) queryParams.transit_mode = params.transit_mode;
-  if (params.transit_routing_preference) {
-    queryParams.transit_routing_preference = params.transit_routing_preference;
-  }
-  if (params.departure_time) queryParams.departure_time = params.departure_time;
-  if (params.arrival_time) queryParams.arrival_time = params.arrival_time;
-  if (params.traffic_model) queryParams.traffic_model = params.traffic_model;
-
-  logger.debug(`Invoking Google Maps Directions API [Session: ${sessionId}] `
-    + `with params: ${JSON.stringify(queryParams)}`);
-
+async function listGithubWorkflowRuns(username, repoName) {
   try {
+    const url = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/runs`;
+    logger.debug(`Listing GitHub workflow runs for ${username}/${repoName} at ${url}`);
     const response = await superagent
-      .get(apiUrl)
-      .query(queryParams)
-      .set('Accept', 'application/json');
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION);
 
-    // Handle different response statuses and API specific statuses
-    if (response.status === 200) {
-      const data = response.body;
-      if (data.status === 'OK') {
-        return data; // Return the full JSON response
-      }
-      logger.error(`Google Maps Directions API error [Session: ${sessionId}]: `
-        + `Status - ${data.status}, Error Message - ${data.error_message || 'No error message provided'}`);
-      // Return the error response from the API for the chatbot to handle
-      return data;
+    return response.body;
+  } catch (err) {
+    logger.error('Failed to list GitHub workflow runs', err);
+    throw err;
+  }
+}
+
+/**
+ * Deletes a specific workflow run from a repository.
+ * @param {string} username - The username of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @param {string} runId - The ID of the workflow run to delete.
+ * @returns {Promise&lt;any>} - A promise that resolves with the API response.
+ */
+async function deleteGithubWorkflowRun(username, repoName, runId) {
+  try {
+    const url = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/runs/${runId}`;
+    logger.debug(`Deleting GitHub workflow run ${runId} for ${username}/${repoName} at ${url}`);
+    const response = await superagent
+      .delete(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION);
+
+    // A successful deletion returns a 204 No Content status.
+    return response;
+  } catch (err) {
+    logger.error('Failed to delete GitHub workflow run', err);
+    throw err;
+  }
+}
+
+/**
+ * Lists running or queued GitHub Actions workflows and their jobs.
+ * Fetches workflow runs by status, then fetches jobs for each run.
+ * Filters jobs by 'queued' or the provided status.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [status='in_progress'] Status to filter workflows (optional).
+ * @returns {Promise&lt;Array&lt;{ workflow_run_id: number, workflow_name: string,
+ * job_id: number, job_name: string, html_url: string, status: string,
+ * started_at: string }>>}
+ * Array of running/queued GitHub Action job details.
+ * @throws {Error} If API request fails or repository/user not found.
+ */
+async function listGitHubActions(username, repoName, status = 'in_progress') {
+  const urlRuns = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/runs?status=${status}`;
+  try {
+    const runsResponse = await superagent
+      .get(urlRuns)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT);
+
+    const runsData = runsResponse.body;
+
+    if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) {
+      return [];
     }
-    logger.error(`Error querying Google Maps Directions API [Session: ${sessionId}]: `
-      + `Status - ${response.status}, Response - ${JSON.stringify(response.body)}`);
-    throw new Error(`Failed to query Google Maps Directions API: ${response.status}`);
+
+    /* eslint-disable no-restricted-syntax, no-await-in-loop */
+    const runningJobs = [];
+    for (const run of runsData.workflow_runs) {
+      const urlJobs = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`;
+      const jobsResponse = await superagent
+        .get(urlJobs)
+        .set('Authorization', `Bearer ${githubToken}`)
+        .set('Accept', 'application/vnd.github+json')
+        .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+        .set('User-Agent', USER_AGENT);
+
+      const jobsData = jobsResponse.body;
+
+      if (jobsData.jobs) {
+        jobsData.jobs.forEach((job) => {
+          if (job.status === 'queued' || job.status === status) {
+            runningJobs.push({
+              workflow_run_id: run.id,
+              workflow_name: run.name,
+              job_id: job.id,
+              job_name: job.name,
+              html_url: job.html_url,
+              status: job.status,
+              started_at: job.started_at,
+            });
+          }
+        });
+      }
+    }
+    /* eslint-enable no-restricted-syntax, no-await-in-loop */
+    return runningJobs;
   } catch (error) {
-    logger.error(`Error during Google Maps Directions API query [Session: ${sessionId}]: `
-      + `${error.message}`);
-    throw error;
+    logger.error(`Error listing actions (exception): ${username} ${repoName} ${status} ${error}`);
+    if (error.response) {
+      logger.error(`Error listing actions (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check user and repo names.');
+      }
+      if (error.response.body &amp;&amp; error.response.body.errors
+        &amp;&amp; error.response.body.errors.length > 0) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to list actions');
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Gets the logs for a specific workflow run.
+ * @param {string} username - The username of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @param {string} runId - The ID of the workflow run.
+ * @returns {Promise&lt;any>} - A promise that resolves with the log data.
+ */
+async function getGithubWorkflowRunLogs(username, repoName, runId) {
+  try {
+    const url = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/runs/${runId}/logs`;
+    logger.debug(`Getting logs for GitHub workflow run ${runId} for ${username}/${repoName} at ${url}`);
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION);
+
+    // The logs are returned as a ZIP file, so we might need to handle that.
+    // The logs are returned as a ZIP file, so we need to extract and parse them.
+    const zip = new AdmZip(response.body);
+    const zipEntries = zip.getEntries();
+
+    // Convert each file in the zip to a JSON element: { filename, content }
+    const files = zipEntries.map((entry) => ({
+      filename: entry.entryName,
+      content: entry.getData().toString('utf8'),
+    }));
+
+    return files;
+  } catch (err) {
+    logger.error('Failed to get GitHub workflow run logs', err);
+    throw err;
   }
 }
 
 module.exports = {
-  generateGoogleMapsLink,
-  planRoute,
+  createGithubWorkflowDispatch,
+  deleteGithubWorkflowRun,
+  getGithubWorkflowRunLogs,
+  listGithubWorkflowRuns,
+  listGithubWorkflows,
+  listGitHubActions,
 };
 </code></pre>
         </article>

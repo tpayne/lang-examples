@@ -12,10 +12,18 @@ const {
   listBranches,
   listCommitHistory,
   listDirectoryContents,
-  listGitHubActions,
   listPublicRepos,
   switchBranch,
 } = require('./gitFunctions');
+
+const {
+  createGithubWorkflowDispatch,
+  deleteGithubWorkflowRun,
+  getGithubWorkflowRunLogs,
+  listGithubWorkflowRuns,
+  listGithubWorkflows,
+  listGitHubActions,
+} = require('./gitActions');
 
 const {
   checkAdoBranchExists,
@@ -441,20 +449,6 @@ async function loadGitHub(sessionId) {
 
   await registerFunction(
     sessionId,
-    'list_actions',
-    listGitHubActions,
-    ['username', 'repoName', 'status'],
-    'Lists the GitHub actions running in a GitHub repository.',
-    {
-      username: { type: 'string', description: 'The GitHub username.' },
-      repoName: { type: 'string', description: 'The repository name.' },
-      status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
-    },
-    ['username', 'repoName'],
-  );
-
-  await registerFunction(
-    sessionId,
     'list_public_repos',
     listPublicRepos,
     ['username'],
@@ -506,6 +500,90 @@ async function loadGitHub(sessionId) {
       recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' }, // Clarified description
     },
     ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
+  );
+}
+
+async function loadGitHubActions(sessionId) {
+  // Register the GitHub Actions functions
+  await registerFunction(
+    sessionId,
+    'list_github_actions',
+    listGitHubActions,
+    ['username', 'repoName', 'status'],
+    'Lists the GitHub actions running in a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
+    },
+    ['username', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'list_github_workflows',
+    listGithubWorkflows,
+    ['username', 'repoName'],
+    'Lists all workflows in a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['username', 'repoName'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'create_github_workflow_dispatch',
+    createGithubWorkflowDispatch,
+    ['username', 'repoName', 'workflowId', 'ref', 'inputs'],
+    'Dispatches a workflow_dispatch event to trigger a workflow.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      workflowId: { type: 'string', description: 'The ID or file name of the workflow to trigger.' },
+      ref: { type: 'string', description: 'The Git reference (branch, tag, or SHA).' },
+      inputs: { type: 'object', description: 'The inputs for the workflow_dispatch event.' },
+    },
+    ['username', 'repoName', 'workflowId', 'ref'],
+  );
+  await registerFunction(
+    sessionId,
+    'list_github_workflow_runs',
+    listGithubWorkflowRuns,
+    ['username', 'repoName'],
+    'Lists all workflow runs for a given GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+    },
+    ['username', 'repoName'],
+  );
+  await registerFunction(
+    sessionId,
+    'get_github_workflow_run_logs',
+    getGithubWorkflowRunLogs,
+    ['username', 'repoName', 'runId'],
+    'Gets the logs for a specific workflow run.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      runId: { type: 'string', description: 'The ID of the workflow run.' },
+    },
+    ['username', 'repoName', 'runId'],
+  );
+  await registerFunction(
+    sessionId,
+    'delete_github_workflow_run',
+    deleteGithubWorkflowRun,
+    ['owner', 'repo', 'runId'],
+    'Deletes a specific workflow run from a repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      runId: { type: 'string', description: 'The ID of the workflow run to delete.' },
+    },
+    ['username', 'repoName', 'runId'],
   );
 }
 
@@ -1553,6 +1631,7 @@ async function loadIntegrations(sessionId) {
   if (process.env.GITHUB_TOKEN) {
     logger.info(`Loading GitHub integration for session: ${sessionId}`);
     await loadGitHub(sessionId);
+    await loadGitHubActions(sessionId);
     logger.info(`Loading GitHub code review integration for session: ${sessionId}`);
     await loadCodeReviews(sessionId);
   }
