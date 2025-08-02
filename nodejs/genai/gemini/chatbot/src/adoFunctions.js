@@ -1,20 +1,18 @@
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
 const { Mutex } = require('async-mutex');
 const superagent = require('superagent');
 const logger = require('./logger');
 
-const {
-  mkdir,
-  getOrCreateSessionTempDir,
-} = require('./utilities');
+const { mkdir, getOrCreateSessionTempDir } = require('./utilities');
 
 // Azure DevOps specific constants - these would ideally come from environment variables or configuration
 const AZURE_DEVOPS_API_VERSION = '7.1-preview.1'; // Or newer
 const { AZURE_DEVOPS_PAT } = process.env; // Personal Access Token
 const USER_AGENT = 'AIBot-AzureDevOps'; // Custom user agent
 const ADO_BASEURI = 'https://dev.azure.com';
+
+const stripLeadingSlash = (p) => p.replace(/^\/+/, '');
 
 /**
  * Encodes a Personal Access Token for Basic Authentication.
@@ -59,7 +57,8 @@ function getDownloadMutex(sessionId, downloadUrl) {
  * @throws {Error} Modified error for "Not Found" or the original.
  */
 function handleNotFoundError(error, context = '') {
-  const isNotFound = (error.response && error.response.status === 404) || error.message.includes('Not Found');
+  const isNotFound = (error.response && error.response.status === 404)
+    || error.message.includes('Not Found');
   if (isNotFound) {
     throw new Error(
       `Resource Not Found ${context}: Please check the provided details (organization, project, repository, path, branch).`,
@@ -85,7 +84,8 @@ async function handleAzureDevopsApiError(response, context = '') {
   let errorMessage = `Azure DevOps API Error ${context}: ${response.status} - ${response.statusText}`;
   if (response.body && response.body.message) {
     errorMessage += ` - ${response.body.message}`;
-  } else if (response.body && response.body.value) { // Azure DevOps often puts error in 'value'
+  } else if (response.body && response.body.value) {
+    // Azure DevOps often puts error in 'value'
     errorMessage += ` - ${response.body.value}`;
   }
   throw new Error(errorMessage);
@@ -101,13 +101,25 @@ async function handleAzureDevopsApiError(response, context = '') {
  * @param {string} branchName The branch name to download from.
  * @param {string} localFilePath The local path to save the file.
  */
-async function downloadAdoFile(sessionId, organization, project, repoName, filePath, branchName, localFilePath) {
+async function downloadAdoFile(
+  sessionId,
+  organization,
+  project,
+  repoName,
+  filePath,
+  branchName,
+  localFilePath,
+) {
   // We need to resolve repoName to repo ID first if not already done.
   // For simplicity here, assuming repoName can be used directly or ID is resolved elsewhere.
   // In a real scenario, you'd likely call checkAdoRepoExists or similar to get the ID.
   const repoId = repoName; // Placeholder: In practice, resolve to actual ID
 
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(filePath)}&versionDescriptor.version=${encodeURIComponent(branchName)}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoId}/items?path=${encodeURIComponent(
+    filePath,
+  )}&versionDescriptor.version=${encodeURIComponent(
+    branchName,
+  )}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
 
   const downloadMutex = getDownloadMutex(sessionId, url);
   const release = await downloadMutex.acquire();
@@ -137,7 +149,9 @@ async function downloadAdoFile(sessionId, organization, project, repoName, fileP
     }
 
     if (Buffer.isBuffer(response.body)) {
-      logger.debug(`Downloading file: ${url} to ${localFilePath} [Session: ${sessionId}]`);
+      logger.debug(
+        `Downloading file: ${url} to ${localFilePath} [Session: ${sessionId}]`,
+      );
       const stats = await fs.promises.stat(localFilePath).catch(() => null);
       if (stats && stats.isDirectory()) {
         logger.warn(`Skipping download: ${localFilePath} is a directory.`);
@@ -162,11 +176,11 @@ async function downloadAdoFile(sessionId, organization, project, repoName, fileP
       : 'No response details';
     logger.error(
       'Error downloading Azure DevOps file (exception): '
-      + `${url} `
-      + `${localFilePath} `
-      + `${errorMessage} `
-      + `${errorDetails} `
-      + `[Session: ${sessionId}]`,
+        + `${url} `
+        + `${localFilePath} `
+        + `${errorMessage} `
+        + `${errorDetails} `
+        + `[Session: ${sessionId}]`,
     );
     throw error;
   } finally {
@@ -175,21 +189,63 @@ async function downloadAdoFile(sessionId, organization, project, repoName, fileP
 }
 
 const BINARY_EXTENSIONS = new Set([
-  '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.gif',
+  '.bmp',
+  '.tiff',
+  '.webp',
   '.svg',
-  '.mp3', '.wav', '.aac', '.flac', '.ogg',
-  '.mp4', '.avi', '.mkv', '.mov', '.wmv',
-  '.zip', '.tar', '.gz', '.bz2', '.rar', '.7z',
-  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-  '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.lib', '.a',
-  '.sqlite', '.db',
-  '.woff', '.woff2', '.ttf', '.otf', '.eot',
+  '.mp3',
+  '.wav',
+  '.aac',
+  '.flac',
+  '.ogg',
+  '.mp4',
+  '.avi',
+  '.mkv',
+  '.mov',
+  '.wmv',
+  '.zip',
+  '.tar',
+  '.gz',
+  '.bz2',
+  '.rar',
+  '.7z',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.exe',
+  '.dll',
+  '.so',
+  '.dylib',
+  '.bin',
+  '.obj',
+  '.lib',
+  '.a',
+  '.sqlite',
+  '.db',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.otf',
+  '.eot',
   '.ico',
-  '.swf', '.fla',
-  '.class', '.jar',
+  '.swf',
+  '.fla',
+  '.class',
+  '.jar',
   '.apk',
-  '.dmg', '.iso',
-  '.obj', '.stl', '.3ds',
+  '.dmg',
+  '.iso',
+  '.obj',
+  '.stl',
+  '.3ds',
 ]);
 
 /**
@@ -229,15 +285,31 @@ async function getAdoDefaultBranch(organization, project, repoName) {
     if (response.status === 200 && response.body.defaultBranch) {
       // Azure DevOps defaultBranch is like "refs/heads/main"
       const branchFullName = response.body.defaultBranch;
-      const branchName = branchFullName.startsWith('refs/heads/') ? branchFullName.substring('refs/heads/'.length) : branchFullName;
-      logger.debug(`Default branch for ${organization}/${project}/${repoName} is: ${branchName}`);
+      const branchName = branchFullName.startsWith('refs/heads/')
+        ? branchFullName.substring('refs/heads/'.length)
+        : branchFullName;
+      logger.debug(
+        `Default branch for ${organization}/${project}/${repoName} is: ${branchName}`,
+      );
       return branchName;
     }
-    await handleAzureDevopsApiError(response, `getting default branch for ${organization}/${project}/${repoName}`);
+    await handleAzureDevopsApiError(
+      response,
+      `getting default branch for ${organization}/${project}/${repoName}`,
+    );
     return ''; // Unreachable, but for consistent-return
   } catch (error) {
-    logger.error('Error getting default branch (exception - Azure DevOps):', organization, project, repoName, error);
-    handleNotFoundError(error, ` for repository ${organization}/${project}/${repoName}`);
+    logger.error(
+      'Error getting default branch (exception - Azure DevOps):',
+      organization,
+      project,
+      repoName,
+      error,
+    );
+    handleNotFoundError(
+      error,
+      ` for repository ${organization}/${project}/${repoName}`,
+    );
     throw error; // Unreachable, but for consistent-return
   }
 }
@@ -266,30 +338,49 @@ async function fetchAdoRepoContentsRecursive(
   localDestPath = null,
   skipBinaryFiles = true,
 ) {
-  const baseLocalDestPath = localDestPath || await getOrCreateSessionTempDir(sessionId);
+  const baseLocalDestPath = localDestPath || (await getOrCreateSessionTempDir(sessionId));
+
+  // Strip any leading slash so repoDirName is always relative
+  let tRepoDirName = '';
+  if (repoName) {
+    if (repoDirName) {
+      tRepoDirName = stripLeadingSlash(repoDirName);
+    } else {
+      tRepoDirName = '';
+    }
+  } else {
+    tRepoDirName = '';
+  }
 
   let effectiveBranchName = branchName;
-
   if (!effectiveBranchName) {
     try {
-      effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
-      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
+      effectiveBranchName = await getAdoDefaultBranch(
+        organization,
+        project,
+        repoName,
+      );
+      logger.info(
+        `No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`,
+      );
     } catch (error) {
-      logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
-      throw new Error(`Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`);
+      logger.error(
+        `Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`,
+      );
+      throw new Error(
+        `Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`,
+      );
     }
   }
 
   const handleSingleFile = async (filePath) => {
-    const destFile = path.join(baseLocalDestPath, filePath);
+    const relPath = stripLeadingSlash(filePath);
+    const destFile = path.join(baseLocalDestPath, relPath);
     const parentDir = path.dirname(destFile);
-    if (
-      parentDir !== baseLocalDestPath
-      && parentDir !== os.tmpdir()
-      && parentDir.startsWith(baseLocalDestPath)
-    ) {
-      await mkdir(parentDir, { recursive: true });
+    if (!parentDir.startsWith(baseLocalDestPath)) {
+      throw new Error(`Cannot create directory outside temp dir: "${parentDir}"`);
     }
+    await mkdir(parentDir, { recursive: true });
     await downloadAdoFile(
       sessionId,
       organization,
@@ -304,8 +395,8 @@ async function fetchAdoRepoContentsRecursive(
 
   // 🕵️‍♀️ Single-item probe with safer parsing
   const probeUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
-    + `?path=${encodeURIComponent(repoDirName)}`
-    + `&versionDescriptor.version=${encodeURIComponent(branchName)}`
+    + `?path=${encodeURIComponent(repoDirName || '/')}`
+    + `&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}`
     + '&versionDescriptor.versionType=branch' // 👈 Required!
     + '&recursionLevel=None'
     + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
@@ -321,23 +412,32 @@ async function fetchAdoRepoContentsRecursive(
       : probeRes.body;
 
     if (!single || !single.path) {
-      throw new Error(`Could not locate "${repoDirName}" on branch "${effectiveBranchName}"`);
+      throw new Error(
+        `Could not locate "${tRepoDirName}" on branch "${effectiveBranchName}"`,
+      );
     }
 
     if (single.isFolder) {
-      throw new FolderFetchError(repoDirName);
+      throw new FolderFetchError(tRepoDirName);
     }
 
     const ext = path.extname(single.path).toLowerCase();
     if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
-      logger.info(`Skipping binary file: "${single.path}" [Session: ${sessionId}]`);
-      return { success: true, message: `Skipped binary file at "${single.path}"` };
+      logger.info(
+        `Skipping binary file: "${single.path}" [Session: ${sessionId}]`,
+      );
+      return {
+        success: true,
+        message: `Skipped binary file at "${single.path}"`,
+      };
     }
 
     return handleSingleFile(single.path);
   } catch (err) {
     const isFolderProbe = err instanceof FolderFetchError
-      || (err.response && err.response.status === 400 && err.response.text.includes('recursionLevel'));
+      || (err.response
+        && err.response.status === 400
+        && err.response.text.includes('recursionLevel'));
 
     if (!isFolderProbe && (!err.response || err.response.status !== 404)) {
       logger.error(`Error in single-item probe: ${err.message}`, err);
@@ -345,14 +445,16 @@ async function fetchAdoRepoContentsRecursive(
     }
 
     if (err.response && err.response.status === 404) {
-      throw new Error('Not Found: verify organization, project, repo and path names.');
+      throw new Error(
+        'Not Found: verify organization, project, repo and path names.',
+      );
     }
 
     // 👇 Fallback to directory fetch
   }
 
   const dirUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
-    + `?scopePath=${encodeURIComponent(repoDirName)}`
+    + `?scopePath=${encodeURIComponent(repoDirName || '/')}`
     + `&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}`
     + '&recursionLevel=Full'
     + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
@@ -363,28 +465,37 @@ async function fetchAdoRepoContentsRecursive(
   const dirRes = await dirReq;
 
   if (dirRes.status !== 200) {
-    throw new Error(`Failed directory fetch. Status ${dirRes.status}: ${dirRes.text}`);
+    throw new Error(
+      `Failed directory fetch. Status ${dirRes.status}: ${dirRes.text}`,
+    );
   }
 
-  const items = dirRes.body.value;
-  const downloadResults = await Promise.all(items.map(async (item) => {
-    if (item.isFolder) {
-      logger.debug(`Skipped folder placeholder: "${item.path}"`);
-      return { success: true, message: `Folder: "${item.path}"` };
-    }
-
-    const ext = path.extname(item.path).toLowerCase();
-    if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
-      logger.info(`Skipping binary file: "${item.path}" [Session: ${sessionId}]`);
-      return null;
-    }
-
-    return handleSingleFile(item.path);
+  const items = dirRes.body.value.map((item) => ({
+    ...item,
+    path: stripLeadingSlash(item.path), // Ensure paths are relative
   }));
+  const downloadResults = await Promise.all(
+    items.map(async (item) => {
+      if (item.isFolder) {
+        logger.debug(`Skipped folder placeholder: "${item.path}"`);
+        return { success: true, message: `Folder: "${item.path}"` };
+      }
+
+      const ext = path.extname(item.path).toLowerCase();
+      if (skipBinaryFiles && BINARY_EXTENSIONS.has(ext)) {
+        logger.info(
+          `Skipping binary file: "${item.path}" [Session: ${sessionId}]`,
+        );
+        return null;
+      }
+
+      return handleSingleFile(item.path);
+    }),
+  );
 
   return {
     success: true,
-    message: `Processed directory "${repoDirName}"`,
+    message: `Processed directory "${tRepoDirName}"`,
     downloadResults: downloadResults.filter((r) => r),
   };
 }
@@ -409,12 +520,23 @@ async function listAdoRepos(organization, project) {
       return response.body.value.map((repo) => repo.name);
     }
     // If status is not 200, an error is thrown by handleAzureDevopsApiError
-    await handleAzureDevopsApiError(response, `listing repos for ${organization}/${project}`);
+    await handleAzureDevopsApiError(
+      response,
+      `listing repos for ${organization}/${project}`,
+    );
     // This line is unreachable, but added for consistent-return if the linter requires it
     return [];
   } catch (error) {
-    logger.error('Error listing repos (exception - Azure DevOps):', organization, project, error);
-    handleNotFoundError(error, ` for organization "${organization}" and project "${project}"`);
+    logger.error(
+      'Error listing repos (exception - Azure DevOps):',
+      organization,
+      project,
+      error,
+    );
+    handleNotFoundError(
+      error,
+      ` for organization "${organization}" and project "${project}"`,
+    );
     // This line is unreachable, but added for consistent-return if the linter requires it
     throw error;
   }
@@ -439,13 +561,27 @@ async function listAdoBranches(organization, project, repoName) {
 
     if (response.status === 200) {
       // Azure DevOps returns refs like { "name": "refs/heads/main", ... }
-      return response.body.value.map((ref) => (ref.name.startsWith('refs/heads/') ? ref.name.substring('refs/heads/'.length) : ref.name));
+      return response.body.value.map((ref) => (ref.name.startsWith('refs/heads/')
+        ? ref.name.substring('refs/heads/'.length)
+        : ref.name));
     }
-    await handleAzureDevopsApiError(response, `listing branches for ${organization}/${project}/${repoName}`);
+    await handleAzureDevopsApiError(
+      response,
+      `listing branches for ${organization}/${project}/${repoName}`,
+    );
     return []; // Unreachable, but for consistent-return
   } catch (error) {
-    logger.error('Error listing branches (exception - Azure DevOps):', organization, project, repoName, error);
-    handleNotFoundError(error, ` for repository ${organization}/${project}/${repoName}`);
+    logger.error(
+      'Error listing branches (exception - Azure DevOps):',
+      organization,
+      project,
+      repoName,
+      error,
+    );
+    handleNotFoundError(
+      error,
+      ` for repository ${organization}/${project}/${repoName}`,
+    );
     throw error; // Unreachable, but for consistent-return
   }
 }
@@ -462,12 +598,21 @@ async function listAdoBranches(organization, project, repoName) {
  * Array of commit history objects.
  * @throws {Error} If API requests fail or file/directory not found.
  */
-async function listAdoCommitHistory(organization, project, repoName, repoDirName) {
+async function listAdoCommitHistory(
+  organization,
+  project,
+  repoName,
+  repoDirName,
+) {
   // Normalize the path; fallback to root if empty or invalid
-  const targetPath = (typeof repoDirName === 'string' && repoDirName.trim() !== '') ? repoDirName.trim() : '/';
+  const targetPath = typeof repoDirName === 'string' && repoDirName.trim() !== ''
+    ? repoDirName.trim()
+    : '/';
 
   // Verify that the file or directory exists
-  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(targetPath)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const contentsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(
+    targetPath,
+  )}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const contentsResponse = await superagent
@@ -475,19 +620,35 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
       .set('User-Agent', USER_AGENT);
 
-    if (contentsResponse.status === 200 && (!contentsResponse.body || contentsResponse.body.count === 0)) {
-      throw new Error(`The path "${targetPath}" in "${organization}/${project}/${repoName}" does not exist.`);
+    if (
+      contentsResponse.status === 200
+      && (!contentsResponse.body || contentsResponse.body.count === 0)
+    ) {
+      throw new Error(
+        `The path "${targetPath}" in "${organization}/${project}/${repoName}" does not exist.`,
+      );
     }
   } catch (contentsError) {
-    logger.error('Error fetching path contents (exception - Azure DevOps):', organization, project, repoName, targetPath, contentsError);
+    logger.error(
+      'Error fetching path contents (exception - Azure DevOps):',
+      organization,
+      project,
+      repoName,
+      targetPath,
+      contentsError,
+    );
     if (contentsError.response && contentsError.response.status === 404) {
-      throw new Error(`The path "${targetPath}" in "${organization}/${project}/${repoName}" does not exist.`);
+      throw new Error(
+        `The path "${targetPath}" in "${organization}/${project}/${repoName}" does not exist.`,
+      );
     }
     throw contentsError;
   }
 
   // Fetch the commit history
-  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(targetPath)}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const commitsUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/commits?searchCriteria.itemPath=${encodeURIComponent(
+    targetPath,
+  )}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const commitResponse = await superagent
@@ -504,11 +665,24 @@ async function listAdoCommitHistory(organization, project, repoName, repoDirName
       }));
     }
 
-    await handleAzureDevopsApiError(commitResponse, `listing commit history for "${targetPath}" in "${organization}/${project}/${repoName}"`);
+    await handleAzureDevopsApiError(
+      commitResponse,
+      `listing commit history for "${targetPath}" in "${organization}/${project}/${repoName}"`,
+    );
     return [];
   } catch (error) {
-    logger.error('Error listing commit history (exception - Azure DevOps):', organization, project, repoName, targetPath, error);
-    handleNotFoundError(error, ` for path "${targetPath}" in "${organization}/${project}/${repoName}"`);
+    logger.error(
+      'Error listing commit history (exception - Azure DevOps):',
+      organization,
+      project,
+      repoName,
+      targetPath,
+      error,
+    );
+    handleNotFoundError(
+      error,
+      ` for path "${targetPath}" in "${organization}/${project}/${repoName}"`,
+    );
     throw error;
   }
 }
@@ -540,17 +714,31 @@ async function listAdoDirectoryContents(
 
   if (!effectiveBranchName) {
     try {
-      effectiveBranchName = await getAdoDefaultBranch(organization, project, repoName);
-      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`);
+      effectiveBranchName = await getAdoDefaultBranch(
+        organization,
+        project,
+        repoName,
+      );
+      logger.info(
+        `No branch specified, using default branch: "${effectiveBranchName}" for ${organization}/${project}/${repoName}`,
+      );
     } catch (error) {
-      logger.error(`Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`);
-      throw new Error(`Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`);
+      logger.error(
+        `Failed to get default branch for ${organization}/${project}/${repoName}: ${error.message}`,
+      );
+      throw new Error(
+        `Failed to get default branch for repository "${organization}/${project}/${repoName}". Please specify a branch or ensure the repository exists.`,
+      );
     }
   }
 
   const cleanRepoDirName = repoDirName.replace(/^\/+|\/+$/g, '');
   const recursionLevel = recursive ? 'Full' : 'OneLevel';
-  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(cleanRepoDirName)}&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}&recursionLevel=${recursionLevel}&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(
+    cleanRepoDirName,
+  )}&versionDescriptor.version=${encodeURIComponent(
+    effectiveBranchName,
+  )}&recursionLevel=${recursionLevel}&api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     logger.debug(`Listing contents from Azure DevOps API URL: ${url}`);
@@ -562,19 +750,29 @@ async function listAdoDirectoryContents(
 
     if (!response.body || !Array.isArray(response.body.value)) {
       if (response.body && response.body.gitItemType === 'File') {
-        logger.warn(`Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`);
+        logger.warn(
+          `Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`,
+        );
         return [];
       }
-      logger.warn(`Expected array of contents for "${repoDirName}" on branch `
-        + `"${effectiveBranchName}", but received unexpected type: ${response.body ? response.body.gitItemType : typeof response.body}`);
-      throw new Error(`Unexpected response type for "${repoDirName}" on branch "${effectiveBranchName}".`);
+      logger.warn(
+        `Expected array of contents for "${repoDirName}" on branch `
+          + `"${effectiveBranchName}", but received unexpected type: ${
+            response.body ? response.body.gitItemType : typeof response.body
+          }`,
+      );
+      throw new Error(
+        `Unexpected response type for "${repoDirName}" on branch "${effectiveBranchName}".`,
+      );
     }
 
     const contents = response.body.value;
     const results = [];
 
     if (contents.length === 0) {
-      logger.debug(`Directory "${repoDirName}" on branch "${effectiveBranchName}" is empty.`);
+      logger.debug(
+        `Directory "${repoDirName}" on branch "${effectiveBranchName}" is empty.`,
+      );
       return [];
     }
 
@@ -604,7 +802,11 @@ async function listAdoDirectoryContents(
     return results;
   } catch (error) {
     const status = (error.response && error.response.status) || 'N/A';
-    const errorMessage = (error.response && error.response.body && (error.response.body.message || error.response.body.value)) || error.message || error;
+    const errorMessage = (error.response
+        && error.response.body
+        && (error.response.body.message || error.response.body.value))
+      || error.message
+      || error;
     logger.error(
       `Error listing directory contents for "${organization}/${project}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}" [Status: ${status}]: ${errorMessage}`,
       error,
@@ -667,14 +869,23 @@ async function createAdoPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleAzureDevopsApiError(response, `creating pull request for ${organization}/${project}/${repoName}`);
+    await handleAzureDevopsApiError(
+      response,
+      `creating pull request for ${organization}/${project}/${repoName}`,
+    );
     return {}; // Unreachable, but for consistent-return
   } catch (error) {
-    logger.error(`Error creating pull request (exception - Azure DevOps):, ${error.message}`);
+    logger.error(
+      `Error creating pull request (exception - Azure DevOps):, ${error.message}`,
+    );
     if (error.response) {
-      logger.error(`Error creating pull request (exception - Azure DevOps): ${error.response.text}`);
+      logger.error(
+        `Error creating pull request (exception - Azure DevOps): ${error.response.text}`,
+      );
       if (error.response.status === 404) {
-        throw new Error('Not Found: Check organization, project, repo and branch names.');
+        throw new Error(
+          'Not Found: Check organization, project, repo and branch names.',
+        );
       }
       throw new Error(error.response.body.message || 'Failed to create PR');
     }
@@ -686,7 +897,9 @@ async function createAdoPullRequest(
  * Fetches the Git repository object so we can grab its GUID.
  */
 async function getRepoByName(org, project, repoName) {
-  const url = `${ADO_BASEURI}/${org}/${project}/_apis/git/repositories/${encodeURIComponent(repoName)}?api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const url = `${ADO_BASEURI}/${org}/${project}/_apis/git/repositories/${encodeURIComponent(
+    repoName,
+  )}?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   const res = await superagent
     .get(url)
@@ -695,7 +908,9 @@ async function getRepoByName(org, project, repoName) {
     .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
 
   if (res.status !== 200) {
-    throw new Error(`Unable to fetch repo '${repoName}' (${res.status}): ${res.text}`);
+    throw new Error(
+      `Unable to fetch repo '${repoName}' (${res.status}): ${res.text}`,
+    );
   }
   return res.body;
 }
@@ -717,21 +932,27 @@ async function bootstrapMainBranch(organization, project, repoName) {
 
   const body = {
     repository: { id: repo.id, name: repo.name },
-    refUpdates: [{
-      name: 'refs/heads/main',
-      oldObjectId: '0000000000000000000000000000000000000000',
-    }],
-    commits: [{
-      comment: 'Initial commit',
-      changes: [{
-        changeType: 'add',
-        item: { path: '/README.md' },
-        newContent: {
-          content: '# Welcome',
-          contentType: 'rawtext',
-        },
-      }],
-    }],
+    refUpdates: [
+      {
+        name: 'refs/heads/main',
+        oldObjectId: '0000000000000000000000000000000000000000',
+      },
+    ],
+    commits: [
+      {
+        comment: 'Initial commit',
+        changes: [
+          {
+            changeType: 'add',
+            item: { path: '/README.md' },
+            newContent: {
+              content: '# Welcome',
+              contentType: 'rawtext',
+            },
+          },
+        ],
+      },
+    ],
   };
 
   try {
@@ -767,26 +988,34 @@ async function createAdoRepo(org, project, repoName) {
   try {
     // 1) Create repo
     const res = await superagent
-      .post(`${ADO_BASEURI}/${org}/${project}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`)
+      .post(
+        `${ADO_BASEURI}/${org}/${project}/_apis/git/repositories?api-version=${AZURE_DEVOPS_API_VERSION}`,
+      )
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
       .set('User-Agent', USER_AGENT)
       .send({ name: repoName });
 
     if (![200, 201].includes(res.status)) {
-      throw new Error(`Failed to create: ${res.body.message || res.body.value}`);
+      throw new Error(
+        `Failed to create: ${res.body.message || res.body.value}`,
+      );
     }
   } catch (error) {
     const msg = (error.response && error.response.body && error.response.body.message)
-          || (error.response && error.response.body && error.response.body.value)
-          || error.message;
-    logger.error(`Error creating repo: ${org}/${project}, ${repoName} – ${msg}`);
+      || (error.response && error.response.body && error.response.body.value)
+      || error.message;
+    logger.error(
+      `Error creating repo: ${org}/${project}, ${repoName} – ${msg}`,
+    );
     throw new Error(`Failed to create repository: ${msg}`);
   }
   // 2) Bootstrap main branch
   try {
     await bootstrapMainBranch(org, project, repoName);
   } catch (error) {
-    logger.error(`Error bootstrapping main branch for repo: ${org}/${project}/${repoName} – ${error.message}`);
+    logger.error(
+      `Error bootstrapping main branch for repo: ${org}/${project}/${repoName} – ${error.message}`,
+    );
     throw new Error(`Failed to bootstrap main branch: ${error.message}`);
   }
   return {
@@ -806,7 +1035,7 @@ async function createAdoRepo(org, project, repoName) {
  */
 async function checkAdoBranchExists(org, proj, repo, branch) {
   const url = `${ADO_BASEURI}/${org}/${proj}/_apis/git/repositories/${repo}/refs`
-              + `?api-version=${AZURE_DEVOPS_API_VERSION}`;
+    + `?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   try {
     const res = await superagent
@@ -856,8 +1085,14 @@ async function checkAdoRepoExists(organization, project, repoName) {
     if (response.status === 200) {
       return { success: true };
     }
-    handleNotFoundError(response, `repository ${organization}/${project}/${repoName}`);
-    return { success: false, message: `Repository '${repoName}' does not exist or is inaccessible.` };
+    handleNotFoundError(
+      response,
+      `repository ${organization}/${project}/${repoName}`,
+    );
+    return {
+      success: false,
+      message: `Repository '${repoName}' does not exist or is inaccessible.`,
+    };
   } catch (error) {
     const errorMessage = error.message || error;
     logger.error(`Error checking ADO repo existence: ${errorMessage}`, error);
@@ -877,9 +1112,16 @@ async function checkAdoRepoExists(organization, project, repoName) {
  * @throws {Error} Throws an error if the API request fails.
  */
 const switchAdoBranch = async (organization, project, repoName, branchName) => {
-  const { success, branch } = await checkAdoBranchExists(organization, project, repoName, branchName);
+  const { success, branch } = await checkAdoBranchExists(
+    organization,
+    project,
+    repoName,
+    branchName,
+  );
   if (!success || !branch) {
-    logger.warn(`[switchAdoBranch] Branch '${branchName}' does not exist in '${repoName}'.`);
+    logger.warn(
+      `[switchAdoBranch] Branch '${branchName}' does not exist in '${repoName}'.`,
+    );
     return {
       success: false,
       message: `Branch '${branchName}' not found in '${repoName}'.`,
@@ -926,7 +1168,13 @@ const switchAdoBranch = async (organization, project, repoName, branchName) => {
  * @returns {Promise<Object>} A promise that resolves to an object indicating success or failure.
  * @throws {Error} Throws an error if the API request fails.
  */
-async function createAdoBranch(organization, project, repoName, branchName, baseBranch = 'main') {
+async function createAdoBranch(
+  organization,
+  project,
+  repoName,
+  branchName,
+  baseBranch = 'main',
+) {
   const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/refs?api-version=${AZURE_DEVOPS_API_VERSION}`;
 
   if (!organization || typeof organization !== 'string') throw new Error('Invalid organization name');
@@ -936,7 +1184,12 @@ async function createAdoBranch(organization, project, repoName, branchName, base
   const base = baseBranch.trim() || 'main';
 
   try {
-    const resp = await checkAdoBranchExists(organization, project, repoName, branchName);
+    const resp = await checkAdoBranchExists(
+      organization,
+      project,
+      repoName,
+      branchName,
+    );
     if (resp.exists) {
       return { success: true, message: 'Branch already exists' };
     }
@@ -952,18 +1205,25 @@ async function createAdoBranch(organization, project, repoName, branchName, base
       .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
       .set('User-Agent', USER_AGENT);
 
-    if (!baseBranchResponse.body.value || baseBranchResponse.body.value.length === 0) {
-      throw new Error(`Base branch '${baseBranch}' not found in repository '${repoName}'.`);
+    if (
+      !baseBranchResponse.body.value
+      || baseBranchResponse.body.value.length === 0
+    ) {
+      throw new Error(
+        `Base branch '${baseBranch}' not found in repository '${repoName}'.`,
+      );
     }
 
     const baseBranchSha = baseBranchResponse.body.value[0].objectId; // objectId is the commit SHA
 
     // Create the new branch reference
-    const postData = [{
-      name: `refs/heads/${branchName}`, // Full ref name
-      oldObjectId: '0000000000000000000000000000000000000000', // Azure DevOps for creating new ref
-      newObjectId: baseBranchSha,
-    }];
+    const postData = [
+      {
+        name: `refs/heads/${branchName}`, // Full ref name
+        oldObjectId: '0000000000000000000000000000000000000000', // Azure DevOps for creating new ref
+        newObjectId: baseBranchSha,
+      },
+    ];
 
     const response = await superagent
       .post(url)
@@ -971,19 +1231,42 @@ async function createAdoBranch(organization, project, repoName, branchName, base
       .set('User-Agent', USER_AGENT)
       .send(postData);
 
-    if (response.status === 200) { // Azure DevOps typically returns 200 for ref updates
+    if (response.status === 200) {
+      // Azure DevOps typically returns 200 for ref updates
       // Optionally try to switch default branch if desired (similar to GitHub version)
-      const switchRes = await switchAdoBranch(organization, project, repoName, branchName);
+      const switchRes = await switchAdoBranch(
+        organization,
+        project,
+        repoName,
+        branchName,
+      );
       if (switchRes.success) {
-        return { success: true, message: 'Branch created and context switched' };
+        return {
+          success: true,
+          message: 'Branch created and context switched',
+        };
       }
-      return { success: true, message: 'Branch created, but could not switch context' };
+      return {
+        success: true,
+        message: 'Branch created, but could not switch context',
+      };
     }
-    return { success: false, status: response.status, message: response.body.message || response.body.value };
+    return {
+      success: false,
+      status: response.status,
+      message: response.body.message || response.body.value,
+    };
   } catch (error) {
-    const message = (error.response && error.response.body && ((error.response.body.message || error.response.body.value))) || error.message || 'Creation failed';
+    const message = (error.response
+        && error.response.body
+        && (error.response.body.message || error.response.body.value))
+      || error.message
+      || 'Creation failed';
     const status = (error.response && error.response.status) || 'Unknown status';
-    logger.error(`Error creating branch (exception - Azure DevOps): ${message} [Status: ${status}]`, error);
+    logger.error(
+      `Error creating branch (exception - Azure DevOps): ${message} [Status: ${status}]`,
+      error,
+    );
     throw new Error(`Failed to create branch: ${message} [Status: ${status}]`);
   }
 }
@@ -1004,13 +1287,16 @@ const walkDir = async (dir, rootDir = dir) => {
     try {
       if (entry.isDirectory()) {
         return await walkDir(fullPath, rootDir);
-      } if (entry.isFile()) {
+      }
+      if (entry.isFile()) {
         const relativePath = path.relative(rootDir, fullPath);
         return [relativePath];
       }
       return [];
     } catch (err) {
-      logger.error(`Error processing entry "${entry.name}" in directory "${dir}": ${err.message}`);
+      logger.error(
+        `Error processing entry "${entry.name}" in directory "${dir}": ${err.message}`,
+      );
       return [];
     }
   });
@@ -1075,11 +1361,18 @@ async function commitAdoFiles(
 
   const repo = await getRepoByName(organization, project, repoName);
   if (!repo || !repo.id) {
-    throw new Error(`Repository "${repoName}" not found in project "${project}" of organization "${organization}".`);
+    throw new Error(
+      `Repository "${repoName}" not found in project "${project}" of organization "${organization}".`,
+    );
   }
 
   let cleanRepoDirName = repoDirNameParam;
-  if (cleanRepoDirName === undefined || cleanRepoDirName === null || cleanRepoDirName === '' || cleanRepoDirName === '/') {
+  if (
+    cleanRepoDirName === undefined
+    || cleanRepoDirName === null
+    || cleanRepoDirName === ''
+    || cleanRepoDirName === '/'
+  ) {
     cleanRepoDirName = null;
   } else {
     cleanRepoDirName = repoDirNameParam.replace(/^\/+|\/+$/g, '');
@@ -1108,19 +1401,14 @@ async function commitAdoFiles(
 
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
   if (!currentDirectoryPath) {
-    throw new Error(
-      `Temporary directory not found for session: ${sessionId}.`,
-    );
+    throw new Error(`Temporary directory not found for session: ${sessionId}.`);
   }
   const filesToProcess = await walkDir(currentDirectoryPath);
   if (filesToProcess.length === 0) {
-    logger.info(
-      'No files found in the session temporary directory to upload.',
-    );
+    logger.info('No files found in the session temporary directory to upload.');
     return {
       success: true,
-      message:
-        'No files found in the session temporary directory to upload',
+      message: 'No files found in the session temporary directory to upload',
       status: 200,
     };
   }
@@ -1174,9 +1462,7 @@ async function commitAdoFiles(
 
       if (cleanRepoDirNormalized) {
         if (
-          !relativeNormalized.startsWith(
-            `${cleanRepoDirNormalized}/`,
-          )
+          !relativeNormalized.startsWith(`${cleanRepoDirNormalized}/`)
           && relativeNormalized !== cleanRepoDirNormalized
         ) {
           logger.debug(
@@ -1190,20 +1476,16 @@ async function commitAdoFiles(
           currentDirectoryPath,
           cleanRepoDirName,
         );
-        const relativeToRoot = path.relative(
-          repoRootInTemp,
-          fullLocalFilePath,
-        );
-        adoDestPath = path.join(
-          cleanRepoDirName,
-          relativeToRoot,
-        );
+        const relativeToRoot = path.relative(repoRootInTemp, fullLocalFilePath);
+        adoDestPath = path.join(cleanRepoDirName, relativeToRoot);
       } else {
         adoDestPath = relativeNormalized;
       }
 
       if (typeof adoDestPath !== 'string') {
-        logger.error(`Logic error: adoDestPath is not a string for file "${relativeFilePath}"`);
+        logger.error(
+          `Logic error: adoDestPath is not a string for file "${relativeFilePath}"`,
+        );
         fileResult.success = false;
         fileResult.message = 'Internal logic error';
         return fileResult;
@@ -1241,10 +1523,7 @@ async function commitAdoFiles(
         try {
           const getItemResp = await superagent
             .get(getItemUrl)
-            .set(
-              'Authorization',
-              `Basic ${encodePat(AZURE_DEVOPS_PAT)}`,
-            )
+            .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
             .set('User-Agent', USER_AGENT);
 
           if (getItemResp.status === 200) {
@@ -1294,9 +1573,7 @@ async function commitAdoFiles(
     },
   );
 
-  const individualFileResults = await Promise.all(
-    fileProcessingPromises,
-  );
+  const individualFileResults = await Promise.all(fileProcessingPromises);
   results.push(...individualFileResults);
 
   if (changes.length === 0) {
@@ -1335,9 +1612,7 @@ async function commitAdoFiles(
     while (attempt <= maxRetries && !pushSuccess) {
       try {
         if (attempt > 0) {
-          logger.info(
-            `Retrying push (attempt ${attempt}/${maxRetries})…`,
-          );
+          logger.info(`Retrying push (attempt ${attempt}/${maxRetries})…`);
           // eslint-disable-next-line no-await-in-loop
           await delay(1000 * attempt);
         }
@@ -1350,9 +1625,7 @@ async function commitAdoFiles(
           .send(updatedPushBody);
 
         if ([200, 201].includes(pushResp.status)) {
-          logger.info(
-            `Successfully pushed changes to ${effectiveBranchName}.`,
-          );
+          logger.info(`Successfully pushed changes to ${effectiveBranchName}.`);
           pushSuccess = true;
         } else if (
           pushResp.status === 409
@@ -1368,14 +1641,13 @@ async function commitAdoFiles(
           // eslint-disable-next-line no-await-in-loop
           const refRefresh = await superagent
             .get(refUrl)
-            .set(
-              'Authorization',
-              `Basic ${encodePat(AZURE_DEVOPS_PAT)}`,
-            )
+            .set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`)
             .set('User-Agent', USER_AGENT);
           if (
             refRefresh.status === 200
-            && (refRefresh.body && refRefresh.body.value && refRefresh.body.value.length > 0)
+            && refRefresh.body
+            && refRefresh.body.value
+            && refRefresh.body.value.length > 0
           ) {
             updatedPushBody = {
               ...updatedPushBody,
@@ -1400,15 +1672,14 @@ async function commitAdoFiles(
         }
       } catch (pushErr) {
         const status = (pushErr.response && pushErr.response.status) || 'N/A';
-        const msg = (pushErr.response && pushErr.response.body && (pushErr.response.body.message || pushErr.response.body.value))
+        const msg = (pushErr.response
+            && pushErr.response.body
+            && (pushErr.response.body.message || pushErr.response.body.value))
           || pushErr.message;
         logger.error(`Push exception [${status}]: ${msg}`);
 
         lastPushError = new Error(`Push failed: ${msg}`);
-        if (
-          status === 429
-          || (status >= 500 && status < 600)
-        ) {
+        if (status === 429 || (status >= 500 && status < 600)) {
           // allow retry
         } else {
           break;
@@ -1419,7 +1690,9 @@ async function commitAdoFiles(
 
     if (!pushSuccess) {
       throw new Error(
-        `Failed to commit files after ${maxRetries} retries: ${lastPushError && lastPushError.message ? lastPushError.message : ''}`,
+        `Failed to commit files after ${maxRetries} retries: ${
+          lastPushError && lastPushError.message ? lastPushError.message : ''
+        }`,
       );
     }
   }
@@ -1427,7 +1700,10 @@ async function commitAdoFiles(
   await tryPushWithRetries();
 
   const updatedResults = results.map((r) => {
-    if (typeof r.message === 'string' && r.message.startsWith('Scheduled for')) {
+    if (
+      typeof r.message === 'string'
+      && r.message.startsWith('Scheduled for')
+    ) {
       return {
         ...r,
         success: true,
@@ -1440,8 +1716,7 @@ async function commitAdoFiles(
   return {
     success: true,
     results: updatedResults,
-    message:
-      'All selected files processed and committed successfully.',
+    message: 'All selected files processed and committed successfully.',
   };
 }
 
