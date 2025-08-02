@@ -1,4 +1,6 @@
 # Changelog
+## 2025-08-02	(22:23:12-UTC+0000)
+- **Other**: Add chat (in nodejs/genai/openai/chatbot/samples/adoSampleChat.md)
 ## 2025-08-02	(20:33:02-UTC+0000)
 - **Other**: Add sample chat for actions (in nodejs/genai/openai/chatbot/documentation/FolderFetchError.html)
 - **Other**: Add sample chat for actions (in nodejs/genai/openai/chatbot/documentation/adoFunctions.js.html)
