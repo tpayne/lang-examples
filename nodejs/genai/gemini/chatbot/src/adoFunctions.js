@@ -315,6 +315,40 @@ async function getAdoDefaultBranch(organization, project, repoName) {
 }
 
 /**
+ * Builds a safe Azure DevOps Git Items URL for a single file.
+ *
+ * @param {string} organization   your ADO org (e.g. "timtpayne0349")
+ * @param {string} project        your ADO project (e.g. "GenAISCM")
+ * @param {string} repoName       the repo slug
+ * @param {string} repoDirName           path inside repo (e.g. "README.md" or "/docs/guide.md")
+ * @param {string} effectiveBranchName   branch or SHA (defaults to "main")
+ * @returns {string}              ready-to-use URL
+ */
+function buildProbeUrl({
+  organization, project, repoName, repoDirName, effectiveBranchName,
+}) {
+  // guarantee a leading slash
+  const dirName = repoDirName || '/';
+  const safePath = dirName.startsWith('/') ? dirName : `/${dirName}`;
+  logger.debug(`Building probe URL for ${organization}/${project}/${repoName} at `
+    + `${dirName} path "${safePath}" on branch "${effectiveBranchName}"`);
+
+  // only encode the fragment *after* the slash
+  const encodedPath = `/${encodeURIComponent(safePath.slice(1))}`;
+
+  const qs = [
+    `path=${encodedPath}`,
+    `versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}`,
+    'versionDescriptor.versionType=branch',
+    'recursionLevel=None',
+    'includeContentMetadata=true',
+  ].join('&');
+
+  return `${ADO_BASEURI}/${organization}/${project}`
+         + `/_apis/git/repositories/${repoName}/items?${qs}`;
+}
+
+/**
  * Recursively fetches files and directories from an Azure DevOps Git repository for a specific session.
  * Optionally skips potential binary files based on extension.
  *
@@ -338,8 +372,10 @@ async function fetchAdoRepoContentsRecursive(
   localDestPath = null,
   skipBinaryFiles = true,
 ) {
-  const baseLocalDestPath = localDestPath || (await getOrCreateSessionTempDir(sessionId));
-
+  const contextDir = await getOrCreateSessionTempDir(sessionId);
+  const baseLocalDestPath = localDestPath || contextDir;
+  logger.debug(`Fetching Azure DevOps repo contents recursively for ${organization}/${project}/${repoName}/${repoDirName} on branch ${branchName} [Session: ${sessionId}]`);
+  logger.debug(`Base local destination path: ${baseLocalDestPath}`);
   // Strip any leading slash so repoDirName is always relative
   let tRepoDirName = '';
   if (repoName) {
@@ -375,9 +411,11 @@ async function fetchAdoRepoContentsRecursive(
 
   const handleSingleFile = async (filePath) => {
     const relPath = stripLeadingSlash(filePath);
-    const destFile = path.join(baseLocalDestPath, relPath);
+    const dirPath = (relPath === baseLocalDestPath) ? contextDir : baseLocalDestPath;
+    const destFile = path.join(dirPath, relPath);
     const parentDir = path.dirname(destFile);
-    if (!parentDir.startsWith(baseLocalDestPath)) {
+    logger.debug(`Downloading file: ${filePath} to ${destFile} ${parentDir} ${relPath} [Session: ${sessionId}]`);
+    if (!parentDir.startsWith(dirPath)) {
       throw new Error(`Cannot create directory outside temp dir: "${parentDir}"`);
     }
     await mkdir(parentDir, { recursive: true });
@@ -394,26 +432,39 @@ async function fetchAdoRepoContentsRecursive(
   };
 
   // 🕵️‍♀️ Single-item probe with safer parsing
-  const probeUrl = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items`
-    + `?path=${encodeURIComponent(repoDirName || '/')}`
-    + `&versionDescriptor.version=${encodeURIComponent(effectiveBranchName)}`
-    + '&versionDescriptor.versionType=branch' // 👈 Required!
-    + '&recursionLevel=None'
-    + `&api-version=${AZURE_DEVOPS_API_VERSION}`;
+  const probeUrl = buildProbeUrl({
+    organization,
+    project,
+    repoName,
+    repoDirName,
+    effectiveBranchName,
+  });
 
   try {
     logger.debug(`Single-item probe: ${probeUrl} [Session: ${sessionId}]`);
-    const probeReq = superagent.get(probeUrl).set('User-Agent', USER_AGENT);
+    const probeReq = superagent
+      .get(probeUrl)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/json; charset=utf-8');
+
     if (AZURE_DEVOPS_PAT) probeReq.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
     const probeRes = await probeReq;
-
-    const single = Array.isArray(probeRes.body.value)
-      ? probeRes.body.value[0]
-      : probeRes.body;
-
-    if (!single || !single.path) {
+    logger.debug(`Probe response: ${probeRes.status} [Session: ${sessionId}]`);
+    // Robustly extract the single item from the probe response
+    let single = null;
+    if (Array.isArray(probeRes.body.value) && probeRes.body.value.length > 0) {
+      [single] = probeRes.body.value;
+    } else if (probeRes.body && typeof probeRes.body === 'object') {
+      single = probeRes.body;
+    }
+    // Validate that the single item exists and has a path
+    if (!single || typeof single.path !== 'string' || single.path.trim() === '') {
+      logger.error(
+        `Probe response did not contain a valid file or folder for "${tRepoDirName}" on branch "${effectiveBranchName}". Response:`,
+        probeRes.body,
+      );
       throw new Error(
-        `Could not locate "${tRepoDirName}" on branch "${effectiveBranchName}"`,
+        `Could not locate "${tRepoDirName}" on branch "${effectiveBranchName}". Please verify the path and branch.`,
       );
     }
 
