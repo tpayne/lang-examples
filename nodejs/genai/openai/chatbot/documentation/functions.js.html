@@ -37,6 +37,7 @@ const {
   createGithubPullRequest,
   createRepo,
   fetchRepoContentsRecursive,
+  getFileContents,
   listBranches,
   listCommitHistory,
   listDirectoryContents,
@@ -61,6 +62,7 @@ const {
   createAdoPullRequest,
   createAdoRepo,
   fetchAdoRepoContentsRecursive,
+  getAdoFileContents,
   listAdoBranches,
   listAdoCommitHistory,
   listAdoDirectoryContents,
@@ -74,18 +76,11 @@ const {
   cleanupSession: cleanupCodeReviewSession, // Import cleanup for code reviews
 } = require('./codeReviews');
 
-const {
-  getVehicleHistory,
-} = require('./dosaFunctions');
+const { getVehicleHistory } = require('./dosaFunctions');
 
-const {
-  generateGoogleMapsLink,
-  planRoute,
-} = require('./mappingFunctions');
+const { generateGoogleMapsLink, planRoute } = require('./mappingFunctions');
 
-const {
-  saveCodeToFile,
-} = require('./utilities');
+const { saveCodeToFile } = require('./utilities');
 
 const {
   createKubernetesResource,
@@ -117,10 +112,7 @@ const {
   updateKubernetesResource,
 } = require('./k8s');
 
-const {
-  getDockerImageTags,
-  searchDockerImages,
-} = require('./dockerHub'); // Import the new dockerhub.js module
+const { getDockerImageTags, searchDockerImages } = require('./dockerHub'); // Import the new dockerhub.js module
 
 const {
   connectToDatabase,
@@ -139,9 +131,7 @@ const {
   testSshConnect,
 } = require('./getInfo'); // Import the new system-info-collector.js module
 
-const {
-  scanNetworkForSSH,
-} = require('./sshscan'); // Import the SSH scanning function
+const { scanNetworkForSSH } = require('./sshscan'); // Import the SSH scanning function
 
 const {
   createAdoPipeline,
@@ -257,11 +247,14 @@ async function registerFunction(
     if (sessionRegistry[name]) {
       logger.warn(
         `Function with name '${name}' already registered for session '${sessionId}'`
-        + ' and will be reused.',
+          + ' and will be reused.',
       );
     } else {
       sessionRegistry[name] = {
-        func, params, needSession, required,
+        func,
+        params,
+        needSession,
+        required,
       };
 
       const functionMetadata = {
@@ -296,8 +289,14 @@ async function loadCodeReviews(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The GitHub repository name.' },
-      repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
-      branchName: { type: 'string', description: 'The name of the branch to review.' },
+      repoDirName: {
+        type: 'string',
+        description: 'The GitHub repository path to start download at.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The name of the branch to review.',
+      },
     },
     ['username', 'repoName', 'repoDirName'],
     true,
@@ -305,7 +304,7 @@ async function loadCodeReviews(sessionId) {
 }
 
 async function loadAdoCodeReviews(sessionId) {
-// Register the Azure DevOps code review function
+  // Register the Azure DevOps code review function
   await registerFunction(
     sessionId,
     'ado_file_review',
@@ -313,11 +312,26 @@ async function loadAdoCodeReviews(sessionId) {
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
     'Review files in a given Azure DevOps repository. Use this for Azure DevOps URLs and Azure DevOps repositories.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
-      repoName: { type: 'string', description: 'The Azure DevOps repository name.' },
-      repoDirName: { type: 'string', description: 'The Azure DevOps repository path to start download at.' },
-      branchName: { type: 'string', description: 'The name of the branch to review.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
+      repoName: {
+        type: 'string',
+        description: 'The Azure DevOps repository name.',
+      },
+      repoDirName: {
+        type: 'string',
+        description: 'The Azure DevOps repository path to start download at.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The name of the branch to review.',
+      },
     },
     ['organization', 'project', 'repoName', 'repoDirName'],
     true,
@@ -333,7 +347,10 @@ async function loadDosa(sessionId) {
     ['registrationNumber'],
     'Get the MOT History for a vehicle.',
     {
-      registrationNumber: { type: 'string', description: 'The Vehicle registration or VIN number.' },
+      registrationNumber: {
+        type: 'string',
+        description: 'The Vehicle registration or VIN number.',
+      },
     },
     ['registrationNumber'],
     true,
@@ -350,10 +367,25 @@ async function loadGitHub(sessionId) {
     ['repoName', 'username', 'orgName', 'description', 'isPrivate'],
     'Create a GitHub repository under an organisation or user',
     {
-      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
-      username: { type: 'string', description: 'The username of the repository owner.' },
-      description: { type: 'string', description: 'The description of the repository name (optional). Defaults if not provided' },
-      isPrivate: { type: 'boolean', description: 'Is the repository private (true) or public (false) (optional). Defaults to public if not provided' },
+      repoName: {
+        type: 'string',
+        description:
+          'The name of the repository where the branch will be created.',
+      },
+      username: {
+        type: 'string',
+        description: 'The username of the repository owner.',
+      },
+      description: {
+        type: 'string',
+        description:
+          'The description of the repository name (optional). Defaults if not provided',
+      },
+      isPrivate: {
+        type: 'boolean',
+        description:
+          'Is the repository private (true) or public (false) (optional). Defaults to public if not provided',
+      },
     },
     ['repoName'],
   );
@@ -365,9 +397,19 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName', 'branchName'],
     'Switch a branch in a GitHub repository',
     {
-      username: { type: 'string', description: 'The username of the repository owner.' },
-      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
-      branchName: { type: 'string', description: 'The branch name to switch to.' },
+      username: {
+        type: 'string',
+        description: 'The username of the repository owner.',
+      },
+      repoName: {
+        type: 'string',
+        description:
+          'The name of the repository where the branch will be created.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The branch name to switch to.',
+      },
     },
     ['username', 'repoName', 'branchName'],
   );
@@ -379,9 +421,18 @@ async function loadGitHub(sessionId) {
     ['code', 'filename', 'repoDirName'],
     'Save generated code or changes made by the bot to a local file',
     {
-      code: { type: 'string', description: 'The generated code or changes to save.' },
-      filename: { type: 'string', description: 'The local filename to save the changes to.' },
-      repoDirName: { type: 'string', description: 'The directory name that is used (optional).' },
+      code: {
+        type: 'string',
+        description: 'The generated code or changes to save.',
+      },
+      filename: {
+        type: 'string',
+        description: 'The local filename to save the changes to.',
+      },
+      repoDirName: {
+        type: 'string',
+        description: 'The directory name that is used (optional).',
+      },
     },
     ['code', 'filename', 'repoDirName'],
     true,
@@ -394,10 +445,24 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName', 'branchName', 'baseBranch'],
     'Create a new branch in a GitHub repository based on an existing branch',
     {
-      username: { type: 'string', description: 'The username of the repository owner.' },
-      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
-      branchName: { type: 'string', description: 'The name of the new branch to be created.' },
-      baseBranch: { type: 'string', description: 'The name of the existing branch to base the new branch on (optional). Defaults to "main".' },
+      username: {
+        type: 'string',
+        description: 'The username of the repository owner.',
+      },
+      repoName: {
+        type: 'string',
+        description:
+          'The name of the repository where the branch will be created.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The name of the new branch to be created.',
+      },
+      baseBranch: {
+        type: 'string',
+        description:
+          'The name of the existing branch to base the new branch on (optional). Defaults to "main".',
+      },
     },
     ['username', 'repoName', 'branchName'],
   );
@@ -409,9 +474,19 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName', 'branchName'],
     'Check if a GitHub branch exists in a specified repository',
     {
-      username: { type: 'string', description: 'The username or organization name of the repository owner.' },
-      repoName: { type: 'string', description: 'The name of the repository to check.' },
-      branchName: { type: 'string', description: 'The name of the branch to check.' },
+      username: {
+        type: 'string',
+        description:
+          'The username or organization name of the repository owner.',
+      },
+      repoName: {
+        type: 'string',
+        description: 'The name of the repository to check.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The name of the branch to check.',
+      },
     },
     ['username', 'repoName', 'branchName'],
   );
@@ -423,10 +498,40 @@ async function loadGitHub(sessionId) {
     ['username', 'repoName'],
     'Check if a GitHub repository exists under a given user or organization',
     {
-      username: { type: 'string', description: 'The username or organization name of the repository owner.' },
-      repoName: { type: 'string', description: 'The name of the repository to check.' },
+      username: {
+        type: 'string',
+        description:
+          'The username or organization name of the repository owner.',
+      },
+      repoName: {
+        type: 'string',
+        description: 'The name of the repository to check.',
+      },
     },
     ['username', 'repoName'],
+  );
+
+  // Register function for GitHub getFileContents
+  await registerFunction(
+    sessionId,
+    'get_github_file_contents',
+    getFileContents,
+    ['username', 'repoName', 'filePath', 'branchName'],
+    'Gets the contents of a single file from a GitHub repository.',
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The name of the repository.' },
+      filePath: {
+        type: 'string',
+        description: 'The path to the file within the repository.',
+      },
+      branchName: {
+        type: 'string',
+        description:
+          'Optional branch name. If not specified, the default branch will be used.',
+      },
+    },
+    ['username', 'repoName', 'filePath'],
   );
 
   await registerFunction(
@@ -438,8 +543,15 @@ async function loadGitHub(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The base directory in the GitHub repository to commit files into.' }, // Changed name and description
-      branchName: { type: 'string', description: 'The name of the branch to commit to.' }, // Clarified description
+      repoDirName: {
+        type: 'string',
+        description:
+          'The base directory in the GitHub repository to commit files into.',
+      }, // Changed name and description
+      branchName: {
+        type: 'string',
+        description: 'The name of the branch to commit to.',
+      }, // Clarified description
     },
     ['username', 'repoName', 'repoDirName'], // Changed 'repoDirName' to 'repoDirName' in required params
     true,
@@ -457,7 +569,10 @@ async function loadGitHub(sessionId) {
       title: { type: 'string', description: 'The Pull Request title.' },
       sourceBranch: { type: 'string', description: 'The source branch name.' },
       targetBranch: { type: 'string', description: 'The target branch name.' },
-      body: { type: 'string', description: 'The description or body of the pull request.' },
+      body: {
+        type: 'string',
+        description: 'The description or body of the pull request.',
+      },
     },
     ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
   );
@@ -471,7 +586,10 @@ async function loadGitHub(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
+      repoDirName: {
+        type: 'string',
+        description: 'The GitHub repository path to start download at.',
+      },
     },
     ['username', 'repoName', 'repoDirName'],
     true,
@@ -511,7 +629,10 @@ async function loadGitHub(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The file or directory path.' },
+      repoDirName: {
+        type: 'string',
+        description: 'The file or directory path.',
+      },
     },
     ['username', 'repoName', 'repoDirName'],
   );
@@ -522,12 +643,25 @@ async function loadGitHub(sessionId) {
     listDirectoryContents, // Function implementation
     ['username', 'repoName', 'branchName', 'repoDirName', 'recursive'],
     'Lists the contents of a directory in a GitHub repository on a specific branch. Defaults to the root and recursive scan.', // Updated description
-    { // Parameter types and descriptions for the tool
+    {
+      // Parameter types and descriptions for the tool
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to "main" if not provided.' }, // Added branch parameter definition
-      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' }, // Clarified description
-      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' }, // Clarified description
+      branchName: {
+        type: 'string',
+        description:
+          'The name of the branch to list contents from (optional). Defaults to "main" if not provided.',
+      }, // Added branch parameter definition
+      repoDirName: {
+        type: 'string',
+        description:
+          'The directory path within the repository (optional). Defaults to the repository root if not provided.',
+      }, // Clarified description
+      recursive: {
+        type: 'boolean',
+        description:
+          'Perform a recursive scan or not (optional). Defaults to true if not provided.',
+      }, // Clarified description
     },
     ['username', 'repoName'], // Required parameters for the tool (repoDirName, recursive, branch are optional via defaults)
   );
@@ -544,7 +678,11 @@ async function loadGitHubActions(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      status: { type: 'string', description: 'The status of the actions (optional). Defaults to in_progress if not provided' },
+      status: {
+        type: 'string',
+        description:
+          'The status of the actions (optional). Defaults to in_progress if not provided',
+      },
     },
     ['username', 'repoName'],
   );
@@ -571,9 +709,18 @@ async function loadGitHubActions(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      workflowId: { type: 'string', description: 'The ID or file name of the workflow to trigger.' },
-      ref: { type: 'string', description: 'The Git reference (branch, tag, or SHA).' },
-      inputs: { type: 'object', description: 'The inputs for the workflow_dispatch event.' },
+      workflowId: {
+        type: 'string',
+        description: 'The ID or file name of the workflow to trigger.',
+      },
+      ref: {
+        type: 'string',
+        description: 'The Git reference (branch, tag, or SHA).',
+      },
+      inputs: {
+        type: 'object',
+        description: 'The inputs for the workflow_dispatch event.',
+      },
     },
     ['username', 'repoName', 'workflowId', 'ref'],
   );
@@ -611,7 +758,10 @@ async function loadGitHubActions(sessionId) {
     {
       username: { type: 'string', description: 'The GitHub username.' },
       repoName: { type: 'string', description: 'The repository name.' },
-      runId: { type: 'string', description: 'The ID of the workflow run to delete.' },
+      runId: {
+        type: 'string',
+        description: 'The ID of the workflow run to delete.',
+      },
     },
     ['username', 'repoName', 'runId'],
   );
@@ -629,12 +779,55 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'isPublic'],
     'Create an Azure DevOps (ADO) Git repository under a specified organization and project.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
-      repoName: { type: 'string', description: 'The name of the repository to be created.' },
-      isPublic: { type: 'boolean', description: 'Is the repository public (true) or private (false) (optional). Defaults to private if not provided.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
+      repoName: {
+        type: 'string',
+        description: 'The name of the repository to be created.',
+      },
+      isPublic: {
+        type: 'boolean',
+        description:
+          'Is the repository public (true) or private (false) (optional). Defaults to private if not provided.',
+      },
     },
     ['organization', 'project', 'repoName'],
+  );
+
+  // Register function for Azure DevOps getAdoFileContents
+  await registerFunction(
+    sessionId,
+    'get_ado_file_contents',
+    getAdoFileContents,
+    ['organization', 'project', 'repoName', 'filePath', 'branchName'],
+    'Gets the contents of a single file from an Azure DevOps Git repository.',
+    {
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
+      repoName: { type: 'string', description: 'The name of the repository.' },
+      filePath: {
+        type: 'string',
+        description: 'The path to the file within the repository.',
+      },
+      branchName: {
+        type: 'string',
+        description:
+          'Optional branch name. If not specified, the default branch will be used.',
+      },
+    },
+    ['organization', 'project', 'repoName', 'filePath'],
   );
 
   await registerFunction(
@@ -644,10 +837,19 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'branchName'],
     'Switch the default branch in an Azure DevOps (ADO) Git repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The name of the repository.' },
-      branchName: { type: 'string', description: 'The branch name to switch to as the new default.' },
+      branchName: {
+        type: 'string',
+        description: 'The branch name to switch to as the new default.',
+      },
     },
     ['organization', 'project', 'repoName', 'branchName'],
   );
@@ -659,11 +861,25 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
     'Upload, push, load or commit files from the session temporary directory to a specified Azure DevOps (ADO) Git repository, maintaining directory structure.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The base directory in the Azure DevOps repository to commit files into (optional). Defaults to the repository root if not provided.' },
-      branchName: { type: 'string', description: 'The name of the branch to commit to (optional). Defaults to the repository\'s default branch if not provided.' },
+      repoDirName: {
+        type: 'string',
+        description:
+          'The base directory in the Azure DevOps repository to commit files into (optional). Defaults to the repository root if not provided.',
+      },
+      branchName: {
+        type: 'string',
+        description:
+          "The name of the branch to commit to (optional). Defaults to the repository's default branch if not provided.",
+      },
     },
     ['organization', 'project', 'repoName'],
     true,
@@ -673,18 +889,42 @@ async function loadAdoIntegration(sessionId) {
     sessionId,
     'create_ado_pull_request',
     createAdoPullRequest,
-    ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch', 'body'],
+    [
+      'organization',
+      'project',
+      'repoName',
+      'title',
+      'sourceBranch',
+      'targetBranch',
+      'body',
+    ],
     'Create a pull request on a given Azure DevOps (ADO) Git repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
       title: { type: 'string', description: 'The Pull Request title.' },
       sourceBranch: { type: 'string', description: 'The source branch name.' },
       targetBranch: { type: 'string', description: 'The target branch name.' },
-      body: { type: 'string', description: 'The description or body of the pull request (optional).' },
+      body: {
+        type: 'string',
+        description: 'The description or body of the pull request (optional).',
+      },
     },
-    ['organization', 'project', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+    [
+      'organization',
+      'project',
+      'repoName',
+      'title',
+      'sourceBranch',
+      'targetBranch',
+    ],
   );
 
   await registerFunction(
@@ -694,11 +934,25 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
     'Fetch or download the contents of an Azure DevOps (ADO) Git repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The Azure DevOps repository path to start download at (optional). Defaults to the repository root if not provided.' },
-      branchName: { type: 'string', description: 'The name of the branch to fetch contents from (optional). Defaults to the repository\'s default branch if not provided.' },
+      repoDirName: {
+        type: 'string',
+        description:
+          'The Azure DevOps repository path to start download at (optional). Defaults to the repository root if not provided.',
+      },
+      branchName: {
+        type: 'string',
+        description:
+          "The name of the branch to fetch contents from (optional). Defaults to the repository's default branch if not provided.",
+      },
     },
     ['organization', 'project', 'repoName'],
     true,
@@ -711,10 +965,20 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'statusFilter'],
     'Lists Azure DevOps (ADO) Pipelines and builds that ran in a specified repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
-      statusFilter: { type: 'string', description: 'The status to filter pipelines by (e.g., "inProgress", "queued", "completed", "failed") (optional). Defaults to "inProgress" if not provided.' },
+      statusFilter: {
+        type: 'string',
+        description:
+          'The status to filter pipelines by (e.g., "inProgress", "queued", "completed", "failed") (optional). Defaults to "inProgress" if not provided.',
+      },
     },
     ['organization', 'project', 'repoName'],
   );
@@ -726,8 +990,14 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project'],
     'Lists repositories for a given Azure DevOps (ADO) organization and project.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
     },
     ['organization', 'project'],
   );
@@ -739,8 +1009,14 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName'],
     'Lists branches for a given Azure DevOps (ADO) Git repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
     },
     ['organization', 'project', 'repoName'],
@@ -753,10 +1029,19 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'repoDirName'],
     'Lists commit history for a file or directory in an Azure DevOps (ADO) Git repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
-      repoDirName: { type: 'string', description: 'The file or directory path within the repository.' },
+      repoDirName: {
+        type: 'string',
+        description: 'The file or directory path within the repository.',
+      },
     },
     ['organization', 'project', 'repoName', 'repoDirName'],
   );
@@ -765,15 +1050,40 @@ async function loadAdoIntegration(sessionId) {
     sessionId,
     'list_ado_directory_contents',
     listAdoDirectoryContents,
-    ['organization', 'project', 'repoName', 'branchName', 'repoDirName', 'recursive'],
+    [
+      'organization',
+      'project',
+      'repoName',
+      'branchName',
+      'repoDirName',
+      'recursive',
+    ],
     'Lists the contents of a directory in an Azure DevOps (ADO) Git repository on a specific branch. Defaults to the root and recursive scan.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
       repoName: { type: 'string', description: 'The repository name.' },
-      branchName: { type: 'string', description: 'The name of the branch to list contents from (optional). Defaults to the repository\'s default branch if not provided.' },
-      repoDirName: { type: 'string', description: 'The directory path within the repository (optional). Defaults to the repository root if not provided.' },
-      recursive: { type: 'boolean', description: 'Perform a recursive scan or not (optional). Defaults to true if not provided.' },
+      branchName: {
+        type: 'string',
+        description:
+          "The name of the branch to list contents from (optional). Defaults to the repository's default branch if not provided.",
+      },
+      repoDirName: {
+        type: 'string',
+        description:
+          'The directory path within the repository (optional). Defaults to the repository root if not provided.',
+      },
+      recursive: {
+        type: 'boolean',
+        description:
+          'Perform a recursive scan or not (optional). Defaults to true if not provided.',
+      },
     },
     ['organization', 'project', 'repoName'],
   );
@@ -785,10 +1095,22 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'branchName'],
     'Check if an Azure DevOps (ADO) Git branch exists in a specified repository.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
-      repoName: { type: 'string', description: 'The name of the repository to check.' },
-      branchName: { type: 'string', description: 'The name of the branch to check.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
+      repoName: {
+        type: 'string',
+        description: 'The name of the repository to check.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The name of the branch to check.',
+      },
     },
     ['organization', 'project', 'repoName', 'branchName'],
   );
@@ -800,9 +1122,18 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName'],
     'Check if an Azure DevOps (ADO) Git repository exists under a given organization and project.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
-      repoName: { type: 'string', description: 'The name of the repository to check.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
+      repoName: {
+        type: 'string',
+        description: 'The name of the repository to check.',
+      },
     },
     ['organization', 'project', 'repoName'],
   );
@@ -814,11 +1145,28 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'branchName', 'baseBranch'],
     'Create a new branch in an Azure DevOps (ADO) Git repository based on an existing branch.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project name.' },
-      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
-      branchName: { type: 'string', description: 'The name of the new branch to be created.' },
-      baseBranch: { type: 'string', description: 'The name of the existing branch to base the new branch on (optional). Defaults to the repository\'s default branch.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project name.',
+      },
+      repoName: {
+        type: 'string',
+        description:
+          'The name of the repository where the branch will be created.',
+      },
+      branchName: {
+        type: 'string',
+        description: 'The name of the new branch to be created.',
+      },
+      baseBranch: {
+        type: 'string',
+        description:
+          "The name of the existing branch to base the new branch on (optional). Defaults to the repository's default branch.",
+      },
     },
     ['organization', 'project', 'repoName', 'branchName'],
   );
@@ -830,7 +1178,10 @@ async function loadAdoIntegration(sessionId) {
     ['organization'],
     'Fetches a list of Azure DevOps projects.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
     },
     ['organization'],
   );
@@ -843,10 +1194,21 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'repoName', 'yamlPath'],
     'Creates a new Azure DevOps pipeline (build definition).',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
       project: { type: 'string', description: 'The project ID or name.' },
-      repoName: { type: 'string', description: 'The name of the repository where the branch will be created.' },
-      yamlPath: { type: 'string', description: 'The path to the YAML file defining the pipeline (default is "azure-pipelines.yml".' },
+      repoName: {
+        type: 'string',
+        description:
+          'The name of the repository where the branch will be created.',
+      },
+      yamlPath: {
+        type: 'string',
+        description:
+          'The path to the YAML file defining the pipeline (default is "azure-pipelines.yml".',
+      },
     },
     ['organization', 'project', 'repoName', 'yamlPath'],
   );
@@ -856,15 +1218,36 @@ async function loadAdoIntegration(sessionId) {
     sessionId,
     'run_ado_pipeline',
     runAdoPipeline,
-    ['organization', 'project', 'pipelineId', 'repoName', 'branchName', 'userParameters'],
+    [
+      'organization',
+      'project',
+      'pipelineId',
+      'repoName',
+      'branchName',
+      'userParameters',
+    ],
     'Triggers a new run for an Azure DevOps pipeline.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
       project: { type: 'string', description: 'The project ID or name.' },
-      pipelineId: { type: 'number', description: 'The ID of the pipeline to run.' },
-      repoName: { type: 'string', description: 'The name of the repository where the pipeline will be run.' },
+      pipelineId: {
+        type: 'number',
+        description: 'The ID of the pipeline to run.',
+      },
+      repoName: {
+        type: 'string',
+        description:
+          'The name of the repository where the pipeline will be run.',
+      },
       branchName: { type: 'string', description: 'The name of branch to use.' },
-      userParameters: { type: 'object', description: 'Optional parameters for the pipeline run (e.g., variables, branch).' },
+      userParameters: {
+        type: 'object',
+        description:
+          'Optional parameters for the pipeline run (e.g., variables, branch).',
+      },
     },
     ['organization', 'project', 'pipelineId', 'repoName'],
   );
@@ -877,7 +1260,10 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'pipelineId', 'runId'],
     'Retrieves logs for a specific pipeline run in Azure DevOps. This function retrieves a list of log entries; to get the full content of a specific log file, a subsequent call to the specific log URL might be needed.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
       project: { type: 'string', description: 'The project ID or name.' },
       pipelineId: { type: 'number', description: 'The ID of the pipeline.' },
       runId: { type: 'number', description: 'The ID of the pipeline run.' },
@@ -893,8 +1279,14 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'pipelineId'],
     'Fetches a list of runs for a specific Azure DevOps pipeline.',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
-      project: { type: 'string', description: 'The Azure DevOps project ID or name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
+      project: {
+        type: 'string',
+        description: 'The Azure DevOps project ID or name.',
+      },
       pipelineId: { type: 'number', description: 'The ID of the pipeline.' },
     },
     ['organization', 'project', 'pipelineId'],
@@ -908,9 +1300,15 @@ async function loadAdoIntegration(sessionId) {
     ['organization', 'project', 'pipelineId'],
     'Deletes an Azure DevOps pipeline (build definition).',
     {
-      organization: { type: 'string', description: 'The Azure DevOps organization name.' },
+      organization: {
+        type: 'string',
+        description: 'The Azure DevOps organization name.',
+      },
       project: { type: 'string', description: 'The project ID or name.' },
-      pipelineId: { type: 'number', description: 'The ID of the pipeline to delete.' },
+      pipelineId: {
+        type: 'number',
+        description: 'The ID of the pipeline to delete.',
+      },
     },
     ['organization', 'project', 'pipelineId'],
   );
@@ -927,58 +1325,95 @@ async function loadMappingFunctions(sessionId) {
     planRoute, // The actual function to execute
     ['params'], // Parameters the function expects (wrapped in a single 'params' object)
     'Plans a route between multiple points using the Google Maps Directions API and returns the details in JSON format.', // Description for the AI
-    { // JSON schema for the 'params' object
+    {
+      // JSON schema for the 'params' object
       params: {
         type: 'object',
         description: 'Parameters for the Google Maps Directions API request.',
         properties: {
-          origin: { type: 'string', description: 'The starting point for the directions request.' },
-          destination: { type: 'string', description: 'The ending point for the directions request.' },
+          origin: {
+            type: 'string',
+            description: 'The starting point for the directions request.',
+          },
+          destination: {
+            type: 'string',
+            description: 'The ending point for the directions request.',
+          },
           waypoints: {
             type: 'array',
-            description: 'An array of intermediate locations to include in the route.',
+            description:
+              'An array of intermediate locations to include in the route.',
             items: { type: 'string' },
             nullable: true, // Make waypoints optional
           },
           mode: {
             type: 'string',
-            description: 'Specifies the mode of transport (e.g., "driving", "walking", "bicycling", "transit"). Defaults to "driving".',
+            description:
+              'Specifies the mode of transport (e.g., "driving", "walking", "bicycling", "transit"). Defaults to "driving".',
             nullable: true, // Make optional
             enum: ['driving', 'walking', 'bicycling', 'transit'], // Add supported modes
           },
-          language: { type: 'string', description: 'The language to use for the results.', nullable: true }, // Make optional
+          language: {
+            type: 'string',
+            description: 'The language to use for the results.',
+            nullable: true,
+          }, // Make optional
           units: {
             type: 'string',
-            description: 'Specifies the unit system to use (e.g., "metric", "imperial"). Defaults to "metric".',
+            description:
+              'Specifies the unit system to use (e.g., "metric", "imperial"). Defaults to "metric".',
             nullable: true, // Make optional
             enum: ['metric', 'imperial'], // Add supported units
           },
-          alternatives: { type: 'boolean', description: 'If true, more than one route may be returned.', nullable: true }, // Make optional
+          alternatives: {
+            type: 'boolean',
+            description: 'If true, more than one route may be returned.',
+            nullable: true,
+          }, // Make optional
           avoid: {
             type: 'string',
-            description: 'Indicates features to avoid (e.g., "tolls", "highways", "ferries", "indoor"). Can be a single value or multiple values separated by "|".',
+            description:
+              'Indicates features to avoid (e.g., "tolls", "highways", "ferries", "indoor"). Can be a single value or multiple values separated by "|".',
             nullable: true, // Make optional
           },
           transit_mode: {
             type: 'string',
-            description: 'Specifies the desired modes of transit (e.g., "bus", "subway", "train", "tram", "rail"). Can be multiple values separated by "|".',
+            description:
+              'Specifies the desired modes of transit (e.g., "bus", "subway", "train", "tram", "rail"). Can be multiple values separated by "|".',
             nullable: true, // Make optional
           },
           transit_routing_preference: {
             type: 'string',
-            description: 'Specifies preferences for transit routes (e.g., "less_walking", "fewer_transfers").',
+            description:
+              'Specifies preferences for transit routes (e.g., "less_walking", "fewer_transfers").',
             nullable: true, // Make optional
             enum: ['less_walking', 'fewer_transfers'], // Add supported preferences
           },
-          departure_time: { type: 'string', description: 'The desired time of departure. Can be a timestamp or "now".', nullable: true }, // Make optional
-          arrival_time: { type: 'string', description: 'The desired time of arrival (for transit). Can be a timestamp.', nullable: true }, // Make optional
+          departure_time: {
+            type: 'string',
+            description:
+              'The desired time of departure. Can be a timestamp or "now".',
+            nullable: true,
+          }, // Make optional
+          arrival_time: {
+            type: 'string',
+            description:
+              'The desired time of arrival (for transit). Can be a timestamp.',
+            nullable: true,
+          }, // Make optional
           traffic_model: {
             type: 'string',
-            description: 'Specifies the assumptions to use when calculating time in traffic (e.g., "best_guess", "optimistic", "pessimistic").',
+            description:
+              'Specifies the assumptions to use when calculating time in traffic (e.g., "best_guess", "optimistic", "pessimistic").',
             nullable: true, // Make optional
             enum: ['best_guess', 'optimistic', 'pessimistic'], // Add supported models
           },
-          optimizeWaypoints: { type: 'boolean', description: 'If true and waypoints are provided, the API will attempt to reorder the waypoints to minimize the total travel time.', nullable: true }, // Make optional
+          optimizeWaypoints: {
+            type: 'boolean',
+            description:
+              'If true and waypoints are provided, the API will attempt to reorder the waypoints to minimize the total travel time.',
+            nullable: true,
+          }, // Make optional
         },
         required: ['origin', 'destination'], // Only origin and destination are required
       },
@@ -993,16 +1428,24 @@ async function loadMappingFunctions(sessionId) {
     generateGoogleMapsLink, // The actual function to execute
     ['params'], // Parameters the function expects (wrapped in a single 'params' object)
     'Generates an HTTP link to view a planned route on the Google Maps website using the original route parameters.', // Description for the AI
-    { // JSON schema for the 'params' object for generating the link
+    {
+      // JSON schema for the 'params' object for generating the link
       params: {
         type: 'object',
         description: 'Parameters used for the original route planning request.',
         properties: {
-          origin: { type: 'string', description: 'The starting point for the directions request.' },
-          destination: { type: 'string', description: 'The ending point for the directions request.' },
+          origin: {
+            type: 'string',
+            description: 'The starting point for the directions request.',
+          },
+          destination: {
+            type: 'string',
+            description: 'The ending point for the directions request.',
+          },
           waypoints: {
             type: 'array',
-            description: 'An array of intermediate locations included in the route.',
+            description:
+              'An array of intermediate locations included in the route.',
             items: { type: 'string' },
             nullable: true, // Waypoints are optional for link generation
           },
@@ -1059,9 +1502,21 @@ async function loadKubernetes(sessionId) {
     ['resourceType', 'resourceBody', 'namespace'],
     'Create a Kubernetes resource from a provided YAML or JSON body.',
     {
-      resourceType: { type: 'string', description: 'The type of the resource to create (e.g., "pods", "deployments", "services", "namespaces").' },
-      resourceBody: { type: 'string', description: 'The YAML or JSON string representation of the Kubernetes resource to create. This should be auto-generated by the chatbot based on the description given' },
-      namespace: { type: 'string', description: 'Optional: The namespace in which to create the resource. Not required for cluster-scoped resources like Namespaces or PersistentVolumes. The default will be "default" if not provided.' },
+      resourceType: {
+        type: 'string',
+        description:
+          'The type of the resource to create (e.g., "pods", "deployments", "services", "namespaces").',
+      },
+      resourceBody: {
+        type: 'string',
+        description:
+          'The YAML or JSON string representation of the Kubernetes resource to create. This should be auto-generated by the chatbot based on the description given',
+      },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace in which to create the resource. Not required for cluster-scoped resources like Namespaces or PersistentVolumes. The default will be "default" if not provided.',
+      },
     },
     ['resourceType', 'resourceBody'],
     true,
@@ -1074,9 +1529,20 @@ async function loadKubernetes(sessionId) {
     ['resourceType', 'name', 'namespace'],
     'Delete a specified Kubernetes resource (e.g., Pod, Deployment, Service) by its name from a given namespace.',
     {
-      resourceType: { type: 'string', description: 'The type of the resource to delete (e.g., "pods", "deployments", "services", "namespaces").' },
-      name: { type: 'string', description: 'The name of the resource to delete.' },
-      namespace: { type: 'string', description: 'The namespace the resource resides in. Required for namespaced resources. Not used for cluster-scoped resources like PersistentVolumes or Namespaces (when deleting the namespace itself).' },
+      resourceType: {
+        type: 'string',
+        description:
+          'The type of the resource to delete (e.g., "pods", "deployments", "services", "namespaces").',
+      },
+      name: {
+        type: 'string',
+        description: 'The name of the resource to delete.',
+      },
+      namespace: {
+        type: 'string',
+        description:
+          'The namespace the resource resides in. Required for namespaced resources. Not used for cluster-scoped resources like PersistentVolumes or Namespaces (when deleting the namespace itself).',
+      },
     },
     ['resourceType', 'name'],
     true,
@@ -1089,10 +1555,25 @@ async function loadKubernetes(sessionId) {
     ['resourceType', 'name', 'resourceBody', 'namespace'],
     'Update an existing Kubernetes resource with a provided YAML or JSON body.',
     {
-      resourceType: { type: 'string', description: 'The type of the resource to update (e.g., "pods", "deployments", "services", "namespaces").' },
-      name: { type: 'string', description: 'The name of the resource to update.' },
-      resourceBody: { type: 'string', description: 'The YAML or JSON string representation of the Kubernetes resource with the updated configuration. This should be auto-generated by the chatbot based on the description given' },
-      namespace: { type: 'string', description: 'Optional: The namespace in which to create the resource. Not required for cluster-scoped resources like Namespaces or PersistentVolumes. The default will be "default" if not provided.' },
+      resourceType: {
+        type: 'string',
+        description:
+          'The type of the resource to update (e.g., "pods", "deployments", "services", "namespaces").',
+      },
+      name: {
+        type: 'string',
+        description: 'The name of the resource to update.',
+      },
+      resourceBody: {
+        type: 'string',
+        description:
+          'The YAML or JSON string representation of the Kubernetes resource with the updated configuration. This should be auto-generated by the chatbot based on the description given',
+      },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace in which to create the resource. Not required for cluster-scoped resources like Namespaces or PersistentVolumes. The default will be "default" if not provided.',
+      },
     },
     ['resourceType', 'name', 'resourceBody'],
     true,
@@ -1105,7 +1586,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes deployments across all namespaces or within a specified namespace, returning their detailed status, replicas, and associated metadata.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list deployments from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list deployments from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1118,8 +1603,14 @@ async function loadKubernetes(sessionId) {
     ['deploymentName', 'namespace'],
     'Get detailed information about a specific Kubernetes Deployment by its name within a given namespace.',
     {
-      deploymentName: { type: 'string', description: 'The name of the deployment to get details for.' },
-      namespace: { type: 'string', description: 'The namespace the deployment resides in.' },
+      deploymentName: {
+        type: 'string',
+        description: 'The name of the deployment to get details for.',
+      },
+      namespace: {
+        type: 'string',
+        description: 'The namespace the deployment resides in.',
+      },
     },
     ['deploymentName', 'namespace'],
     true,
@@ -1132,7 +1623,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes services across all namespaces or within a specified namespace, returning their detailed status, cluster IPs, ports, and selectors.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list services from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list services from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1145,8 +1640,14 @@ async function loadKubernetes(sessionId) {
     ['serviceName', 'namespace'],
     'Get detailed information about a specific Kubernetes Service by its name within a given namespace.',
     {
-      serviceName: { type: 'string', description: 'The name of the service to get details for.' },
-      namespace: { type: 'string', description: 'The namespace the service resides in.' },
+      serviceName: {
+        type: 'string',
+        description: 'The name of the service to get details for.',
+      },
+      namespace: {
+        type: 'string',
+        description: 'The namespace the service resides in.',
+      },
     },
     ['serviceName', 'namespace'],
     true,
@@ -1159,7 +1660,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes pods across all namespaces or within a specified namespace, returning their detailed status, node assignments, and container information.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list pods from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list pods from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1172,8 +1677,14 @@ async function loadKubernetes(sessionId) {
     ['podName', 'namespace'],
     'Get detailed information about a specific Kubernetes Pod by its name within a given namespace. This is ONLY for Kubernetes use, not for host machine details',
     {
-      podName: { type: 'string', description: 'The name of the pod to get details for.' },
-      namespace: { type: 'string', description: 'The namespace the pod resides in.' },
+      podName: {
+        type: 'string',
+        description: 'The name of the pod to get details for.',
+      },
+      namespace: {
+        type: 'string',
+        description: 'The namespace the pod resides in.',
+      },
     },
     ['podName', 'namespace'],
     true,
@@ -1186,8 +1697,14 @@ async function loadKubernetes(sessionId) {
     ['podName', 'namespace'],
     'Get the logs for a specific pod in a given namespace.',
     {
-      podName: { type: 'string', description: 'The name of the pod to get logs from.' },
-      namespace: { type: 'string', description: 'The namespace the pod resides in.' },
+      podName: {
+        type: 'string',
+        description: 'The name of the pod to get logs from.',
+      },
+      namespace: {
+        type: 'string',
+        description: 'The namespace the pod resides in.',
+      },
     },
     ['podName', 'namespace'], // Both podName and namespace are required
     true,
@@ -1200,7 +1717,10 @@ async function loadKubernetes(sessionId) {
     ['nodeName'],
     'Get detailed information about a specific Kubernetes Node by its name.',
     {
-      nodeName: { type: 'string', description: 'The name of the node to get details for.' },
+      nodeName: {
+        type: 'string',
+        description: 'The name of the node to get details for.',
+      },
     },
     ['nodeName'],
     true,
@@ -1213,8 +1733,14 @@ async function loadKubernetes(sessionId) {
     ['secretName', 'namespace'],
     'Get detailed information about a specific Kubernetes Secret by its name within a given namespace.',
     {
-      secretName: { type: 'string', description: 'The name of the secret to get details for.' },
-      namespace: { type: 'string', description: 'The namespace the secret resides in.' },
+      secretName: {
+        type: 'string',
+        description: 'The name of the secret to get details for.',
+      },
+      namespace: {
+        type: 'string',
+        description: 'The namespace the secret resides in.',
+      },
     },
     ['secretName', 'namespace'],
     true,
@@ -1227,7 +1753,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'],
     'List or get all Kubernetes Events across all namespaces or within a specified namespace, returning their detailed status and associated resources.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list events from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list events from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true,
@@ -1251,7 +1781,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'],
     'List or get all Kubernetes Secrets across all namespaces or within a specified namespace, returning their detailed data (excluding sensitive content).',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list secrets from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list secrets from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true,
@@ -1264,9 +1798,18 @@ async function loadKubernetes(sessionId) {
     ['deploymentName', 'namespace', 'replicas'],
     'Scale a specified Kubernetes Deployment to a desired number of replicas.',
     {
-      deploymentName: { type: 'string', description: 'The name of the deployment to scale.' },
-      namespace: { type: 'string', description: 'The namespace the deployment resides in.' },
-      replicas: { type: 'number', description: 'The desired number of replicas for the deployment.' },
+      deploymentName: {
+        type: 'string',
+        description: 'The name of the deployment to scale.',
+      },
+      namespace: {
+        type: 'string',
+        description: 'The namespace the deployment resides in.',
+      },
+      replicas: {
+        type: 'number',
+        description: 'The desired number of replicas for the deployment.',
+      },
     },
     ['deploymentName', 'namespace', 'replicas'],
     true,
@@ -1279,7 +1822,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes ReplicaSets across all namespaces or within a specified namespace, returning their detailed status and replica counts.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list ReplicaSets from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1292,7 +1839,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes DaemonSets across all namespaces or within a specified namespace, returning their detailed status.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list DaemonSets from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1305,7 +1856,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes StatefulSets across all namespaces or within a specified namespace, returning their detailed status and replica counts.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list StatefulSets from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1318,7 +1873,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes Ingresses across all namespaces or within a specified namespace, returning their detailed rules and backend services.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list Ingresses from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list Ingresses from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1331,7 +1890,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes ConfigMaps across all namespaces or within a specified namespace, returning their detailed data.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list ConfigMaps from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1355,7 +1918,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes PersistentVolumeClaims across all namespaces or within a specified namespace, returning their detailed status and volume bindings.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list PersistentVolumeClaims from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list PersistentVolumeClaims from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1368,7 +1935,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes Jobs across all namespaces or within a specified namespace, returning their detailed status and completion information.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list Jobs from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list Jobs from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1381,7 +1952,11 @@ async function loadKubernetes(sessionId) {
     ['namespace'], // Added namespace parameter
     'List or get all the Kubernetes CronJobs across all namespaces or within a specified namespace, returning their detailed status and schedule.',
     {
-      namespace: { type: 'string', description: 'Optional: The namespace to list CronJobs from. If not provided, lists from all namespaces.' },
+      namespace: {
+        type: 'string',
+        description:
+          'Optional: The namespace to list CronJobs from. If not provided, lists from all namespaces.',
+      },
     },
     [], // No required parameters, namespace is optional
     true, // needSession is true
@@ -1396,9 +1971,21 @@ async function loadDockerHub(sessionId) {
     ['searchTerm', 'isPrivate', 'username'],
     'Search for Docker images on Docker Hub, supporting both public and private repositories. For private searches, the Docker Hub username and password must be configured as environment variables.',
     {
-      searchTerm: { type: 'string', description: 'The term to search for (e.g., "ubuntu", "my-private-repo/my-image").' },
-      isPrivate: { type: 'boolean', description: 'Set to true to search private repositories of the configured Docker Hub user. Defaults to false (public search).' },
-      username: { type: 'string', description: 'Optional: Docker Hub username if searching private repos. Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.' },
+      searchTerm: {
+        type: 'string',
+        description:
+          'The term to search for (e.g., "ubuntu", "my-private-repo/my-image").',
+      },
+      isPrivate: {
+        type: 'boolean',
+        description:
+          'Set to true to search private repositories of the configured Docker Hub user. Defaults to false (public search).',
+      },
+      username: {
+        type: 'string',
+        description:
+          'Optional: Docker Hub username if searching private repos. Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.',
+      },
     },
     ['searchTerm'], // Only searchTerm is strictly required for any search
     true,
@@ -1411,7 +1998,11 @@ async function loadDockerHub(sessionId) {
     ['imageName'],
     'For a given Docker image name, get all the details of its tags.',
     {
-      imageName: { type: 'string', description: 'The Docker image name to get tags for (e.g., "latest", "my-private-repo/my-image").' },
+      imageName: {
+        type: 'string',
+        description:
+          'The Docker image name to get tags for (e.g., "latest", "my-private-repo/my-image").',
+      },
     },
     ['imageName'],
   );
@@ -1429,7 +2020,11 @@ async function loadDatabaseFunctions(sessionId) {
     ['uri'],
     'Connects to a database using a JDBC-like URI. This function establishes a connection to the specified database and returns a client object for further operations.',
     {
-      uri: { type: 'string', description: 'The JDBC-like URI for the database connection (e.g., "jdbc:postgresql://host:port/database?user=...").' },
+      uri: {
+        type: 'string',
+        description:
+          'The JDBC-like URI for the database connection (e.g., "jdbc:postgresql://host:port/database?user=...").',
+      },
     },
     ['uri'],
     true,
@@ -1442,7 +2037,10 @@ async function loadDatabaseFunctions(sessionId) {
     ['uri'],
     'Dumps the structure (tables, views, columns) of a database in JSON format. Requires a JDBC-like URI to connect.',
     {
-      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+      uri: {
+        type: 'string',
+        description: 'The JDBC-like URI for the database connection.',
+      },
     },
     ['uri'],
     true,
@@ -1455,9 +2053,19 @@ async function loadDatabaseFunctions(sessionId) {
     ['uri', 'tableNameOrViewName', 'percentage'],
     'Selects an optional percentage of data from a specified table or view in a database, returning the results in JSON format including column names. Defaults to 10% if percentage is not specified.',
     {
-      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
-      tableNameOrViewName: { type: 'string', description: 'The name of the table or view to select data from.' },
-      percentage: { type: 'number', description: 'Optional: The percentage of data to select (0-100). Defaults to 10% if not provided.' },
+      uri: {
+        type: 'string',
+        description: 'The JDBC-like URI for the database connection.',
+      },
+      tableNameOrViewName: {
+        type: 'string',
+        description: 'The name of the table or view to select data from.',
+      },
+      percentage: {
+        type: 'number',
+        description:
+          'Optional: The percentage of data to select (0-100). Defaults to 10% if not provided.',
+      },
     },
     ['uri', 'tableNameOrViewName'],
     true,
@@ -1470,7 +2078,10 @@ async function loadDatabaseFunctions(sessionId) {
     ['uri'],
     'Lists all schemas available in the connected database.',
     {
-      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
+      uri: {
+        type: 'string',
+        description: 'The JDBC-like URI for the database connection.',
+      },
     },
     ['uri'],
     true,
@@ -1483,12 +2094,22 @@ async function loadDatabaseFunctions(sessionId) {
     ['uri', 'schemaName', 'objectTypes'],
     'Lists objects (tables, views, indexes, constraints) owned by a specific schema in a database. The type of objects to list can be specified, defaulting to all if not provided.',
     {
-      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
-      schemaName: { type: 'string', description: 'The name of the schema to list objects from.' },
+      uri: {
+        type: 'string',
+        description: 'The JDBC-like URI for the database connection.',
+      },
+      schemaName: {
+        type: 'string',
+        description: 'The name of the schema to list objects from.',
+      },
       objectTypes: {
         type: 'array',
-        items: { type: 'string', enum: ['tables', 'views', 'indexes', 'constraints'] },
-        description: 'Optional: An array of object types to list (e.g., ["tables", "views"]). Defaults to all types if not provided.',
+        items: {
+          type: 'string',
+          enum: ['tables', 'views', 'indexes', 'constraints'],
+        },
+        description:
+          'Optional: An array of object types to list (e.g., ["tables", "views"]). Defaults to all types if not provided.',
       },
     },
     ['uri', 'schemaName'],
@@ -1503,8 +2124,14 @@ async function loadDatabaseFunctions(sessionId) {
     ['uri', 'sqlQuery'],
     'Executes any arbitrary SQL query against a connected relational database. This includes DML (INSERT, UPDATE, DELETE, SELECT) and DDL (CREATE, ALTER, DROP, etc.) statements, as well as stored procedure calls, triggers, and other advanced SQL commands. Returns query results for SELECT statements and affected rows for DML/DDL statements.',
     {
-      uri: { type: 'string', description: 'The JDBC-like URI for the database connection.' },
-      sqlQuery: { type: 'string', description: 'The free-text SQL query to execute.' },
+      uri: {
+        type: 'string',
+        description: 'The JDBC-like URI for the database connection.',
+      },
+      sqlQuery: {
+        type: 'string',
+        description: 'The free-text SQL query to execute.',
+      },
     },
     ['uri', 'sqlQuery'],
     true,
@@ -1525,15 +2152,18 @@ async function loadSystemInfoFunctions(sessionId) {
     {
       baseIp: {
         type: 'string',
-        description: 'The base IP address of the subnet to scan (e.g., "192.168.1").',
+        description:
+          'The base IP address of the subnet to scan (e.g., "192.168.1").',
       },
       startRange: {
         type: 'number',
-        description: 'The starting value for the last octet in the IP range (default: 1).',
+        description:
+          'The starting value for the last octet in the IP range (default: 1).',
       },
       endRange: {
         type: 'number',
-        description: 'The ending value for the last octet in the IP range (default: 254).',
+        description:
+          'The ending value for the last octet in the IP range (default: 254).',
       },
       port: {
         type: 'number',
@@ -1541,7 +2171,8 @@ async function loadSystemInfoFunctions(sessionId) {
       },
       timeout: {
         type: 'number',
-        description: 'Timeout in milliseconds for each connection attempt (default: 1000).',
+        description:
+          'Timeout in milliseconds for each connection attempt (default: 1000).',
       },
     },
     [], // Only baseIp is strictly required, others have defaults
@@ -1559,7 +2190,8 @@ async function loadSystemInfoFunctions(sessionId) {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
+        description:
+          'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1577,7 +2209,8 @@ async function loadSystemInfoFunctions(sessionId) {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
+        description:
+          'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1595,7 +2228,8 @@ async function loadSystemInfoFunctions(sessionId) {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
+        description:
+          'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1613,7 +2247,8 @@ async function loadSystemInfoFunctions(sessionId) {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
+        description:
+          'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1631,7 +2266,8 @@ async function loadSystemInfoFunctions(sessionId) {
       // Updated parameter schema for the single sshTarget string
       sshTarget: {
         type: 'string',
-        description: 'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
+        description:
+          'Optional: The SSH target machine. If no user is specified it will be looked up. The password for this target will be looked up from a Docker secret map.',
       },
     },
     [], // sshTarget is optional
@@ -1662,23 +2298,34 @@ async function loadIntegrations(sessionId) {
     logger.info(`Loading GitHub integration for session: ${sessionId}`);
     await loadGitHub(sessionId);
     await loadGitHubActions(sessionId);
-    logger.info(`Loading GitHub code review integration for session: ${sessionId}`);
+    logger.info(
+      `Loading GitHub code review integration for session: ${sessionId}`,
+    );
     await loadCodeReviews(sessionId);
   }
 
   // New ADO integration loading
   if (process.env.AZURE_DEVOPS_PAT) {
-    logger.info(`Loading Azure DevOps (ADO) integration for session: ${sessionId}`);
+    logger.info(
+      `Loading Azure DevOps (ADO) integration for session: ${sessionId}`,
+    );
     await loadAdoIntegration(sessionId);
-    logger.info(`Loading Azure DevOps (ADO) code review integration for session: ${sessionId}`);
+    logger.info(
+      `Loading Azure DevOps (ADO) code review integration for session: ${sessionId}`,
+    );
     await loadAdoCodeReviews(sessionId);
   } else {
-    logger.info(`Azure DevOps (ADO) integration not loaded for session: ${sessionId}. AZURE_DEVOPS_PAT not set.`);
+    logger.info(
+      `Azure DevOps (ADO) integration not loaded for session: ${sessionId}. AZURE_DEVOPS_PAT not set.`,
+    );
   }
 
-  if (process.env.DOSA_API_KEY &amp;&amp; process.env.DOSA_API_SECRET
-        &amp;&amp; process.env.DOSA_AUTH_TENANT_ID
-        &amp;&amp; process.env.DOSA_CLIENT_ID) {
+  if (
+    process.env.DOSA_API_KEY
+    &amp;&amp; process.env.DOSA_API_SECRET
+    &amp;&amp; process.env.DOSA_AUTH_TENANT_ID
+    &amp;&amp; process.env.DOSA_CLIENT_ID
+  ) {
     logger.info(`Loading DOSA/DLVA integration for session: ${sessionId}`);
     await loadDosa(sessionId);
   }
@@ -1688,12 +2335,17 @@ async function loadIntegrations(sessionId) {
     await loadMappingFunctions(sessionId);
   }
 
-  if (process.env.KUBERNETES_API_ENDPOINT &amp;&amp; process.env.KUBERNETES_BEARER_TOKEN) {
+  if (
+    process.env.KUBERNETES_API_ENDPOINT
+    &amp;&amp; process.env.KUBERNETES_BEARER_TOKEN
+  ) {
     logger.info(`Loading Kubernetes integration for session: ${sessionId}`);
     await loadKubernetes(sessionId);
     await loadDockerHub(sessionId);
   } else {
-    logger.info(`Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`);
+    logger.info(
+      `Kubernetes integration not loaded for session: ${sessionId}. KUBERNETES_API_ENDPOINT or KUBERNETES_BEARER_TOKEN not set.`,
+    );
   }
 
   // Load Database integration
@@ -1701,11 +2353,15 @@ async function loadIntegrations(sessionId) {
     logger.info(`Loading Database integration for session: ${sessionId}`);
     await loadDatabaseFunctions(sessionId);
   } else {
-    logger.info(`Database integration not loaded for session: ${sessionId}. DATABASE_URI not set.`);
+    logger.info(
+      `Database integration not loaded for session: ${sessionId}. DATABASE_URI not set.`,
+    );
   }
 
   // Load System Info integration
-  logger.info(`Loading System Information integration for session: ${sessionId}`);
+  logger.info(
+    `Loading System Information integration for session: ${sessionId}`,
+  );
   await loadSystemInfoFunctions(sessionId);
 }
 
@@ -1737,13 +2393,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#buildProbeUrl">buildProbeUrl</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#buildProbeUrl">buildProbeUrl</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoFileContents">getAdoFileContents</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFileContents">getFileContents</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Aug 05 2025 02:16:54 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Aug 05 2025 21:37:35 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -1771,6 +1771,94 @@ async function commitAdoFiles(
   };
 }
 
+/**
+ * Gets the contents of a single file from an Azure DevOps Git repository.
+ * Fetches the file's data, decodes the content, and returns it as a JSON object.
+ * Handles API errors, including "Not Found" exceptions.
+ * @async
+ * @param {string} organization The Azure DevOps organization name.
+ * @param {string} project The Azure DevOps project name.
+ * @param {string} repoName The name of the repository.
+ * @param {string} filePath The path to the file within the repository.
+ * @param {string} [branchName=''] Optional branch name. If not specified, the default branch will be used.
+ * @returns {Promise<Object>} A promise that resolves to a JSON object with the file's name, path, and decoded content.
+ * @throws {Error} If API request fails, file/repo not found, or content cannot be retrieved.
+ */
+
+async function getAdoFileContents(
+  organization,
+  project,
+  repoName,
+  filePath,
+  branchName = '',
+) {
+  let effectiveBranchName = branchName;
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getAdoDefaultBranch(
+        organization,
+        project,
+        repoName,
+      );
+    } catch (error) {
+      logger.error('Error getting default branch for ADO file contents:', error);
+      throw error;
+    }
+  }
+
+  const url = `${ADO_BASEURI}/${organization}/${project}/_apis/git/repositories/${repoName}/items?path=${encodeURIComponent(
+    filePath,
+  )}&versionDescriptor.version=${encodeURIComponent(
+    effectiveBranchName,
+  )}&api-version=${AZURE_DEVOPS_API_VERSION}&download=true`;
+
+  try {
+    const request = superagent.get(url);
+    request.set('User-Agent', USER_AGENT);
+    if (AZURE_DEVOPS_PAT) {
+      request.set('Authorization', `Basic ${encodePat(AZURE_DEVOPS_PAT)}`);
+    }
+
+    request.buffer(true);
+    request.parse(superagent.parse['application/octet-stream']);
+
+    const response = await request;
+
+    if (Buffer.isBuffer(response.body)) {
+      const fileContent = response.body.toString('utf8'); // Convert buffer to string (utf8)
+      if (fileContent) {
+        return {
+          name: path.basename(filePath),
+          path: filePath,
+          content: fileContent,
+        };
+      }
+    } else {
+      await handleAzureDevopsApiError(
+        response,
+        `getting file contents for "${filePath}"`,
+      );
+    }
+  } catch (error) {
+    logger.error(
+      'Error getting file contents (exception - Azure DevOps):',
+      organization,
+      project,
+      repoName,
+      filePath,
+      error,
+    );
+    handleNotFoundError(
+      error,
+      ` for file "${filePath}" in repository "${organization}/${project}/${repoName}"`,
+    );
+    throw error;
+  }
+  // This return statement ensures the function returns a value in all cases,
+  // satisfying the `consistent-return` linting rule.
+  return null;
+}
+
 module.exports = {
   checkAdoBranchExists,
   checkAdoRepoExists,
@@ -1780,6 +1868,7 @@ module.exports = {
   createAdoRepo,
   fetchAdoRepoContentsRecursive,
   getAdoDefaultBranch,
+  getAdoFileContents,
   listAdoBranches,
   listAdoCommitHistory,
   listAdoDirectoryContents,

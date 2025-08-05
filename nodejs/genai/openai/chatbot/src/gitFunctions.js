@@ -1686,7 +1686,55 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
   }
   /* eslint-enable no-continue */
 }
+
 /* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
+
+/**
+ * Gets the contents of a single file from a GitHub repository.
+ * Fetches the file's data, decodes the content, and returns it as a JSON object.
+ * Handles API errors, including "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} filePath The path to the file within the repository.
+ * @param {string} [branchName=''] Optional branch name. If not specified, the default branch will be used.
+ * @returns {Promise<Object>} A promise that resolves to a JSON object with the file's name, path, and decoded content.
+ * @throws {Error} If API request fails, file/repo not found, or content cannot be retrieved.
+ */
+async function getFileContents(username, repoName, filePath, branchName = '') {
+  let effectiveBranchName = branchName;
+  if (!effectiveBranchName) {
+    effectiveBranchName = await getDefaultBranch(username, repoName);
+  }
+
+  const url = `https://api.github.com/repos/${username}/${repoName}`
+    + `/contents/${filePath}?ref=${encodeURIComponent(effectiveBranchName)}`;
+  logger.debug(`getFileContents called for ${username}/${repoName} at path ${filePath} with url ${url}`);
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION); // Remove the raw header
+
+    if (response.status === 200) {
+      const content = Buffer.from(response.body.content, 'base64').toString('utf-8');
+      return {
+        name: path.basename(filePath),
+        path: filePath,
+        content,
+      };
+    }
+    // This part handles other successful but non-200 responses if they occur
+    // which is unlikely for this specific API call.
+    await handleGitHubApiError(response, `getting file contents for "${filePath}"`);
+  } catch (error) {
+    logger.error('Error getting file contents (exception):', username, repoName, filePath, error);
+    handleNotFoundError(error, ` for file "${filePath}" in repository "${username}/${repoName}"`);
+  }
+  return null; // Return null if the file was not found or an error occurred
+}
 
 module.exports = {
   checkBranchExists,
@@ -1696,6 +1744,7 @@ module.exports = {
   createGithubPullRequest,
   createRepo,
   fetchRepoContentsRecursive,
+  getFileContents,
   listBranches,
   listCommitHistory,
   listDirectoryContents,
