@@ -258,15 +258,16 @@ async function registerFunction(
 /* eslint-disable no-shadow */
 
 async function loadCodeReviews(sessionId) {
+  // Register the GitHub code review function
   await registerFunction(
     sessionId,
-    'file_review',
+    'github_file_review', // Renamed for clarity
     codeReviews,
     ['username', 'repoName', 'repoDirName', 'branchName'],
-    'Review files in a given GitHub repository.',
+    'Review files in a given GitHub repository. Use this for GitHub URLs and GitHub repositories.',
     {
       username: { type: 'string', description: 'The GitHub username.' },
-      repoName: { type: 'string', description: 'The repository name.' },
+      repoName: { type: 'string', description: 'The GitHub repository name.' },
       repoDirName: { type: 'string', description: 'The GitHub repository path to start download at.' },
       branchName: { type: 'string', description: 'The name of the branch to review.' },
     },
@@ -276,12 +277,13 @@ async function loadCodeReviews(sessionId) {
 }
 
 async function loadAdoCodeReviews(sessionId) {
+// Register the Azure DevOps code review function
   await registerFunction(
     sessionId,
     'ado_file_review',
     adoCodeReviews,
     ['organization', 'project', 'repoName', 'repoDirName', 'branchName'],
-    'Review files in a given Azure DevOps repository.',
+    'Review files in a given Azure DevOps repository. Use this for Azure DevOps URLs and Azure DevOps repositories.',
     {
       organization: { type: 'string', description: 'The Azure DevOps organization name.' },
       project: { type: 'string', description: 'The Azure DevOps project name.' },
