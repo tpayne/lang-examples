@@ -1,4 +1,6 @@
 # Changelog
+## 2025-08-07	(17:41:26-UTC+0000)
+- **Other**: Update README.md (in nodejs/genai/openai/chatbot/README.md)
 ## 2025-08-05	(20:49:49-UTC+0000)
 - **Other**: Add file getter (in nodejs/genai/openai/chatbot/documentation/FolderFetchError.html)
 - **Other**: Add file getter (in nodejs/genai/openai/chatbot/documentation/adoFunctions.js.html)
