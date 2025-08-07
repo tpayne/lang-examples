@@ -9,7 +9,7 @@ The web page is a very simple interface, so if you wish to create something more
 
 Using the Chatbot for DevEx and DevOps
 --------------------------------------
-You can find various sample conversations held with the chatbot [here](samples/). They show how the bot can interact with
+You can find various sample conversations held with the chatbot [here](samples/). They show how the bot can interact with...
 * Kubernetes and DockerHub
 * GitHub code operations
 * GitHub actions operations
