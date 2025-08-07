@@ -7,6 +7,15 @@ The web page is a very simple interface, so if you wish to create something more
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
+You can find various sample conversations held with the chatbot [here](samples/). They show how the bot can interact with
+* Kubernetes and DockerHub
+* GitHub code operations
+* GitHub actions operations
+* Azure DevOps code operations
+* Azure DevOps pipeline operations
+* Database DDL and DML operations
+* CMDB asset management operations
+
 Pre-Requisites
 --------------
 To run this sample you will need to: -
@@ -395,6 +404,7 @@ Notes
 * This code does not have any unit testing or SA analysis run as part of the process
 * Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context)
 * The OpenAI can and will sometimes produce corrupt results that screw up certain operations. Unfortunately, this is beyond my control, so just beware of it
+* You can find example conversations held with the chatbot [here](samples/)
 
 References
 ----------
