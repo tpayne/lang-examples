@@ -7,8 +7,8 @@ The web page is a very simple interface, so if you wish to create something more
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
-Using the Chatbot for DevEx and DevOps
---------------------------------------
+Using the Chatbot for DevEx, DevOps and Data Quality Operations
+---------------------------------------------------------------
 You can find various sample conversations held with the chatbot [here](samples/). They show how the bot can interact with...
 * Kubernetes and DockerHub
 * GitHub code operations
