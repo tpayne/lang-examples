@@ -25,6 +25,7 @@ This repo includes - but is not limited to - samples for: -
 * Python
 * OpenAI API
 * Gemini API
+* Ollama API
 * GenAI
 * Azure services using NodeJS
 * CSP API usage
