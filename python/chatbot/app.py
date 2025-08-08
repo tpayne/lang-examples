@@ -110,7 +110,7 @@ def get_chat_response(
         return "Hello there! How can I help you?"
     elif "help" in user_input.lower():
         return "Sample *Help* text"
-    elif "bot-context" in user_input.lower():
+    elif "/bot-context" in user_input.lower():
         # Context handling logic
         botCmd = user_input.split(" ")
         if botCmd[1] == "load":

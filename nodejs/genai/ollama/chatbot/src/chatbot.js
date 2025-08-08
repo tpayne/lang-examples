@@ -321,14 +321,14 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
   if (lowerInput.startsWith('bot-echo-string')) {
     return userInput.substring('bot-echo-string'.length).trim() || 'No string to echo';
   }
-  if (lowerInput.startsWith('bot-context')) {
+  if (lowerInput.startsWith('/bot-context')) {
     const parts = lowerInput.split(' ').map((p) => p.trim()).filter((p) => p);
     const command = parts[1];
     const arg = parts.slice(2).join(' ');
 
     switch (command) {
       case 'load':
-        if (!arg) return 'Usage: bot-context load <context_file_name>';
+        if (!arg) return 'Usage: /bot-context load <context_file_name>';
         /* eslint-disable no-case-declarations */
         const newContext = await readContext(arg);
         /* eslint-enable no-case-declarations */
@@ -352,13 +352,13 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         logger.info(`Context, chat history, and cache reset [Session: ${sessionId}]`);
         return 'Context, chat history, and cache reset for this session';
       default:
-        return 'Invalid bot-context command. Use: load <file>, show, reset';
+        return 'Invalid /bot-context command. Use: load <file>, show, reset';
     }
   }
 
   // If context is required and not set, inform the user
   if (!xsession.context && getConfig().requireContext === 'true') {
-    return 'Error: Context is required and not set for this session. Please use "bot-context load <file>" to load one.';
+    return 'Error: Context is required and not set for this session. Please use "/bot-context load <file>" to load one.';
   }
 
   // Check cache before calling the API

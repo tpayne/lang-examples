@@ -27,10 +27,10 @@ If everything has worked as expected, then you can open the chatbot on port loca
 You have various contexts available that the bot supports. These can be accessed using...
 
 ```bash
-bot-context load tvr-cars.txt
-bot-context load marcos-cars.txt
-bot-context load devops.txt
-bot-context load cloudops.txt
+/bot-context load tvr-cars.txt
+/bot-context load marcos-cars.txt
+/bot-context load devops.txt
+/bot-context load cloudops.txt
 ```
 
 If you use the `tvr-cars.txt`, then you can ask questions about TVRs. Similar to the Marcos sample.
@@ -44,7 +44,7 @@ Sample Conversation
 The following is a sample chat about Marcos cars...
 
 ```md
-You: bot-context load marcos-cars.txt
+You: /bot-context load marcos-cars.txt
 
 Bot: Context loaded
 
@@ -83,7 +83,7 @@ cp tvr-cars.txt <custom-context>.txt
 
 Then edit the `<custom-context>.txt` to specify the rules you want as appropriate. Please refer to [here](https://help.openai.com/en/articles/10032626-prompt-engineering-best-practices-for-chatgpt) for guidance on how to modify the context file.
 
-You can then load it into the chatbot using the `bot-context load` command once the image is built.
+You can then load it into the chatbot using the `/bot-context load` command once the image is built.
 
 Cleaning Up
 -----------

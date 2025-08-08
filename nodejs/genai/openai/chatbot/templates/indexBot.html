@@ -71,7 +71,7 @@ docker build . --tag chatbot:1.0 && \
                 <p>You can load different knowledge contexts to focus the bot's responses. Available contexts include <code>tvr-cars.txt</code>, <code>marcos-cars.txt</code>, <code>devops.txt</code>, and <code>cloudops.txt</code>. Send a message like:</p>
                 <div class="code-block-container">
                     <pre>
-bot-context load tvr-cars.txt
+/bot-context load tvr-cars.txt
                     </pre>
                      <button class="copy-button" aria-label="Copy message">📄</button>
                  </div>
@@ -96,7 +96,7 @@ cp tvr-cars.txt &lt;custom-context&gt;.txt
                 <p>Edit the new <code>&lt;custom-context&gt;.txt</code> file with your desired rules/information. Then load it using the command:</p>
                 <div class="code-block-container">
                     <pre>
-bot-context load &lt;custom-context&gt;.txt
+/bot-context load &lt;custom-context&gt;.txt
                     </pre>
                     <button class="copy-button" aria-label="Copy message">📄</button>
                 </div>
@@ -192,7 +192,7 @@ tell me all the MOT defects for ABC123
 
 
                  <h3>How can I add my own custom knowledge contexts?</h3>
-                 <p>You can create custom context files in the <code>contexts</code> directory and load them using the <code>bot-context load &lt;filename&gt;</code> command in the chat.</p>
+                 <p>You can create custom context files in the <code>contexts</code> directory and load them using the <code>/bot-context load &lt;filename&gt;</code> command in the chat.</p>
 
                  <h3>How do I clean up the installation?</h3>
                  <p>To remove the Docker image, run the command:</p>

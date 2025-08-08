@@ -57,13 +57,14 @@ async function createGithubWorkflowDispatch(username, repoName, workflowId, ref,
   try {
     const url = `${GITHUB_API_URL}/repos/${username}/${repoName}/actions/workflows/${workflowId}/dispatches`;
     logger.debug(`Triggering GitHub workflow ${workflowId} with inputs: ${JSON.stringify(inputs)}, for url ${url}`);
+    const payload = inputs ? { ref, inputs } : { ref };
     const response = await superagent
       .post(url)
       .set('Authorization', `Bearer ${githubToken}`)
       .set('Accept', 'application/vnd.github.v3+json')
       .set('User-Agent', USER_AGENT)
       .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-      .send({ ref, inputs });
+      .send(payload);
 
     return response.body;
   } catch (err) {

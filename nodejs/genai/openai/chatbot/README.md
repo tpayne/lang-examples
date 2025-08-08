@@ -7,6 +7,17 @@ The web page is a very simple interface, so if you wish to create something more
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
+Using the Chatbot for DevEx, DevOps & Data Quality Operations
+-------------------------------------------------------------
+You can find various sample conversations held with the chatbot [here](samples/). They show how the bot can interact with...
+* Kubernetes and DockerHub
+* GitHub code operations
+* GitHub actions operations
+* Azure DevOps code operations
+* Azure DevOps pipeline operations
+* Database DDL and DML operations
+* CMDB asset management operations
+
 Pre-Requisites
 --------------
 To run this sample you will need to: -
@@ -29,7 +40,7 @@ If everything has worked as expected, then you can open the chatbot on port loca
 
 ```bash
  curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -d '{"message":"/bot-context load tvr-cars.txt"}' \
     -X POST localhost:8080/chat &&\
     curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"what is a tvr?"}' \
@@ -40,10 +51,10 @@ If everything has worked as expected, then you can open the chatbot on port loca
 You have various contexts available that the bot supports. These can be accessed using...
 
 ```bash
-bot-context load tvr-cars.txt
-bot-context load marcos-cars.txt
-bot-context load devops.txt
-bot-context load cloudops.txt
+/bot-context load tvr-cars.txt
+/bot-context load marcos-cars.txt
+/bot-context load devops.txt
+/bot-context load cloudops.txt
 ```
 
 If you use the `tvr-cars.txt`, then you can ask questions about TVRs. Similar to the Marcos sample.
@@ -57,7 +68,7 @@ Sample Conversation
 The following is a sample chat about Marcos cars...
 
 ```md
-You: bot-context load marcos-cars.txt
+You: /bot-context load marcos-cars.txt
 
 Bot: Context loaded
 
@@ -93,7 +104,7 @@ cp tvr-cars.txt <custom-context>.txt
 
 Then edit the `<custom-context>.txt` to specify the rules you want as appropriate.
 
-You can then load it into the chatbot using the `bot-context load` command once the image is built.
+You can then load it into the chatbot using the `/bot-context load` command once the image is built.
 
 Interacting with GitHub
 -----------------------
@@ -103,14 +114,14 @@ A few samples are
 
 ```bash
  curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load devops.txt"}' \
+    -d '{"message":"/bot-context load devops.txt"}' \
     -X POST localhost:8080/chat && \
     curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"list all the branches in the github repo CloudFunctions that is owned by the user tpayne"}' \
     -X POST localhost:8080/chat
 
  curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load devops.txt"}' \
+    -d '{"message":"/bot-context load devops.txt"}' \
     -X POST localhost:8080/chat && \
     curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"list all the files in the github repo CloudRun that is owned by the user tpayne"}' \
@@ -162,21 +173,21 @@ The command format is something like...
 
 ```bash
 curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load developer.txt"}' \
+    -d '{"message":"/bot-context load developer.txt"}' \
     -X POST localhost:8080/chat && \
 curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"please perform a detailed code review of the files under the directory samples/DemoApp/src/main/java/  in the github repo tpayne/CloudRun and tell me improvements for the content to make it more efficient"}' \
      -X POST localhost:8080/chat
 
 curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load developer.txt"}' \
+    -d '{"message":"/bot-context load developer.txt"}' \
     -X POST localhost:8080/chat && \
 curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"please perform a security review of the terraform code in the github repo tpayne/terraform-examples under the directory samples/Azure/templates/modules and give me a security analysis of the content. Let me know if there are any security issues I should fix"}' \
     -X POST localhost:8080/chat
 
 curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load developer.txt"}' \
+    -d '{"message":"/bot-context load developer.txt"}' \
     -X POST localhost:8080/chat && \
 curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"please perform a security review of the terraform code in the github repo tpayne/terraform-examples and give me a security analysis of the content. Let me know if there are any security issues I should fix"}' \
@@ -202,14 +213,14 @@ Setting these will allow queries to be run on the DOSA MOT history database.
 
 ```bash
 curl -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -d '{"message":"/bot-context load tvr-cars.txt"}' \
     -X POST localhost:8080/chat &&\
 curl -H "Content-Type: application/json" \
     -d '{"message":"give me the mot history for the car ABC123"}' \
     -X POST localhost:8080/chat
 
 curl -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load tvr-cars.txt"}' \
+    -d '{"message":"/bot-context load tvr-cars.txt"}' \
     -X POST localhost:8080/chat &&\
 curl -H "Content-Type: application/json" \
     -d '{"message":"tell me all the MOT defects for ABC123"}' \
@@ -311,7 +322,7 @@ To list all pods in the default namespace:
 
 ```bash
 curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load cloudops.txt"}' \
+    -d '{"message":"/bot-context load cloudops.txt"}' \
     -X POST localhost:8080/chat && \
     curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"list all kubernetes pods in the default namespace"}' \
@@ -322,7 +333,7 @@ To get the Kubernetes cluster version:
 
 ```bash
 curl -c cookies.txt -H "Content-Type: application/json" \
-    -d '{"message":"bot-context load cloudops.txt"}' \
+    -d '{"message":"/bot-context load cloudops.txt"}' \
     -X POST localhost:8080/chat && \
     curl -b cookies.txt -H "Content-Type: application/json" \
     -d '{"message":"get the kubernetes version"}' \
@@ -395,6 +406,7 @@ Notes
 * This code does not have any unit testing or SA analysis run as part of the process
 * Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context)
 * The OpenAI can and will sometimes produce corrupt results that screw up certain operations. Unfortunately, this is beyond my control, so just beware of it
+* You can find example conversations held with the chatbot [here](samples/)
 
 References
 ----------

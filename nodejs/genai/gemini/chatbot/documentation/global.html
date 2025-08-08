@@ -152,7 +152,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line155">line 155</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line145">line 145</a>
     </li></ul></dd>
     
 
@@ -290,7 +290,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line33">line 33</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line31">line 31</a>
     </li></ul></dd>
     
 
@@ -435,7 +435,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line161">line 161</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line151">line 151</a>
     </li></ul></dd>
     
 
@@ -507,7 +507,7 @@ of the same file.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line167">line 167</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line157">line 157</a>
     </li></ul></dd>
     
 
@@ -1975,7 +1975,7 @@ This token is required for accessing private repositories.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line714">line 714</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line980">line 980</a>
     </li></ul></dd>
     
 
@@ -2046,6 +2046,257 @@ the success or failure of the operation.
     <dd>
         
 <span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="buildProbeUrl"><span class="type-signature"></span>buildProbeUrl<span class="signature">(organization, project, repoName, repoDirName, effectiveBranchName)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Builds a safe Azure DevOps Git Items URL for a single file.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>organization</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">your ADO org (e.g. "timtpayne0349")</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>project</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">your ADO project (e.g. "GenAISCM")</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>repoName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">the repo slug</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>repoDirName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">path inside repo (e.g. "README.md" or "/docs/guide.md")</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>effectiveBranchName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">branch or SHA (defaults to "main")</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line327">line 327</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    ready-to-use URL
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
 
 
     </dd>
@@ -2757,7 +3008,7 @@ or if the API request fails.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line807">line 807</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1087">line 1087</a>
     </li></ul></dd>
     
 
@@ -2958,7 +3209,7 @@ or if the API request fails.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line844">line 844</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1124">line 1124</a>
     </li></ul></dd>
     
 
@@ -5316,7 +5567,7 @@ where files will be committed.</td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1027">line 1027</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1364">line 1364</a>
     </li></ul></dd>
     
 
@@ -6236,7 +6487,7 @@ the success or failure of the operation, with results for each file processed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line929">line 929</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1222">line 1222</a>
     </li></ul></dd>
     
 
@@ -6938,7 +7189,7 @@ the success or failure of the operation, with results for each file processed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line643">line 643</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line896">line 896</a>
     </li></ul></dd>
     
 
@@ -7172,7 +7423,7 @@ the success or failure of the operation, with results for each file processed.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line762">line 762</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1034">line 1034</a>
     </li></ul></dd>
     
 
@@ -9634,7 +9885,7 @@ write permissions to it. The path of the created directory is returned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line117">line 117</a>
+        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line118">line 118</a>
     </li></ul></dd>
     
 
@@ -11139,7 +11390,7 @@ Moved this function definition before `connectToDatabase` to resolve `no-use-bef
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line24">line 24</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line22">line 22</a>
     </li></ul></dd>
     
 
@@ -11727,7 +11978,7 @@ Optionally skips potential binary files based on extension.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line259">line 259</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line365">line 365</a>
     </li></ul></dd>
     
 
@@ -12717,7 +12968,7 @@ not for embedding or using the Directions API result directly.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line221">line 221</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line277">line 277</a>
     </li></ul></dd>
     
 
@@ -12787,6 +13038,356 @@ not for embedding or using the Directions API result directly.
     <dd>
         
 <span class="param-type">Promise.&lt;string></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getAdoFileContents"><span class="type-signature">(async) </span>getAdoFileContents<span class="signature">(organization, project, repoName, filePath, branchName<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Gets the contents of a single file from an Azure DevOps Git repository.
+Fetches the file's data, decodes the content, and returns it as a JSON object.
+Handles API errors, including "Not Found" exceptions.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>organization</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The Azure DevOps organization name.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>project</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The Azure DevOps project name.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>repoName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The name of the repository.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>filePath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The path to the file within the repository.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>branchName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    ''
+                
+                </td>
+            
+
+            <td class="description last">Optional branch name. If not specified, the default branch will be used.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1788">line 1788</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If API request fails, file/repo not found, or content cannot be retrieved.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise that resolves to a JSON object with the file's name, path, and decoded content.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
 
 
     </dd>
@@ -13442,7 +14043,7 @@ authentication endpoint using the client credentials grant type.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1626">line 1626</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line2264">line 2264</a>
     </li></ul></dd>
     
 
@@ -14566,7 +15167,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line41">line 41</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line39">line 39</a>
     </li></ul></dd>
     
 
@@ -14806,6 +15407,321 @@ and tools.
     
 
     
+    <h4 class="name" id="getFileContents"><span class="type-signature">(async) </span>getFileContents<span class="signature">(username, repoName, filePath, branchName<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Gets the contents of a single file from a GitHub repository.
+Fetches the file's data, decodes the content, and returns it as a JSON object.
+Handles API errors, including "Not Found" exceptions.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>username</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The GitHub username.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>repoName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The name of the repository.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>filePath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The path to the file within the repository.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>branchName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    ''
+                
+                </td>
+            
+
+            <td class="description last">Optional branch name. If not specified, the default branch will be used.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="gitFunctions.js.html">gitFunctions.js</a>, <a href="gitFunctions.js.html#line1704">line 1704</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        If API request fails, file/repo not found, or content cannot be retrieved.
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A promise that resolves to a JSON object with the file's name, path, and decoded content.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
     <h4 class="name" id="getFunctionDefinitionsForTool"><span class="type-signature">(async) </span>getFunctionDefinitionsForTool<span class="signature">(sessionId)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;<a href="global.html#FunctionMetadata">FunctionMetadata</a>>>}</span></h4>
     
 
@@ -14907,7 +15823,7 @@ and tools.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1617">line 1617</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line2255">line 2255</a>
     </li></ul></dd>
     
 
@@ -15224,7 +16140,7 @@ Commands executed via `runCommand` with `targetHost=true` will attempt to get ho
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line222">line 222</a>
+        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line223">line 223</a>
     </li></ul></dd>
     
 
@@ -17765,7 +18681,7 @@ created or retrieved temporary directory for the session.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line688">line 688</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line950">line 950</a>
     </li></ul></dd>
     
 
@@ -18200,7 +19116,7 @@ as an object for further inspection or processing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line191">line 191</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -18359,7 +19275,7 @@ as an object for further inspection or processing.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line174">line 174</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line164">line 164</a>
     </li></ul></dd>
     
 
@@ -19159,7 +20075,7 @@ indicate an error status. Includes status, text, and body message.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line78">line 78</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line77">line 77</a>
     </li></ul></dd>
     
 
@@ -19787,7 +20703,7 @@ Otherwise, it re-throws the original error.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line61">line 61</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line59">line 59</a>
     </li></ul></dd>
     
 
@@ -20472,7 +21388,7 @@ If no username is specified, attempts to get one from the Docker secret that mat
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line432">line 432</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line605">line 605</a>
     </li></ul></dd>
     
 
@@ -20730,7 +21646,7 @@ given Azure DevOps Git repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line465">line 465</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line652">line 652</a>
     </li></ul></dd>
     
 
@@ -21121,7 +22037,7 @@ given Azure DevOps Git repository.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line531">line 531</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line756">line 756</a>
     </li></ul></dd>
     
 
@@ -22011,7 +22927,7 @@ This is a significant re-write from GitHub Actions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line400">line 400</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line562">line 562</a>
     </li></ul></dd>
     
 
@@ -23315,7 +24231,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line150">line 150</a>
+        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line151">line 151</a>
     </li></ul></dd>
     
 
@@ -23806,7 +24722,7 @@ Filters jobs by 'queued' or the provided status.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line92">line 92</a>
+        <a href="gitActions.js.html">gitActions.js</a>, <a href="gitActions.js.html#line93">line 93</a>
     </li></ul></dd>
     
 
@@ -27754,7 +28670,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line594">line 594</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line746">line 746</a>
     </li></ul></dd>
     
 
@@ -27891,7 +28807,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1394">line 1394</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1987">line 1987</a>
     </li></ul></dd>
     
 
@@ -28028,7 +28944,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1001">line 1001</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1446">line 1446</a>
     </li></ul></dd>
     
 
@@ -28165,7 +29081,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line893">line 893</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1293">line 1293</a>
     </li></ul></dd>
     
 
@@ -28302,7 +29218,7 @@ Handles API errors and "Not Found" exceptions.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line1488">line 1488</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line2117">line 2117</a>
     </li></ul></dd>
     
 
@@ -29611,7 +30527,7 @@ or null if the route cannot be planned.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line214">line 214</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line204">line 204</a>
     </li></ul></dd>
     
 
@@ -32152,7 +33068,7 @@ Defaults to DOCKERHUB_USERNAME env var if not provided and isPrivate is true.</t
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line879">line 879</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1165">line 1165</a>
     </li></ul></dd>
     
 
@@ -33376,7 +34292,7 @@ This performs a full replacement (PUT operation).
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line998">line 998</a>
+        <a href="adoFunctions.js.html">adoFunctions.js</a>, <a href="adoFunctions.js.html#line1332">line 1332</a>
     </li></ul></dd>
     
 
@@ -34596,7 +35512,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line130">line 130</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line120">line 120</a>
     </li></ul></dd>
     
 
@@ -34739,7 +35655,7 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line145">line 145</a>
+        <a href="functions.js.html">functions.js</a>, <a href="functions.js.html#line135">line 135</a>
     </li></ul></dd>
     
 
@@ -34769,13 +35685,13 @@ API will attempt to reorder the waypoints to minimize the total travel time.</td
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeGenAI">initializeGenAI</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#buildProbeUrl">buildProbeUrl</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoFileContents">getAdoFileContents</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getChatSession">getChatSession</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFileContents">getFileContents</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleFunctionCall">handleFunctionCall</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeGenAI">initializeGenAI</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Sat Aug 02 2025 20:38:56 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Aug 05 2025 21:37:39 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
