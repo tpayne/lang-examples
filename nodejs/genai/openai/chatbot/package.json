@@ -14,7 +14,12 @@
     "test:lint": "run-s test:lint:*",
     "test:lint:html": "npx linthtml 'templates/*.html'",
     "test:lint:js": "npx eslint src/**/*.js --fix",
-    "test:lint:yaml": "npx yamllint **/*.yml"
+    "test:lint:yaml": "npx yamllint **/*.yml",
+    "test:dbfuncs": "jest src/dbfuncs.test.js",
+    "test:getInfo": "jest src/getInfo.test.js",
+    "test:k8s": "jest src/k8sFunctions.test.js",
+    "test:ado": "jest src/adoFunctions.test.js",
+    "test:github": "jest src/githubFunctions.test.js"
   },
   "pkg": {
     "scripts": "src/*.js",
