@@ -1,4 +1,6 @@
 # Changelog
+## 2025-08-21	(09:15:14-UTC+0000)
+- **Other**: Add email bot sample (in nodejs/genai/openai/chatbot/contexts/emailbot.txt)
 ## 2025-08-21	(08:59:06-UTC+0000)
 - **Other**: Add email bot sample (in nodejs/genai/openai/chatbot/samples/emailBotChat.md)
 ## 2025-08-21	(08:37:59-UTC+0000)
