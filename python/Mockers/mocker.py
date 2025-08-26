@@ -5,18 +5,21 @@ from faker import Faker
 
 def generate_mock_data():
     """
-    Generates a mock JSON dataset for an energy supplier based on the provided schema.
+    Generates a mock JSON dataset for an energy supplier based on the provided schema,
+    now creating separate files for core data and IT-related emails.
 
     The script creates 50 customers with a payment, invoice, and meter reading history
     ranging from 2 months to 5 years. It includes a mix of "good paying" and
-    "problematic" customers to provide a realistic testing dataset.
+    "problematic" customers, along with a separate collection of mock IT emails that
+    now vary in tone from professional to frustrated.
     """
     
     # Initialize Faker for generating realistic-looking data
     fake = Faker('en_GB')  # Use a locale that fits the requested data (e.g., UK)
 
-    # Define the number of customers to generate
+    # Define the number of customers and emails to generate
     NUM_CUSTOMERS = 50
+    NUM_IT_EMAILS = 50
 
     # Define the range for customer history
     MIN_HISTORY_MONTHS = 2
@@ -29,7 +32,9 @@ def generate_mock_data():
     payments = []
     meter_readings = []
     delinquent_customers = []
+    it_emails = []
 
+    # --- Generate Customer-Related Data ---
     for i in range(NUM_CUSTOMERS):
         customer_id = str(fake.uuid4())
         
@@ -144,7 +149,125 @@ def generate_mock_data():
                 "pursuit_status": random.choice(["First Notice Sent", "Final Notice Sent", "Account Suspended"])
             })
 
-    # Assemble the final JSON object
+    # --- Generate IT-Related Emails ---
+    it_issue_types = [
+        "Login/Account Access Issue",
+        "Windows OS Problem",
+        "Disk Space Full",
+        "Hardware Purchase Policy"
+    ]
+    
+    email_sentiments = ["Professional", "Impatient", "Frustrated"]
+
+    for j in range(NUM_IT_EMAILS):
+        issue_type = random.choice(it_issue_types)
+        sentiment = random.choice(email_sentiments)
+        
+        email_sender = fake.email()
+        email_recipient = "it-support@example.com"
+        email_date = fake.date_time_between(start_date='-1y', end_date='now')
+
+        subject = ""
+        body = ""
+        
+        # Determine subject and body based on issue type and sentiment
+        if issue_type == "Login/Account Access Issue":
+            if sentiment == "Professional":
+                subject = f"Query: Login Issue"
+                body = f"""Hello IT Support,
+
+I am writing to report an issue with my account access. I am unable to log in, and the password reset tool is not working as expected. My username is {fake.user_name()}. Could you please look into this matter at your earliest convenience?
+
+Thank you,
+{fake.name()}"""
+            elif sentiment == "Impatient":
+                subject = f"Still can't log in! Account Access Issue"
+                body = f"""Hello,
+
+I've been trying to log in all morning, but my account ({fake.user_name()}) is still locked. I need access to my files immediately to meet a deadline. Please resolve this as soon as possible.
+
+Thanks,
+{fake.name()}"""
+            else: # Frustrated
+                subject = f"URGENT: THIS IS UNACCEPTABLE. I CAN'T ACCESS MY ACCOUNT."
+                body = f"""I have been completely locked out of my account for hours now, and my requests for help have gone unanswered. I am losing valuable work time. This needs to be fixed RIGHT NOW. Why isn't anyone responding?!
+
+Sent from my iPhone"""
+        
+        elif issue_type == "Windows OS Problem":
+            if sentiment == "Professional":
+                subject = f"Windows OS Error Report"
+                body = f"""Hi Team,
+
+I'm experiencing a recurring issue with my Windows OS. A system error message appears, stating "{fake.catch_phrase()}", followed by a system freeze. I have attached a screenshot for your reference.
+
+Please advise on the next steps.
+
+Best regards,
+{fake.name()}"""
+            elif sentiment == "Impatient":
+                subject = f"Fix my computer please."
+                body = f"""My Windows computer is acting up again and keeps freezing. I'm getting an error message that says "{fake.catch_phrase()}". This has been happening for a few days. Can someone please help me get this resolved?
+
+{fake.name()}"""
+            else: # Frustrated
+                subject = f"MY PC IS UNUSABLE. GET SOMEONE TO HELP ME NOW."
+                body = f"""I cannot get any work done. My computer crashes every five minutes with a "{fake.catch_phrase()}" error. This is ridiculous. I need a solution immediately.
+
+{fake.name()}"""
+
+        elif issue_type == "Disk Space Full":
+            if sentiment == "Professional":
+                subject = f"Low Disk Space Notification"
+                body = f"""Hello,
+
+I have received a notification indicating that my local disk is nearing full capacity. I have reviewed my files but am unsure what to safely remove. Could you please provide guidance on freeing up disk space?
+
+Thank you for your time,
+{fake.name()}"""
+            elif sentiment == "Impatient":
+                subject = f"Urgent: My C Drive is Full"
+                body = f"""My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.
+
+{fake.name()}"""
+            else: # Frustrated
+                subject = f"FIX MY COMPUTER. DISK SPACE IS ZERO."
+                body = f"""I literally have zero disk space left and my computer is completely frozen. I can't even open a program. Why do we not have more storage?? This is insane! Fix this now.
+
+{fake.name()}"""
+
+        elif issue_type == "Hardware Purchase Policy":
+            if sentiment == "Professional":
+                subject = f"Query: Hardware Purchase Policy"
+                body = f"""Hi IT,
+
+I would like to inquire about the company's policy for purchasing new hardware, specifically regarding monitors. Could you please direct me to the appropriate documentation or process?
+
+Thank you for your assistance,
+{fake.name()}"""
+            elif sentiment == "Impatient":
+                subject = f"Need info on hardware policy"
+                body = f"""I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.
+
+{fake.name()}"""
+            else: # Frustrated
+                subject = f"WHY IS IT SO HARD TO GET NEW HARDWARE?"
+                body = f"""I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.
+
+{fake.name()}"""
+
+        email_data = {
+            "email_id": str(fake.uuid4()),
+            "subject": subject,
+            "body": body,
+            "sender": email_sender,
+            "recipient": email_recipient,
+            "timestamp": email_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "sentiment": sentiment
+        }
+        it_emails.append(email_data)
+
+    # Assemble the final JSON object for the primary data
     data = {
         "customers": customers,
         "accounts": accounts,
@@ -154,11 +277,17 @@ def generate_mock_data():
         "delinquent_customers": delinquent_customers
     }
     
-    return data
+    # Return both data sets
+    return data, it_emails
 
 if __name__ == "__main__":
-    # Generate the data and save it to a JSON file
-    mock_data = generate_mock_data()
+    # Generate the data and save it to two separate JSON files
+    mock_data, it_emails_data = generate_mock_data()
+    
     with open("mock_data.json", "w") as f:
         json.dump(mock_data, f, indent=2)
-    print("Mock data generated and saved to mock_data.json")
+    print("Mock customer data generated and saved to mock_data.json")
+
+    with open("it_emails.json", "w") as f:
+        json.dump(it_emails_data, f, indent=2)
+    print("Mock IT email data generated and saved to it_emails.json")

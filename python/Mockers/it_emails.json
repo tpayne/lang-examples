@@ -1,0 +1,452 @@
+[
+  {
+    "email_id": "bd727dc5-d2a2-4dbb-ad0a-ef302c9c349a",
+    "subject": "Query: Login Issue",
+    "body": "Hello IT Support,\n\nI am writing to report an issue with my account access. I am unable to log in, and the password reset tool is not working as expected. My username is gwelch. Could you please look into this matter at your earliest convenience?\n\nThank you,\nSheila Bolton-Moore",
+    "sender": "browneileen@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-01-10T21:29:17Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "3be1505b-9f3f-4b42-a240-1d3d9252496f",
+    "subject": "WHY IS IT SO HARD TO GET NEW HARDWARE?",
+    "body": "I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.\n\nCharlotte Tyler",
+    "sender": "butlergemma@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-12-15T22:20:27Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "39378c22-6830-4795-9f48-d57bc5561819",
+    "subject": "WHY IS IT SO HARD TO GET NEW HARDWARE?",
+    "body": "I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.\n\nJason Smith",
+    "sender": "kingmohamed@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-07-16T13:49:47Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "8c47e1d5-b29e-4c00-97ff-e8ff0884be6e",
+    "subject": "FIX MY COMPUTER. DISK SPACE IS ZERO.",
+    "body": "I literally have zero disk space left and my computer is completely frozen. I can't even open a program. Why do we not have more storage?? This is insane! Fix this now.\n\nJayne Bell",
+    "sender": "simon60@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-09-12T15:53:03Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "0983bad6-cf15-40a4-9724-44eabcac6d5e",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nDr Ronald Griffiths",
+    "sender": "lindahiggins@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-08-30T10:26:11Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "195d257c-d4d5-4dfb-80e1-d7957137eb14",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nMs Hazel Thomson",
+    "sender": "katy47@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-01-02T16:55:47Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "1db6a94e-c678-4a60-89fa-008576f684e0",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nBenjamin Carter",
+    "sender": "nathanwilliams@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-12-06T03:36:55Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "c7284a03-ec7c-4bfc-90d2-1f7c8b3da190",
+    "subject": "MY PC IS UNUSABLE. GET SOMEONE TO HELP ME NOW.",
+    "body": "I cannot get any work done. My computer crashes every five minutes with a \"Proactive bottom-line contingency\" error. This is ridiculous. I need a solution immediately.\n\nShirley Green",
+    "sender": "abdul98@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-03-07T11:01:59Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "3a268a74-b5ef-48f8-9bdd-95ae607749b0",
+    "subject": "Query: Login Issue",
+    "body": "Hello IT Support,\n\nI am writing to report an issue with my account access. I am unable to log in, and the password reset tool is not working as expected. My username is scottjade. Could you please look into this matter at your earliest convenience?\n\nThank you,\nElliott Hartley-Johnson",
+    "sender": "anelson@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-29T09:02:50Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "7bc8dab0-8ac8-4acf-90fa-b8e2eeb17d53",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nMaurice Wright",
+    "sender": "samuelclark@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-22T04:02:14Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "a27ec3ad-3ea3-49be-876b-376e8d345fda",
+    "subject": "FIX MY COMPUTER. DISK SPACE IS ZERO.",
+    "body": "I literally have zero disk space left and my computer is completely frozen. I can't even open a program. Why do we not have more storage?? This is insane! Fix this now.\n\nMelissa Martin",
+    "sender": "shannon12@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-08-29T02:47:39Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "5bff3ee7-89ca-48db-aea9-15f1d9714b0d",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nJoseph Roberts",
+    "sender": "jamie15@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-10T13:02:35Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "40b522c3-823f-4734-b550-aec7a973ad7b",
+    "subject": "Low Disk Space Notification",
+    "body": "Hello,\n\nI have received a notification indicating that my local disk is nearing full capacity. I have reviewed my files but am unsure what to safely remove. Could you please provide guidance on freeing up disk space?\n\nThank you for your time,\nPauline Noble",
+    "sender": "alexandrayoung@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-22T23:23:38Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "cab070b1-66d0-499d-9e6a-f53d5f3a3333",
+    "subject": "Windows OS Error Report",
+    "body": "Hi Team,\n\nI'm experiencing a recurring issue with my Windows OS. A system error message appears, stating \"Distributed human-resource concept\", followed by a system freeze. I have attached a screenshot for your reference.\n\nPlease advise on the next steps.\n\nBest regards,\nNaomi Short",
+    "sender": "nturner@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-06T04:43:20Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "06ce0898-b382-4a02-b63d-1abe3c637b78",
+    "subject": "Fix my computer please.",
+    "body": "My Windows computer is acting up again and keeps freezing. I'm getting an error message that says \"Synergistic systemic implementation\". This has been happening for a few days. Can someone please help me get this resolved?\n\nLeanne Webster-Peacock",
+    "sender": "omoore@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-01-08T02:56:24Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "e8fb510e-4ac6-401e-9878-23b5d8fa0157",
+    "subject": "Query: Hardware Purchase Policy",
+    "body": "Hi IT,\n\nI would like to inquire about the company's policy for purchasing new hardware, specifically regarding monitors. Could you please direct me to the appropriate documentation or process?\n\nThank you for your assistance,\nVictoria Gray",
+    "sender": "iheath@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-09-09T06:19:24Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "5e0ee0ee-8cb5-4945-bcf9-ee03fe98f458",
+    "subject": "WHY IS IT SO HARD TO GET NEW HARDWARE?",
+    "body": "I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.\n\nSusan Rees",
+    "sender": "evanstom@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-03-30T09:58:45Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "e23203d6-e651-4556-a1eb-c43ee04bc7b8",
+    "subject": "URGENT: THIS IS UNACCEPTABLE. I CAN'T ACCESS MY ACCOUNT.",
+    "body": "I have been completely locked out of my account for hours now, and my requests for help have gone unanswered. I am losing valuable work time. This needs to be fixed RIGHT NOW. Why isn't anyone responding?!\n\nSent from my iPhone",
+    "sender": "traceypearce@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-16T08:22:06Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "01518b5f-e27e-49f6-983a-f5020129840d",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nRyan Berry",
+    "sender": "daviesjade@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-18T22:41:56Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "bebb3294-eba8-47a6-b985-ab8042c6679a",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nWayne Berry",
+    "sender": "nkirby@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-12-08T16:21:57Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "1c22cf0b-79dc-4729-926c-e11a133114f2",
+    "subject": "Query: Hardware Purchase Policy",
+    "body": "Hi IT,\n\nI would like to inquire about the company's policy for purchasing new hardware, specifically regarding monitors. Could you please direct me to the appropriate documentation or process?\n\nThank you for your assistance,\nMs Hayley Thompson",
+    "sender": "qparker@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-03-02T08:56:18Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "7f9f3d0d-b22d-4c1a-bb8b-36ae625c1811",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nCharlotte Booth-Thomas",
+    "sender": "cheryl04@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-10-10T18:18:09Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "086cd15e-89c5-4169-ab20-095efe145f9f",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nMs Jemma Begum",
+    "sender": "yvonne64@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-10-02T05:53:26Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "4a38a969-7754-4949-8bc3-0260e7126972",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nBryan Thompson",
+    "sender": "leeduncan@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-15T06:45:06Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "24b74df4-3ba5-40f6-8ab7-bd05202d1734",
+    "subject": "Query: Login Issue",
+    "body": "Hello IT Support,\n\nI am writing to report an issue with my account access. I am unable to log in, and the password reset tool is not working as expected. My username is sarahmyers. Could you please look into this matter at your earliest convenience?\n\nThank you,\nMr Conor Perkins",
+    "sender": "pwhitehouse@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-11-21T01:46:49Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "14280707-06df-4913-ac82-0d8650a5bcde",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nMiss Leanne Perry",
+    "sender": "kimberleygoodwin@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-09-05T17:19:21Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "26bd145f-f34e-4044-8e0f-4c98461deb26",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nCarolyn Griffiths",
+    "sender": "kieranwalton@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-08-26T13:10:14Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "068224de-6228-4dec-9633-db27de9a4431",
+    "subject": "URGENT: THIS IS UNACCEPTABLE. I CAN'T ACCESS MY ACCOUNT.",
+    "body": "I have been completely locked out of my account for hours now, and my requests for help have gone unanswered. I am losing valuable work time. This needs to be fixed RIGHT NOW. Why isn't anyone responding?!\n\nSent from my iPhone",
+    "sender": "clarkepaul@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-30T14:31:37Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "c4a1ddb6-d0ab-4967-ab31-3b676f73ef0d",
+    "subject": "Fix my computer please.",
+    "body": "My Windows computer is acting up again and keeps freezing. I'm getting an error message that says \"Future-proofed multimedia neural-net\". This has been happening for a few days. Can someone please help me get this resolved?\n\nMs Joanne Smith",
+    "sender": "lread@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-09-28T02:37:51Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "4ad8edf4-ad4a-4a98-b663-ffd16299ab38",
+    "subject": "MY PC IS UNUSABLE. GET SOMEONE TO HELP ME NOW.",
+    "body": "I cannot get any work done. My computer crashes every five minutes with a \"Seamless fresh-thinking array\" error. This is ridiculous. I need a solution immediately.\n\nNatasha Storey",
+    "sender": "thompsonnigel@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-08-15T21:55:03Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "9f404a70-317b-40de-b8d8-35e2e94f0ce0",
+    "subject": "Windows OS Error Report",
+    "body": "Hi Team,\n\nI'm experiencing a recurring issue with my Windows OS. A system error message appears, stating \"Balanced bifurcated function\", followed by a system freeze. I have attached a screenshot for your reference.\n\nPlease advise on the next steps.\n\nBest regards,\nAnna Allan",
+    "sender": "mitchellsandra@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-29T04:26:08Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "ee9e3d2e-12b0-4c45-ae2b-eddd5422b88c",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nMiss Bethany Rogers",
+    "sender": "callumgreen@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-10-15T22:21:26Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "652e8d27-02c4-4b60-bfef-e07b91097cfa",
+    "subject": "URGENT: THIS IS UNACCEPTABLE. I CAN'T ACCESS MY ACCOUNT.",
+    "body": "I have been completely locked out of my account for hours now, and my requests for help have gone unanswered. I am losing valuable work time. This needs to be fixed RIGHT NOW. Why isn't anyone responding?!\n\nSent from my iPhone",
+    "sender": "albertdavies@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-31T09:30:06Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "96e5c19e-b622-4b3b-9fac-1c1bdf98a566",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nMaurice Craig-Barker",
+    "sender": "kimclayton@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-06T11:30:44Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "cfaa89e3-4902-4e5d-9993-3303e99b7830",
+    "subject": "Fix my computer please.",
+    "body": "My Windows computer is acting up again and keeps freezing. I'm getting an error message that says \"Monitored interactive strategy\". This has been happening for a few days. Can someone please help me get this resolved?\n\nDennis Hawkins",
+    "sender": "hjones@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-07-26T20:11:53Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "15a6cc42-dfd9-4701-89b1-08cfbbf78d52",
+    "subject": "Query: Hardware Purchase Policy",
+    "body": "Hi IT,\n\nI would like to inquire about the company's policy for purchasing new hardware, specifically regarding monitors. Could you please direct me to the appropriate documentation or process?\n\nThank you for your assistance,\nJamie Nash",
+    "sender": "kevin69@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-25T14:14:56Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "a0e3d667-bd6d-4a35-9498-2db8a1131ae6",
+    "subject": "Query: Login Issue",
+    "body": "Hello IT Support,\n\nI am writing to report an issue with my account access. I am unable to log in, and the password reset tool is not working as expected. My username is walshconnor. Could you please look into this matter at your earliest convenience?\n\nThank you,\nMs Sara McDonald",
+    "sender": "smithlaura@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-30T03:49:49Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "a0b29e2f-19bc-4f53-93df-069e8eaf8c37",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nDerek O'Brien",
+    "sender": "clarkgavin@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-03T03:06:19Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "4699a341-6fd8-4974-ac5b-b381c87fd047",
+    "subject": "Low Disk Space Notification",
+    "body": "Hello,\n\nI have received a notification indicating that my local disk is nearing full capacity. I have reviewed my files but am unsure what to safely remove. Could you please provide guidance on freeing up disk space?\n\nThank you for your time,\nShaun Donnelly",
+    "sender": "owarner@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-11-22T17:23:35Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "f8ca5a66-677d-4e50-8b91-d454e9083455",
+    "subject": "WHY IS IT SO HARD TO GET NEW HARDWARE?",
+    "body": "I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.\n\nSophie Cunningham",
+    "sender": "yvonne46@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-14T11:12:31Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "c5b00591-e2fa-4053-81d4-fd0745c25c1b",
+    "subject": "Query: Login Issue",
+    "body": "Hello IT Support,\n\nI am writing to report an issue with my account access. I am unable to log in, and the password reset tool is not working as expected. My username is leon14. Could you please look into this matter at your earliest convenience?\n\nThank you,\nMs Chelsea Bryant",
+    "sender": "fosterdarren@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-12-01T09:34:57Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "9487b30f-22cb-4d99-a676-e0a151a76d25",
+    "subject": "WHY IS IT SO HARD TO GET NEW HARDWARE?",
+    "body": "I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.\n\nJacqueline Baldwin",
+    "sender": "obarnett@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-03-09T23:58:56Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "c8158602-734d-427a-adcf-ca16524bdeda",
+    "subject": "Query: Hardware Purchase Policy",
+    "body": "Hi IT,\n\nI would like to inquire about the company's policy for purchasing new hardware, specifically regarding monitors. Could you please direct me to the appropriate documentation or process?\n\nThank you for your assistance,\nRonald Young",
+    "sender": "rhys27@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-07-06T18:44:36Z",
+    "sentiment": "Professional"
+  },
+  {
+    "email_id": "abc7bd92-b5a5-46cd-969a-6854e8aa4e86",
+    "subject": "Urgent: My C Drive is Full",
+    "body": "My C drive is almost full, and it's slowing down my machine. What can I do to fix this quickly? Please let me know what my options are.\n\nGlen Andrews-Parker",
+    "sender": "terrymiddleton@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-30T04:03:37Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "ed94f7a4-ffed-406f-960f-8e4ed6ae2453",
+    "subject": "WHY IS IT SO HARD TO GET NEW HARDWARE?",
+    "body": "I've been trying to find information on the hardware policy for weeks and keep getting the runaround. All I need is a new headset. Is this a secret? Please provide the policy document immediately.\n\nElaine Smith",
+    "sender": "smithbarry@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-18T01:33:20Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "2f5ba8a7-ffdf-4578-8d2e-432fc292ad91",
+    "subject": "MY PC IS UNUSABLE. GET SOMEONE TO HELP ME NOW.",
+    "body": "I cannot get any work done. My computer crashes every five minutes with a \"Reduced transitional service-desk\" error. This is ridiculous. I need a solution immediately.\n\nDr Victoria Price",
+    "sender": "juliadavies@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-04T19:03:29Z",
+    "sentiment": "Frustrated"
+  },
+  {
+    "email_id": "dc4bf05e-adb0-4ec3-903e-45cc11845f6c",
+    "subject": "Still can't log in! Account Access Issue",
+    "body": "Hello,\n\nI've been trying to log in all morning, but my account (ievans) is still locked. I need access to my files immediately to meet a deadline. Please resolve this as soon as possible.\n\nThanks,\nPaul Hart",
+    "sender": "howardknight@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-06-08T17:53:50Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "4407a461-f10b-4a9e-ab83-bebd1fb733ee",
+    "subject": "Need info on hardware policy",
+    "body": "I need to know the policy for buying hardware. How do I purchase a new keyboard? Can you just send me the form? I need this ASAP.\n\nAlice Barton",
+    "sender": "julia66@example.net",
+    "recipient": "it-support@example.com",
+    "timestamp": "2024-10-07T14:25:32Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "a31a6785-0658-4881-901a-0ea5bb90e097",
+    "subject": "Still can't log in! Account Access Issue",
+    "body": "Hello,\n\nI've been trying to log in all morning, but my account (webbchloe) is still locked. I need access to my files immediately to meet a deadline. Please resolve this as soon as possible.\n\nThanks,\nMiss Megan Carr",
+    "sender": "leon56@example.com",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-05-30T06:50:52Z",
+    "sentiment": "Impatient"
+  },
+  {
+    "email_id": "175137d1-cbea-4cc7-8cda-ec23f53b845b",
+    "subject": "MY PC IS UNUSABLE. GET SOMEONE TO HELP ME NOW.",
+    "body": "I cannot get any work done. My computer crashes every five minutes with a \"Digitized impactful alliance\" error. This is ridiculous. I need a solution immediately.\n\nMitchell Brown",
+    "sender": "arthur38@example.org",
+    "recipient": "it-support@example.com",
+    "timestamp": "2025-04-09T03:16:54Z",
+    "sentiment": "Frustrated"
+  }
+]
