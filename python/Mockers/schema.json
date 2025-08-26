@@ -1,0 +1,124 @@
+{
+  "type": "object",
+  "properties": {
+    "customers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string" },
+          "name": { "type": "string" },
+          "address": { "type": "string" },
+          "contact_details": {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string", "format": "email" },
+              "phone": { "type": "string" }
+            },
+            "required": ["email", "phone"]
+          }
+        },
+        "required": ["customer_id", "name", "address", "contact_details"]
+      }
+    },
+    "accounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "account_id": { "type": "string" },
+          "customer_id": { "type": "string" },
+          "payment_details": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["Credit Card", "Bank Transfer"] },
+              "card_number": { "type": "string" },
+              "expiry_date": { "type": "string", "format": "date" },
+              "bank_name": { "type": "string" },
+              "account_number": { "type": "string" },
+              "sort_code": { "type": "string" }
+            },
+            "required": ["type"]
+          }
+        },
+        "required": ["account_id", "customer_id", "payment_details"]
+      }
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "invoice_id": { "type": "string" },
+          "customer_id": { "type": "string" },
+          "details": {
+            "type": "object",
+            "properties": {
+              "issue_date": { "type": "string", "format": "date" },
+              "amount_due": { "type": "number" },
+              "due_date": { "type": "string", "format": "date" },
+              "start_date": { "type": "string", "format": "date" },
+              "end_date": { "type": "string", "format": "date" }
+            },
+            "required": ["issue_date", "amount_due", "due_date", "start_date", "end_date"]
+          },
+          "status": { "type": "string", "enum": ["Paid", "Pending", "Overdue", "In Arrears"] }
+        },
+        "required": ["invoice_id", "customer_id", "details", "status"]
+      }
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "payment_id": { "type": "string" },
+          "customer_id": { "type": "string" },
+          "invoice_id": { "type": "string" },
+          "amount_paid": { "type": "number" },
+          "payment_date": { "type": "string", "format": "date-time" }
+        },
+        "required": ["payment_id", "customer_id", "invoice_id", "amount_paid", "payment_date"]
+      }
+    },
+    "meter_readings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "meter_id": { "type": "string" },
+          "customer_id": { "type": "string" },
+          "reading": { "type": "number" },
+          "reading_date": { "type": "string", "format": "date-time" },
+          "energy_used_kwh": { "type": "number" }
+        },
+        "required": ["meter_id", "customer_id", "reading", "reading_date", "energy_used_kwh"]
+      }
+    },
+    "delinquent_customers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "customer_id": { "type": "string" },
+          "delinquent_invoices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "invoice_id": { "type": "string" },
+                "amount_due": { "type": "number" },
+                "due_date": { "type": "string", "format": "date" }
+              },
+              "required": ["invoice_id", "amount_due", "due_date"]
+            }
+          },
+          "pursuit_status": { "type": "string" }
+        },
+        "required": ["customer_id", "delinquent_invoices", "pursuit_status"]
+      }
+    }
+  },
+  "required": ["customers", "accounts", "invoices", "payments", "meter_readings", "delinquent_customers"]
+}
+
