@@ -1,0 +1,732 @@
+[
+  {
+    "customer_id": "f688c779-4293-4d12-ba5e-7f0451d2f54d",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "1af7f01a-6ffc-4b6a-a299-b2b4fe2eb248",
+        "amount_due": 274.41,
+        "due_date": "2023-12-27"
+      },
+      {
+        "invoice_id": "647ab3aa-a1b4-4257-b621-1684c1004ff1",
+        "amount_due": 768.76,
+        "due_date": "2024-02-25"
+      },
+      {
+        "invoice_id": "77bdf035-26f7-45a3-b439-acec4d29896d",
+        "amount_due": 865.13,
+        "due_date": "2024-04-25"
+      },
+      {
+        "invoice_id": "da7c3be9-b1ee-47d1-87a8-d05a089e59cb",
+        "amount_due": 170.34,
+        "due_date": "2024-05-25"
+      },
+      {
+        "invoice_id": "c4761cf8-a044-49e7-b9b9-4941196f4a1a",
+        "amount_due": 135.44,
+        "due_date": "2024-06-24"
+      },
+      {
+        "invoice_id": "692b4f89-2658-4627-89f7-f930f976ff4e",
+        "amount_due": 931.97,
+        "due_date": "2024-08-23"
+      },
+      {
+        "invoice_id": "f4f2d68a-445f-4653-93db-8a768c1293e6",
+        "amount_due": 344.05,
+        "due_date": "2024-11-21"
+      },
+      {
+        "invoice_id": "d56a826a-4622-4a4f-93bf-fbe9ddfc0142",
+        "amount_due": 189.21,
+        "due_date": "2025-05-20"
+      },
+      {
+        "invoice_id": "feec52a0-3894-4d51-ba9b-02a081a3b67a",
+        "amount_due": 480.98,
+        "due_date": "2025-06-19"
+      },
+      {
+        "invoice_id": "0d48042b-b337-46dd-b1f0-c534050a778f",
+        "amount_due": 909.78,
+        "due_date": "2025-07-19"
+      }
+    ],
+    "pursuit_status": "Final Notice Sent"
+  },
+  {
+    "customer_id": "3cc9ab52-25d5-4805-a99a-6a85b128fc68",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "81abeff2-8555-4337-9fa0-ee05313ac828",
+        "amount_due": 272.52,
+        "due_date": "2022-12-02"
+      },
+      {
+        "invoice_id": "b7e59afe-4075-4e24-9cde-8a99fc6f33de",
+        "amount_due": 340.56,
+        "due_date": "2023-03-02"
+      },
+      {
+        "invoice_id": "66acafd6-da88-43fd-be26-c3cb27abb1a2",
+        "amount_due": 954.06,
+        "due_date": "2023-07-30"
+      },
+      {
+        "invoice_id": "14d126f0-b100-4494-ae31-3790a1acd1da",
+        "amount_due": 595.84,
+        "due_date": "2023-12-27"
+      },
+      {
+        "invoice_id": "550a619f-2f54-4cba-85a7-3a1693900d28",
+        "amount_due": 942.4,
+        "due_date": "2024-03-26"
+      },
+      {
+        "invoice_id": "370801ce-132b-495c-9a03-58be403007c2",
+        "amount_due": 589.9,
+        "due_date": "2024-05-25"
+      },
+      {
+        "invoice_id": "59103fab-a88a-4322-9ff7-1315cd1fcc3f",
+        "amount_due": 672.8,
+        "due_date": "2024-11-21"
+      },
+      {
+        "invoice_id": "2d1bcf60-f85c-4292-a2f2-addefb49f04a",
+        "amount_due": 897.0,
+        "due_date": "2025-01-20"
+      },
+      {
+        "invoice_id": "9e154874-cac0-4418-9374-25ea19c6104a",
+        "amount_due": 872.3,
+        "due_date": "2025-06-19"
+      },
+      {
+        "invoice_id": "cebe6e54-d7df-440b-b1c1-03f65911496d",
+        "amount_due": 1065.61,
+        "due_date": "2025-07-19"
+      }
+    ],
+    "pursuit_status": "Final Notice Sent"
+  },
+  {
+    "customer_id": "814522bf-c616-44c4-b33c-81a873790ddf",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "cd727665-937e-4c4d-9af9-70cbdc7ccc24",
+        "amount_due": 313.64,
+        "due_date": "2022-06-05"
+      },
+      {
+        "invoice_id": "a307dfe7-46e2-42f0-8861-61e159f7ab41",
+        "amount_due": 653.47,
+        "due_date": "2022-07-05"
+      },
+      {
+        "invoice_id": "cb95878a-923e-4edb-b312-a1f33d826a01",
+        "amount_due": 602.32,
+        "due_date": "2022-09-03"
+      },
+      {
+        "invoice_id": "258863c2-86d8-4624-ab8e-c447efbd20c9",
+        "amount_due": 206.79,
+        "due_date": "2023-04-01"
+      },
+      {
+        "invoice_id": "fbd54f0b-6fa2-474f-8951-4d70d3a826dd",
+        "amount_due": 476.57,
+        "due_date": "2023-05-01"
+      },
+      {
+        "invoice_id": "07765f7d-d1d8-4db5-9500-216e60980a15",
+        "amount_due": 79.98,
+        "due_date": "2023-11-27"
+      },
+      {
+        "invoice_id": "baa7ca1d-bca7-42e4-bc06-a25a4c3c9991",
+        "amount_due": 48.12,
+        "due_date": "2024-07-24"
+      },
+      {
+        "invoice_id": "2cb34ba2-712d-4a09-a02d-01dd8e7dd75e",
+        "amount_due": 1000.65,
+        "due_date": "2024-08-23"
+      },
+      {
+        "invoice_id": "73952b6d-0d44-4340-ae7d-a1e20ca1c637",
+        "amount_due": 395.16,
+        "due_date": "2024-09-22"
+      },
+      {
+        "invoice_id": "4519ab08-9f2d-4cde-bc89-966476de8a85",
+        "amount_due": 368.69,
+        "due_date": "2024-10-22"
+      },
+      {
+        "invoice_id": "20ade1b5-16c7-4565-8cf1-93105a20df4b",
+        "amount_due": 774.7,
+        "due_date": "2024-12-21"
+      },
+      {
+        "invoice_id": "02543bf7-a677-4ac0-ae19-da972ed08f16",
+        "amount_due": 517.23,
+        "due_date": "2025-01-20"
+      },
+      {
+        "invoice_id": "719a62cc-1081-42f1-83c8-13c8bd9d916d",
+        "amount_due": 42.55,
+        "due_date": "2025-03-21"
+      },
+      {
+        "invoice_id": "76ac3481-864a-424d-9c31-97976caa2f7a",
+        "amount_due": 763.1,
+        "due_date": "2025-04-20"
+      },
+      {
+        "invoice_id": "0cf7cbec-d9cf-41d7-bfb9-a320ff5c10d5",
+        "amount_due": 522.59,
+        "due_date": "2025-05-20"
+      },
+      {
+        "invoice_id": "c07fec70-dd1d-4cff-a2b6-09246138ce65",
+        "amount_due": 930.65,
+        "due_date": "2025-06-19"
+      }
+    ],
+    "pursuit_status": "Final Notice Sent"
+  },
+  {
+    "customer_id": "662434ac-d86a-48b5-af3c-08e9e80f1b0b",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "938e2523-6d47-4e17-99cf-7ed0d092a23d",
+        "amount_due": 57.38,
+        "due_date": "2020-11-12"
+      },
+      {
+        "invoice_id": "a8c256f5-b194-4335-a793-7051f93ad42d",
+        "amount_due": 663.97,
+        "due_date": "2022-01-06"
+      },
+      {
+        "invoice_id": "af44f409-a4d7-46c3-9e90-83abbc3b14a4",
+        "amount_due": 737.12,
+        "due_date": "2022-03-07"
+      },
+      {
+        "invoice_id": "19566066-b119-4360-abff-65ccdd8eedb6",
+        "amount_due": 162.92,
+        "due_date": "2022-06-05"
+      },
+      {
+        "invoice_id": "79b7f87e-416f-4852-96c3-db97e03f08de",
+        "amount_due": 638.89,
+        "due_date": "2022-11-02"
+      },
+      {
+        "invoice_id": "a48d2ce1-4b7c-406d-a09e-23bd0fbc06e6",
+        "amount_due": 742.31,
+        "due_date": "2023-04-01"
+      },
+      {
+        "invoice_id": "46f0a722-8b65-44c5-9d9e-2271cbdf06b3",
+        "amount_due": 486.73,
+        "due_date": "2023-05-31"
+      },
+      {
+        "invoice_id": "cbf7fcb1-c70f-4ee4-b485-de19fdd3d6db",
+        "amount_due": 180.56,
+        "due_date": "2023-08-29"
+      },
+      {
+        "invoice_id": "72e215b6-5b2f-4559-90ba-04fd53182e08",
+        "amount_due": 669.88,
+        "due_date": "2024-06-24"
+      },
+      {
+        "invoice_id": "a5818965-23d9-4e42-847b-d75bbba3b55b",
+        "amount_due": 715.71,
+        "due_date": "2024-08-23"
+      },
+      {
+        "invoice_id": "2b50bb8a-6f0e-4e0a-908c-cd9794617d77",
+        "amount_due": 91.89,
+        "due_date": "2024-09-22"
+      },
+      {
+        "invoice_id": "c68a197b-f69f-4238-bed5-301c6e790e45",
+        "amount_due": 71.57,
+        "due_date": "2024-11-21"
+      },
+      {
+        "invoice_id": "c2980f97-296e-404b-a4a7-79da7cc493e0",
+        "amount_due": 1051.17,
+        "due_date": "2025-06-19"
+      }
+    ],
+    "pursuit_status": "First Notice Sent"
+  },
+  {
+    "customer_id": "85f7bebf-8feb-4b48-936c-a0d734f24098",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "f1bd18d6-4037-45fb-bf04-7f2bc8df75bc",
+        "amount_due": 990.08,
+        "due_date": "2021-07-10"
+      },
+      {
+        "invoice_id": "4c0378f9-8633-45ec-8f5e-08174f2f610b",
+        "amount_due": 855.3,
+        "due_date": "2021-08-09"
+      },
+      {
+        "invoice_id": "6c63dfc8-026a-431f-ac7b-af035283970d",
+        "amount_due": 874.82,
+        "due_date": "2021-10-08"
+      },
+      {
+        "invoice_id": "6f4cf6d3-8939-4e12-956b-aa0193cfc1c2",
+        "amount_due": 363.68,
+        "due_date": "2021-11-07"
+      },
+      {
+        "invoice_id": "90c8e42c-fd4a-4b93-a2a9-9d24cb716b28",
+        "amount_due": 600.09,
+        "due_date": "2021-12-07"
+      },
+      {
+        "invoice_id": "329bf9bd-f837-43c8-9fd2-04242a7ed993",
+        "amount_due": 242.27,
+        "due_date": "2022-01-06"
+      },
+      {
+        "invoice_id": "b1654879-c5f8-4f75-873f-525cdb6a671e",
+        "amount_due": 247.85,
+        "due_date": "2022-02-05"
+      },
+      {
+        "invoice_id": "78599bd0-fce0-4e15-88cc-d312c4a1f72e",
+        "amount_due": 419.96,
+        "due_date": "2022-09-03"
+      },
+      {
+        "invoice_id": "f797a4ce-8f33-4920-ad38-0e56fed13da0",
+        "amount_due": 717.13,
+        "due_date": "2022-12-02"
+      },
+      {
+        "invoice_id": "1bd12628-29bc-4d78-bb13-b1b8dcfbbdea",
+        "amount_due": 868.91,
+        "due_date": "2023-01-01"
+      },
+      {
+        "invoice_id": "60d6f433-cb9d-4f40-8b1a-fd02a587a974",
+        "amount_due": 198.16,
+        "due_date": "2023-04-01"
+      },
+      {
+        "invoice_id": "739db823-af31-48df-87fd-95b1ab65181a",
+        "amount_due": 652.11,
+        "due_date": "2023-07-30"
+      },
+      {
+        "invoice_id": "df6b07a3-3d23-498a-90a2-74d7eb38e27e",
+        "amount_due": 803.23,
+        "due_date": "2023-08-29"
+      },
+      {
+        "invoice_id": "fcba15da-b19b-4e53-a6bc-16d8ed3b8fbb",
+        "amount_due": 187.68,
+        "due_date": "2023-10-28"
+      },
+      {
+        "invoice_id": "93a3a913-e45a-43d0-92e3-c9febe787b67",
+        "amount_due": 306.85,
+        "due_date": "2023-12-27"
+      },
+      {
+        "invoice_id": "49ed1f56-7153-453a-ba68-fc25466e715f",
+        "amount_due": 733.66,
+        "due_date": "2024-03-26"
+      },
+      {
+        "invoice_id": "f9feaae4-82a7-4c58-a573-78ea83095f27",
+        "amount_due": 680.77,
+        "due_date": "2024-04-25"
+      },
+      {
+        "invoice_id": "902dba2f-6880-4364-a001-2a81c00e4236",
+        "amount_due": 665.8,
+        "due_date": "2024-05-25"
+      },
+      {
+        "invoice_id": "b6363d6e-9b4a-4f1f-bb44-dc2572eeae23",
+        "amount_due": 408.37,
+        "due_date": "2024-10-22"
+      },
+      {
+        "invoice_id": "639090be-5ec7-477e-8e10-44e59314f180",
+        "amount_due": 597.84,
+        "due_date": "2025-04-20"
+      },
+      {
+        "invoice_id": "706b1b3f-603f-469c-abda-83324b5d8226",
+        "amount_due": 460.96,
+        "due_date": "2025-05-20"
+      },
+      {
+        "invoice_id": "ba493ebf-92e0-4a83-be83-7baf4ef3409e",
+        "amount_due": 282.53,
+        "due_date": "2025-08-18"
+      }
+    ],
+    "pursuit_status": "Account Suspended"
+  },
+  {
+    "customer_id": "8a7a5092-1bbe-4a65-b5c9-4f4f13bf9352",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "397f75a8-13c1-4395-9f3c-d7d22ab4f650",
+        "amount_due": 805.16,
+        "due_date": "2022-11-02"
+      },
+      {
+        "invoice_id": "da38d3e5-e6a7-4b2e-95b0-d7429927212c",
+        "amount_due": 67.04,
+        "due_date": "2023-01-01"
+      },
+      {
+        "invoice_id": "32f45b51-defb-4456-84cf-e0a15de4c965",
+        "amount_due": 560.0,
+        "due_date": "2023-01-31"
+      },
+      {
+        "invoice_id": "35e8028a-8848-4f83-9294-d2e376554be2",
+        "amount_due": 236.18,
+        "due_date": "2023-08-29"
+      },
+      {
+        "invoice_id": "027238a9-7e73-408f-a0e8-116b7fb58714",
+        "amount_due": 689.46,
+        "due_date": "2024-08-23"
+      },
+      {
+        "invoice_id": "cd43036c-5b9d-4f9b-a68f-fb612a62acb6",
+        "amount_due": 228.82,
+        "due_date": "2024-09-22"
+      },
+      {
+        "invoice_id": "d00817a8-f9e9-4ca3-9ac3-436123bce93c",
+        "amount_due": 704.11,
+        "due_date": "2024-10-22"
+      },
+      {
+        "invoice_id": "7ca0a986-a15b-4575-b9f9-5437a4ab4fce",
+        "amount_due": 465.03,
+        "due_date": "2025-02-19"
+      }
+    ],
+    "pursuit_status": "Account Suspended"
+  },
+  {
+    "customer_id": "4843ddf8-d0e5-420e-a8ea-5f55163cf697",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "1fb30527-d876-47e6-8ac0-beda47facc46",
+        "amount_due": 730.03,
+        "due_date": "2021-06-10"
+      },
+      {
+        "invoice_id": "ba643da8-f942-475a-a2e8-cb6ccdfa7747",
+        "amount_due": 363.06,
+        "due_date": "2021-08-09"
+      },
+      {
+        "invoice_id": "c593da28-6a7a-41b9-b7d2-48696d694c92",
+        "amount_due": 247.04,
+        "due_date": "2021-09-08"
+      },
+      {
+        "invoice_id": "1d3021aa-51b0-412a-8caf-38c80bf8fb5e",
+        "amount_due": 510.24,
+        "due_date": "2021-10-08"
+      },
+      {
+        "invoice_id": "56a9f5c1-a08f-47c8-b1b1-1196f50d37db",
+        "amount_due": 871.56,
+        "due_date": "2022-01-06"
+      },
+      {
+        "invoice_id": "d5970cc9-8974-45a6-819f-81529da8e722",
+        "amount_due": 158.01,
+        "due_date": "2022-05-06"
+      },
+      {
+        "invoice_id": "f8631000-0295-41a6-88a5-869b4a62578f",
+        "amount_due": 123.16,
+        "due_date": "2022-07-05"
+      },
+      {
+        "invoice_id": "7e8fbcb0-21dc-4157-9ed8-1bef0f3ccede",
+        "amount_due": 458.49,
+        "due_date": "2022-08-04"
+      },
+      {
+        "invoice_id": "db263624-da74-4adb-9754-d735b9a2424a",
+        "amount_due": 687.22,
+        "due_date": "2023-01-31"
+      },
+      {
+        "invoice_id": "6fc7a0fd-f168-4e6c-b220-1d627bcd9b43",
+        "amount_due": 724.31,
+        "due_date": "2023-05-01"
+      },
+      {
+        "invoice_id": "7109133f-6f23-4102-b0cd-9bc21488cd87",
+        "amount_due": 372.63,
+        "due_date": "2023-06-30"
+      },
+      {
+        "invoice_id": "f141fc2f-f265-45d6-a552-d4d8c4e7c87b",
+        "amount_due": 463.62,
+        "due_date": "2023-08-29"
+      },
+      {
+        "invoice_id": "50c16c65-9eb6-4c32-bcd7-5217507c9a7a",
+        "amount_due": 711.22,
+        "due_date": "2023-09-28"
+      },
+      {
+        "invoice_id": "cc75cb04-c3ac-40ae-b743-4aaaa003f2a2",
+        "amount_due": 794.55,
+        "due_date": "2023-10-28"
+      },
+      {
+        "invoice_id": "621e4d89-c981-45cb-885f-3e89f4938115",
+        "amount_due": 44.79,
+        "due_date": "2024-02-25"
+      },
+      {
+        "invoice_id": "6ca7eae8-7cf7-4b2c-997f-ba6beedecca1",
+        "amount_due": 154.01,
+        "due_date": "2024-03-26"
+      },
+      {
+        "invoice_id": "f4a262e9-28cb-4448-bed6-c8b5d9d96f40",
+        "amount_due": 411.49,
+        "due_date": "2024-06-24"
+      },
+      {
+        "invoice_id": "54230c1a-ca6d-425c-97cc-d273de2309ba",
+        "amount_due": 95.73,
+        "due_date": "2024-08-23"
+      },
+      {
+        "invoice_id": "6de4bc76-a1a4-4c45-b986-2c2240a879dc",
+        "amount_due": 606.65,
+        "due_date": "2024-09-22"
+      },
+      {
+        "invoice_id": "34db33d5-c3ae-41d6-94c0-0d70fde4bda0",
+        "amount_due": 722.03,
+        "due_date": "2024-12-21"
+      },
+      {
+        "invoice_id": "8ebf030b-c4f9-4217-857a-abcd698b2784",
+        "amount_due": 318.94,
+        "due_date": "2025-03-21"
+      },
+      {
+        "invoice_id": "06cbc877-a5c0-46da-8602-c7bb7b89355c",
+        "amount_due": 598.71,
+        "due_date": "2025-06-19"
+      }
+    ],
+    "pursuit_status": "First Notice Sent"
+  },
+  {
+    "customer_id": "e5e39001-2fa5-47dd-810c-eb5c2e81e0e2",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "897272fa-b293-4a15-beec-ef45732a961f",
+        "amount_due": 492.26,
+        "due_date": "2022-05-06"
+      },
+      {
+        "invoice_id": "49fa848d-dbc5-45bb-9668-a495c19260c3",
+        "amount_due": 431.34,
+        "due_date": "2023-01-01"
+      },
+      {
+        "invoice_id": "b853a53a-495f-4b67-8fda-3ca59c17e2a6",
+        "amount_due": 615.43,
+        "due_date": "2023-05-01"
+      },
+      {
+        "invoice_id": "eea9d3fb-8321-4d76-8974-052159849078",
+        "amount_due": 562.63,
+        "due_date": "2023-09-28"
+      },
+      {
+        "invoice_id": "e302c3ff-c5d7-4db3-b4df-738075cef73f",
+        "amount_due": 390.26,
+        "due_date": "2024-03-26"
+      },
+      {
+        "invoice_id": "e3e3295f-f15d-40de-be89-00982e3283be",
+        "amount_due": 880.9,
+        "due_date": "2024-08-23"
+      },
+      {
+        "invoice_id": "565b911f-c814-48ed-a194-a8340d788cc4",
+        "amount_due": 846.26,
+        "due_date": "2024-11-21"
+      },
+      {
+        "invoice_id": "f21d1e74-adeb-4276-9f8b-efe129887090",
+        "amount_due": 311.99,
+        "due_date": "2025-03-21"
+      }
+    ],
+    "pursuit_status": "First Notice Sent"
+  },
+  {
+    "customer_id": "1600cc81-d9ea-4d41-8fdb-262b04197665",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "08978f72-bcd2-438b-a1d5-5f128151ae23",
+        "amount_due": 297.36,
+        "due_date": "2021-04-11"
+      },
+      {
+        "invoice_id": "4cb3e4dd-1b4c-4cb7-900e-6ac180a9756c",
+        "amount_due": 933.32,
+        "due_date": "2021-08-09"
+      },
+      {
+        "invoice_id": "e441eaf9-f0ff-4e35-9e1a-8bcdfdc01bfe",
+        "amount_due": 683.38,
+        "due_date": "2021-10-08"
+      },
+      {
+        "invoice_id": "44ab7f71-ac02-44db-9934-5371a7a9b17e",
+        "amount_due": 813.04,
+        "due_date": "2021-12-07"
+      },
+      {
+        "invoice_id": "ef1a17a0-64e8-4e5b-b7e1-e64006a3ff02",
+        "amount_due": 261.92,
+        "due_date": "2022-01-06"
+      },
+      {
+        "invoice_id": "926af3af-a37a-47e7-945f-430953aeed7d",
+        "amount_due": 22.96,
+        "due_date": "2022-08-04"
+      },
+      {
+        "invoice_id": "9a4b709e-7340-410a-8cff-370f5a68e6c9",
+        "amount_due": 506.79,
+        "due_date": "2022-11-02"
+      },
+      {
+        "invoice_id": "8a2b7853-7534-4b97-8a72-8fa4306b4d7b",
+        "amount_due": 149.04,
+        "due_date": "2022-12-02"
+      },
+      {
+        "invoice_id": "9513cd43-5e6f-4016-8a53-a4c97ea4d634",
+        "amount_due": 1061.32,
+        "due_date": "2023-01-01"
+      },
+      {
+        "invoice_id": "237918bd-4e9e-49c3-a2ce-033bb8206fde",
+        "amount_due": 323.72,
+        "due_date": "2023-01-31"
+      },
+      {
+        "invoice_id": "a4b87ebe-bcea-40cb-844e-7cbf20dcbbe6",
+        "amount_due": 941.76,
+        "due_date": "2023-03-02"
+      },
+      {
+        "invoice_id": "1acc5483-f279-443e-ac93-825f61d17081",
+        "amount_due": 823.34,
+        "due_date": "2023-05-31"
+      },
+      {
+        "invoice_id": "84217ab9-5ffd-484e-8d97-bf6dd971cd47",
+        "amount_due": 60.19,
+        "due_date": "2023-07-30"
+      },
+      {
+        "invoice_id": "b76a7249-7abc-40d5-a1c8-e6d4e81fd7a6",
+        "amount_due": 876.68,
+        "due_date": "2023-09-28"
+      },
+      {
+        "invoice_id": "406a262e-533b-4db4-9816-295b1e1e7663",
+        "amount_due": 433.91,
+        "due_date": "2023-10-28"
+      },
+      {
+        "invoice_id": "a32da06a-a89d-4aee-8d15-f844f6cd1613",
+        "amount_due": 821.11,
+        "due_date": "2024-01-26"
+      },
+      {
+        "invoice_id": "8557add5-4dba-4c4c-8831-860cc6458b20",
+        "amount_due": 223.51,
+        "due_date": "2024-02-25"
+      },
+      {
+        "invoice_id": "1b837204-685d-4833-a19e-fb4c096a53a8",
+        "amount_due": 677.21,
+        "due_date": "2024-12-21"
+      }
+    ],
+    "pursuit_status": "First Notice Sent"
+  },
+  {
+    "customer_id": "1bc2e4bb-5c10-4a3f-a08e-a841c31edc1f",
+    "delinquent_invoices": [
+      {
+        "invoice_id": "d2ead2b2-3598-4ed5-bc9d-825788efbe9c",
+        "amount_due": 679.4,
+        "due_date": "2023-11-27"
+      },
+      {
+        "invoice_id": "c6b65bcb-26d1-49b3-be54-bee9ed48eee3",
+        "amount_due": 326.94,
+        "due_date": "2024-05-25"
+      },
+      {
+        "invoice_id": "a7c7172d-c01e-4bde-a169-25847b33aff2",
+        "amount_due": 187.34,
+        "due_date": "2024-10-22"
+      },
+      {
+        "invoice_id": "318fe862-9960-4dd9-9099-db0c1ffda3eb",
+        "amount_due": 655.85,
+        "due_date": "2024-12-21"
+      },
+      {
+        "invoice_id": "d304eb5f-884e-4c54-bd38-739ae2d9765b",
+        "amount_due": 389.63,
+        "due_date": "2025-03-21"
+      },
+      {
+        "invoice_id": "6d224760-5f8c-4510-990b-900472dd1972",
+        "amount_due": 768.76,
+        "due_date": "2025-04-20"
+      },
+      {
+        "invoice_id": "8a44ac7f-8b21-46ed-879d-d6d421fa42a5",
+        "amount_due": 81.94,
+        "due_date": "2025-06-19"
+      }
+    ],
+    "pursuit_status": "Final Notice Sent"
+  }
+]
