@@ -1,0 +1,1736 @@
+[
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-001",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "United Airlines",
+      "flightNumber": "UA101",
+      "originAirport": "JFK",
+      "destinationAirport": "LAX",
+      "departureDate": "2025-09-15",
+      "departureTime": "08:00 AM",
+      "arrivalDate": "2025-09-15",
+      "arrivalTime": "11:30 AM",
+      "class": "Economy",
+      "price": 450.75,
+      "seatAvailability": 42
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-001",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Grand Hyatt",
+      "location": "New York, NY",
+      "checkInDate": "2025-10-10",
+      "checkOutDate": "2025-10-14",
+      "roomType": "King Room",
+      "pricePerNight": 250.00,
+      "totalRoomsAvailable": 15,
+      "amenities": [
+        "Free Wi-Fi",
+        "Swimming Pool",
+        "Gym",
+        "Restaurant"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-001",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend in Las Vegas",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-05",
+      "endDate": "2025-11-08",
+      "price": 960.00,
+      "flightDetails": {
+        "airline": "Southwest Airlines",
+        "flightNumber": "WN789",
+        "originAirport": "DEN",
+        "destinationAirport": "LAS",
+        "departureDate": "2025-11-05",
+        "departureTime": "02:00 PM",
+        "class": "Economy",
+        "seatAvailability": 120
+      },
+      "hotelDetails": {
+        "name": "Bellagio Hotel & Casino",
+        "checkInDate": "2025-11-05",
+        "checkOutDate": "2025-11-08",
+        "roomType": "Fountain View Room",
+        "totalRoomsAvailable": 30
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "3 nights hotel stay",
+        "Show tickets"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-002",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Delta Airlines",
+      "flightNumber": "DL505",
+      "originAirport": "SFO",
+      "destinationAirport": "LHR",
+      "departureDate": "2025-10-01",
+      "departureTime": "06:00 PM",
+      "arrivalDate": "2025-10-02",
+      "arrivalTime": "12:15 PM",
+      "class": "Business",
+      "price": 2800.50,
+      "seatAvailability": 8
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-002",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Venetian Resort",
+      "location": "Las Vegas, NV",
+      "checkInDate": "2025-11-15",
+      "checkOutDate": "2025-11-18",
+      "roomType": "Luxury Suite",
+      "pricePerNight": 400.00,
+      "totalRoomsAvailable": 30,
+      "amenities": [
+        "Free Wi-Fi",
+        "Casino",
+        "Multiple Restaurants",
+        "Spa"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-002",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Paris, France & Rome, Italy",
+      "startDate": "2025-11-20",
+      "endDate": "2025-11-30",
+      "price": 4200.00,
+      "flightDetails": {
+        "airline": "Air France",
+        "flightNumber": "AF009",
+        "originAirport": "JFK",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-11-20",
+        "departureTime": "09:00 PM",
+        "class": "Economy",
+        "seatAvailability": 55
+      },
+      "hotelDetails": {
+        "name": "Hotel Le Bristol Paris & The Westin Excelsior, Rome",
+        "checkInDate": "2025-11-21",
+        "checkOutDate": "2025-11-25"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Eurostar train between cities",
+        "5 nights in Paris hotel",
+        "4 nights in Rome hotel",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-003",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "American Airlines",
+      "flightNumber": "AA202",
+      "originAirport": "ORD",
+      "destinationAirport": "MCO",
+      "departureDate": "2025-12-05",
+      "departureTime": "10:30 AM",
+      "arrivalDate": "2025-12-05",
+      "arrivalTime": "01:30 PM",
+      "class": "Economy",
+      "price": 315.50,
+      "seatAvailability": 98
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-003",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hyatt Regency Waikiki Beach",
+      "location": "Honolulu, HI",
+      "checkInDate": "2025-12-20",
+      "checkOutDate": "2025-12-27",
+      "roomType": "Ocean View Room",
+      "pricePerNight": 400.00,
+      "totalRoomsAvailable": 22,
+      "amenities": [
+        "Free Wi-Fi",
+        "Beach access",
+        "Swimming Pool",
+        "Spa"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-003",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure in Aspen",
+      "destination": "Aspen, CO",
+      "startDate": "2025-12-10",
+      "endDate": "2025-12-15",
+      "price": 5500.00,
+      "flightDetails": {
+        "airline": "United Airlines",
+        "flightNumber": "UA345",
+        "originAirport": "LGA",
+        "destinationAirport": "ASE",
+        "departureDate": "2025-12-10",
+        "departureTime": "07:00 AM",
+        "class": "Economy",
+        "seatAvailability": 15
+      },
+      "hotelDetails": {
+        "name": "The Little Nell",
+        "checkInDate": "2025-12-10",
+        "checkOutDate": "2025-12-15",
+        "roomType": "Deluxe Room",
+        "totalRoomsAvailable": 5
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "5 nights hotel stay",
+        "Lift tickets for Aspen Snowmass",
+        "Ski equipment rental"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-004",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Lufthansa",
+      "flightNumber": "LH450",
+      "originAirport": "LAX",
+      "destinationAirport": "FRA",
+      "departureDate": "2025-11-25",
+      "departureTime": "09:00 PM",
+      "arrivalDate": "2025-11-26",
+      "arrivalTime": "05:00 PM",
+      "class": "First",
+      "price": 7500.00,
+      "seatAvailability": 4
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-004",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Marina Bay Sands",
+      "location": "Singapore",
+      "checkInDate": "2025-12-10",
+      "checkOutDate": "2025-12-14",
+      "roomType": "Premier Room",
+      "pricePerNight": 550.00,
+      "totalRoomsAvailable": 8,
+      "amenities": [
+        "Rooftop Infinity Pool",
+        "Casino",
+        "Shopping Mall",
+        "Multiple Restaurants"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-004",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise Getaway",
+      "destination": "Maui, HI",
+      "startDate": "2025-10-01",
+      "endDate": "2025-10-08",
+      "price": 3500.00,
+      "flightDetails": {
+        "airline": "Hawaiian Airlines",
+        "flightNumber": "HA21",
+        "originAirport": "LAX",
+        "destinationAirport": "OGG",
+        "departureDate": "2025-10-01",
+        "departureTime": "11:00 AM",
+        "class": "Economy",
+        "seatAvailability": 45
+      },
+      "hotelDetails": {
+        "name": "The Ritz-Carlton, Maui",
+        "checkInDate": "2025-10-01",
+        "checkOutDate": "2025-10-08",
+        "roomType": "Garden View Room",
+        "totalRoomsAvailable": 12
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "7 nights at The Ritz-Carlton",
+        "Snorkeling tour",
+        "Dinner luau"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-005",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Southwest Airlines",
+      "flightNumber": "WN404",
+      "originAirport": "MCO",
+      "destinationAirport": "SFO",
+      "departureDate": "2025-10-15",
+      "departureTime": "03:00 PM",
+      "arrivalDate": "2025-10-15",
+      "arrivalTime": "06:15 PM",
+      "class": "Economy",
+      "price": 285.50,
+      "seatAvailability": 78
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-005",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "JW Marriott Cancun Resort & Spa",
+      "location": "Cancun, Mexico",
+      "checkInDate": "2025-11-01",
+      "checkOutDate": "2025-11-08",
+      "roomType": "Oceanfront Room",
+      "pricePerNight": 350.00,
+      "totalRoomsAvailable": 45,
+      "amenities": [
+        "All-inclusive options",
+        "Private beach",
+        "Spa",
+        "Water sports"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-005",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Alaskan Cruise",
+      "destination": "Alaska, USA",
+      "startDate": "2025-09-05",
+      "endDate": "2025-09-12",
+      "price": 2800.00,
+      "flightDetails": null,
+      "hotelDetails": null,
+      "inclusions": [
+        "7-night cruise on Royal Caribbean",
+        "All meals included",
+        "Excursion to Mendenhall Glacier",
+        "Sightseeing in Juneau and Ketchikan"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-006",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Qatar Airways",
+      "flightNumber": "QR702",
+      "originAirport": "LAX",
+      "destinationAirport": "DOH",
+      "departureDate": "2025-10-20",
+      "departureTime": "04:00 PM",
+      "arrivalDate": "2025-10-21",
+      "arrivalTime": "05:00 PM",
+      "class": "Business",
+      "price": 3200.00,
+      "seatAvailability": 12
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-006",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Oberoi Grand, Kolkata",
+      "location": "Kolkata, India",
+      "checkInDate": "2025-10-22",
+      "checkOutDate": "2025-10-29",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 200.00,
+      "totalRoomsAvailable": 18,
+      "amenities": [
+        "Spa",
+        "Multiple Restaurants",
+        "Heritage building",
+        "Free Wi-Fi"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-006",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Greek Islands Escape",
+      "destination": "Santorini & Mykonos, Greece",
+      "startDate": "2025-09-15",
+      "endDate": "2025-09-26",
+      "price": 4500.00,
+      "flightDetails": {
+        "airline": "Lufthansa",
+        "flightNumber": "LH123",
+        "originAirport": "JFK",
+        "destinationAirport": "JTR",
+        "departureDate": "2025-09-15",
+        "departureTime": "11:00 PM",
+        "class": "Economy",
+        "seatAvailability": 38
+      },
+      "hotelDetails": {
+        "name": "Aressana Spa Hotel & Suites, Santorini",
+        "checkInDate": "2025-09-16",
+        "checkOutDate": "2025-09-21"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "11 nights in resorts",
+        "Ferry transfers",
+        "Sunset cruises"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-007",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Air Canada",
+      "flightNumber": "AC789",
+      "originAirport": "LGA",
+      "destinationAirport": "YVR",
+      "departureDate": "2025-11-10",
+      "departureTime": "07:00 AM",
+      "arrivalDate": "2025-11-10",
+      "arrivalTime": "10:30 AM",
+      "class": "Economy",
+      "price": 600.00,
+      "seatAvailability": 65
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-007",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Fairmont Le Château Frontenac",
+      "location": "Quebec City, Canada",
+      "checkInDate": "2025-11-11",
+      "checkOutDate": "2025-11-15",
+      "roomType": "Fairmont Room",
+      "pricePerNight": 280.00,
+      "totalRoomsAvailable": 10,
+      "amenities": [
+        "Historic landmark",
+        "Indoor pool",
+        "Spa",
+        "Pet-friendly"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-007",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Costa Rican Rainforest Adventure",
+      "destination": "La Fortuna & Manuel Antonio, Costa Rica",
+      "startDate": "2025-10-01",
+      "endDate": "2025-10-10",
+      "price": 3100.00,
+      "flightDetails": {
+        "airline": "Spirit Airlines",
+        "flightNumber": "NK606",
+        "originAirport": "FLL",
+        "destinationAirport": "SJO",
+        "departureDate": "2025-10-01",
+        "departureTime": "09:00 AM",
+        "class": "Economy",
+        "seatAvailability": 90
+      },
+      "hotelDetails": {
+        "name": "Tabacon Thermal Resort & Spa, La Fortuna",
+        "checkInDate": "2025-10-01",
+        "checkOutDate": "2025-10-05"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "9 nights in eco-lodges",
+        "Zip-lining tour",
+        "Hot springs visit",
+        "Guided rainforest hikes"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-008",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Virgin Atlantic",
+      "flightNumber": "VS1",
+      "originAirport": "JFK",
+      "destinationAirport": "LHR",
+      "departureDate": "2025-12-01",
+      "departureTime": "08:00 PM",
+      "arrivalDate": "2025-12-02",
+      "arrivalTime": "06:00 AM",
+      "class": "Upper Class",
+      "price": 4500.00,
+      "seatAvailability": 6
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-008",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Langham, London",
+      "location": "London, UK",
+      "checkInDate": "2025-12-02",
+      "checkOutDate": "2025-12-07",
+      "roomType": "Executive Room",
+      "pricePerNight": 450.00,
+      "totalRoomsAvailable": 11,
+      "amenities": [
+        "Fine dining",
+        "Chuan Body + Soul Spa",
+        "Indoor pool",
+        "Concierge services"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-008",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Patagonian Trekking Tour",
+      "destination": "Torres del Paine National Park, Chile",
+      "startDate": "2025-12-10",
+      "endDate": "2025-12-20",
+      "price": 5500.00,
+      "flightDetails": {
+        "airline": "LATAM Airlines",
+        "flightNumber": "LA530",
+        "originAirport": "MIA",
+        "destinationAirport": "SCL",
+        "departureDate": "2025-12-10",
+        "departureTime": "10:00 PM",
+        "class": "Economy",
+        "seatAvailability": 25
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "Guided trekking tours",
+        "Accommodation in lodges and campsites",
+        "All meals"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-009",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Japan Airlines",
+      "flightNumber": "JL1",
+      "originAirport": "ORD",
+      "destinationAirport": "HND",
+      "departureDate": "2025-11-01",
+      "departureTime": "12:00 PM",
+      "arrivalDate": "2025-11-02",
+      "arrivalTime": "03:00 PM",
+      "class": "First",
+      "price": 6800.00,
+      "seatAvailability": 2
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-009",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Park Hyatt Tokyo",
+      "location": "Tokyo, Japan",
+      "checkInDate": "2025-11-02",
+      "checkOutDate": "2025-11-06",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 700.00,
+      "totalRoomsAvailable": 6,
+      "amenities": [
+        "Sky-high views",
+        "New York Bar",
+        "Indoor swimming pool",
+        "Spa"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-009",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Italian Culinary Journey",
+      "destination": "Tuscany, Italy",
+      "startDate": "2025-10-20",
+      "endDate": "2025-10-27",
+      "price": 3800.00,
+      "flightDetails": {
+        "airline": "Alitalia",
+        "flightNumber": "AZ603",
+        "originAirport": "JFK",
+        "destinationAirport": "FLR",
+        "departureDate": "2025-10-20",
+        "departureTime": "07:00 PM",
+        "class": "Economy",
+        "seatAvailability": 30
+      },
+      "hotelDetails": {
+        "name": "Tuscan Villa",
+        "checkInDate": "2025-10-21",
+        "checkOutDate": "2025-10-28"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "7 nights in a Tuscan villa",
+        "Daily cooking classes",
+        "Wine tasting tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-010",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Korean Air",
+      "flightNumber": "KE001",
+      "originAirport": "JFK",
+      "destinationAirport": "ICN",
+      "departureDate": "2025-12-15",
+      "departureTime": "10:00 AM",
+      "arrivalDate": "2025-12-16",
+      "arrivalTime": "02:00 PM",
+      "class": "First",
+      "price": 8500.00,
+      "seatAvailability": 3
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-010",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Shilla Seoul",
+      "location": "Seoul, South Korea",
+      "checkInDate": "2025-12-16",
+      "checkOutDate": "2025-12-21",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 650.00,
+      "totalRoomsAvailable": 10,
+      "amenities": [
+        "Luxury Spa",
+        "Indoor & outdoor pool",
+        "Michelin-starred dining",
+        "Shopping arcade"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-010",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Egyptian Wonders Tour",
+      "destination": "Cairo, Egypt",
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-12",
+      "price": 6800.00,
+      "flightDetails": {
+        "airline": "EgyptAir",
+        "flightNumber": "MS986",
+        "originAirport": "JFK",
+        "destinationAirport": "CAI",
+        "departureDate": "2025-11-01",
+        "departureTime": "10:00 PM",
+        "class": "Business",
+        "seatAvailability": 15
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "11 nights in 5-star hotels",
+        "Nile River cruise",
+        "Tour of Pyramids of Giza",
+        "Temple of Luxor tour"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-011",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Qantas",
+      "flightNumber": "QF12",
+      "originAirport": "LAX",
+      "destinationAirport": "SYD",
+      "departureDate": "2025-10-05",
+      "departureTime": "11:00 PM",
+      "arrivalDate": "2025-10-07",
+      "arrivalTime": "07:00 AM",
+      "class": "Economy",
+      "price": 1200.00,
+      "seatAvailability": 58
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-011",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "InterContinental Sydney",
+      "location": "Sydney, Australia",
+      "checkInDate": "2025-10-07",
+      "checkOutDate": "2025-10-14",
+      "roomType": "Harbour View Room",
+      "pricePerNight": 380.00,
+      "totalRoomsAvailable": 15,
+      "amenities": [
+        "Rooftop pool",
+        "Harbour views",
+        "Multiple restaurants",
+        "24-hour fitness center"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-011",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Japan Cherry Blossom Tour",
+      "destination": "Tokyo & Kyoto, Japan",
+      "startDate": "2025-11-10",
+      "endDate": "2025-11-19",
+      "price": 4800.00,
+      "flightDetails": {
+        "airline": "Japan Airlines",
+        "flightNumber": "JL1",
+        "originAirport": "SFO",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-11-10",
+        "departureTime": "11:00 AM",
+        "class": "Economy",
+        "seatAvailability": 40
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "9 nights in hotels",
+        "Bullet train tickets",
+        "Guided temple and garden tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-012",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Aeromexico",
+      "flightNumber": "AM498",
+      "originAirport": "MIA",
+      "destinationAirport": "CUN",
+      "departureDate": "2025-09-20",
+      "departureTime": "09:00 AM",
+      "arrivalDate": "2025-09-20",
+      "arrivalTime": "11:00 AM",
+      "class": "Economy",
+      "price": 250.00,
+      "seatAvailability": 115
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-012",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The St. Regis Bora Bora Resort",
+      "location": "Bora Bora, French Polynesia",
+      "checkInDate": "2025-10-01",
+      "checkOutDate": "2025-10-08",
+      "roomType": "Overwater Villa",
+      "pricePerNight": 1500.00,
+      "totalRoomsAvailable": 4,
+      "amenities": [
+        "Overwater bungalows",
+        "Private plunge pools",
+        "Butler service",
+        "Lagoonarium"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-012",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "South African Safari",
+      "destination": "Kruger National Park, South Africa",
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-10",
+      "price": 8500.00,
+      "flightDetails": {
+        "airline": "South African Airways",
+        "flightNumber": "SA204",
+        "originAirport": "JFK",
+        "destinationAirport": "JNB",
+        "departureDate": "2025-11-01",
+        "departureTime": "09:00 PM",
+        "class": "Business",
+        "seatAvailability": 10
+      },
+      "hotelDetails": {
+        "name": "Sabi Sabi Private Game Reserve",
+        "checkInDate": "2025-11-02",
+        "checkOutDate": "2025-11-10"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "9 nights in luxury safari lodges",
+        "Daily game drives",
+        "Guided bush walks"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-013",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Spirit Airlines",
+      "flightNumber": "NK606",
+      "originAirport": "FLL",
+      "destinationAirport": "BOS",
+      "departureDate": "2025-12-10",
+      "departureTime": "09:00 AM",
+      "arrivalDate": "2025-12-10",
+      "arrivalTime": "12:00 PM",
+      "class": "Economy",
+      "price": 125.00,
+      "seatAvailability": 150
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-013",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Plaza Hotel",
+      "location": "New York, NY",
+      "checkInDate": "2025-12-24",
+      "checkOutDate": "2025-12-28",
+      "roomType": "Deluxe King Room",
+      "pricePerNight": 800.00,
+      "totalRoomsAvailable": 5,
+      "amenities": [
+        "Historic landmark",
+        "Afternoon tea at The Palm Court",
+        "Spa",
+        "Central Park views"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-013",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Thailand Island Hopping",
+      "destination": "Phuket & Koh Phi Phi, Thailand",
+      "startDate": "2025-11-05",
+      "endDate": "2025-11-19",
+      "price": 2900.00,
+      "flightDetails": {
+        "airline": "Thai Airways",
+        "flightNumber": "TG681",
+        "originAirport": "LAX",
+        "destinationAirport": "HKT",
+        "departureDate": "2025-11-05",
+        "departureTime": "08:00 AM",
+        "class": "Economy",
+        "seatAvailability": 70
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "14 nights in resorts",
+        "Ferry transfers between islands",
+        "Snorkeling and kayaking tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-014",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Turkish Airlines",
+      "flightNumber": "TK1",
+      "originAirport": "MIA",
+      "destinationAirport": "IST",
+      "departureDate": "2025-10-15",
+      "departureTime": "11:00 PM",
+      "arrivalDate": "2025-10-16",
+      "arrivalTime": "05:00 PM",
+      "class": "Business",
+      "price": 3100.00,
+      "seatAvailability": 18
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-014",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Waldorf Astoria Cancun",
+      "location": "Cancun, Mexico",
+      "checkInDate": "2025-11-01",
+      "checkOutDate": "2025-11-08",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 500.00,
+      "totalRoomsAvailable": 25,
+      "amenities": [
+        "Private balconies",
+        "Ocean views",
+        "Fine dining",
+        "Spa"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-014",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Bali Retreat",
+      "destination": "Ubud, Bali",
+      "startDate": "2025-10-01",
+      "endDate": "2025-10-10",
+      "price": 3800.00,
+      "flightDetails": {
+        "airline": "Cathay Pacific",
+        "flightNumber": "CX873",
+        "originAirport": "SFO",
+        "destinationAirport": "DPS",
+        "departureDate": "2025-10-01",
+        "departureTime": "09:00 AM",
+        "class": "Economy",
+        "seatAvailability": 50
+      },
+      "hotelDetails": {
+        "name": "The Kayon Jungle Resort",
+        "checkInDate": "2025-10-02",
+        "checkOutDate": "2025-10-10"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "9 nights at a private villa",
+        "Daily yoga sessions",
+        "Cooking class",
+        "Temple tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-015",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Emirates",
+      "flightNumber": "EK201",
+      "originAirport": "JFK",
+      "destinationAirport": "DXB",
+      "departureDate": "2025-11-05",
+      "departureTime": "11:30 PM",
+      "arrivalDate": "2025-11-06",
+      "arrivalTime": "07:45 PM",
+      "class": "Economy",
+      "price": 950.00,
+      "seatAvailability": 110
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-015",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Ritz-Carlton, Maui",
+      "location": "Maui, HI",
+      "checkInDate": "2025-10-01",
+      "checkOutDate": "2025-10-08",
+      "roomType": "Garden View Room",
+      "pricePerNight": 600.00,
+      "totalRoomsAvailable": 12,
+      "amenities": [
+        "Free Wi-Fi",
+        "Spa",
+        "Beach access",
+        "Golf course"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-015",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Paris, France & Rome, Italy",
+      "startDate": "2025-11-20",
+      "endDate": "2025-11-30",
+      "price": 4200.00,
+      "flightDetails": {
+        "airline": "Air France",
+        "flightNumber": "AF009",
+        "originAirport": "JFK",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-11-20",
+        "departureTime": "09:00 PM",
+        "class": "Economy",
+        "seatAvailability": 55
+      },
+      "hotelDetails": {
+        "name": "Hotel Le Bristol Paris & The Westin Excelsior, Rome",
+        "checkInDate": "2025-11-21",
+        "checkOutDate": "2025-11-25"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Eurostar train between cities",
+        "5 nights in Paris hotel",
+        "4 nights in Rome hotel",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-016",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "American Airlines",
+      "flightNumber": "AA501",
+      "originAirport": "LGA",
+      "destinationAirport": "MIA",
+      "departureDate": "2025-10-25",
+      "departureTime": "11:00 AM",
+      "arrivalDate": "2025-10-25",
+      "arrivalTime": "02:30 PM",
+      "class": "Economy",
+      "price": 220.50,
+      "seatAvailability": 85
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-016",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Setai, Miami Beach",
+      "location": "Miami Beach, FL",
+      "checkInDate": "2025-10-26",
+      "checkOutDate": "2025-10-31",
+      "roomType": "Studio Suite",
+      "pricePerNight": 750.00,
+      "totalRoomsAvailable": 9,
+      "amenities": [
+        "Oceanfront",
+        "Three swimming pools",
+        "Spa",
+        "Asian-inspired design"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-016",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "New Zealand Explorer",
+      "destination": "North & South Islands, New Zealand",
+      "startDate": "2025-11-15",
+      "endDate": "2025-11-29",
+      "price": 6200.00,
+      "flightDetails": {
+        "airline": "Air New Zealand",
+        "flightNumber": "NZ1",
+        "originAirport": "LAX",
+        "destinationAirport": "AKL",
+        "departureDate": "2025-11-15",
+        "departureTime": "09:00 PM",
+        "class": "Economy",
+        "seatAvailability": 25
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "14 nights in hotels",
+        "Rental car",
+        "Hobbiton movie set tour",
+        "Milford Sound cruise"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-017",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "JetBlue Airways",
+      "flightNumber": "B6234",
+      "originAirport": "BOS",
+      "destinationAirport": "SJU",
+      "departureDate": "2025-12-05",
+      "departureTime": "06:30 AM",
+      "arrivalDate": "2025-12-05",
+      "arrivalTime": "11:00 AM",
+      "class": "Economy",
+      "price": 280.00,
+      "seatAvailability": 130
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-017",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Condado Vanderbilt Hotel",
+      "location": "San Juan, Puerto Rico",
+      "checkInDate": "2025-12-05",
+      "checkOutDate": "2025-12-10",
+      "roomType": "Ocean View Room",
+      "pricePerNight": 350.00,
+      "totalRoomsAvailable": 20,
+      "amenities": [
+        "Historic architecture",
+        "Infinity pool",
+        "Spa",
+        "Fine dining"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-017",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "South American Adventure",
+      "destination": "Machu Picchu, Peru",
+      "startDate": "2025-10-10",
+      "endDate": "2025-10-18",
+      "price": 3900.00,
+      "flightDetails": {
+        "airline": "LATAM Airlines",
+        "flightNumber": "LA250",
+        "originAirport": "MIA",
+        "destinationAirport": "LIM",
+        "departureDate": "2025-10-10",
+        "departureTime": "08:00 AM",
+        "class": "Economy",
+        "seatAvailability": 45
+      },
+      "hotelDetails": {
+        "name": "Belmond Sanctuary Lodge, Machu Picchu",
+        "checkInDate": "2025-10-14",
+        "checkOutDate": "2025-10-16"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "8 nights in hotels",
+        "Train tickets to Machu Picchu",
+        "Guided tours of historic sites"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-018",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Lufthansa",
+      "flightNumber": "LH111",
+      "originAirport": "ORD",
+      "destinationAirport": "MUC",
+      "departureDate": "2025-11-20",
+      "departureTime": "05:00 PM",
+      "arrivalDate": "2025-11-21",
+      "arrivalTime": "09:00 AM",
+      "class": "Economy",
+      "price": 750.00,
+      "seatAvailability": 60
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-018",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Mandarin Oriental, Munich",
+      "location": "Munich, Germany",
+      "checkInDate": "2025-11-21",
+      "checkOutDate": "2025-11-25",
+      "roomType": "Superior Room",
+      "pricePerNight": 480.00,
+      "totalRoomsAvailable": 12,
+      "amenities": [
+        "Rooftop pool",
+        "City views",
+        "Spa",
+        "Fine dining"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-018",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "African Safari & Cape Town",
+      "destination": "Cape Town & Kruger National Park, South Africa",
+      "startDate": "2025-10-05",
+      "endDate": "2025-10-17",
+      "price": 9500.00,
+      "flightDetails": {
+        "airline": "United Airlines",
+        "flightNumber": "UA101",
+        "originAirport": "EWR",
+        "destinationAirport": "CPT",
+        "departureDate": "2025-10-05",
+        "departureTime": "10:00 PM",
+        "class": "Business",
+        "seatAvailability": 8
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "5 nights in Cape Town",
+        "7 nights in a safari lodge",
+        "Guided game drives",
+        "Table Mountain cable car"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-019",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "British Airways",
+      "flightNumber": "BA282",
+      "originAirport": "PHX",
+      "destinationAirport": "LHR",
+      "departureDate": "2025-10-01",
+      "departureTime": "07:00 PM",
+      "arrivalDate": "2025-10-02",
+      "arrivalTime": "12:00 PM",
+      "class": "Economy",
+      "price": 850.00,
+      "seatAvailability": 75
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-019",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Londoner",
+      "location": "London, UK",
+      "checkInDate": "2025-10-02",
+      "checkOutDate": "2025-10-07",
+      "roomType": "Deluxe King Room",
+      "pricePerNight": 550.00,
+      "totalRoomsAvailable": 15,
+      "amenities": [
+        "Boutique hotel",
+        "Rooftop bar",
+        "Pool",
+        "Cinema"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-019",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Canadian Rockies Winter Escape",
+      "destination": "Banff & Jasper, Canada",
+      "startDate": "2025-12-01",
+      "endDate": "2025-12-08",
+      "price": 3200.00,
+      "flightDetails": {
+        "airline": "Air Canada",
+        "flightNumber": "AC123",
+        "originAirport": "YVR",
+        "destinationAirport": "YYC",
+        "departureDate": "2025-12-01",
+        "departureTime": "09:00 AM",
+        "class": "Economy",
+        "seatAvailability": 45
+      },
+      "hotelDetails": {
+        "name": "Fairmont Banff Springs & Fairmont Jasper Park Lodge"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "7 nights in luxury hotels",
+        "Rental car",
+        "Ice skating on Lake Louise",
+        "Snowshoeing tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-020",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "LATAM Airlines",
+      "flightNumber": "LA240",
+      "originAirport": "JFK",
+      "destinationAirport": "SCL",
+      "departureDate": "2025-12-10",
+      "departureTime": "11:00 PM",
+      "arrivalDate": "2025-12-11",
+      "arrivalTime": "10:30 AM",
+      "class": "Economy",
+      "price": 800.00,
+      "seatAvailability": 55
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-020",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Ritz-Carlton, Santiago",
+      "location": "Santiago, Chile",
+      "checkInDate": "2025-12-11",
+      "checkOutDate": "2025-12-16",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 320.00,
+      "totalRoomsAvailable": 18,
+      "amenities": [
+        "Rooftop pool",
+        "City views",
+        "Spa",
+        "Fine dining"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-020",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Tuscan Vineyard Escape",
+      "destination": "Chianti, Italy",
+      "startDate": "2025-10-15",
+      "endDate": "2025-10-22",
+      "price": 3500.00,
+      "flightDetails": {
+        "airline": "United Airlines",
+        "flightNumber": "UA900",
+        "originAirport": "EWR",
+        "destinationAirport": "FLR",
+        "departureDate": "2025-10-15",
+        "departureTime": "06:00 PM",
+        "class": "Economy",
+        "seatAvailability": 35
+      },
+      "hotelDetails": {
+        "name": "Castello di Fonterutoli"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "7 nights at a vineyard estate",
+        "Daily wine tastings",
+        "Cooking classes with local chefs",
+        "Bike tours through the vineyards"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-021",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Air France",
+      "flightNumber": "AF009",
+      "originAirport": "JFK",
+      "destinationAirport": "CDG",
+      "departureDate": "2025-11-20",
+      "departureTime": "09:00 PM",
+      "arrivalDate": "2025-11-21",
+      "arrivalTime": "10:30 AM",
+      "class": "Economy",
+      "price": 780.00,
+      "seatAvailability": 55
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-021",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hotel Le Bristol Paris",
+      "location": "Paris, France",
+      "checkInDate": "2025-11-21",
+      "checkOutDate": "2025-11-25",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 900.00,
+      "totalRoomsAvailable": 8,
+      "amenities": [
+        "Michelin-starred restaurant",
+        "Rooftop pool",
+        "Spa",
+        "Kids club"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-021",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Galapagos Islands Cruise",
+      "destination": "Galapagos Islands, Ecuador",
+      "startDate": "2025-11-05",
+      "endDate": "2025-11-12",
+      "price": 6500.00,
+      "flightDetails": {
+        "airline": "LATAM Airlines",
+        "flightNumber": "LA1450",
+        "originAirport": "JFK",
+        "destinationAirport": "GPS",
+        "departureDate": "2025-11-05",
+        "departureTime": "07:00 AM",
+        "class": "Economy",
+        "seatAvailability": 20
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "7-night cruise",
+        "All meals on board",
+        "Daily guided excursions",
+        "Snorkeling equipment"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-022",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Cathay Pacific",
+      "flightNumber": "CX873",
+      "originAirport": "SFO",
+      "destinationAirport": "DPS",
+      "departureDate": "2025-10-01",
+      "departureTime": "09:00 AM",
+      "arrivalDate": "2025-10-02",
+      "arrivalTime": "03:00 PM",
+      "class": "Economy",
+      "price": 850.00,
+      "seatAvailability": 50
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-022",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "The Kayon Jungle Resort",
+      "location": "Ubud, Bali",
+      "checkInDate": "2025-10-02",
+      "checkOutDate": "2025-10-10",
+      "roomType": "Jungle Villa",
+      "pricePerNight": 450.00,
+      "totalRoomsAvailable": 10,
+      "amenities": [
+        "Private pool",
+        "Rainforest views",
+        "Spa",
+        "Daily yoga classes"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-022",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Patagonian Trekking Tour",
+      "destination": "Torres del Paine National Park, Chile",
+      "startDate": "2025-12-10",
+      "endDate": "2025-12-20",
+      "price": 5500.00,
+      "flightDetails": {
+        "airline": "LATAM Airlines",
+        "flightNumber": "LA530",
+        "originAirport": "MIA",
+        "destinationAirport": "SCL",
+        "departureDate": "2025-12-10",
+        "departureTime": "10:00 PM",
+        "class": "Economy",
+        "seatAvailability": 25
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "Guided trekking tours",
+        "Accommodation in lodges and campsites",
+        "All meals"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-023",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Air New Zealand",
+      "flightNumber": "NZ1",
+      "originAirport": "LAX",
+      "destinationAirport": "AKL",
+      "departureDate": "2025-11-15",
+      "departureTime": "09:00 PM",
+      "arrivalDate": "2025-11-17",
+      "arrivalTime": "05:00 AM",
+      "class": "Economy",
+      "price": 1300.00,
+      "seatAvailability": 25
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-023",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hilton Auckland",
+      "location": "Auckland, New Zealand",
+      "checkInDate": "2025-11-17",
+      "checkOutDate": "2025-11-22",
+      "roomType": "King Room",
+      "pricePerNight": 220.00,
+      "totalRoomsAvailable": 30,
+      "amenities": [
+        "Waterfront location",
+        "Rooftop bar",
+        "Swimming pool",
+        "Fitness center"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-023",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ultimate European Christmas Markets",
+      "destination": "Prague, Vienna & Budapest",
+      "startDate": "2025-12-05",
+      "endDate": "2025-12-15",
+      "price": 4100.00,
+      "flightDetails": {
+        "airline": "Lufthansa",
+        "flightNumber": "LH455",
+        "originAirport": "EWR",
+        "destinationAirport": "PRG",
+        "departureDate": "2025-12-05",
+        "departureTime": "07:00 PM",
+        "class": "Economy",
+        "seatAvailability": 40
+      },
+      "hotelDetails": null,
+      "inclusions": [
+        "Round-trip flights",
+        "10 nights in hotels",
+        "High-speed rail between cities",
+        "Guided Christmas market tours"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-024",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Lufthansa",
+      "flightNumber": "LH455",
+      "originAirport": "EWR",
+      "destinationAirport": "PRG",
+      "departureDate": "2025-12-05",
+      "departureTime": "07:00 PM",
+      "arrivalDate": "2025-12-06",
+      "arrivalTime": "09:00 AM",
+      "class": "Economy",
+      "price": 700.00,
+      "seatAvailability": 40
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-024",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Mandarin Oriental, Prague",
+      "location": "Prague, Czech Republic",
+      "checkInDate": "2025-12-06",
+      "checkOutDate": "2025-12-10",
+      "roomType": "Deluxe Room",
+      "pricePerNight": 300.00,
+      "totalRoomsAvailable": 10,
+      "amenities": [
+        "Historic Monastery setting",
+        "Spa",
+        "Courtyard garden",
+        "Fine dining"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-024",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Serengeti National Park, Tanzania",
+      "startDate": "2025-10-25",
+      "endDate": "2025-11-05",
+      "price": 7500.00,
+      "flightDetails": {
+        "airline": "Qatar Airways",
+        "flightNumber": "QR763",
+        "originAirport": "JFK",
+        "destinationAirport": "DAR",
+        "departureDate": "2025-10-25",
+        "departureTime": "11:00 PM",
+        "class": "Business",
+        "seatAvailability": 12
+      },
+      "hotelDetails": {
+        "name": "Four Seasons Safari Lodge Serengeti"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "11 nights in luxury safari lodges",
+        "Daily game drives",
+        "Hot air balloon safari"
+      ]
+    }
+  },
+  {
+    "type": "flight",
+    "recordId": "FLIGHT-025",
+    "availabilityStatus": "Available",
+    "details": {
+      "airline": "Qatar Airways",
+      "flightNumber": "QR763",
+      "originAirport": "JFK",
+      "destinationAirport": "DAR",
+      "departureDate": "2025-10-25",
+      "departureTime": "11:00 PM",
+      "arrivalDate": "2025-10-26",
+      "arrivalTime": "08:00 PM",
+      "class": "Business",
+      "price": 4200.00,
+      "seatAvailability": 12
+    }
+  },
+  {
+    "type": "hotel",
+    "recordId": "HOTEL-025",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Four Seasons Safari Lodge Serengeti",
+      "location": "Serengeti National Park, Tanzania",
+      "checkInDate": "2025-10-26",
+      "checkOutDate": "2025-11-05",
+      "roomType": "Safari Room",
+      "pricePerNight": 750.00,
+      "totalRoomsAvailable": 5,
+      "amenities": [
+        "Infinity pool overlooking watering hole",
+        "Spa",
+        "Bush walks",
+        "Fine dining"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-025",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Bora Bora Honeymoon",
+      "destination": "Bora Bora, French Polynesia",
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-08",
+      "price": 8500.00,
+      "flightDetails": {
+        "airline": "Air Tahiti Nui",
+        "flightNumber": "TN101",
+        "originAirport": "LAX",
+        "destinationAirport": "PPT",
+        "departureDate": "2025-11-01",
+        "departureTime": "01:00 PM",
+        "class": "Business",
+        "seatAvailability": 10
+      },
+      "hotelDetails": {
+        "name": "The St. Regis Bora Bora Resort"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "7 nights in an overwater villa",
+        "Romantic dinners",
+        "Snorkeling excursions",
+        "Couples spa treatment"
+      ]
+    }
+  }
+]

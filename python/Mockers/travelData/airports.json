@@ -1,0 +1,16 @@
+{
+  "JFK": "John F. Kennedy International Airport",
+  "LAX": "Los Angeles International Airport",
+  "ORD": "O'Hare International Airport",
+  "SFO": "San Francisco International Airport",
+  "MIA": "Miami International Airport",
+  "LHR": "Heathrow Airport",
+  "CDG": "Charles de Gaulle Airport",
+  "NRT": "Narita International Airport",
+  "SYD": "Sydney Airport",
+  "DXB": "Dubai International Airport",
+  "IST": "Istanbul Airport",
+  "BOS": "Logan International Airport",
+  "MCO": "Orlando International Airport",
+  "DEN": "Denver International Airport"
+}

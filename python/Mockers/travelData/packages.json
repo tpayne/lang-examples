@@ -1,0 +1,4807 @@
+[
+  {
+    "type": "package",
+    "recordId": "PACKAGE-002",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-03",
+      "endDate": "2025-09-12",
+      "price": 4850,
+      "flightDetails": {
+        "airline": "Taylor, Taylor and Davis",
+        "flightNumber": "DL645",
+        "originAirport": "DEN",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-10-03",
+        "departureTime": "15:46:29"
+      },
+      "hotelDetails": {
+        "name": "Rivera, Castro and Gomez Hotel",
+        "checkInDate": "2025-09-10",
+        "checkOutDate": "2025-09-12",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-003",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "New York, NY",
+      "startDate": "2025-11-26",
+      "endDate": "2025-11-07",
+      "price": 5132,
+      "flightDetails": {
+        "airline": "Grimes-Green",
+        "flightNumber": "UA195",
+        "originAirport": "LHR",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-26",
+        "departureTime": "18:55:59"
+      },
+      "hotelDetails": {
+        "name": "Sanchez-Nguyen Hotel",
+        "checkInDate": "2025-10-26",
+        "checkOutDate": "2025-11-07",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-006",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-11",
+      "endDate": "2025-10-16",
+      "price": 7910,
+      "flightDetails": {
+        "airline": "Stewart-Allen",
+        "flightNumber": "AA293",
+        "originAirport": "MIA",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-11",
+        "departureTime": "18:57:11"
+      },
+      "hotelDetails": {
+        "name": "Mcdowell Inc Hotel",
+        "checkInDate": "2025-10-14",
+        "checkOutDate": "2025-10-16",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "Excursions",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-008",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-11",
+      "endDate": "2025-09-07",
+      "price": 3897,
+      "flightDetails": {
+        "airline": "Nguyen Inc",
+        "flightNumber": "WN701",
+        "originAirport": "SFO",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-10-11",
+        "departureTime": "22:33:04"
+      },
+      "hotelDetails": {
+        "name": "Robinson, Norton and Cook Hotel",
+        "checkInDate": "2025-09-03",
+        "checkOutDate": "2025-09-07",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Guided city tours",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-010",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-06",
+      "endDate": "2025-11-06",
+      "price": 5118,
+      "flightDetails": {
+        "airline": "Johnson Inc",
+        "flightNumber": "AA289",
+        "originAirport": "MIA",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-10-06",
+        "departureTime": "10:24:49"
+      },
+      "hotelDetails": {
+        "name": "Johnson, Coleman and Garcia Hotel",
+        "checkInDate": "2025-11-05",
+        "checkOutDate": "2025-11-06",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-018",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "New York, NY",
+      "startDate": "2025-10-28",
+      "endDate": "2025-09-17",
+      "price": 1501,
+      "flightDetails": {
+        "airline": "Hutchinson, Carroll and Perry",
+        "flightNumber": "WN992",
+        "originAirport": "DEN",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-10-28",
+        "departureTime": "08:37:18"
+      },
+      "hotelDetails": {
+        "name": "Moore, Rose and Freeman Hotel",
+        "checkInDate": "2025-09-16",
+        "checkOutDate": "2025-09-17",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Guided city tours",
+        "Hotel stay",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-020",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-11-28",
+      "endDate": "2025-09-22",
+      "price": 7999,
+      "flightDetails": {
+        "airline": "Butler, Smith and Smith",
+        "flightNumber": "UA942",
+        "originAirport": "ORD",
+        "destinationAirport": "JFK",
+        "departureDate": "2025-11-28",
+        "departureTime": "08:37:11"
+      },
+      "hotelDetails": {
+        "name": "Ramirez-Good Hotel",
+        "checkInDate": "2025-09-12",
+        "checkOutDate": "2025-09-22",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-024",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-10-15",
+      "endDate": "2025-09-30",
+      "price": 2175,
+      "flightDetails": {
+        "airline": "Graham, Savage and Thompson",
+        "flightNumber": "WN701",
+        "originAirport": "LHR",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-15",
+        "departureTime": "05:36:35"
+      },
+      "hotelDetails": {
+        "name": "Higgins-Morgan Hotel",
+        "checkInDate": "2025-09-25",
+        "checkOutDate": "2025-09-30",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-034",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "New York, NY",
+      "startDate": "2025-11-18",
+      "endDate": "2025-10-29",
+      "price": 2081,
+      "flightDetails": {
+        "airline": "Stark, Morris and Jimenez",
+        "flightNumber": "WN750",
+        "originAirport": "NRT",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-18",
+        "departureTime": "14:18:03"
+      },
+      "hotelDetails": {
+        "name": "Thornton-Burgess Hotel",
+        "checkInDate": "2025-10-25",
+        "checkOutDate": "2025-10-29",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals",
+        "Guided city tours",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-035",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-18",
+      "endDate": "2025-09-09",
+      "price": 3938,
+      "flightDetails": {
+        "airline": "Mueller, Kirby and Aguilar",
+        "flightNumber": "WN167",
+        "originAirport": "ORD",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-10-18",
+        "departureTime": "05:22:49"
+      },
+      "hotelDetails": {
+        "name": "Smith-Anthony Hotel",
+        "checkInDate": "2025-09-07",
+        "checkOutDate": "2025-09-09",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-037",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-11-07",
+      "endDate": "2025-11-28",
+      "price": 6950,
+      "flightDetails": {
+        "airline": "Nichols-George",
+        "flightNumber": "WN965",
+        "originAirport": "MCO",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-11-07",
+        "departureTime": "03:47:59"
+      },
+      "hotelDetails": {
+        "name": "Mcclure, Yang and Turner Hotel",
+        "checkInDate": "2025-11-16",
+        "checkOutDate": "2025-11-28",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-039",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-09-16",
+      "endDate": "2025-11-28",
+      "price": 2076,
+      "flightDetails": {
+        "airline": "Mitchell LLC",
+        "flightNumber": "UA136",
+        "originAirport": "DXB",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-09-16",
+        "departureTime": "05:52:39"
+      },
+      "hotelDetails": {
+        "name": "Nunez and Sons Hotel",
+        "checkInDate": "2025-11-19",
+        "checkOutDate": "2025-11-28",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-040",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "London, UK",
+      "startDate": "2025-10-26",
+      "endDate": "2025-09-19",
+      "price": 2485,
+      "flightDetails": {
+        "airline": "Williams-Ruiz",
+        "flightNumber": "AA120",
+        "originAirport": "CDG",
+        "destinationAirport": "IST",
+        "departureDate": "2025-10-26",
+        "departureTime": "01:50:22"
+      },
+      "hotelDetails": {
+        "name": "Lee-Logan Hotel",
+        "checkInDate": "2025-09-11",
+        "checkOutDate": "2025-09-19",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-044",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-22",
+      "endDate": "2025-11-29",
+      "price": 8562,
+      "flightDetails": {
+        "airline": "Mills, Hunter and Dougherty",
+        "flightNumber": "AA536",
+        "originAirport": "JFK",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-09-22",
+        "departureTime": "15:04:12"
+      },
+      "hotelDetails": {
+        "name": "Perry and Sons Hotel",
+        "checkInDate": "2025-11-23",
+        "checkOutDate": "2025-11-29",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-047",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "New York, NY",
+      "startDate": "2025-10-24",
+      "endDate": "2025-11-27",
+      "price": 5730,
+      "flightDetails": {
+        "airline": "Smith Ltd",
+        "flightNumber": "UA865",
+        "originAirport": "LAX",
+        "destinationAirport": "IST",
+        "departureDate": "2025-10-24",
+        "departureTime": "01:46:47"
+      },
+      "hotelDetails": {
+        "name": "Lopez Inc Hotel",
+        "checkInDate": "2025-11-23",
+        "checkOutDate": "2025-11-27",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Excursions",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-049",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "New York, NY",
+      "startDate": "2025-10-28",
+      "endDate": "2025-10-03",
+      "price": 3666,
+      "flightDetails": {
+        "airline": "Kaiser, Garcia and Carpenter",
+        "flightNumber": "AA485",
+        "originAirport": "LHR",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-10-28",
+        "departureTime": "05:26:23"
+      },
+      "hotelDetails": {
+        "name": "Carter Group Hotel",
+        "checkInDate": "2025-09-29",
+        "checkOutDate": "2025-10-03",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-051",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-28",
+      "endDate": "2025-10-14",
+      "price": 4538,
+      "flightDetails": {
+        "airline": "Wright Ltd",
+        "flightNumber": "DL752",
+        "originAirport": "DEN",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-28",
+        "departureTime": "08:36:20"
+      },
+      "hotelDetails": {
+        "name": "Valenzuela, Alexander and Watson Hotel",
+        "checkInDate": "2025-10-08",
+        "checkOutDate": "2025-10-14",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-052",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Paris, France",
+      "startDate": "2025-11-11",
+      "endDate": "2025-11-15",
+      "price": 7322,
+      "flightDetails": {
+        "airline": "Grant Ltd",
+        "flightNumber": "AA914",
+        "originAirport": "DEN",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-11-11",
+        "departureTime": "23:36:10"
+      },
+      "hotelDetails": {
+        "name": "Chung LLC Hotel",
+        "checkInDate": "2025-11-08",
+        "checkOutDate": "2025-11-15",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-054",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-12",
+      "endDate": "2025-09-16",
+      "price": 1854,
+      "flightDetails": {
+        "airline": "Wilson-Irwin",
+        "flightNumber": "DL658",
+        "originAirport": "SYD",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-10-12",
+        "departureTime": "05:49:53"
+      },
+      "hotelDetails": {
+        "name": "Stephens Group Hotel",
+        "checkInDate": "2025-09-09",
+        "checkOutDate": "2025-09-16",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-056",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-26",
+      "endDate": "2025-09-20",
+      "price": 3225,
+      "flightDetails": {
+        "airline": "Miller, Jones and Baker",
+        "flightNumber": "DL221",
+        "originAirport": "DEN",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-26",
+        "departureTime": "13:09:51"
+      },
+      "hotelDetails": {
+        "name": "Meyer-Berry Hotel",
+        "checkInDate": "2025-09-07",
+        "checkOutDate": "2025-09-20",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours",
+        "Hotel stay",
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-057",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Paris, France",
+      "startDate": "2025-10-08",
+      "endDate": "2025-09-25",
+      "price": 6398,
+      "flightDetails": {
+        "airline": "Figueroa-Strong",
+        "flightNumber": "DL399",
+        "originAirport": "MIA",
+        "destinationAirport": "JFK",
+        "departureDate": "2025-10-08",
+        "departureTime": "00:08:06"
+      },
+      "hotelDetails": {
+        "name": "Morales-Mcdonald Hotel",
+        "checkInDate": "2025-09-15",
+        "checkOutDate": "2025-09-25",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours",
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-060",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Paris, France",
+      "startDate": "2025-11-27",
+      "endDate": "2025-11-28",
+      "price": 8610,
+      "flightDetails": {
+        "airline": "Avery, Middleton and Foster",
+        "flightNumber": "DL142",
+        "originAirport": "JFK",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-11-27",
+        "departureTime": "13:33:15"
+      },
+      "hotelDetails": {
+        "name": "Lester, Taylor and Berry Hotel",
+        "checkInDate": "2025-11-18",
+        "checkOutDate": "2025-11-28",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-062",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-10-11",
+      "endDate": "2025-10-10",
+      "price": 2315,
+      "flightDetails": {
+        "airline": "Stewart, Clark and Lopez",
+        "flightNumber": "DL908",
+        "originAirport": "JFK",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-10-11",
+        "departureTime": "20:42:54"
+      },
+      "hotelDetails": {
+        "name": "Gonzales and Sons Hotel",
+        "checkInDate": "2025-10-06",
+        "checkOutDate": "2025-10-10",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay",
+        "Excursions",
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-067",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-09-07",
+      "endDate": "2025-11-16",
+      "price": 4615,
+      "flightDetails": {
+        "airline": "Walker, Franklin and Grant",
+        "flightNumber": "AA564",
+        "originAirport": "MIA",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-09-07",
+        "departureTime": "22:10:54"
+      },
+      "hotelDetails": {
+        "name": "Barry-Scott Hotel",
+        "checkInDate": "2025-11-11",
+        "checkOutDate": "2025-11-16",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-070",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-11-22",
+      "endDate": "2025-11-22",
+      "price": 4455,
+      "flightDetails": {
+        "airline": "Stevens-Wilson",
+        "flightNumber": "UA346",
+        "originAirport": "SYD",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-11-22",
+        "departureTime": "08:28:51"
+      },
+      "hotelDetails": {
+        "name": "Jones, Simmons and Fischer Hotel",
+        "checkInDate": "2025-11-19",
+        "checkOutDate": "2025-11-22",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-071",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-23",
+      "endDate": "2025-11-06",
+      "price": 5776,
+      "flightDetails": {
+        "airline": "Pittman LLC",
+        "flightNumber": "DL427",
+        "originAirport": "LHR",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-09-23",
+        "departureTime": "06:31:46"
+      },
+      "hotelDetails": {
+        "name": "Phillips, Ramos and Jacobs Hotel",
+        "checkInDate": "2025-10-25",
+        "checkOutDate": "2025-11-06",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay",
+        "Excursions",
+        "Guided city tours",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-074",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-22",
+      "endDate": "2025-10-11",
+      "price": 1914,
+      "flightDetails": {
+        "airline": "Campbell, Singh and Valenzuela",
+        "flightNumber": "UA630",
+        "originAirport": "LHR",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-22",
+        "departureTime": "08:37:55"
+      },
+      "hotelDetails": {
+        "name": "Jackson, Pacheco and Tran Hotel",
+        "checkInDate": "2025-10-04",
+        "checkOutDate": "2025-10-11",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-075",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-11-12",
+      "endDate": "2025-09-24",
+      "price": 3671,
+      "flightDetails": {
+        "airline": "Daugherty PLC",
+        "flightNumber": "UA238",
+        "originAirport": "MIA",
+        "destinationAirport": "IST",
+        "departureDate": "2025-11-12",
+        "departureTime": "13:02:33"
+      },
+      "hotelDetails": {
+        "name": "Wolf LLC Hotel",
+        "checkInDate": "2025-09-22",
+        "checkOutDate": "2025-09-24",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-078",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-09-29",
+      "endDate": "2025-11-27",
+      "price": 5201,
+      "flightDetails": {
+        "airline": "Taylor-Morales",
+        "flightNumber": "AA941",
+        "originAirport": "MCO",
+        "destinationAirport": "JFK",
+        "departureDate": "2025-09-29",
+        "departureTime": "08:32:52"
+      },
+      "hotelDetails": {
+        "name": "Barber-Nixon Hotel",
+        "checkInDate": "2025-11-24",
+        "checkOutDate": "2025-11-27",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-082",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-17",
+      "endDate": "2025-10-23",
+      "price": 9920,
+      "flightDetails": {
+        "airline": "Hatfield, Burgess and Reyes",
+        "flightNumber": "WN370",
+        "originAirport": "SYD",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-17",
+        "departureTime": "02:51:09"
+      },
+      "hotelDetails": {
+        "name": "Jackson-Mason Hotel",
+        "checkInDate": "2025-10-21",
+        "checkOutDate": "2025-10-23",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-084",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Paris, France",
+      "startDate": "2025-11-25",
+      "endDate": "2025-11-12",
+      "price": 2095,
+      "flightDetails": {
+        "airline": "French, Sutton and Jackson",
+        "flightNumber": "UA537",
+        "originAirport": "ORD",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-11-25",
+        "departureTime": "15:36:08"
+      },
+      "hotelDetails": {
+        "name": "King Ltd Hotel",
+        "checkInDate": "2025-11-03",
+        "checkOutDate": "2025-11-12",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-085",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-10-15",
+      "endDate": "2025-10-02",
+      "price": 9182,
+      "flightDetails": {
+        "airline": "Powers-Ellis",
+        "flightNumber": "DL266",
+        "originAirport": "CDG",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-15",
+        "departureTime": "22:16:19"
+      },
+      "hotelDetails": {
+        "name": "Smith-Moreno Hotel",
+        "checkInDate": "2025-09-25",
+        "checkOutDate": "2025-10-02",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-086",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Paris, France",
+      "startDate": "2025-11-27",
+      "endDate": "2025-09-10",
+      "price": 6247,
+      "flightDetails": {
+        "airline": "Arnold, Villa and Johnson",
+        "flightNumber": "WN838",
+        "originAirport": "BOS",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-11-27",
+        "departureTime": "02:46:15"
+      },
+      "hotelDetails": {
+        "name": "King Ltd Hotel",
+        "checkInDate": "2025-09-06",
+        "checkOutDate": "2025-09-10",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-090",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-01",
+      "endDate": "2025-09-21",
+      "price": 4078,
+      "flightDetails": {
+        "airline": "Williams, Martinez and Noble",
+        "flightNumber": "WN780",
+        "originAirport": "JFK",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-01",
+        "departureTime": "04:13:48"
+      },
+      "hotelDetails": {
+        "name": "Dodson-Thompson Hotel",
+        "checkInDate": "2025-09-07",
+        "checkOutDate": "2025-09-21",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-094",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-10-03",
+      "endDate": "2025-11-05",
+      "price": 5996,
+      "flightDetails": {
+        "airline": "Gaines, Fields and Lindsey",
+        "flightNumber": "AA116",
+        "originAirport": "SFO",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-10-03",
+        "departureTime": "13:58:24"
+      },
+      "hotelDetails": {
+        "name": "Smith-Moss Hotel",
+        "checkInDate": "2025-10-27",
+        "checkOutDate": "2025-11-05",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-097",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-09",
+      "endDate": "2025-10-28",
+      "price": 9261,
+      "flightDetails": {
+        "airline": "Smith-King",
+        "flightNumber": "WN495",
+        "originAirport": "JFK",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-09",
+        "departureTime": "17:06:06"
+      },
+      "hotelDetails": {
+        "name": "Martinez, Page and Murphy Hotel",
+        "checkInDate": "2025-10-23",
+        "checkOutDate": "2025-10-28",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-100",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-17",
+      "endDate": "2025-09-13",
+      "price": 2822,
+      "flightDetails": {
+        "airline": "Martin and Sons",
+        "flightNumber": "WN822",
+        "originAirport": "LAX",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-11-17",
+        "departureTime": "18:08:54"
+      },
+      "hotelDetails": {
+        "name": "Terry, Hughes and White Hotel",
+        "checkInDate": "2025-09-05",
+        "checkOutDate": "2025-09-13",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-103",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-04",
+      "endDate": "2025-11-23",
+      "price": 2810,
+      "flightDetails": {
+        "airline": "Lee Group",
+        "flightNumber": "AA931",
+        "originAirport": "LAX",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-09-04",
+        "departureTime": "12:41:38"
+      },
+      "hotelDetails": {
+        "name": "Brown, Miller and Holmes Hotel",
+        "checkInDate": "2025-11-21",
+        "checkOutDate": "2025-11-23",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-106",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-02",
+      "endDate": "2025-09-11",
+      "price": 4460,
+      "flightDetails": {
+        "airline": "Burke Ltd",
+        "flightNumber": "AA466",
+        "originAirport": "SYD",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-11-02",
+        "departureTime": "14:02:10"
+      },
+      "hotelDetails": {
+        "name": "Avila, Chambers and Hart Hotel",
+        "checkInDate": "2025-09-06",
+        "checkOutDate": "2025-09-11",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-109",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-09-08",
+      "endDate": "2025-10-15",
+      "price": 6203,
+      "flightDetails": {
+        "airline": "Atkins, Gibbs and Garrison",
+        "flightNumber": "DL128",
+        "originAirport": "MIA",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-08",
+        "departureTime": "20:38:35"
+      },
+      "hotelDetails": {
+        "name": "Donaldson-Moore Hotel",
+        "checkInDate": "2025-10-01",
+        "checkOutDate": "2025-10-15",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-111",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-24",
+      "endDate": "2025-09-20",
+      "price": 3760,
+      "flightDetails": {
+        "airline": "Dougherty-Webb",
+        "flightNumber": "WN145",
+        "originAirport": "DEN",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-11-24",
+        "departureTime": "14:34:17"
+      },
+      "hotelDetails": {
+        "name": "Martin Group Hotel",
+        "checkInDate": "2025-09-16",
+        "checkOutDate": "2025-09-20",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-113",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "New York, NY",
+      "startDate": "2025-09-03",
+      "endDate": "2025-10-16",
+      "price": 8059,
+      "flightDetails": {
+        "airline": "Smith, Williams and Frost",
+        "flightNumber": "AA897",
+        "originAirport": "DEN",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-09-03",
+        "departureTime": "20:03:32"
+      },
+      "hotelDetails": {
+        "name": "Cook, Wright and Taylor Hotel",
+        "checkInDate": "2025-10-08",
+        "checkOutDate": "2025-10-16",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-114",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-08",
+      "endDate": "2025-09-30",
+      "price": 1855,
+      "flightDetails": {
+        "airline": "Hopkins, Church and Reynolds",
+        "flightNumber": "WN351",
+        "originAirport": "DXB",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-09-08",
+        "departureTime": "22:25:29"
+      },
+      "hotelDetails": {
+        "name": "Jones, King and Hill Hotel",
+        "checkInDate": "2025-09-23",
+        "checkOutDate": "2025-09-30",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-121",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-09-04",
+      "endDate": "2025-09-19",
+      "price": 6219,
+      "flightDetails": {
+        "airline": "Ford-May",
+        "flightNumber": "UA896",
+        "originAirport": "JFK",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-04",
+        "departureTime": "15:42:05"
+      },
+      "hotelDetails": {
+        "name": "Johnson and Sons Hotel",
+        "checkInDate": "2025-09-16",
+        "checkOutDate": "2025-09-19",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-125",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-26",
+      "endDate": "2025-11-12",
+      "price": 5869,
+      "flightDetails": {
+        "airline": "Vega and Sons",
+        "flightNumber": "AA105",
+        "originAirport": "JFK",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-11-26",
+        "departureTime": "08:38:51"
+      },
+      "hotelDetails": {
+        "name": "Larson PLC Hotel",
+        "checkInDate": "2025-11-02",
+        "checkOutDate": "2025-11-12",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-128",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-24",
+      "endDate": "2025-11-26",
+      "price": 5827,
+      "flightDetails": {
+        "airline": "Livingston PLC",
+        "flightNumber": "UA899",
+        "originAirport": "SFO",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-09-24",
+        "departureTime": "09:09:17"
+      },
+      "hotelDetails": {
+        "name": "Ortiz, Guerrero and Kim Hotel",
+        "checkInDate": "2025-11-14",
+        "checkOutDate": "2025-11-26",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-129",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "New York, NY",
+      "startDate": "2025-09-03",
+      "endDate": "2025-10-09",
+      "price": 9532,
+      "flightDetails": {
+        "airline": "Jackson-Alexander",
+        "flightNumber": "UA484",
+        "originAirport": "SYD",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-09-03",
+        "departureTime": "22:43:22"
+      },
+      "hotelDetails": {
+        "name": "Williams-Harvey Hotel",
+        "checkInDate": "2025-10-01",
+        "checkOutDate": "2025-10-09",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-130",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-10-20",
+      "endDate": "2025-09-08",
+      "price": 9401,
+      "flightDetails": {
+        "airline": "Baker-Hall",
+        "flightNumber": "DL263",
+        "originAirport": "BOS",
+        "destinationAirport": "IST",
+        "departureDate": "2025-10-20",
+        "departureTime": "09:11:57"
+      },
+      "hotelDetails": {
+        "name": "Knight-Ortiz Hotel",
+        "checkInDate": "2025-09-07",
+        "checkOutDate": "2025-09-08",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-132",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-02",
+      "endDate": "2025-11-05",
+      "price": 9620,
+      "flightDetails": {
+        "airline": "Lyons, Guzman and Klein",
+        "flightNumber": "UA584",
+        "originAirport": "NRT",
+        "destinationAirport": "IST",
+        "departureDate": "2025-09-02",
+        "departureTime": "11:50:41"
+      },
+      "hotelDetails": {
+        "name": "Roberson-Collins Hotel",
+        "checkInDate": "2025-11-01",
+        "checkOutDate": "2025-11-05",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-136",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-03",
+      "endDate": "2025-11-24",
+      "price": 4562,
+      "flightDetails": {
+        "airline": "Douglas LLC",
+        "flightNumber": "DL542",
+        "originAirport": "MIA",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-03",
+        "departureTime": "05:49:22"
+      },
+      "hotelDetails": {
+        "name": "Martinez-Moore Hotel",
+        "checkInDate": "2025-11-17",
+        "checkOutDate": "2025-11-24",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-142",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-10-17",
+      "endDate": "2025-11-19",
+      "price": 7186,
+      "flightDetails": {
+        "airline": "Jones-Thompson",
+        "flightNumber": "AA332",
+        "originAirport": "DXB",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-10-17",
+        "departureTime": "07:28:46"
+      },
+      "hotelDetails": {
+        "name": "Cherry-Williams Hotel",
+        "checkInDate": "2025-11-12",
+        "checkOutDate": "2025-11-19",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours",
+        "Excursions",
+        "Hotel stay",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-149",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-09-24",
+      "endDate": "2025-11-04",
+      "price": 6979,
+      "flightDetails": {
+        "airline": "Perez LLC",
+        "flightNumber": "DL768",
+        "originAirport": "NRT",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-24",
+        "departureTime": "22:55:08"
+      },
+      "hotelDetails": {
+        "name": "Mccoy, Martinez and Brown Hotel",
+        "checkInDate": "2025-11-01",
+        "checkOutDate": "2025-11-04",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-154",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "New York, NY",
+      "startDate": "2025-09-07",
+      "endDate": "2025-12-01",
+      "price": 7605,
+      "flightDetails": {
+        "airline": "Sawyer-Bishop",
+        "flightNumber": "UA982",
+        "originAirport": "ORD",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-07",
+        "departureTime": "07:44:09"
+      },
+      "hotelDetails": {
+        "name": "Mcclure-Morgan Hotel",
+        "checkInDate": "2025-11-22",
+        "checkOutDate": "2025-12-01",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-160",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-06",
+      "endDate": "2025-10-08",
+      "price": 5240,
+      "flightDetails": {
+        "airline": "Faulkner, Johnson and Boyer",
+        "flightNumber": "DL257",
+        "originAirport": "SFO",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-11-06",
+        "departureTime": "12:09:44"
+      },
+      "hotelDetails": {
+        "name": "Reyes Ltd Hotel",
+        "checkInDate": "2025-09-26",
+        "checkOutDate": "2025-10-08",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Guided city tours",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-165",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-21",
+      "endDate": "2025-10-30",
+      "price": 3086,
+      "flightDetails": {
+        "airline": "Roy, Rivera and Cooper",
+        "flightNumber": "UA728",
+        "originAirport": "ORD",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-11-21",
+        "departureTime": "22:42:14"
+      },
+      "hotelDetails": {
+        "name": "Anderson, Johnson and Pittman Hotel",
+        "checkInDate": "2025-10-22",
+        "checkOutDate": "2025-10-30",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-167",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-25",
+      "endDate": "2025-11-28",
+      "price": 6875,
+      "flightDetails": {
+        "airline": "Moore-Le",
+        "flightNumber": "DL660",
+        "originAirport": "MCO",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-10-25",
+        "departureTime": "01:57:13"
+      },
+      "hotelDetails": {
+        "name": "Hoffman-Parsons Hotel",
+        "checkInDate": "2025-11-14",
+        "checkOutDate": "2025-11-28",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-168",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Paris, France",
+      "startDate": "2025-09-29",
+      "endDate": "2025-10-22",
+      "price": 2816,
+      "flightDetails": {
+        "airline": "Miller Inc",
+        "flightNumber": "DL922",
+        "originAirport": "DEN",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-09-29",
+        "departureTime": "04:52:34"
+      },
+      "hotelDetails": {
+        "name": "Davis-Shaw Hotel",
+        "checkInDate": "2025-10-17",
+        "checkOutDate": "2025-10-22",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Guided city tours",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-169",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-24",
+      "endDate": "2025-11-24",
+      "price": 6209,
+      "flightDetails": {
+        "airline": "Thompson-Allen",
+        "flightNumber": "WN789",
+        "originAirport": "MCO",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-10-24",
+        "departureTime": "09:33:47"
+      },
+      "hotelDetails": {
+        "name": "Jones-Daugherty Hotel",
+        "checkInDate": "2025-11-15",
+        "checkOutDate": "2025-11-24",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Round-trip flights",
+        "Excursions",
+        "All-inclusive meals",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-170",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "New York, NY",
+      "startDate": "2025-09-05",
+      "endDate": "2025-12-08",
+      "price": 2340,
+      "flightDetails": {
+        "airline": "Black, Green and Brown",
+        "flightNumber": "WN528",
+        "originAirport": "MIA",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-09-05",
+        "departureTime": "16:12:49"
+      },
+      "hotelDetails": {
+        "name": "Burns, Cole and Martinez Hotel",
+        "checkInDate": "2025-11-25",
+        "checkOutDate": "2025-12-08",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-174",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-18",
+      "endDate": "2025-11-28",
+      "price": 1844,
+      "flightDetails": {
+        "airline": "Johnson, Hall and Hoover",
+        "flightNumber": "WN822",
+        "originAirport": "NRT",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-09-18",
+        "departureTime": "06:27:59"
+      },
+      "hotelDetails": {
+        "name": "Mcgee PLC Hotel",
+        "checkInDate": "2025-11-19",
+        "checkOutDate": "2025-11-28",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours",
+        "Hotel stay",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-176",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-09-10",
+      "endDate": "2025-12-07",
+      "price": 5475,
+      "flightDetails": {
+        "airline": "Smith, Bryan and Miller",
+        "flightNumber": "AA863",
+        "originAirport": "IST",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-09-10",
+        "departureTime": "15:17:52"
+      },
+      "hotelDetails": {
+        "name": "Barber-Stafford Hotel",
+        "checkInDate": "2025-11-27",
+        "checkOutDate": "2025-12-07",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-183",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "New York, NY",
+      "startDate": "2025-11-21",
+      "endDate": "2025-11-05",
+      "price": 4344,
+      "flightDetails": {
+        "airline": "Clarke and Sons",
+        "flightNumber": "DL569",
+        "originAirport": "SFO",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-11-21",
+        "departureTime": "18:52:02"
+      },
+      "hotelDetails": {
+        "name": "Petersen and Sons Hotel",
+        "checkInDate": "2025-10-24",
+        "checkOutDate": "2025-11-05",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-184",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "New York, NY",
+      "startDate": "2025-11-21",
+      "endDate": "2025-11-30",
+      "price": 8576,
+      "flightDetails": {
+        "airline": "Cain, Smith and Ewing",
+        "flightNumber": "UA121",
+        "originAirport": "IST",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-11-21",
+        "departureTime": "22:00:28"
+      },
+      "hotelDetails": {
+        "name": "Rodgers-Garrison Hotel",
+        "checkInDate": "2025-11-26",
+        "checkOutDate": "2025-11-30",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay",
+        "Guided city tours",
+        "Round-trip flights",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-185",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "London, UK",
+      "startDate": "2025-11-10",
+      "endDate": "2025-10-12",
+      "price": 5214,
+      "flightDetails": {
+        "airline": "Smith PLC",
+        "flightNumber": "DL461",
+        "originAirport": "CDG",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-11-10",
+        "departureTime": "06:14:58"
+      },
+      "hotelDetails": {
+        "name": "Barrett-Carr Hotel",
+        "checkInDate": "2025-09-30",
+        "checkOutDate": "2025-10-12",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-186",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-21",
+      "endDate": "2025-11-05",
+      "price": 5995,
+      "flightDetails": {
+        "airline": "Merritt-Johnson",
+        "flightNumber": "AA614",
+        "originAirport": "IST",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-11-21",
+        "departureTime": "15:01:43"
+      },
+      "hotelDetails": {
+        "name": "Lopez, Brown and Mata Hotel",
+        "checkInDate": "2025-10-27",
+        "checkOutDate": "2025-11-05",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-188",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Paris, France",
+      "startDate": "2025-09-15",
+      "endDate": "2025-11-13",
+      "price": 9401,
+      "flightDetails": {
+        "airline": "Green, Espinoza and Franklin",
+        "flightNumber": "WN787",
+        "originAirport": "DXB",
+        "destinationAirport": "IST",
+        "departureDate": "2025-09-15",
+        "departureTime": "16:08:36"
+      },
+      "hotelDetails": {
+        "name": "Silva Inc Hotel",
+        "checkInDate": "2025-11-01",
+        "checkOutDate": "2025-11-13",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-189",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "London, UK",
+      "startDate": "2025-09-27",
+      "endDate": "2025-09-06",
+      "price": 1943,
+      "flightDetails": {
+        "airline": "Duran, Baker and Glover",
+        "flightNumber": "DL621",
+        "originAirport": "DXB",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-27",
+        "departureTime": "23:34:22"
+      },
+      "hotelDetails": {
+        "name": "Beasley Group Hotel",
+        "checkInDate": "2025-09-05",
+        "checkOutDate": "2025-09-06",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay",
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-190",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Paris, France",
+      "startDate": "2025-09-29",
+      "endDate": "2025-10-30",
+      "price": 8802,
+      "flightDetails": {
+        "airline": "Warner Ltd",
+        "flightNumber": "AA149",
+        "originAirport": "IST",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-09-29",
+        "departureTime": "03:50:13"
+      },
+      "hotelDetails": {
+        "name": "Simon, Phillips and Sullivan Hotel",
+        "checkInDate": "2025-10-24",
+        "checkOutDate": "2025-10-30",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "Hotel stay",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-192",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-25",
+      "endDate": "2025-10-31",
+      "price": 6943,
+      "flightDetails": {
+        "airline": "Cohen-Hancock",
+        "flightNumber": "UA636",
+        "originAirport": "IST",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-25",
+        "departureTime": "16:42:40"
+      },
+      "hotelDetails": {
+        "name": "Wall PLC Hotel",
+        "checkInDate": "2025-10-28",
+        "checkOutDate": "2025-10-31",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Round-trip flights",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-199",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "London, UK",
+      "startDate": "2025-09-08",
+      "endDate": "2025-09-11",
+      "price": 5369,
+      "flightDetails": {
+        "airline": "Graham-Montgomery",
+        "flightNumber": "UA631",
+        "originAirport": "SFO",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-09-08",
+        "departureTime": "14:05:09"
+      },
+      "hotelDetails": {
+        "name": "Adams-Webb Hotel",
+        "checkInDate": "2025-09-05",
+        "checkOutDate": "2025-09-11",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-203",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "London, UK",
+      "startDate": "2025-10-23",
+      "endDate": "2025-09-27",
+      "price": 7033,
+      "flightDetails": {
+        "airline": "Hammond, Grimes and Thomas",
+        "flightNumber": "WN500",
+        "originAirport": "CDG",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-10-23",
+        "departureTime": "05:48:55"
+      },
+      "hotelDetails": {
+        "name": "Herrera LLC Hotel",
+        "checkInDate": "2025-09-23",
+        "checkOutDate": "2025-09-27",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-208",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-11-13",
+      "endDate": "2025-10-12",
+      "price": 2813,
+      "flightDetails": {
+        "airline": "Boyer Inc",
+        "flightNumber": "UA442",
+        "originAirport": "MCO",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-11-13",
+        "departureTime": "19:41:13"
+      },
+      "hotelDetails": {
+        "name": "Brooks-Shah Hotel",
+        "checkInDate": "2025-09-29",
+        "checkOutDate": "2025-10-12",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-210",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-03",
+      "endDate": "2025-09-29",
+      "price": 5240,
+      "flightDetails": {
+        "airline": "Collins, Cabrera and Berg",
+        "flightNumber": "AA890",
+        "originAirport": "IST",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-09-03",
+        "departureTime": "16:14:52"
+      },
+      "hotelDetails": {
+        "name": "Garza and Sons Hotel",
+        "checkInDate": "2025-09-26",
+        "checkOutDate": "2025-09-29",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-214",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-20",
+      "endDate": "2025-11-07",
+      "price": 4592,
+      "flightDetails": {
+        "airline": "Ray, Smith and Martinez",
+        "flightNumber": "WN651",
+        "originAirport": "CDG",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-11-20",
+        "departureTime": "21:42:48"
+      },
+      "hotelDetails": {
+        "name": "Ibarra, Hall and Banks Hotel",
+        "checkInDate": "2025-10-31",
+        "checkOutDate": "2025-11-07",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-216",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-20",
+      "endDate": "2025-10-22",
+      "price": 6858,
+      "flightDetails": {
+        "airline": "Bennett PLC",
+        "flightNumber": "UA629",
+        "originAirport": "LAX",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-20",
+        "departureTime": "06:19:49"
+      },
+      "hotelDetails": {
+        "name": "Lee, Moody and Stevenson Hotel",
+        "checkInDate": "2025-10-09",
+        "checkOutDate": "2025-10-22",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "Hotel stay",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-219",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "New York, NY",
+      "startDate": "2025-10-19",
+      "endDate": "2025-09-19",
+      "price": 4636,
+      "flightDetails": {
+        "airline": "Nunez, Curry and Jackson",
+        "flightNumber": "AA338",
+        "originAirport": "SYD",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-10-19",
+        "departureTime": "01:20:39"
+      },
+      "hotelDetails": {
+        "name": "Fox and Sons Hotel",
+        "checkInDate": "2025-09-07",
+        "checkOutDate": "2025-09-19",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Guided city tours",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-220",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-22",
+      "endDate": "2025-11-06",
+      "price": 4737,
+      "flightDetails": {
+        "airline": "Anderson, Lee and Ray",
+        "flightNumber": "WN715",
+        "originAirport": "JFK",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-22",
+        "departureTime": "22:08:07"
+      },
+      "hotelDetails": {
+        "name": "Bell and Sons Hotel",
+        "checkInDate": "2025-10-28",
+        "checkOutDate": "2025-11-06",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-222",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-13",
+      "endDate": "2025-11-07",
+      "price": 8206,
+      "flightDetails": {
+        "airline": "Huff-Roberts",
+        "flightNumber": "DL855",
+        "originAirport": "CDG",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-10-13",
+        "departureTime": "23:32:37"
+      },
+      "hotelDetails": {
+        "name": "Salazar-Valdez Hotel",
+        "checkInDate": "2025-10-26",
+        "checkOutDate": "2025-11-07",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-223",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-22",
+      "endDate": "2025-10-10",
+      "price": 8444,
+      "flightDetails": {
+        "airline": "Washington and Sons",
+        "flightNumber": "DL856",
+        "originAirport": "JFK",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-11-22",
+        "departureTime": "21:47:16"
+      },
+      "hotelDetails": {
+        "name": "Ward and Sons Hotel",
+        "checkInDate": "2025-09-30",
+        "checkOutDate": "2025-10-10",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-225",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Paris, France",
+      "startDate": "2025-10-30",
+      "endDate": "2025-09-28",
+      "price": 2127,
+      "flightDetails": {
+        "airline": "Greer Group",
+        "flightNumber": "DL259",
+        "originAirport": "CDG",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-10-30",
+        "departureTime": "06:23:41"
+      },
+      "hotelDetails": {
+        "name": "Taylor PLC Hotel",
+        "checkInDate": "2025-09-25",
+        "checkOutDate": "2025-09-28",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-228",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-11-03",
+      "endDate": "2025-10-01",
+      "price": 4405,
+      "flightDetails": {
+        "airline": "Young Inc",
+        "flightNumber": "AA608",
+        "originAirport": "SFO",
+        "destinationAirport": "IST",
+        "departureDate": "2025-11-03",
+        "departureTime": "08:18:10"
+      },
+      "hotelDetails": {
+        "name": "Wang, Thomas and Walsh Hotel",
+        "checkInDate": "2025-09-21",
+        "checkOutDate": "2025-10-01",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-230",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-14",
+      "endDate": "2025-09-22",
+      "price": 5603,
+      "flightDetails": {
+        "airline": "Reed LLC",
+        "flightNumber": "WN499",
+        "originAirport": "MIA",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-09-14",
+        "departureTime": "18:05:07"
+      },
+      "hotelDetails": {
+        "name": "Thomas, Salas and Lewis Hotel",
+        "checkInDate": "2025-09-20",
+        "checkOutDate": "2025-09-22",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-232",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-22",
+      "endDate": "2025-11-07",
+      "price": 9979,
+      "flightDetails": {
+        "airline": "Miller-Thomas",
+        "flightNumber": "UA495",
+        "originAirport": "BOS",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-09-22",
+        "departureTime": "02:40:38"
+      },
+      "hotelDetails": {
+        "name": "Howell, Coleman and Carr Hotel",
+        "checkInDate": "2025-10-27",
+        "checkOutDate": "2025-11-07",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-234",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "New York, NY",
+      "startDate": "2025-10-14",
+      "endDate": "2025-09-24",
+      "price": 4654,
+      "flightDetails": {
+        "airline": "Robertson-Anderson",
+        "flightNumber": "WN374",
+        "originAirport": "NRT",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-10-14",
+        "departureTime": "23:19:14"
+      },
+      "hotelDetails": {
+        "name": "Valencia, Rodriguez and Johnson Hotel",
+        "checkInDate": "2025-09-20",
+        "checkOutDate": "2025-09-24",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Round-trip flights",
+        "Excursions",
+        "Hotel stay",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-240",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-01",
+      "endDate": "2025-09-03",
+      "price": 6435,
+      "flightDetails": {
+        "airline": "Bradford-Sanchez",
+        "flightNumber": "WN367",
+        "originAirport": "LAX",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-10-01",
+        "departureTime": "05:15:19"
+      },
+      "hotelDetails": {
+        "name": "Hardy-Edwards Hotel",
+        "checkInDate": "2025-09-02",
+        "checkOutDate": "2025-09-03",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-242",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-16",
+      "endDate": "2025-10-22",
+      "price": 7749,
+      "flightDetails": {
+        "airline": "Marshall Ltd",
+        "flightNumber": "AA550",
+        "originAirport": "LHR",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-09-16",
+        "departureTime": "08:43:32"
+      },
+      "hotelDetails": {
+        "name": "Garcia Inc Hotel",
+        "checkInDate": "2025-10-21",
+        "checkOutDate": "2025-10-22",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-243",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-20",
+      "endDate": "2025-12-06",
+      "price": 9160,
+      "flightDetails": {
+        "airline": "Ford PLC",
+        "flightNumber": "DL291",
+        "originAirport": "ORD",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-09-20",
+        "departureTime": "08:28:22"
+      },
+      "hotelDetails": {
+        "name": "Reed-Edwards Hotel",
+        "checkInDate": "2025-11-27",
+        "checkOutDate": "2025-12-06",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions",
+        "Round-trip flights",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-244",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Paris, France",
+      "startDate": "2025-11-19",
+      "endDate": "2025-10-25",
+      "price": 9979,
+      "flightDetails": {
+        "airline": "Nelson-Martin",
+        "flightNumber": "AA573",
+        "originAirport": "IST",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-19",
+        "departureTime": "14:24:10"
+      },
+      "hotelDetails": {
+        "name": "Mitchell, Wright and Hendrix Hotel",
+        "checkInDate": "2025-10-13",
+        "checkOutDate": "2025-10-25",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-247",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Paris, France",
+      "startDate": "2025-09-19",
+      "endDate": "2025-10-29",
+      "price": 1547,
+      "flightDetails": {
+        "airline": "Henry and Sons",
+        "flightNumber": "UA836",
+        "originAirport": "SYD",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-19",
+        "departureTime": "08:58:37"
+      },
+      "hotelDetails": {
+        "name": "Johnson-Woods Hotel",
+        "checkInDate": "2025-10-26",
+        "checkOutDate": "2025-10-29",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Hotel stay",
+        "Guided city tours",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-250",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-20",
+      "endDate": "2025-10-19",
+      "price": 2110,
+      "flightDetails": {
+        "airline": "Roberts, Washington and Ross",
+        "flightNumber": "WN504",
+        "originAirport": "LHR",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-10-20",
+        "departureTime": "20:33:18"
+      },
+      "hotelDetails": {
+        "name": "Meyers-Willis Hotel",
+        "checkInDate": "2025-10-13",
+        "checkOutDate": "2025-10-19",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-252",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "New York, NY",
+      "startDate": "2025-10-05",
+      "endDate": "2025-11-25",
+      "price": 8569,
+      "flightDetails": {
+        "airline": "Moore-Underwood",
+        "flightNumber": "WN998",
+        "originAirport": "ORD",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-10-05",
+        "departureTime": "10:23:54"
+      },
+      "hotelDetails": {
+        "name": "Mayo, Smith and Meyer Hotel",
+        "checkInDate": "2025-11-24",
+        "checkOutDate": "2025-11-25",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-258",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-10-29",
+      "endDate": "2025-09-21",
+      "price": 4253,
+      "flightDetails": {
+        "airline": "Smith Ltd",
+        "flightNumber": "AA914",
+        "originAirport": "LAX",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-10-29",
+        "departureTime": "04:27:18"
+      },
+      "hotelDetails": {
+        "name": "Reynolds-Wilson Hotel",
+        "checkInDate": "2025-09-19",
+        "checkOutDate": "2025-09-21",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-261",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "London, UK",
+      "startDate": "2025-10-18",
+      "endDate": "2025-11-30",
+      "price": 3844,
+      "flightDetails": {
+        "airline": "Hale, Payne and Stout",
+        "flightNumber": "AA679",
+        "originAirport": "NRT",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-10-18",
+        "departureTime": "02:12:47"
+      },
+      "hotelDetails": {
+        "name": "Campbell, Gomez and Brooks Hotel",
+        "checkInDate": "2025-11-16",
+        "checkOutDate": "2025-11-30",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-262",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-09-24",
+      "endDate": "2025-11-21",
+      "price": 9719,
+      "flightDetails": {
+        "airline": "Leach, Lopez and Poole",
+        "flightNumber": "WN782",
+        "originAirport": "MCO",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-09-24",
+        "departureTime": "17:07:03"
+      },
+      "hotelDetails": {
+        "name": "Bell, Burgess and Gonzalez Hotel",
+        "checkInDate": "2025-11-18",
+        "checkOutDate": "2025-11-21",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-265",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-22",
+      "endDate": "2025-11-13",
+      "price": 3358,
+      "flightDetails": {
+        "airline": "Pollard, Sharp and Forbes",
+        "flightNumber": "WN107",
+        "originAirport": "SYD",
+        "destinationAirport": "DXB",
+        "departureDate": "2025-11-22",
+        "departureTime": "17:47:59"
+      },
+      "hotelDetails": {
+        "name": "White, Wood and Sampson Hotel",
+        "checkInDate": "2025-10-30",
+        "checkOutDate": "2025-11-13",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-267",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-09-24",
+      "endDate": "2025-11-28",
+      "price": 1773,
+      "flightDetails": {
+        "airline": "Moore, Jackson and Sullivan",
+        "flightNumber": "AA132",
+        "originAirport": "ORD",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-09-24",
+        "departureTime": "00:37:51"
+      },
+      "hotelDetails": {
+        "name": "Montgomery, Cook and Short Hotel",
+        "checkInDate": "2025-11-18",
+        "checkOutDate": "2025-11-28",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-270",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-07",
+      "endDate": "2025-10-28",
+      "price": 5609,
+      "flightDetails": {
+        "airline": "Smith, Bartlett and Curry",
+        "flightNumber": "UA257",
+        "originAirport": "MCO",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-09-07",
+        "departureTime": "20:17:13"
+      },
+      "hotelDetails": {
+        "name": "Ryan-Coleman Hotel",
+        "checkInDate": "2025-10-18",
+        "checkOutDate": "2025-10-28",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-272",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Paris, France",
+      "startDate": "2025-11-24",
+      "endDate": "2025-11-04",
+      "price": 7890,
+      "flightDetails": {
+        "airline": "Nelson-Douglas",
+        "flightNumber": "WN839",
+        "originAirport": "LAX",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-24",
+        "departureTime": "01:03:06"
+      },
+      "hotelDetails": {
+        "name": "Marquez-Johnson Hotel",
+        "checkInDate": "2025-10-21",
+        "checkOutDate": "2025-11-04",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-273",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-25",
+      "endDate": "2025-10-28",
+      "price": 3608,
+      "flightDetails": {
+        "airline": "Ruiz, Wallace and Manning",
+        "flightNumber": "WN692",
+        "originAirport": "BOS",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-11-25",
+        "departureTime": "17:30:05"
+      },
+      "hotelDetails": {
+        "name": "Jones-Davis Hotel",
+        "checkInDate": "2025-10-25",
+        "checkOutDate": "2025-10-28",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-275",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-02",
+      "endDate": "2025-11-28",
+      "price": 1942,
+      "flightDetails": {
+        "airline": "Mcbride, Walker and Williams",
+        "flightNumber": "DL503",
+        "originAirport": "LHR",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-10-02",
+        "departureTime": "15:56:03"
+      },
+      "hotelDetails": {
+        "name": "Brown LLC Hotel",
+        "checkInDate": "2025-11-20",
+        "checkOutDate": "2025-11-28",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-276",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-15",
+      "endDate": "2025-12-05",
+      "price": 3303,
+      "flightDetails": {
+        "airline": "Mills, Taylor and Owens",
+        "flightNumber": "AA676",
+        "originAirport": "SFO",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-10-15",
+        "departureTime": "11:02:31"
+      },
+      "hotelDetails": {
+        "name": "Williams-Garcia Hotel",
+        "checkInDate": "2025-11-22",
+        "checkOutDate": "2025-12-05",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-278",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "London, UK",
+      "startDate": "2025-10-07",
+      "endDate": "2025-10-12",
+      "price": 9118,
+      "flightDetails": {
+        "airline": "Butler LLC",
+        "flightNumber": "WN542",
+        "originAirport": "MCO",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-10-07",
+        "departureTime": "12:18:37"
+      },
+      "hotelDetails": {
+        "name": "Fuller-Lee Hotel",
+        "checkInDate": "2025-10-09",
+        "checkOutDate": "2025-10-12",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-279",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "New York, NY",
+      "startDate": "2025-09-30",
+      "endDate": "2025-09-23",
+      "price": 5961,
+      "flightDetails": {
+        "airline": "Cooper-Martin",
+        "flightNumber": "AA821",
+        "originAirport": "CDG",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-09-30",
+        "departureTime": "21:22:52"
+      },
+      "hotelDetails": {
+        "name": "Wallace, Stewart and Miller Hotel",
+        "checkInDate": "2025-09-15",
+        "checkOutDate": "2025-09-23",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-283",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-22",
+      "endDate": "2025-11-29",
+      "price": 7033,
+      "flightDetails": {
+        "airline": "Wilson, Powell and Mcclain",
+        "flightNumber": "DL183",
+        "originAirport": "LHR",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-11-22",
+        "departureTime": "12:14:15"
+      },
+      "hotelDetails": {
+        "name": "Barrera-Schmidt Hotel",
+        "checkInDate": "2025-11-16",
+        "checkOutDate": "2025-11-29",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Excursions",
+        "Hotel stay",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-285",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-09-09",
+      "endDate": "2025-11-14",
+      "price": 8708,
+      "flightDetails": {
+        "airline": "Lowe-Bryant",
+        "flightNumber": "UA439",
+        "originAirport": "ORD",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-09-09",
+        "departureTime": "06:45:10"
+      },
+      "hotelDetails": {
+        "name": "Porter and Sons Hotel",
+        "checkInDate": "2025-11-12",
+        "checkOutDate": "2025-11-14",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-287",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-11-17",
+      "endDate": "2025-09-27",
+      "price": 8959,
+      "flightDetails": {
+        "airline": "Gates, Valenzuela and Odom",
+        "flightNumber": "DL892",
+        "originAirport": "LAX",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-11-17",
+        "departureTime": "00:08:04"
+      },
+      "hotelDetails": {
+        "name": "Collins and Sons Hotel",
+        "checkInDate": "2025-09-19",
+        "checkOutDate": "2025-09-27",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-289",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-29",
+      "endDate": "2025-09-21",
+      "price": 6609,
+      "flightDetails": {
+        "airline": "Stone Ltd",
+        "flightNumber": "UA856",
+        "originAirport": "BOS",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-11-29",
+        "departureTime": "12:47:35"
+      },
+      "hotelDetails": {
+        "name": "Hubbard Inc Hotel",
+        "checkInDate": "2025-09-09",
+        "checkOutDate": "2025-09-21",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-301",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-11-11",
+      "endDate": "2025-09-05",
+      "price": 3530,
+      "flightDetails": {
+        "airline": "Griffin Ltd",
+        "flightNumber": "DL659",
+        "originAirport": "ORD",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-11-11",
+        "departureTime": "23:55:17"
+      },
+      "hotelDetails": {
+        "name": "Wilkerson-Lang Hotel",
+        "checkInDate": "2025-09-02",
+        "checkOutDate": "2025-09-05",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-307",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Paris, France",
+      "startDate": "2025-11-12",
+      "endDate": "2025-12-01",
+      "price": 7391,
+      "flightDetails": {
+        "airline": "Crane and Sons",
+        "flightNumber": "UA531",
+        "originAirport": "MIA",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-11-12",
+        "departureTime": "21:13:00"
+      },
+      "hotelDetails": {
+        "name": "Osborne, Solomon and Underwood Hotel",
+        "checkInDate": "2025-11-18",
+        "checkOutDate": "2025-12-01",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Excursions",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-308",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-11-28",
+      "endDate": "2025-11-17",
+      "price": 2128,
+      "flightDetails": {
+        "airline": "Davis Inc",
+        "flightNumber": "AA589",
+        "originAirport": "NRT",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-11-28",
+        "departureTime": "23:23:17"
+      },
+      "hotelDetails": {
+        "name": "Kelly-King Hotel",
+        "checkInDate": "2025-11-11",
+        "checkOutDate": "2025-11-17",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-309",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Paris, France",
+      "startDate": "2025-09-29",
+      "endDate": "2025-10-04",
+      "price": 3446,
+      "flightDetails": {
+        "airline": "Barr-Walker",
+        "flightNumber": "WN115",
+        "originAirport": "MCO",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-09-29",
+        "departureTime": "19:12:43"
+      },
+      "hotelDetails": {
+        "name": "Carter-Martin Hotel",
+        "checkInDate": "2025-09-20",
+        "checkOutDate": "2025-10-04",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Excursions",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-312",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-11-28",
+      "endDate": "2025-10-26",
+      "price": 9570,
+      "flightDetails": {
+        "airline": "Mejia and Sons",
+        "flightNumber": "UA995",
+        "originAirport": "MCO",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-11-28",
+        "departureTime": "07:21:37"
+      },
+      "hotelDetails": {
+        "name": "Banks PLC Hotel",
+        "checkInDate": "2025-10-19",
+        "checkOutDate": "2025-10-26",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-317",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "London, UK",
+      "startDate": "2025-10-24",
+      "endDate": "2025-10-29",
+      "price": 7785,
+      "flightDetails": {
+        "airline": "Reynolds Group",
+        "flightNumber": "WN400",
+        "originAirport": "MIA",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-10-24",
+        "departureTime": "08:07:41"
+      },
+      "hotelDetails": {
+        "name": "Barnett Inc Hotel",
+        "checkInDate": "2025-10-19",
+        "checkOutDate": "2025-10-29",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "All-inclusive meals",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-320",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-24",
+      "endDate": "2025-11-13",
+      "price": 6800,
+      "flightDetails": {
+        "airline": "Vasquez-Mccann",
+        "flightNumber": "UA957",
+        "originAirport": "LAX",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-10-24",
+        "departureTime": "19:41:41"
+      },
+      "hotelDetails": {
+        "name": "Johnson Inc Hotel",
+        "checkInDate": "2025-11-05",
+        "checkOutDate": "2025-11-13",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions",
+        "Round-trip flights",
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-321",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-01",
+      "endDate": "2025-11-22",
+      "price": 7843,
+      "flightDetails": {
+        "airline": "White Ltd",
+        "flightNumber": "WN382",
+        "originAirport": "ORD",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-10-01",
+        "departureTime": "15:01:02"
+      },
+      "hotelDetails": {
+        "name": "Martin-James Hotel",
+        "checkInDate": "2025-11-08",
+        "checkOutDate": "2025-11-22",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-323",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-10-22",
+      "endDate": "2025-10-24",
+      "price": 5924,
+      "flightDetails": {
+        "airline": "Rodriguez, Hobbs and Turner",
+        "flightNumber": "DL216",
+        "originAirport": "JFK",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-10-22",
+        "departureTime": "13:58:16"
+      },
+      "hotelDetails": {
+        "name": "Taylor-Robertson Hotel",
+        "checkInDate": "2025-10-20",
+        "checkOutDate": "2025-10-24",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-326",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-02",
+      "endDate": "2025-10-23",
+      "price": 2216,
+      "flightDetails": {
+        "airline": "Lee-Peterson",
+        "flightNumber": "AA950",
+        "originAirport": "MIA",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-11-02",
+        "departureTime": "06:26:53"
+      },
+      "hotelDetails": {
+        "name": "Cordova LLC Hotel",
+        "checkInDate": "2025-10-19",
+        "checkOutDate": "2025-10-23",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-328",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "New York, NY",
+      "startDate": "2025-09-09",
+      "endDate": "2025-10-19",
+      "price": 8487,
+      "flightDetails": {
+        "airline": "Cantrell, Craig and Gomez",
+        "flightNumber": "AA916",
+        "originAirport": "ORD",
+        "destinationAirport": "JFK",
+        "departureDate": "2025-09-09",
+        "departureTime": "14:52:26"
+      },
+      "hotelDetails": {
+        "name": "Carpenter, Allen and Woods Hotel",
+        "checkInDate": "2025-10-14",
+        "checkOutDate": "2025-10-19",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-329",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "London, UK",
+      "startDate": "2025-09-25",
+      "endDate": "2025-09-18",
+      "price": 9431,
+      "flightDetails": {
+        "airline": "Conner and Sons",
+        "flightNumber": "WN936",
+        "originAirport": "LHR",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-09-25",
+        "departureTime": "20:40:48"
+      },
+      "hotelDetails": {
+        "name": "Tate-Flores Hotel",
+        "checkInDate": "2025-09-07",
+        "checkOutDate": "2025-09-18",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Excursions",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-330",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-14",
+      "endDate": "2025-09-29",
+      "price": 2303,
+      "flightDetails": {
+        "airline": "Vaughn-Jones",
+        "flightNumber": "AA169",
+        "originAirport": "NRT",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-09-14",
+        "departureTime": "15:49:02"
+      },
+      "hotelDetails": {
+        "name": "Potts, Estes and Hooper Hotel",
+        "checkInDate": "2025-09-27",
+        "checkOutDate": "2025-09-29",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-331",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-10-07",
+      "endDate": "2025-10-11",
+      "price": 7097,
+      "flightDetails": {
+        "airline": "Richardson, Eaton and Sanchez",
+        "flightNumber": "UA219",
+        "originAirport": "SFO",
+        "destinationAirport": "LAX",
+        "departureDate": "2025-10-07",
+        "departureTime": "13:07:59"
+      },
+      "hotelDetails": {
+        "name": "Waters-Velazquez Hotel",
+        "checkInDate": "2025-10-03",
+        "checkOutDate": "2025-10-11",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-335",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-11",
+      "endDate": "2025-11-09",
+      "price": 1785,
+      "flightDetails": {
+        "airline": "Davis, Michael and Campbell",
+        "flightNumber": "DL360",
+        "originAirport": "NRT",
+        "destinationAirport": "JFK",
+        "departureDate": "2025-11-11",
+        "departureTime": "15:23:34"
+      },
+      "hotelDetails": {
+        "name": "Cox, Howard and Gould Hotel",
+        "checkInDate": "2025-10-28",
+        "checkOutDate": "2025-11-09",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-337",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-03",
+      "endDate": "2025-12-01",
+      "price": 6196,
+      "flightDetails": {
+        "airline": "Conley Inc",
+        "flightNumber": "DL301",
+        "originAirport": "ORD",
+        "destinationAirport": "DEN",
+        "departureDate": "2025-09-03",
+        "departureTime": "09:34:44"
+      },
+      "hotelDetails": {
+        "name": "Contreras LLC Hotel",
+        "checkInDate": "2025-11-29",
+        "checkOutDate": "2025-12-01",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions",
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-338",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-03",
+      "endDate": "2025-11-20",
+      "price": 5205,
+      "flightDetails": {
+        "airline": "Chen-James",
+        "flightNumber": "AA842",
+        "originAirport": "DEN",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-09-03",
+        "departureTime": "09:59:53"
+      },
+      "hotelDetails": {
+        "name": "Lozano, Davis and Saunders Hotel",
+        "checkInDate": "2025-11-17",
+        "checkOutDate": "2025-11-20",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Excursions",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-341",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-11",
+      "endDate": "2025-10-30",
+      "price": 5823,
+      "flightDetails": {
+        "airline": "Smith-Jensen",
+        "flightNumber": "DL820",
+        "originAirport": "DEN",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-10-11",
+        "departureTime": "16:44:11"
+      },
+      "hotelDetails": {
+        "name": "Boyd, Williams and Duncan Hotel",
+        "checkInDate": "2025-10-20",
+        "checkOutDate": "2025-10-30",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Excursions",
+        "Guided city tours",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-342",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "New York, NY",
+      "startDate": "2025-10-21",
+      "endDate": "2025-09-19",
+      "price": 1611,
+      "flightDetails": {
+        "airline": "Martinez, Edwards and Bush",
+        "flightNumber": "DL812",
+        "originAirport": "LHR",
+        "destinationAirport": "JFK",
+        "departureDate": "2025-10-21",
+        "departureTime": "21:18:51"
+      },
+      "hotelDetails": {
+        "name": "Morris-Jones Hotel",
+        "checkInDate": "2025-09-10",
+        "checkOutDate": "2025-09-19",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-343",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-12",
+      "endDate": "2025-10-30",
+      "price": 5827,
+      "flightDetails": {
+        "airline": "Garcia, Gonzalez and Nunez",
+        "flightNumber": "UA118",
+        "originAirport": "IST",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-11-12",
+        "departureTime": "14:24:49"
+      },
+      "hotelDetails": {
+        "name": "Yang-Hill Hotel",
+        "checkInDate": "2025-10-17",
+        "checkOutDate": "2025-10-30",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Guided city tours",
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-346",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "London, UK",
+      "startDate": "2025-09-17",
+      "endDate": "2025-12-01",
+      "price": 9300,
+      "flightDetails": {
+        "airline": "Green-Davis",
+        "flightNumber": "AA666",
+        "originAirport": "CDG",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-17",
+        "departureTime": "15:54:37"
+      },
+      "hotelDetails": {
+        "name": "Reyes LLC Hotel",
+        "checkInDate": "2025-11-26",
+        "checkOutDate": "2025-12-01",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-347",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-05",
+      "endDate": "2025-11-24",
+      "price": 5832,
+      "flightDetails": {
+        "airline": "Flores-Nelson",
+        "flightNumber": "DL176",
+        "originAirport": "ORD",
+        "destinationAirport": "IST",
+        "departureDate": "2025-09-05",
+        "departureTime": "23:58:16"
+      },
+      "hotelDetails": {
+        "name": "Howard PLC Hotel",
+        "checkInDate": "2025-11-12",
+        "checkOutDate": "2025-11-24",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Guided city tours",
+        "All-inclusive meals",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-351",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-06",
+      "endDate": "2025-11-17",
+      "price": 8745,
+      "flightDetails": {
+        "airline": "Brown LLC",
+        "flightNumber": "WN637",
+        "originAirport": "DEN",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-09-06",
+        "departureTime": "20:33:30"
+      },
+      "hotelDetails": {
+        "name": "Morgan, Cook and Williams Hotel",
+        "checkInDate": "2025-11-12",
+        "checkOutDate": "2025-11-17",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-352",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-10-18",
+      "endDate": "2025-09-15",
+      "price": 9591,
+      "flightDetails": {
+        "airline": "Roth, Flores and Warren",
+        "flightNumber": "AA832",
+        "originAirport": "CDG",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-18",
+        "departureTime": "20:05:05"
+      },
+      "hotelDetails": {
+        "name": "Hernandez-Baldwin Hotel",
+        "checkInDate": "2025-09-04",
+        "checkOutDate": "2025-09-15",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-360",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-26",
+      "endDate": "2025-09-13",
+      "price": 5892,
+      "flightDetails": {
+        "airline": "Howard Group",
+        "flightNumber": "DL557",
+        "originAirport": "BOS",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-10-26",
+        "departureTime": "18:57:39"
+      },
+      "hotelDetails": {
+        "name": "Rogers Inc Hotel",
+        "checkInDate": "2025-09-10",
+        "checkOutDate": "2025-09-13",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-364",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Paris, France",
+      "startDate": "2025-10-26",
+      "endDate": "2025-09-21",
+      "price": 3560,
+      "flightDetails": {
+        "airline": "Greene-Mcgrath",
+        "flightNumber": "WN162",
+        "originAirport": "BOS",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-10-26",
+        "departureTime": "05:21:32"
+      },
+      "hotelDetails": {
+        "name": "Johnston Group Hotel",
+        "checkInDate": "2025-09-12",
+        "checkOutDate": "2025-09-21",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-368",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-11-12",
+      "endDate": "2025-09-13",
+      "price": 5764,
+      "flightDetails": {
+        "airline": "Valenzuela Group",
+        "flightNumber": "WN469",
+        "originAirport": "DXB",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-11-12",
+        "departureTime": "18:42:29"
+      },
+      "hotelDetails": {
+        "name": "Carey, Cooper and Salinas Hotel",
+        "checkInDate": "2025-09-04",
+        "checkOutDate": "2025-09-13",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Guided city tours",
+        "Excursions",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-370",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-17",
+      "endDate": "2025-10-02",
+      "price": 4108,
+      "flightDetails": {
+        "airline": "Doyle Ltd",
+        "flightNumber": "WN307",
+        "originAirport": "ORD",
+        "destinationAirport": "IST",
+        "departureDate": "2025-09-17",
+        "departureTime": "15:00:05"
+      },
+      "hotelDetails": {
+        "name": "Parker and Sons Hotel",
+        "checkInDate": "2025-09-29",
+        "checkOutDate": "2025-10-02",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-371",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-06",
+      "endDate": "2025-10-13",
+      "price": 2426,
+      "flightDetails": {
+        "airline": "Andrews-Campbell",
+        "flightNumber": "UA385",
+        "originAirport": "MIA",
+        "destinationAirport": "NRT",
+        "departureDate": "2025-09-06",
+        "departureTime": "21:54:53"
+      },
+      "hotelDetails": {
+        "name": "Hoffman, Garrett and Jefferson Hotel",
+        "checkInDate": "2025-10-08",
+        "checkOutDate": "2025-10-13",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-374",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-19",
+      "endDate": "2025-11-06",
+      "price": 4662,
+      "flightDetails": {
+        "airline": "Smith Group",
+        "flightNumber": "DL930",
+        "originAirport": "LAX",
+        "destinationAirport": "LHR",
+        "departureDate": "2025-11-19",
+        "departureTime": "00:27:54"
+      },
+      "hotelDetails": {
+        "name": "Ross, Harding and Reeves Hotel",
+        "checkInDate": "2025-10-24",
+        "checkOutDate": "2025-11-06",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-375",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Paris, France",
+      "startDate": "2025-09-20",
+      "endDate": "2025-11-01",
+      "price": 5360,
+      "flightDetails": {
+        "airline": "Thomas-Wiley",
+        "flightNumber": "UA133",
+        "originAirport": "IST",
+        "destinationAirport": "MCO",
+        "departureDate": "2025-09-20",
+        "departureTime": "15:13:22"
+      },
+      "hotelDetails": {
+        "name": "Clark-Davis Hotel",
+        "checkInDate": "2025-10-22",
+        "checkOutDate": "2025-11-01",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-376",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Paris, France",
+      "startDate": "2025-11-22",
+      "endDate": "2025-10-07",
+      "price": 6955,
+      "flightDetails": {
+        "airline": "Durham Group",
+        "flightNumber": "WN303",
+        "originAirport": "ORD",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-22",
+        "departureTime": "18:00:34"
+      },
+      "hotelDetails": {
+        "name": "Woodward Inc Hotel",
+        "checkInDate": "2025-09-26",
+        "checkOutDate": "2025-10-07",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Guided city tours",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-379",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-11-18",
+      "endDate": "2025-11-05",
+      "price": 3094,
+      "flightDetails": {
+        "airline": "Brown, Myers and Hernandez",
+        "flightNumber": "DL330",
+        "originAirport": "NRT",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-18",
+        "departureTime": "06:55:43"
+      },
+      "hotelDetails": {
+        "name": "Payne-Young Hotel",
+        "checkInDate": "2025-11-04",
+        "checkOutDate": "2025-11-05",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-381",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Safari in the Serengeti",
+      "destination": "Sydney, Australia",
+      "startDate": "2025-10-31",
+      "endDate": "2025-11-13",
+      "price": 6030,
+      "flightDetails": {
+        "airline": "Collier Group",
+        "flightNumber": "DL540",
+        "originAirport": "SYD",
+        "destinationAirport": "CDG",
+        "departureDate": "2025-10-31",
+        "departureTime": "22:09:59"
+      },
+      "hotelDetails": {
+        "name": "Yates PLC Hotel",
+        "checkInDate": "2025-11-05",
+        "checkOutDate": "2025-11-13",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Guided city tours",
+        "Excursions"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-383",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Cancun, Mexico",
+      "startDate": "2025-09-03",
+      "endDate": "2025-10-21",
+      "price": 2228,
+      "flightDetails": {
+        "airline": "Pennington-Walton",
+        "flightNumber": "UA867",
+        "originAirport": "MIA",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-09-03",
+        "departureTime": "23:26:22"
+      },
+      "hotelDetails": {
+        "name": "Reyes, Fisher and Pope Hotel",
+        "checkInDate": "2025-10-11",
+        "checkOutDate": "2025-10-21",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "All-inclusive meals",
+        "Round-trip flights",
+        "Hotel stay",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-384",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-07",
+      "endDate": "2025-09-29",
+      "price": 5417,
+      "flightDetails": {
+        "airline": "Vaughn, Savage and Mcdowell",
+        "flightNumber": "UA954",
+        "originAirport": "CDG",
+        "destinationAirport": "IST",
+        "departureDate": "2025-09-07",
+        "departureTime": "16:51:43"
+      },
+      "hotelDetails": {
+        "name": "Garcia-White Hotel",
+        "checkInDate": "2025-09-20",
+        "checkOutDate": "2025-09-29",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions",
+        "Round-trip flights",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-385",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Tokyo, Japan",
+      "startDate": "2025-09-22",
+      "endDate": "2025-10-20",
+      "price": 8610,
+      "flightDetails": {
+        "airline": "Ross-Williams",
+        "flightNumber": "WN971",
+        "originAirport": "LHR",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-09-22",
+        "departureTime": "02:33:35"
+      },
+      "hotelDetails": {
+        "name": "Jones-Perez Hotel",
+        "checkInDate": "2025-10-06",
+        "checkOutDate": "2025-10-20",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Excursions",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-386",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "Paris, France",
+      "startDate": "2025-11-18",
+      "endDate": "2025-11-14",
+      "price": 9361,
+      "flightDetails": {
+        "airline": "Scott-Burnett",
+        "flightNumber": "UA665",
+        "originAirport": "IST",
+        "destinationAirport": "SYD",
+        "departureDate": "2025-11-18",
+        "departureTime": "02:58:54"
+      },
+      "hotelDetails": {
+        "name": "Williams LLC Hotel",
+        "checkInDate": "2025-11-03",
+        "checkOutDate": "2025-11-14",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-387",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-10-30",
+      "endDate": "2025-10-05",
+      "price": 6780,
+      "flightDetails": {
+        "airline": "Pratt, Rivera and Bowman",
+        "flightNumber": "AA962",
+        "originAirport": "CDG",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-10-30",
+        "departureTime": "10:46:03"
+      },
+      "hotelDetails": {
+        "name": "Torres, Huffman and Hamilton Hotel",
+        "checkInDate": "2025-09-22",
+        "checkOutDate": "2025-10-05",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Hotel stay",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-389",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-29",
+      "endDate": "2025-10-12",
+      "price": 1641,
+      "flightDetails": {
+        "airline": "Camacho-Sanchez",
+        "flightNumber": "DL501",
+        "originAirport": "BOS",
+        "destinationAirport": "IST",
+        "departureDate": "2025-09-29",
+        "departureTime": "14:10:21"
+      },
+      "hotelDetails": {
+        "name": "Fowler PLC Hotel",
+        "checkInDate": "2025-10-10",
+        "checkOutDate": "2025-10-12",
+        "roomType": "Overwater Villa"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "Hotel stay",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-390",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Weekend Getaway",
+      "destination": "New York, NY",
+      "startDate": "2025-10-06",
+      "endDate": "2025-09-18",
+      "price": 5376,
+      "flightDetails": {
+        "airline": "Munoz Inc",
+        "flightNumber": "WN535",
+        "originAirport": "SFO",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-10-06",
+        "departureTime": "03:12:07"
+      },
+      "hotelDetails": {
+        "name": "Farley, Garza and Solomon Hotel",
+        "checkInDate": "2025-09-05",
+        "checkOutDate": "2025-09-18",
+        "roomType": "Deluxe Room"
+      },
+      "inclusions": [
+        "Excursions",
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Guided city tours",
+        "Hotel stay"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-391",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "Las Vegas, NV",
+      "startDate": "2025-09-16",
+      "endDate": "2025-10-30",
+      "price": 6441,
+      "flightDetails": {
+        "airline": "Taylor-Carter",
+        "flightNumber": "WN352",
+        "originAirport": "SYD",
+        "destinationAirport": "ORD",
+        "departureDate": "2025-09-16",
+        "departureTime": "17:46:19"
+      },
+      "hotelDetails": {
+        "name": "Jacobson Inc Hotel",
+        "checkInDate": "2025-10-26",
+        "checkOutDate": "2025-10-30",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Round-trip flights",
+        "All-inclusive meals",
+        "Excursions",
+        "Guided city tours"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-392",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Hawaiian Paradise",
+      "destination": "London, UK",
+      "startDate": "2025-11-05",
+      "endDate": "2025-10-09",
+      "price": 9841,
+      "flightDetails": {
+        "airline": "Owens-Gilbert",
+        "flightNumber": "AA139",
+        "originAirport": "DEN",
+        "destinationAirport": "SFO",
+        "departureDate": "2025-11-05",
+        "departureTime": "04:18:26"
+      },
+      "hotelDetails": {
+        "name": "Johnson-Gregory Hotel",
+        "checkInDate": "2025-10-07",
+        "checkOutDate": "2025-10-09",
+        "roomType": "Luxury Suite"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "All-inclusive meals"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-394",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "Ski Adventure",
+      "destination": "London, UK",
+      "startDate": "2025-11-14",
+      "endDate": "2025-12-09",
+      "price": 3260,
+      "flightDetails": {
+        "airline": "Black, Mills and Fuller",
+        "flightNumber": "WN429",
+        "originAirport": "SYD",
+        "destinationAirport": "BOS",
+        "departureDate": "2025-11-14",
+        "departureTime": "13:37:31"
+      },
+      "hotelDetails": {
+        "name": "Eaton PLC Hotel",
+        "checkInDate": "2025-11-25",
+        "checkOutDate": "2025-12-09",
+        "roomType": "Standard Room"
+      },
+      "inclusions": [
+        "Guided city tours",
+        "Excursions",
+        "Hotel stay",
+        "Round-trip flights"
+      ]
+    }
+  },
+  {
+    "type": "package",
+    "recordId": "PACKAGE-399",
+    "availabilityStatus": "Available",
+    "details": {
+      "name": "European City Break",
+      "destination": "New York, NY",
+      "startDate": "2025-09-24",
+      "endDate": "2025-10-14",
+      "price": 4524,
+      "flightDetails": {
+        "airline": "Brock, Huynh and David",
+        "flightNumber": "WN777",
+        "originAirport": "CDG",
+        "destinationAirport": "MIA",
+        "departureDate": "2025-09-24",
+        "departureTime": "08:48:03"
+      },
+      "hotelDetails": {
+        "name": "Bowen Ltd Hotel",
+        "checkInDate": "2025-10-12",
+        "checkOutDate": "2025-10-14",
+        "roomType": "King Room"
+      },
+      "inclusions": [
+        "Hotel stay",
+        "Round-trip flights",
+        "Excursions",
+        "All-inclusive meals",
+        "Guided city tours"
+      ]
+    }
+  }
+]
