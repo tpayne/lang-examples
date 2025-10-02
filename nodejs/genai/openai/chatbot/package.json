@@ -14,7 +14,12 @@
     "test:lint": "run-s test:lint:*",
     "test:lint:html": "npx linthtml 'templates/*.html'",
     "test:lint:js": "npx eslint src/**/*.js --fix",
-    "test:lint:yaml": "npx yamllint **/*.yml"
+    "test:lint:yaml": "npx yamllint **/*.yml",
+    "test:dbfuncs": "jest src/dbfuncs.test.js",
+    "test:getInfo": "jest src/getInfo.test.js",
+    "test:k8s": "jest src/k8sFunctions.test.js",
+    "test:ado": "jest src/adoFunctions.test.js",
+    "test:github": "jest src/githubFunctions.test.js"
   },
   "pkg": {
     "scripts": "src/*.js",
@@ -55,10 +60,11 @@
     "redis": "^5.8.0",
     "signal-exit": "4.1.0",
     "superagent": "^10.2.3",
-    "uuid": "^11.1.0",
+    "uuid": "^13.0.0",
     "winston": "^3.0.0"
   },
   "devDependencies": {
+    "jest": "^30.0.0",
     "@eslint/js": "^9.27.0",
     "@linthtml/linthtml": "^0.10.1",
     "eslint": "^8.57.1",
