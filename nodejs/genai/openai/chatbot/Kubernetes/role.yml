@@ -1,9 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chatbot-integration
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chatbot-sa
+  namespace: chatbot-integration
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: chatbot-viewer
 rules:
-- apiGroups: ["", "apps", "networking.k8s.io", "storage.k8s.io", "batch"] # "" refers to core API group
+- apiGroups: ["", "apps", "networking.k8s.io", "storage.k8s.io", "batch"]
   resources:
   - namespaces
   - deployments
@@ -37,7 +48,7 @@ rules:
   - priorityclasses
   - volumeattachments
   - leases
-  verbs: ["get", "list", "create", "watch", "update", "patch", "delete"] # Granting list and get permissions
+  verbs: ["get", "list", "create", "watch", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -46,12 +57,15 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: chatbot-sa
-  namespace: chatbot-integration # Ensure this matches your service account namespace
+  namespace: chatbot-integration
 roleRef:
   kind: ClusterRole
   name: chatbot-viewer
   apiGroup: rbac.authorization.k8s.io
 ---
+# NOTE: This Secret requests a service-account token for chatbot-sa.
+# On many clusters the token controller will populate this Secret only after the ServiceAccount exists.
+# Apply this single file with: kubectl apply -f <file>.yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -60,7 +74,7 @@ metadata:
   annotations:
     kubernetes.io/service-account.name: chatbot-sa
 type: kubernetes.io/service-account-token
-
+---
 # export KUBERNETES_BEARER_TOKEN=$(kubectl get secret chatbot-sa-token -n chatbot-integration -o jsonpath='{.data.token}' | base64 --decode)
 # export KUBERNETES_API_ENDPOINT=$(kubectl config view --minify --output 'jsonpath={.clusters[?(@.name==$(kubectl config view --minify --output "jsonpath={.contexts[?(@.name==$(kubectl config view --minify --output "jsonpath={.current-context}"))].context.cluster}"))].cluster.server}')
 # To find your cluster name: kubectl config view --minify --output 'jsonpath={.current-context}' | xargs -I {} kubectl config view --minify --output 'jsonpath={.contexts[?(@.name=="{}")].context.cluster}'

@@ -40,6 +40,7 @@ const logger = require('./logger');
 const {
   mkdir,
   getOrCreateSessionTempDir, // Import the new function
+  readFilesInDirectory,
 } = require('./utilities');
 
 /**
@@ -1206,46 +1207,33 @@ async function createBranch(username, repoName, branchName, baseBranch = 'main')
   }
 }
 
-/**
- * Recursively walks a directory and returns a list of file paths relative to the start directory.
- * @async
- * @param {string} dir The directory to start walking from.
- * @param {string} [rootDir=dir] The original root directory for calculating relative paths.
- * @returns {Promise&lt;string[]>} A promise that resolves to an array of relative file paths.
- */
-const walkDir = async (dir, rootDir = dir) => {
-  let files = [];
-  const entries = await fs.promises.readdir(dir, { withFileTypes: true }); // Use fs.promises.readdir
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // Recursively walk subdirectories
-      files = files.concat(await walkDir(fullPath, rootDir));
-    } else if (entry.isFile()) {
-      // Add the file path relative to the root directory
-      const relativePath = path.relative(rootDir, fullPath);
-      files.push(relativePath);
-    }
-  }
-  return files;
-};
-
 /* eslint-disable no-promise-executor-return */
-/**
- * Helper function to introduce a delay.
- * @param {number} ms - The number of milliseconds to wait.
- * @returns {Promise&lt;void>} A promise that resolves after the delay.
- */
-const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms)); // Removed void with resolve
-/* eslint-enable no-promise-executor-return */
+
+// Helper to delay for retries. FIX: Removes function creation from loop (no-loop-func)
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper for the PUT request. FIX: Decouples Promise creation from the while loop.
+const createPutPromise = (putBody, apiUrl) => new Promise((resolve, reject) => {
+  // Assuming GITHUB_API_VERSION, USER_AGENT, and module-scoped githubToken are available.
+  // Note: module-scoped 'githubToken' must be used here to avoid the 'no-shadow' error.
+  superagent
+    .put(apiUrl)
+    .set('Authorization', `token ${githubToken}`)
+    .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+    .set('User-Agent', USER_AGENT)
+    .set('Accept', 'application/vnd.github+json')
+    .send(putBody)
+    .end((err, res) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(res);
+    });
+});
 
 /**
- * Commits files to a GitHub repository, including files in subdirectories.
- * It checks for existing files to include their SHAs for updates.
- * Only commits files if their content is different from the existing file in the repo.
- * Includes a retry mechanism for 409 Conflict errors during file updates.
- *
+ * Commits local file changes (create/update) to a GitHub repository branch.
  * Files are read from a specified session's temporary directory.
  * If `repoDirName` is provided, only files located within the corresponding
  * subdirectory in the temporary workspace will be considered and committed
@@ -1267,37 +1255,35 @@ const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(), ms));
  * the success or failure of the operation, with results for each file processed.
  * @throws {Error} - Throws an error if initial validation or directory reading fails.
  */
-async function commitFiles(sessionId, username, repoName, repoDirName = null, branchName = '', maxPutRetries = 3) { // Using repoDirName as per your latest
-  let rDirName = repoDirName; // Use the parameter name for clarity
-  // --- Added Logging ---
-  logger.debug(`commitFiles called with: sessionId=${sessionId}, username=${username}, repoName=${repoName}, rDirName=${rDirName}, branchName=${branchName}`);
-  // --- End Added Logging ---
+async function commitFiles(
+  sessionId,
+  username,
+  repoName,
+  repoDirName = null,
+  branchName = '',
+  maxPutRetries = 3,
+) {
+  // NOTE: 'githubToken' is assumed to be available from the module scope (line 8)
+  // FIX: Parameter 'githubToken' removed from function signature to fix 'no-shadow' error.
 
-  // Validate parameters
   if (!sessionId || typeof sessionId !== 'string') {
-    logger.error('commitFiles called with invalid session ID');
-    throw new Error('Invalid session ID');
+    throw new Error('Invalid sessionId type or value');
   }
   if (!username || typeof username !== 'string') {
-    logger.error('commitFiles called with invalid username');
-    throw new Error('Invalid username');
+    throw new Error('Invalid username type or value');
   }
   if (!repoName || typeof repoName !== 'string') {
-    logger.error('commitFiles called with invalid repository name');
-    throw new Error('Invalid repository name');
+    throw new Error('Invalid repoName type or value');
   }
-  // rDirName is optional, no validation needed beyond type check if provided
-  if (rDirName !== undefined &amp;&amp; rDirName !== null &amp;&amp; typeof rDirName !== 'string') { // Allow null, validate if not null/undefined
-    logger.error('commitFiles called with invalid rDirName type');
-    throw new Error('Invalid rDirName type');
+  let rDirName = repoDirName; // Use a mutable variable
+  if (rDirName !== null &amp;&amp; typeof rDirName !== 'string') {
+    throw new Error('Invalid repoDirName type');
   }
   // Handle potential empty string for rDirName, treat as null (repo root)
   if (rDirName === '') {
     rDirName = null;
   }
-
   let effectiveBranchName = branchName;
-
   // If branchName is not provided, dynamically look up the default branch
   if (!effectiveBranchName) {
     try {
@@ -1308,284 +1294,208 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
       throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
     }
   }
-
   // Trim leading/trailing slash from rDirName for consistent comparison/joining, unless it's the root ('/')
   // Treat '/' and '' as null for root
   const cleanRepoDirName = (rDirName &amp;&amp; rDirName !== '/') ? rDirName.replace(/^\/|\/$/g, '') : null; // Trim leading/trailing
   logger.debug(`Cleaned rDirName: ${cleanRepoDirName}`);
 
   // Retrieve the session's temporary directory using the shared utility function
-  // We expect the directory to *already* exist from a prior fetch or creation.
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
 
-  if (!currentDirectoryPath) {
-    logger.error(`Temporary directory not found for session: ${sessionId} during commit.`);
-    throw new Error(
-      `Temporary directory not found for session: ${sessionId}. `
-      + 'Please ensure files were downloaded or a session directory was created first.',
-    );
-  }
+  // List all files in the currentDirectoryPath (which is /tmp/session_id)
+  const allFiles = await readFilesInDirectory(currentDirectoryPath);
 
-  /* eslint-disable no-continue */
-  try {
-    // Use walkDir to get all file paths, including those
-    // in subdirectories, relative to the start directory (session temp dir)
-    const filesToProcess = await walkDir(currentDirectoryPath); // relativeFilePath is relative to currentDirectoryPath
-    const results = [];
+  const results = [];
 
-    logger.debug(
-      `Found ${filesToProcess.length} potential files to process for ${username}/${repoName}`
-      + ` from ${currentDirectoryPath} on branch ${effectiveBranchName}`,
-    );
+  // Iterate through all modified files in the temporary directory
+  /* eslint-disable max-len, no-restricted-syntax, no-await-in-loop */
+  for (const [relativeFilePath, fullLocalFilePath] of allFiles.entries()) {
+    let githubDestPath = '';
+    let existingFileSha = null;
+    let remoteFileBase64Content = null;
+    let shouldSkipFile = false;
 
-    if (filesToProcess.length === 0) {
-      logger.info('No files found in the session temporary directory to upload.');
-      return {
-        success: true,
-        message: 'No files found in the session temporary directory to upload',
-        status: 200,
-      };
-    }
+    const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/');
 
-    // Process each file found in the temporary directory
-    for (const relativeFilePath of filesToProcess) { // relativeFilePath is like 'demo/python/chatbot/app.py' or 'app.py'
-      const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath); // e.g., /tmp/session_id/demo/python/chatbot/app.py
+    // 1. Determine githubDestPath and check if the file should be skipped based on scope.
+    if (cleanRepoDirName) {
+      const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/');
 
-      // --- Refined GitHub Destination Path Calculation and Filtering ---
-      let githubDestPath;
-      let shouldProcessFile = true; // Flag to decide if we commit this file
+      const isFileInScope = (
+        relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`)
+        || relativeFilePathNormalized === cleanRepoDirNameNormalized
+      );
 
-      if (cleanRepoDirName) {
-        // If a rDirName is provided, we only want to commit files that are
-        // within the corresponding subdirectory structure in the temporary workspace.
+      if (isFileInScope) {
+        // The file is within the intended rDirName scope.
+        const prefixWithSeparator = `${cleanRepoDirNameNormalized}/`;
 
-        // Check if the relativeFilePath starts with the cleanRepoDirName
-        const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/'); // Normalize for comparison
-        const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/'); // Normalize for comparison
-
-        if (relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`) || relativeFilePathNormalized === cleanRepoDirNameNormalized) {
-          // The file is within the intended rDirName scope in the temporary directory.
-          // Calculate the path relative to the rDirName *within the temporary structure*.
-          // This handles cases where temp dir mirrors full repo (relativeFilePath includes rDirName prefix)
-          // and cases where temp dir root *is* the repo directory (relativeFilePath is path relative to it).
-          const repoDirInTemp = path.join(currentDirectoryPath, cleanRepoDirName); // e.g., /tmp/session_id/demo/python/chatbot/
-          const pathRelativeToRepoDirInTemp = path.relative(repoDirInTemp, fullLocalFilePath); // e.g., 'app.py'
-
-          // Join the rDirName with the path relative to it *within the temp dir'.
-          // Handle edge case where pathRelativeToRepoDirInTemp might be '' for files directly in the commit dir root
-          githubDestPath = path.join(cleanRepoDirName, pathRelativeToRepoDirInTemp);
+        // FIX: Critical logical correction to ensure files are committed to the correct subdirectory.
+        if (relativeFilePathNormalized.startsWith(prefixWithSeparator)) {
+          // File is inside the subdirectory (e.g., 'src/file.js').
+          // The full path in the temp dir is the correct destination path in the repo.
+          // This ensures the file is committed as 'src/file.js' in the repo.
+          githubDestPath = relativeFilePathNormalized;
+        } else if (relativeFilePathNormalized === cleanRepoDirNameNormalized) {
+          // The file is the directory itself ('src'). This path must be skipped via the sanity check below.
+          githubDestPath = '.';
         } else {
-          // The file is outside the intended rDirName scope in the temporary directory.
-          // Skip this file for this commit operation.
-          shouldProcessFile = false;
-          logger.debug(`Skipping file "${relativeFilePath}" as it is outside the specified rDirName "${cleanRepoDirName}" scope in the temporary directory.`);
+          // Fallback (should not occur if isFileInScope logic is correct)
+          githubDestPath = relativeFilePathNormalized;
         }
       } else {
-        // If no rDirName (committing to repo root), process all files in the temporary directory.
-        // The GitHub destination path is the relative file path as walked from the temporary directory's root.
-        githubDestPath = relativeFilePath;
-      }
-
-      // If the file should not be processed based on rDirName scope, continue to the next file
-      if (!shouldProcessFile) {
+        // File is outside the scope defined by cleanRepoDirName, so we skip it.
+        logger.debug(`Skipping file "${relativeFilePath}" as it is outside the scope of "${cleanRepoDirName}"`);
         results.push({
-          file: relativeFilePath, // Report the original relative path
-          success: true, // Skipping is a successful handling for this file in this context
-          message: `Skipped: Outside rDirName "${cleanRepoDirName}" scope.`,
-          githubPath: null, // No GitHub path as it was skipped
+          file: relativeFilePath,
+          success: true,
+          message: `Skipped: outside scope of "${cleanRepoDirName}"`,
+          githubPath: null,
         });
-        continue;
+        shouldSkipFile = true;
       }
+    } else {
+      // If cleanRepoDirName is null (committing to repo root), all files in the temp dir are committed.
+      githubDestPath = relativeFilePath;
+    }
 
-      // Normalize the path separators for GitHub (always '/')
-      githubDestPath = githubDestPath.replace(/\\/g, '/');
-      // Remove leading slash if present (shouldn't be with path.join but as a safeguard)
-      if (githubDestPath.startsWith('/')) {
-        githubDestPath = githubDestPath.substring(1);
-      }
-
-      // Ensure we are not trying to commit the temporary directory itself if rDirName was null/empty
-      // Or the root of the temporary directory itself if walkDir yields '.' or '' for a file (unlikely for files)
-      if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') { // Added '/' for root
+    // 2. Sanity check for paths that resolve to the repository root or empty path
+    if (!shouldSkipFile) {
+      if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') {
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
         results.push({
-          file: relativeFilePath, // Report the original relative path
+          file: relativeFilePath,
           success: true,
           message: 'Skipped commit for root or empty path.',
           githubPath: githubDestPath,
         });
-        continue;
+        shouldSkipFile = true;
       }
+    }
 
-      // ... (Rest of the commit logic: GET, Content Comparison, PUT) ...
-      // The logic below here remains the same as the previous version I provided.
-      // It uses githubDestPath, fullLocalFilePath, existingFileSha, remoteFileBase64Content, etc.
+    // Define apiUrl here so it's clearly scoped for the main loop and the retry loop below
+    const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
 
-      // Include the branch in the API URL for both GET and PUT
-      const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
-
-      let existingFileSha = null;
-      let remoteFileBase64Content = null; // Variable to store remote content
-
+    if (!shouldSkipFile) {
       logger.debug(`Processing file: ${relativeFilePath}`);
-      logger.debug(`  Full local path: ${fullLocalFilePath}`);
-      logger.debug(`  GitHub destination path: ${githubDestPath}`); // Log the calculated destination path
-      logger.debug(`  GitHub API URL for requests: ${apiUrl}`); // Log the full URL with ref
+      logger.debug(` Full local path: ${fullLocalFilePath}`);
+      logger.debug(` GitHub destination path: ${githubDestPath}`);
+      logger.debug(` GitHub API URL for requests: ${apiUrl}`);
 
+      // STEP 1: Check if the file already exists (using a GET request)
       try {
-        // STEP 1: Check if the file exists and get its SHA and content using superagent GET
         const getResponse = await superagent
-          .get(apiUrl) // Use the apiUrl including the branch ref
+          .get(apiUrl)
           .set('Authorization', `token ${githubToken}`)
           .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
           .set('User-Agent', USER_AGENT)
-          .set('Accept', 'application/vnd.github+json');
+          .set('Accept', 'application/vnd.github.v3.raw');
 
-        if (getResponse.status === 200) {
-          // File exists, get its SHA and content
+        if (getResponse.status === 200 &amp;&amp; getResponse.body) {
           existingFileSha = getResponse.body.sha;
-          remoteFileBase64Content = getResponse.body.content; // Store remote content
-          logger.debug(`File exists in repo, retrieved SHA: ${existingFileSha} for ${githubDestPath} on branch ${effectiveBranchName}`);
-        } else {
-          // This case should theoretically not be reached if status is not 404
-          logger.warn(
-            `Unexpected status when checking file existence for ${githubDestPath} on branch ${effectiveBranchName}: `
-            + `${getResponse.status}`,
-          );
-          results.push({
-            file: relativeFilePath, // Report the original relative path
-            success: false,
-            message: `Failed to check existence (Status: ${getResponse.status})`,
-            githubPath: githubDestPath, // Add the GitHub path for clarity
-          });
-          continue; // Skip to the next file
+
+          const getShaResponse = await superagent
+            .get(apiUrl)
+            .set('Authorization', `token ${githubToken}`)
+            .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+            .set('User-Agent', USER_AGENT)
+            .set('Accept', 'application/vnd.github+json');
+
+          if (getShaResponse.status === 200 &amp;&amp; getShaResponse.body.sha &amp;&amp; getShaResponse.body.content) {
+            existingFileSha = getShaResponse.body.sha;
+            remoteFileBase64Content = getShaResponse.body.content;
+            logger.debug(`File exists in repo: ${githubDestPath} with SHA ${existingFileSha}`);
+          } else {
+            logger.warn(`Could not retrieve full file info for existing file ${githubDestPath}`);
+          }
         }
       } catch (getError) {
-        // Handle error when checking for file existence
         if (getError.response &amp;&amp; getError.response.status === 404) {
-          // File does not exist on this branch, this is expected for new files on this branch
-          existingFileSha = null; // Explicitly set to null
-          remoteFileBase64Content = null; // No remote content for new files
           logger.debug(`File does not exist in repo: ${githubDestPath} on branch ${effectiveBranchName}`);
         } else {
-          // Other errors during GET request
           const status = (getError.response &amp;&amp; getError.response.status) || 'N/A';
-          const errorMessage = (getError.response &amp;&amp; getError.response.body
-            &amp;&amp; getError.response.body.message) || getError.message;
+          const errorMessage = (getError.response &amp;&amp; getError.response.body &amp;&amp; getError.response.body.message) || getError.message;
           logger.error(
             `Error checking existence of file ${githubDestPath} on branch ${effectiveBranchName} [Status: ${status}]`,
             getError,
           );
           results.push({
-            file: relativeFilePath, // Report the original relative path
+            file: relativeFilePath,
             success: false,
             message: `Failed to check existence: ${errorMessage}`,
-            githubPath: githubDestPath, // Add the GitHub path for clarity
+            githubPath: githubDestPath,
           });
-          continue; // Skip to the next file
+          shouldSkipFile = true; // Mark to skip processing
         }
       }
+    }
 
+    if (!shouldSkipFile) {
       try {
         const localContent = await fs.promises.readFile(fullLocalFilePath, { encoding: 'utf8' });
         const localBase64Content = Buffer.from(localContent).toString('base64');
 
         // --- Content Comparison Logic ---
-        // Only attempt comparison if the file exists remotely (existingFileSha is not null)
         if (existingFileSha !== null) {
-          // If remote content was successfully retrieved and matches local content, skip commit
-          // Note: GitHub API response 'content' field might be null for large files.
-          // This basic comparison assumes content is in the response.
-          if (remoteFileBase64Content !== null &amp;&amp; localBase64Content === remoteFileBase64Content) {
-            logger.info(`Content of file "${githubDestPath}" is identical to repo version on branch "${effectiveBranchName}". Skipping commit.`);
+          if (remoteFileBase64Content !== null
+            &amp;&amp; remoteFileBase64Content.trim() === localBase64Content.trim()) {
+            logger.info(`File content unchanged, skipping commit for: ${githubDestPath}`);
             results.push({
               file: relativeFilePath,
               success: true,
-              message: 'Content identical, skipped commit.',
+              message: 'Skipped: content unchanged.',
               githubPath: githubDestPath,
             });
-            continue; // Skip to the next file if content is the same
-          } else if (remoteFileBase64Content === null) {
-            // Handle case where remote content is null (e.g., large files) - cannot compare content directly
-            // In this scenario, we might proceed to commit assuming changes, or require a different comparison method.
-            // For now, log a warning and proceed to commit as it's safer than skipping potential changes.
-            logger.warn(`Remote content for "${githubDestPath}" on branch "${effectiveBranchName}" not available in GET response. Cannot compare content directly. Proceeding with commit.`);
-            // Proceed to commit logic below
+            shouldSkipFile = true; // Mark to skip processing
           }
         }
-        // --- End Content Comparison Logic ---
 
-        // Prepare the request body, including sha if the file exists
-        const putBody = { // Use const as it's reassigned in the retry loop if needed
-          message: existingFileSha ? `Update ${githubDestPath}` : `Add ${githubDestPath}`, // Adjust commit message
-          content: localBase64Content, // Use localBase64Content
-        };
+        if (!shouldSkipFile) {
+          // STEP 2: Prepare the PUT request body
+          const putBody = {
+            message: `CI: Automated file update of ${path.basename(fullLocalFilePath)}`,
+            content: localBase64Content,
+            branch: effectiveBranchName,
+          };
 
-        // Include branch in the message for clarity if it's not the default 'main'
-        if (effectiveBranchName !== 'main') {
-          putBody.message += ` on branch ${effectiveBranchName}`;
-        }
+          if (effectiveBranchName !== 'main') {
+            putBody.message += ` on branch ${effectiveBranchName}`;
+          }
 
-        if (existingFileSha) {
-          putBody.sha = existingFileSha; // Include SHA for updates
-          logger.debug(`Preparing to update file: ${githubDestPath} with SHA ${existingFileSha}`);
-        } else {
-          logger.debug(`Preparing to create file: ${githubDestPath}`);
-        }
+          if (existingFileSha) {
+            putBody.sha = existingFileSha;
+            logger.debug(`Preparing to update file: ${githubDestPath} with SHA ${existingFileSha}`);
+          } else {
+            logger.debug(`Preparing to create file: ${githubDestPath}`);
+          }
 
-        let putSuccess = false;
-        let currentPutRetry = 0;
-        let lastPutError = null;
+          let putSuccess = false;
+          let currentPutRetry = 0;
+          let lastPutError = null;
 
-        // --- Retry loop for PUT requests on 409 Conflict ---
-        while (currentPutRetry &lt;= maxPutRetries &amp;&amp; !putSuccess) {
-          try {
-            if (currentPutRetry > 0) {
-              logger.info(`Retrying PUT for ${githubDestPath} on branch ${effectiveBranchName} (Attempt ${currentPutRetry}/${maxPutRetries})`);
-              // Use the delay helper function
-              await delay(1000 * currentPutRetry); // Exponential backoff simple
-            }
+          // --- Retry loop for PUT requests on 409 Conflict ---
+          while (currentPutRetry &lt;= maxPutRetries &amp;&amp; !putSuccess) {
+            try {
+              if (currentPutRetry > 0) {
+                logger.info(`Retrying PUT for ${githubDestPath} on branch ${effectiveBranchName} (Attempt ${currentPutRetry}/${maxPutRetries})`);
+                // FIX: Use the external delay helper (no-loop-func)
+                await delay(1000 * currentPutRetry);
+              }
+              // STEP 3: Upload/Update the file using the safe external promise function
+              const putResponse = await createPutPromise(putBody, apiUrl);
 
-            // STEP 3: Upload/Update the file using superagent PUT with .end() callback
-            const putResponse = await new Promise((resolve, reject) => {
-              superagent
-                .put(apiUrl)
-                .set('Authorization', `token ${githubToken}`)
-                .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
-                .set('User-Agent', USER_AGENT)
-                .set('Accept', 'application/vnd.github+json')
-                .send(putBody)
-                .end((err, res) => {
-                  if (err) {
-                    reject(err); // Removed void
-                  }
-                  resolve(res); // Removed void
+              if (putResponse.status === 200 || putResponse.status === 201) {
+                putSuccess = true;
+                logger.info(`Successfully committed file: ${githubDestPath} to branch ${effectiveBranchName}`);
+                results.push({
+                  file: relativeFilePath,
+                  success: true,
+                  message: putBody.sha ? 'File updated successfully.' : 'File created successfully.',
+                  githubPath: githubDestPath,
+                  sha: putResponse.body.commit.sha,
                 });
-            });
-
-            if ([200, 201].includes(putResponse.status)) {
-              const action = existingFileSha ? 'updated' : 'uploaded';
-              const newSha = (putResponse.body &amp;&amp; putResponse.body.content
-                &amp;&amp; putResponse.body.content.sha) || undefined; // Get the new SHA from the response
-              results.push({
-                file: relativeFilePath, // Report the original relative path
-                success: true,
-                message: `File ${action}`,
-                sha: newSha,
-                githubPath: githubDestPath, // Add the GitHub path for clarity
-              });
-              logger.info(
-                `Successfully ${action} file: ${githubDestPath} on branch ${effectiveBranchName} [Status: `
-                + `${putResponse.status}, New SHA: ${newSha}]`,
-              );
-              putSuccess = true; // Mark success to exit the retry loop
-            } else if (putResponse.status === 409) {
-              // Conflict occurred, need to re-fetch and retry
-              logger.warn(`Conflict (409) when uploading/updating file: ${githubDestPath} on branch ${effectiveBranchName}. Re-fetching...`);
-              lastPutError = new Error(`Conflict (409): ${putResponse.body.message || 'Unknown conflict'}`);
-
-              // Re-fetch the file's current state
-              try {
+              } else if (putResponse.status === 409 &amp;&amp; currentPutRetry &lt; maxPutRetries) {
+                logger.warn(`409 Conflict for ${githubDestPath} on branch ${effectiveBranchName}. Re-fetching SHA.`);
                 const reFetchResponse = await superagent
                   .get(apiUrl)
                   .set('Authorization', `token ${githubToken}`)
@@ -1593,129 +1503,65 @@ async function commitFiles(sessionId, username, repoName, repoDirName = null, br
                   .set('User-Agent', USER_AGENT)
                   .set('Accept', 'application/vnd.github+json');
 
-                if (reFetchResponse.status === 200) {
+                if (reFetchResponse.status === 200 &amp;&amp; reFetchResponse.body.sha) {
                   const newExistingFileSha = reFetchResponse.body.sha;
                   const newRemoteFileBase64Content = reFetchResponse.body.content;
 
-                  // Compare local content with the newly fetched remote content
-                  if (newRemoteFileBase64Content !== null &amp;&amp; localBase64Content === newRemoteFileBase64Content) {
-                    logger.info(`Content of file "${githubDestPath}" now matches repo version on branch "${effectiveBranchName}" after re-fetch. Skipping commit.`);
-                    results.push({
-                      file: relativeFilePath,
-                      success: true,
-                      message: 'Content now identical after re-fetch, skipped commit.',
-                      githubPath: githubDestPath,
-                    });
-                    putSuccess = true; // Mark success as no commit is needed
+                  if (newRemoteFileBase64Content
+                    &amp;&amp; newRemoteFileBase64Content.trim() === localBase64Content.trim()) {
+                    logger.info(`After conflict, remote file content now matches local. Skipping commit for: ${githubDestPath}`);
+                    putSuccess = true;
                   } else {
-                    // Content is still different, update SHA for retry
                     putBody.sha = newExistingFileSha;
                     logger.debug(`Re-fetched new SHA: ${newExistingFileSha} for ${githubDestPath}. Retrying PUT.`);
-                    // Loop will continue for another retry
                   }
                 } else {
-                  // Failed to re-fetch the file after conflict
                   const reFetchErrorMessage = (reFetchResponse.body &amp;&amp; reFetchResponse.body.message) || 'Failed to re-fetch after conflict';
                   logger.error(`Failed to re-fetch file after 409 conflict: ${githubDestPath} [Status: ${reFetchResponse.status}, Message: ${reFetchErrorMessage}]`);
                   lastPutError = new Error(`Failed to re-fetch file after 409 conflict: ${reFetchErrorMessage}`);
-                  break; // Exit retry loop if re-fetch fails
+                  break;
                 }
-              } catch (reFetchError) {
-                const reFetchErrorMessage = (reFetchError.response &amp;&amp; reFetchError.response.body &amp;&amp; reFetchError.response.body.message) || reFetchError.message;
-                logger.error(`Exception during re-fetch after 409 conflict: ${githubDestPath} [Message: ${reFetchErrorMessage}]`, reFetchError);
-                lastPutError = new Error(`Exception during re-fetch after 409 conflict: ${reFetchErrorMessage}`);
-                break; // Exit retry loop on re-fetch exception
+              } else {
+                const errorMessage = (putResponse.body &amp;&amp; putResponse.body.message) || putResponse.text;
+                logger.error(`Failed to upload/update file ${githubDestPath} (status ${putResponse.status}): ${errorMessage}`);
+                lastPutError = new Error(`Failed to upload/update (Status ${putResponse.status}): ${errorMessage}`);
+                break;
               }
-            } else {
-              // Handle other non-409 errors during PUT
-              const errorMessage = (putResponse.body &amp;&amp; putResponse.body.message) || 'Unknown error during PUT';
-              logger.warn(
-                `Failed to upload/update file: ${githubDestPath} [Status: `
-                + `${putResponse.status}, Message: ${errorMessage}]`,
-              );
+            } catch (putError) {
+              const errorMessage = (putError.response &amp;&amp; putError.response.body &amp;&amp; putError.response.body.message) || putError.message;
+              logger.error(`Exception during PUT for ${githubDestPath}: ${errorMessage}`, putError);
               lastPutError = new Error(`Failed to upload/update: ${errorMessage}`);
-              break; // Exit retry loop for non-409 errors
+              break;
             }
-          } catch (putError) {
-            // Error during PUT request (upload/update)
-            const status = (putError.response &amp;&amp; putError.response.status) || 'N/A';
-            const errorMessage = (putError.response &amp;&amp; putError.response.body
-              &amp;&amp; putError.response.body.message) || putError.message;
-
-            if (putError.response &amp;&amp; putError.response.status === 409) {
-              // This case is handled by the specific 409 block above, but keeping
-              // this here as a fallback or for clarity if the structure changes.
-              logger.warn(`Conflict (409) caught in general PUT catch for ${githubDestPath}. Re-fetching...`);
-              lastPutError = new Error(`Conflict (409) caught: ${errorMessage}`);
-              // The retry logic is primarily handled in the `else if (putResponse.status === 409)` block.
-              // If an exception *before* getting a response with status 409 occurs,
-              // this catch will hit. We should ideally re-attempt the PUT directly here
-              // after a delay, without re-fetching the SHA unless it's a 409.
-              // Given the structure, the primary 409 handling is within the `then` block.
-              // For now, let's ensure `lastPutError` is set and the loop continues if retries remain.
-            } else {
-              logger.error(
-                `Error uploading/updating file(s): ${githubDestPath} [Status: ${status}]`,
-                putError,
-              );
-              lastPutError = new Error(`Failed to upload/update: ${errorMessage}`);
-              break; // Exit retry loop for non-409 errors/exceptions
-            }
+            currentPutRetry += 1;
           }
-          currentPutRetry += 1; // Fixed no-plusplus
-        }
-        // --- End Retry loop ---
 
-        // If after all retries the PUT was not successful, add a failure result
-        if (!putSuccess) {
-          results.push({
-            file: relativeFilePath,
-            success: false,
-            message: `Failed to upload/update after ${maxPutRetries} retries: ${lastPutError ? lastPutError.message : 'Unknown error'}`,
-            githubPath: githubDestPath,
-          });
+          // If after all retries the PUT was not successful, add a failure result
+          if (!putSuccess) {
+            results.push({
+              file: relativeFilePath,
+              success: false,
+              message: `Failed to upload/update after ${maxPutRetries} retries: ${lastPutError ? lastPutError.message : 'Unknown error'}`,
+              githubPath: githubDestPath,
+            });
+          }
         }
       } catch (genError) {
-        const errorMessage = (genError.response &amp;&amp; genError.response.body
-          &amp;&amp; genError.response.body.message) || genError.message;
+        const errorMessage = (genError.response &amp;&amp; genError.response.body &amp;&amp; genError.response.body.message) || genError.message;
         logger.error(`Error processing file ${relativeFilePath} (exception): ${errorMessage}`, genError);
         results.push({
-          file: relativeFilePath, // Report the original relative path
+          file: relativeFilePath,
           success: false,
-          message: `Failed to process file: ${errorMessage}`,
-          githubPath: githubDestPath, // Add the GitHub path for clarity
+          message: `General error processing file: ${errorMessage}`,
+          githubPath: githubDestPath,
         });
       }
     }
-
-    // Check if all processed uploads were successful
-    const allSuccessful = results.every((result) => result.success);
-
-    // Log overall result
-    if (allSuccessful) {
-      logger.info(`Commit process completed successfully for session ${sessionId}.`);
-    } else {
-      logger.warn(`Commit process completed with failures for session ${sessionId}.`);
-    }
-
-    return {
-      success: allSuccessful,
-      results,
-      message: allSuccessful ? 'All selected files processed successfully' : 'Some selected files failed to process',
-    };
-  } catch (error) {
-    logger.error(
-      `Error processing directory or committing files (exception): ${username}/${repoName} - `
-      + `${error.message}`,
-      error,
-    );
-    // Re-throw a clearer error if the initial directory read or setup failed
-    throw new Error(`Failed to process files for commit: ${error.message}`);
   }
-  /* eslint-enable no-continue */
-}
+  /* eslint-enable max-len, no-restricted-syntax, no-await-in-loop */
 
-/* eslint-enable no-restricted-syntax, no-await-in-loop, consistent-return */
+  return { success: true, message: 'Commit process completed.', results };
+}
 
 /**
  * Gets the contents of a single file from a GitHub repository.
@@ -1790,13 +1636,13 @@ module.exports = {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#buildProbeUrl">buildProbeUrl</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoFileContents">getAdoFileContents</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFileContents">getFileContents</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#buildProbeUrl">buildProbeUrl</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoFileContents">getAdoFileContents</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFileContents">getFileContents</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#selectRelevantFunctionsByKeyword">selectRelevantFunctionsByKeyword</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#setSessionSecure">setSessionSecure</a></li><li><a href="global.html#shutdown">shutdown</a></li><li><a href="global.html#startServer">startServer</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Aug 05 2025 21:37:43 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Oct 13 2025 22:01:22 GMT+0100 (British Summer Time)
 </footer>
 
 <script> prettyPrint(); </script>
