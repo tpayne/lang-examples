@@ -21,6 +21,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Predictive Text Variables ---
     let lastBotMessage = ''; // Stores the last bot message for predictive text generation
 
+    // --- Automatic Theme Detection and Application ---
+    function detectAndApplyTheme() {
+        const body = document.body;
+        // Check for dark mode preference
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (prefersDark) {
+            body.classList.add('dark-theme');
+        } else {
+            body.classList.remove('dark-theme');
+        }
+
+        // Optional: Listen for changes in the color scheme
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (e.matches) {
+                body.classList.add('dark-theme');
+            } else {
+                body.classList.remove('dark-theme');
+            }
+        });
+    }
+
+    // Run the theme detection function on load
+    detectAndApplyTheme();
+
+
     // --- Page Timer Logic ---
     const timerElement = document.getElementById('page-timer');
     const startTime = new Date().getTime(); // Record the time when the script starts
