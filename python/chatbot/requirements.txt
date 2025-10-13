@@ -8,7 +8,7 @@ Flask==3.1.0
 h11==0.14.0
 httpcore==1.0.8
 httpx==0.28.1
-idna==3.10
+idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 jproperties==2.1.2
