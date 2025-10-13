@@ -9,11 +9,36 @@ body {
     color: #1a202c; /* Dark text color */
 }
 
-/* --- Dark Mode Styles (Applied when 'dark-theme' class is on body) --- */
+/* --- Scrollbar Styles for Dark Theme (Applies to body and all scrollable elements) --- */
 body.dark-theme {
     background-color: #121212; /* Very dark background (Standard dark mode) */
     color: #e0e0e0; /* Light text */
+
+    /* Firefox scrollbar styling */
+    scrollbar-color: #424242 #1e1e1e; /* thumb color track color */
 }
+
+/* Webkit scrollbar styling (Chrome, Safari, Edge) */
+body.dark-theme ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+body.dark-theme ::-webkit-scrollbar-track {
+    background: #1e1e1e; /* Dark track color */
+    border-radius: 10px;
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb {
+    background-color: #424242; /* Darker gray thumb */
+    border-radius: 10px;
+    border: 3px solid #1e1e1e; /* Border to shrink thumb and reveal track */
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb:hover {
+    background-color: #555555; /* Slightly lighter gray on hover */
+}
+/* --- End Scrollbar Styles --- */
 
 /* --- Page Timer Style --- */
 #page-timer {
@@ -75,6 +100,11 @@ body.dark-theme .carousel-container {
     overflow-y: auto; /* Add scrollbar if content is too long */
     height: auto; /* Adjust height based on content */
     max-height: 400px; /* Optional: limit height and enable scrolling */
+}
+
+/* Webkit scrollbar styling for carousel pane (content within carousel) */
+body.dark-theme .carousel-pane::-webkit-scrollbar-track {
+    background: #1e1e1e;
 }
 
 .carousel-pane h2 {
@@ -352,6 +382,12 @@ body.dark-theme #chat_container {
     background-color: #1e1e1e; /* Match chat window background */
 }
 
+/* Webkit scrollbar styling for chat container */
+body.dark-theme #chat_container::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+
 /* Style for the toolbar */
 #toolbar {
     display: flex;
@@ -450,6 +486,11 @@ body.dark-theme #input_container {
     /* Note: Placeholders for contenteditable require JavaScript or a CSS hack */
     background-color: #ffffff; /* Default background */
     color: #1a202c; /* Default text color */
+}
+
+/* Webkit scrollbar styling for user input */
+body.dark-theme #user_input::-webkit-scrollbar-track {
+    background: #2d2d2d;
 }
 
 /* Changed user input styling for dark theme */
@@ -639,6 +680,12 @@ body.dark-theme .message.bot .message-icon {
     order: 1; /* Ensure content is ordered correctly relative to icon */
 }
 
+/* Webkit scrollbar styling for message content */
+body.dark-theme .message-content::-webkit-scrollbar-track {
+    background: #424242;
+}
+
+
 .user .message-content {
     background-color: #dcf8c6;
     color: #15803d;
@@ -771,6 +818,11 @@ body.dark-theme .typing-indicator span {
     flex-shrink: 0; /* Prevent the ribbon from shrinking */
     max-height: 100px; /* Limit height of the ribbon to prevent it from taking too much space */
     overflow-y: auto; /* Add vertical scroll if suggestions exceed max-height */
+}
+
+/* Webkit scrollbar styling for predictive ribbon */
+body.dark-theme #predictive_text_ribbon::-webkit-scrollbar-track {
+    background: #2d2d2d;
 }
 
 /* Changed predictive ribbon styling for dark theme */
