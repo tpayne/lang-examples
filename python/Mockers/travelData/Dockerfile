@@ -1,6 +1,6 @@
 # Use the official Python 3.11 Alpine image as the base.
 # Alpine is a lightweight Linux distribution, which results in a smaller Docker image.
-FROM python:3.11-alpine
+FROM python:3.14-alpine
 
 # Set the working directory inside the container.
 # This is where your scripts will be placed.
