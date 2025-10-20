@@ -42,7 +42,7 @@
     "redis": "^5.8.0",
     "signal-exit": "4.1.0",
     "superagent": "^10.2.3",
-    "uuid": "^11.1.0",
+    "uuid": "^13.0.0",
     "winston": "^3.0.0"    
   },
   "devDependencies": {
