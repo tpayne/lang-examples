@@ -407,6 +407,7 @@ Notes
 * Sample actions have been added to allow you to interact GitHub REST API (use the cloudops context)
 * The OpenAI can and will sometimes produce corrupt results that screw up certain operations. Unfortunately, this is beyond my control, so just beware of it
 * You can find example conversations held with the chatbot [here](samples/)
+* Logging can be done with commands like `docker exec -it $(docker ps --filter "ancestor=chatbotgemini:latest" --format "{{.ID}}") tail -f /app/logs/nodeapp.out.log`
 
 References
 ----------

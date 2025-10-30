@@ -50,7 +50,15 @@ const {
 
 const { getVehicleHistory } = require('./dosaFunctions');
 
-const { generateGoogleMapsLink, planRoute } = require('./mappingFunctions');
+const {
+  generateGoogleMapsLink,
+  planRoute,
+} = require('./mappingFunctions');
+
+const {
+  getAggregatedStockData,
+  getLastStockPrice,
+} = require('./fintechFunctions');
 
 const { saveCodeToFile } = require('./utilities');
 
@@ -1287,6 +1295,54 @@ async function loadAdoIntegration(sessionId) {
 }
 
 /**
+ * Registers the Fintech API function with the function registry.
+ * @param {string} sessionId The unique identifier for the session.
+ */
+async function loadFintechFunctions(sessionId) {
+  await registerFunction(
+    sessionId,
+    'get_last_uk_stock_price', // Function name for the AI tool
+    getLastStockPrice, // The actual function to execute
+    ['symbol'],
+    'Gets last stock price for stock symbol from UK stock market.',
+    {
+      symbol: {
+        type: 'string',
+        description: 'The UK stock market symbol name. This HAS to be a UK stock symbol and cannot be from any other market.',
+      },
+    },
+    ['symbol'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'get_aggregated_uk_stock_info', // Function name for the AI tool
+    getAggregatedStockData, // The actual function to execute
+    ['symbol', 'time', 'from', 'to'],
+    'Gets aggregated stock data from UK stock market.',
+    {
+      symbol: {
+        type: 'string',
+        description: 'The UK stock market symbol name. This HAS to be a UK stock symbol and cannot be from any other market.',
+      },
+      time: {
+        type: 'string',
+        description: 'The supported time interval for aggregation, i.e. 1min, 5min, 15min, 30min, 45min, 1h, 2h, 4h, 1day, 1week and 1month. No other ranges are supported',
+      },
+      from: {
+        type: 'string',
+        description: 'The start date for the data range (YYYY-MM-DD).',
+      },
+      to: {
+        type: 'string',
+        description: 'The end date for the data range (YYYY-MM-DD).',
+      },
+    },
+    ['symbol', 'time', 'from', 'to'],
+  );
+}
+
+/**
  * Registers the Google Maps Directions API function with the function registry.
  * @param {string} sessionId The unique identifier for the session.
  */
@@ -2327,6 +2383,15 @@ async function loadIntegrations(sessionId) {
   } else {
     logger.info(
       `Database integration not loaded for session: ${sessionId}. DATABASE_URI not set.`,
+    );
+  }
+
+  if (process.env.FINAGE_API_KEY) {
+    logger.info(`Loading Finage Stock API integration for session: ${sessionId}`);
+    await loadFintechFunctions(sessionId);
+  } else {
+    logger.info(
+      `Finage Stock API integration not loaded for session: ${sessionId}. FINAGE_API_KEY not set.`,
     );
   }
 
