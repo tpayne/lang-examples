@@ -1263,9 +1263,6 @@ async function commitFiles(
   branchName = '',
   maxPutRetries = 3,
 ) {
-  // NOTE: 'githubToken' is assumed to be available from the module scope (line 8)
-  // FIX: Parameter 'githubToken' removed from function signature to fix 'no-shadow' error.
-
   if (!sessionId || typeof sessionId !== 'string') {
     throw new Error('Invalid sessionId type or value');
   }
@@ -1275,16 +1272,15 @@ async function commitFiles(
   if (!repoName || typeof repoName !== 'string') {
     throw new Error('Invalid repoName type or value');
   }
-  let rDirName = repoDirName; // Use a mutable variable
+  let rDirName = repoDirName;
   if (rDirName !== null &amp;&amp; typeof rDirName !== 'string') {
     throw new Error('Invalid repoDirName type');
   }
-  // Handle potential empty string for rDirName, treat as null (repo root)
   if (rDirName === '') {
     rDirName = null;
   }
+
   let effectiveBranchName = branchName;
-  // If branchName is not provided, dynamically look up the default branch
   if (!effectiveBranchName) {
     try {
       effectiveBranchName = await getDefaultBranch(username, repoName);
@@ -1294,22 +1290,23 @@ async function commitFiles(
       throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
     }
   }
-  // Trim leading/trailing slash from rDirName for consistent comparison/joining, unless it's the root ('/')
-  // Treat '/' and '' as null for root
-  const cleanRepoDirName = (rDirName &amp;&amp; rDirName !== '/') ? rDirName.replace(/^\/|\/$/g, '') : null; // Trim leading/trailing
+
+  const cleanRepoDirName = (rDirName &amp;&amp; rDirName !== '/') ? rDirName.replace(/^\/|\/$/g, '') : null;
   logger.debug(`Cleaned rDirName: ${cleanRepoDirName}`);
 
-  // Retrieve the session's temporary directory using the shared utility function
   const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
 
-  // List all files in the currentDirectoryPath (which is /tmp/session_id)
+  // Assuming this returns Map&lt;RelativePath, FileContentString>
   const allFiles = await readFilesInDirectory(currentDirectoryPath);
 
   const results = [];
 
-  // Iterate through all modified files in the temporary directory
   /* eslint-disable max-len, no-restricted-syntax, no-await-in-loop */
-  for (const [relativeFilePath, fullLocalFilePath] of allFiles.entries()) {
+  // FIX: Deconstruct 'fileContent' instead of 'fullLocalFilePath'
+  for (const [relativeFilePath, fileContent] of allFiles.entries()) {
+    // FIX: Reconstruct the full local path manually for logging/basename purposes
+    const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
+
     let githubDestPath = '';
     let existingFileSha = null;
     let remoteFileBase64Content = null;
@@ -1317,34 +1314,23 @@ async function commitFiles(
 
     const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/');
 
-    // 1. Determine githubDestPath and check if the file should be skipped based on scope.
     if (cleanRepoDirName) {
       const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/');
-
       const isFileInScope = (
         relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`)
         || relativeFilePathNormalized === cleanRepoDirNameNormalized
       );
 
       if (isFileInScope) {
-        // The file is within the intended rDirName scope.
         const prefixWithSeparator = `${cleanRepoDirNameNormalized}/`;
-
-        // FIX: Critical logical correction to ensure files are committed to the correct subdirectory.
         if (relativeFilePathNormalized.startsWith(prefixWithSeparator)) {
-          // File is inside the subdirectory (e.g., 'src/file.js').
-          // The full path in the temp dir is the correct destination path in the repo.
-          // This ensures the file is committed as 'src/file.js' in the repo.
           githubDestPath = relativeFilePathNormalized;
         } else if (relativeFilePathNormalized === cleanRepoDirNameNormalized) {
-          // The file is the directory itself ('src'). This path must be skipped via the sanity check below.
           githubDestPath = '.';
         } else {
-          // Fallback (should not occur if isFileInScope logic is correct)
           githubDestPath = relativeFilePathNormalized;
         }
       } else {
-        // File is outside the scope defined by cleanRepoDirName, so we skip it.
         logger.debug(`Skipping file "${relativeFilePath}" as it is outside the scope of "${cleanRepoDirName}"`);
         results.push({
           file: relativeFilePath,
@@ -1355,11 +1341,9 @@ async function commitFiles(
         shouldSkipFile = true;
       }
     } else {
-      // If cleanRepoDirName is null (committing to repo root), all files in the temp dir are committed.
       githubDestPath = relativeFilePath;
     }
 
-    // 2. Sanity check for paths that resolve to the repository root or empty path
     if (!shouldSkipFile) {
       if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') {
         logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
@@ -1373,16 +1357,13 @@ async function commitFiles(
       }
     }
 
-    // Define apiUrl here so it's clearly scoped for the main loop and the retry loop below
     const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
 
     if (!shouldSkipFile) {
       logger.debug(`Processing file: ${relativeFilePath}`);
-      logger.debug(` Full local path: ${fullLocalFilePath}`);
+      // logger.debug(` Content preview: ${fileContent.substring(0, 50)}...`); // Optional debug
       logger.debug(` GitHub destination path: ${githubDestPath}`);
-      logger.debug(` GitHub API URL for requests: ${apiUrl}`);
 
-      // STEP 1: Check if the file already exists (using a GET request)
       try {
         const getResponse = await superagent
           .get(apiUrl)
@@ -1405,34 +1386,30 @@ async function commitFiles(
             existingFileSha = getShaResponse.body.sha;
             remoteFileBase64Content = getShaResponse.body.content;
             logger.debug(`File exists in repo: ${githubDestPath} with SHA ${existingFileSha}`);
-          } else {
-            logger.warn(`Could not retrieve full file info for existing file ${githubDestPath}`);
           }
         }
       } catch (getError) {
         if (getError.response &amp;&amp; getError.response.status === 404) {
           logger.debug(`File does not exist in repo: ${githubDestPath} on branch ${effectiveBranchName}`);
         } else {
-          const status = (getError.response &amp;&amp; getError.response.status) || 'N/A';
+          // Error handling logic...
           const errorMessage = (getError.response &amp;&amp; getError.response.body &amp;&amp; getError.response.body.message) || getError.message;
-          logger.error(
-            `Error checking existence of file ${githubDestPath} on branch ${effectiveBranchName} [Status: ${status}]`,
-            getError,
-          );
           results.push({
             file: relativeFilePath,
             success: false,
             message: `Failed to check existence: ${errorMessage}`,
             githubPath: githubDestPath,
           });
-          shouldSkipFile = true; // Mark to skip processing
+          shouldSkipFile = true;
         }
       }
     }
 
     if (!shouldSkipFile) {
       try {
-        const localContent = await fs.promises.readFile(fullLocalFilePath, { encoding: 'utf8' });
+        // FIX: Do not read from disk. Use the content from the Map directly.
+        // We assume 'fileContent' is already a UTF8 string based on the logs.
+        const localContent = fileContent;
         const localBase64Content = Buffer.from(localContent).toString('base64');
 
         // --- Content Comparison Logic ---
@@ -1446,12 +1423,11 @@ async function commitFiles(
               message: 'Skipped: content unchanged.',
               githubPath: githubDestPath,
             });
-            shouldSkipFile = true; // Mark to skip processing
+            shouldSkipFile = true;
           }
         }
 
         if (!shouldSkipFile) {
-          // STEP 2: Prepare the PUT request body
           const putBody = {
             message: `CI: Automated file update of ${path.basename(fullLocalFilePath)}`,
             content: localBase64Content,
@@ -1464,29 +1440,23 @@ async function commitFiles(
 
           if (existingFileSha) {
             putBody.sha = existingFileSha;
-            logger.debug(`Preparing to update file: ${githubDestPath} with SHA ${existingFileSha}`);
-          } else {
-            logger.debug(`Preparing to create file: ${githubDestPath}`);
           }
 
           let putSuccess = false;
           let currentPutRetry = 0;
           let lastPutError = null;
 
-          // --- Retry loop for PUT requests on 409 Conflict ---
           while (currentPutRetry &lt;= maxPutRetries &amp;&amp; !putSuccess) {
             try {
               if (currentPutRetry > 0) {
-                logger.info(`Retrying PUT for ${githubDestPath} on branch ${effectiveBranchName} (Attempt ${currentPutRetry}/${maxPutRetries})`);
-                // FIX: Use the external delay helper (no-loop-func)
                 await delay(1000 * currentPutRetry);
               }
-              // STEP 3: Upload/Update the file using the safe external promise function
+
               const putResponse = await createPutPromise(putBody, apiUrl);
 
               if (putResponse.status === 200 || putResponse.status === 201) {
                 putSuccess = true;
-                logger.info(`Successfully committed file: ${githubDestPath} to branch ${effectiveBranchName}`);
+                logger.info(`Successfully committed file: ${githubDestPath}`);
                 results.push({
                   file: relativeFilePath,
                   success: true,
@@ -1495,7 +1465,7 @@ async function commitFiles(
                   sha: putResponse.body.commit.sha,
                 });
               } else if (putResponse.status === 409 &amp;&amp; currentPutRetry &lt; maxPutRetries) {
-                logger.warn(`409 Conflict for ${githubDestPath} on branch ${effectiveBranchName}. Re-fetching SHA.`);
+                // ... 409 Conflict handling (same as before) ...
                 const reFetchResponse = await superagent
                   .get(apiUrl)
                   .set('Authorization', `token ${githubToken}`)
@@ -1504,51 +1474,41 @@ async function commitFiles(
                   .set('Accept', 'application/vnd.github+json');
 
                 if (reFetchResponse.status === 200 &amp;&amp; reFetchResponse.body.sha) {
-                  const newExistingFileSha = reFetchResponse.body.sha;
                   const newRemoteFileBase64Content = reFetchResponse.body.content;
-
-                  if (newRemoteFileBase64Content
-                    &amp;&amp; newRemoteFileBase64Content.trim() === localBase64Content.trim()) {
-                    logger.info(`After conflict, remote file content now matches local. Skipping commit for: ${githubDestPath}`);
-                    putSuccess = true;
+                  if (newRemoteFileBase64Content &amp;&amp; newRemoteFileBase64Content.trim() === localBase64Content.trim()) {
+                    putSuccess = true; // Content matches now
                   } else {
-                    putBody.sha = newExistingFileSha;
-                    logger.debug(`Re-fetched new SHA: ${newExistingFileSha} for ${githubDestPath}. Retrying PUT.`);
+                    putBody.sha = reFetchResponse.body.sha;
                   }
                 } else {
-                  const reFetchErrorMessage = (reFetchResponse.body &amp;&amp; reFetchResponse.body.message) || 'Failed to re-fetch after conflict';
-                  logger.error(`Failed to re-fetch file after 409 conflict: ${githubDestPath} [Status: ${reFetchResponse.status}, Message: ${reFetchErrorMessage}]`);
-                  lastPutError = new Error(`Failed to re-fetch file after 409 conflict: ${reFetchErrorMessage}`);
+                  lastPutError = new Error('Failed to re-fetch after 409');
                   break;
                 }
               } else {
                 const errorMessage = (putResponse.body &amp;&amp; putResponse.body.message) || putResponse.text;
-                logger.error(`Failed to upload/update file ${githubDestPath} (status ${putResponse.status}): ${errorMessage}`);
                 lastPutError = new Error(`Failed to upload/update (Status ${putResponse.status}): ${errorMessage}`);
                 break;
               }
             } catch (putError) {
               const errorMessage = (putError.response &amp;&amp; putError.response.body &amp;&amp; putError.response.body.message) || putError.message;
-              logger.error(`Exception during PUT for ${githubDestPath}: ${errorMessage}`, putError);
               lastPutError = new Error(`Failed to upload/update: ${errorMessage}`);
               break;
             }
             currentPutRetry += 1;
           }
 
-          // If after all retries the PUT was not successful, add a failure result
           if (!putSuccess) {
             results.push({
               file: relativeFilePath,
               success: false,
-              message: `Failed to upload/update after ${maxPutRetries} retries: ${lastPutError ? lastPutError.message : 'Unknown error'}`,
+              message: `Failed to upload/update: ${lastPutError ? lastPutError.message : 'Unknown error'}`,
               githubPath: githubDestPath,
             });
           }
         }
       } catch (genError) {
         const errorMessage = (genError.response &amp;&amp; genError.response.body &amp;&amp; genError.response.body.message) || genError.message;
-        logger.error(`Error processing file ${relativeFilePath} (exception): ${errorMessage}`, genError);
+        logger.error(`Error processing file ${relativeFilePath}: ${errorMessage}`, genError);
         results.push({
           file: relativeFilePath,
           success: false,
@@ -1558,7 +1518,6 @@ async function commitFiles(
       }
     }
   }
-  /* eslint-enable max-len, no-restricted-syntax, no-await-in-loop */
 
   return { success: true, message: 'Commit process completed.', results };
 }
@@ -1642,7 +1601,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Oct 13 2025 22:01:15 GMT+0100 (British Summer Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Nov 19 2025 18:52:32 GMT+0000 (Greenwich Mean Time)
 </footer>
 
 <script> prettyPrint(); </script>
