@@ -41,7 +41,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.0",
     "express-session": "^1.18.0",
-    "js-yaml": "4.1.0",
+    "js-yaml": "4.1.1",
     "mongodb": "^6.8.0",
     "morgan": "^1.10.0",
     "mysql2": "^3.10.2",
