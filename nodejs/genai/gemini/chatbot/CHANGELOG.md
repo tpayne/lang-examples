@@ -1,4 +1,7 @@
 # Changelog
+## 2025-11-20	(19:45:54-UTC+0000)
+- **Other**: Add delete directory functionality for GH (in nodejs/genai/gemini/chatbot/src/functions.js)
+- **Other**: Add delete directory functionality for GH (in nodejs/genai/gemini/chatbot/src/gitFunctions.js)
 ## 2025-11-19	(19:05:00-UTC+0000)
 - **Other**: Fix commit issue (in nodejs/genai/gemini/chatbot/src/gitFunctions.js)
 ## 2025-08-08	(21:31:44-UTC+0000)
