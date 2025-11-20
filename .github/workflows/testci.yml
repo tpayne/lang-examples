@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: ${{github.event.inputs.id}}
         run: echo Running job ${{github.event.inputs.id}}
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
         # Build tasks to run...
       - name: Build the .Net8 Docker image...
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Build the NodeJS Parse Docker image...
         id: nodejsparse-image
         run: |
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Build the NodeJS Table Docker image...
         id: nodejstable-image
         run: |
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref != 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'CHANGELOG update'))
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Build the NodeJS OpenAI chatbot Docker image...
         id: nodejschatbot-image
         run: |
