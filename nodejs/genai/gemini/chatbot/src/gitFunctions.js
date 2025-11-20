@@ -47,7 +47,7 @@ function handleNotFoundError(error, context = '') {
  * @param {string} [context=''] Optional context for the error message.
  * @throws {Error} Custom error detailing the GitHub API error.
  */
-async function handleGitHubApiError(response, context = '') {
+function handleGitHubApiError(response, context = '') {
   logger.error(
     `GitHub API Error ${context} (status):`,
     response.status,
@@ -175,6 +175,76 @@ const BINARY_EXTENSIONS = new Set([
   '.obj', '.stl', '.3ds', // 3D models
   // Add or remove extensions as needed
 ]);
+
+/**
+ * Retrieves the default branch name for a given GitHub repository.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise<string>} The name of the default branch.
+ * @throws {Error} If the API request fails or the repository is not found.
+ */
+async function getDefaultBranch(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200 && response.body.default_branch) {
+      logger.debug(`Default branch for ${username}/${repoName} is: ${response.body.default_branch}`);
+      return response.body.default_branch;
+    }
+    handleGitHubApiError(response, `getting default branch for ${username}/${repoName}`);
+  } catch (error) {
+    logger.error('Error getting default branch (exception):', username, repoName, error);
+    handleNotFoundError(error, ` for repository ${username}/${repoName}`);
+  }
+  return null;
+}
+
+/**
+ * Helper to fetch content details (SHA, type) for a given path.
+ * This is necessary for both single file and directory deletion.
+ */
+async function fetchContentDetails(username, repoName, contentPath, effectiveBranchName) {
+  const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${contentPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
+  logger.debug(`Fetching content details for ${contentPath} at ${effectiveBranchName} from URL: ${apiUrl}`);
+  try {
+    const getResponse = await superagent
+      .get(apiUrl)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json');
+
+    if (getResponse.status === 200 && getResponse.body) {
+      if (Array.isArray(getResponse.body)) {
+        // Directory listing (returns an array of contents)
+        return {
+          type: 'dir',
+          contents: getResponse.body,
+        };
+      }
+      // Single file/item
+      return {
+        type: getResponse.body.type, // 'file' or 'dir'
+        sha: getResponse.body.sha,
+        content: getResponse.body.content, // Base64 content for file
+      };
+    }
+  } catch (getError) {
+    if (getError.response && getError.response.status === 404) {
+      logger.debug(`Content not found at path: ${contentPath} on branch ${effectiveBranchName}`);
+      return { type: 'not_found' };
+    }
+    // Re-throw other errors
+    throw new Error(`Failed to fetch content details for ${contentPath}: ${getError.message}`);
+  }
+  return { type: 'not_found' };
+}
 
 /**
  * Recursively fetches files and directories from a GitHub repository for a specific session.
@@ -478,6 +548,105 @@ async function fetchRepoContentsRecursive(
 /* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
 
 /**
+ * Deletes a single file from the repository.
+ * @param {string} username - GitHub username/organization.
+ * @param {string} repoName - Repository name.
+ * @param {string} filePath - Path to the file in the repo.
+ * @param {string} fileSha - Current SHA of the file.
+ * @param {string} effectiveBranchName - Target branch.
+ * @returns {object} Result object.
+ */
+async function deleteFile(username, repoName, filePath, fileSha, effectiveBranchName) {
+  const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${filePath}`;
+
+  const deleteBody = {
+    message: `CI: Automated file deletion of ${path.basename(filePath)}`,
+    sha: fileSha,
+    branch: effectiveBranchName,
+  };
+
+  if (effectiveBranchName !== 'main') {
+    deleteBody.message += ` on branch ${effectiveBranchName}`;
+  }
+
+  logger.debug(`Preparing to delete file: ${filePath}`);
+
+  try {
+    const response = await superagent
+      .delete(apiUrl)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .send(deleteBody);
+
+    // GitHub returns 200 for successful deletions
+    if (response.status === 200 || response.status === 204) {
+      logger.info(`Successfully deleted file: ${filePath}`);
+      return {
+        file: filePath,
+        success: true,
+        message: 'File deleted successfully.',
+        githubPath: filePath,
+        sha: response.body && response.body.commit ? response.body.commit.sha : null,
+      };
+    }
+    throw new Error(`Unexpected status ${response.status} during file deletion.`);
+  } catch (deleteError) {
+    const errorMessage = (deleteError.response && deleteError.response.body && deleteError.response.body.message) || deleteError.message;
+    logger.error(`Exception during DELETE for ${filePath}: ${errorMessage}`, deleteError);
+    return {
+      file: filePath,
+      success: false,
+      message: `Failed to delete file: ${errorMessage}`,
+      githubPath: filePath,
+    };
+  }
+}
+
+/**
+ * Recursively deletes all files and subdirectories within a given directory path.
+ * NOTE: GitHub API requires files to be deleted one-by-one.
+ * @param {string} username - GitHub username/organization.
+ * @param {string} repoName - Repository name.
+ * @param {string} dirPath - Path to the directory in the repo.
+ * @param {string} effectiveBranchName - Target branch.
+ * @param {Array<object>} allResults - Accumulator for deletion results.
+ */
+async function deleteDirectoryRecursive(username, repoName, dirPath, effectiveBranchName, allResults) {
+  logger.info(`Starting recursive deletion for directory: ${dirPath}`);
+  const details = await fetchContentDetails(username, repoName, dirPath, effectiveBranchName);
+
+  if (details.type !== 'dir' || !details.contents) {
+    const errorMsg = `Path is not a valid directory or not found during recursion: ${dirPath}`;
+    logger.error(errorMsg);
+    allResults.push({
+      file: dirPath,
+      success: false,
+      message: errorMsg,
+      githubPath: dirPath,
+    });
+    return;
+  }
+
+  // Recursively process contents
+  for (const item of details.contents) {
+    const itemPath = item.path;
+    if (item.type === 'dir') {
+      // Recurse into subdirectory
+      await deleteDirectoryRecursive(username, repoName, itemPath, effectiveBranchName, allResults);
+    } else if (item.type === 'file') {
+      // Delete file
+      const result = await deleteFile(username, repoName, itemPath, item.sha, effectiveBranchName);
+      allResults.push(result);
+    } else {
+      logger.warn(`Skipping item of unknown type (${item.type}): ${itemPath}`);
+    }
+  }
+  logger.info(`Finished recursive deletion for directory: ${dirPath}`);
+}
+
+/**
  * Lists the names of public repositories for a given GitHub username.
  * Fetches repo data and extracts the 'name' property.
  * Handles API errors and "Not Found" exceptions.
@@ -498,7 +667,7 @@ async function listPublicRepos(username) {
     if (response.status === 200) {
       return response.body.map((repo) => repo.name);
     }
-    await handleGitHubApiError(response, `listing repos for user "${username}"`);
+    handleGitHubApiError(response, `listing repos for user "${username}"`);
   } catch (error) {
     logger.error('Error listing repos (exception):', username, error);
     handleNotFoundError(error, ` for user "${username}"`);
@@ -506,30 +675,104 @@ async function listPublicRepos(username) {
 }
 
 /**
- * Retrieves the default branch name for a given GitHub repository.
- * @async
- * @param {string} username The GitHub username.
- * @param {string} repoName The name of the repository.
- * @returns {Promise<string>} The name of the default branch.
- * @throws {Error} If the API request fails or the repository is not found.
+ * Deletes a file or recursively deletes a directory from a GitHub repository.
+ *
+ * NOTE: Deleting a directory involves deleting all files within it recursively,
+ * as the GitHub API does not support a single directory deletion operation.
+ *
+ * @param {string} username - GitHub username/organization.
+ * @param {string} repoName - Repository name.
+ * @param {string} repoDirName - The path to the file or directory to delete.
+ * @param {string} [branchName=''] - The target branch (defaults to repository default branch).
+ * @returns {object} Result object containing success status and results array.
  */
-async function getDefaultBranch(username, repoName) {
-  const url = `https://api.github.com/repos/${username}/${repoName}`;
-  try {
-    const response = await superagent
-      .get(url)
-      .set('Authorization', `Bearer ${githubToken}`)
-      .set('Accept', 'application/vnd.github.v3+json')
-      .set('User-Agent', USER_AGENT);
+async function deleteContent(
+  username,
+  repoName,
+  repoDirName,
+  branchName = '',
+) {
+  if (!username || typeof username !== 'string' || !repoName || typeof repoName !== 'string' || !repoDirName || typeof repoDirName !== 'string') {
+    throw new Error('Invalid username, repoName, or contentPath type or value');
+  }
 
-    if (response.status === 200 && response.body.default_branch) {
-      logger.debug(`Default branch for ${username}/${repoName} is: ${response.body.default_branch}`);
-      return response.body.default_branch;
+  // Normalize path
+  const cleanContentPath = (repoDirName && repoDirName !== '/') ? repoDirName.replace(/^\/|\/$/g, '') : null;
+  if (!cleanContentPath) {
+    throw new Error('Cannot delete the repository root (/)');
+  }
+
+  // Security: Prevent path traversal attacks
+  if (cleanContentPath.includes('..') || path.isAbsolute(cleanContentPath)) {
+    throw new Error('Invalid path: cannot contain ".." or be an absolute path');
+  }
+  logger.debug(`Params for deleteContent - username: ${username}, repoName: ${repoName}, contentPath: ${cleanContentPath}, branchName: ${branchName}`);
+
+  let effectiveBranchName = branchName;
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
     }
-    await handleGitHubApiError(response, `getting default branch for ${username}/${repoName}`);
+  }
+  const allResults = [];
+  logger.debug(`Starting deletion for content path: ${cleanContentPath} on branch: ${effectiveBranchName}`);
+  try {
+    const details = await fetchContentDetails(username, repoName, cleanContentPath, effectiveBranchName);
+
+    if (details.type === 'file') {
+      // Case 1: Delete a single file
+      const result = await deleteFile(username, repoName, cleanContentPath, details.sha, effectiveBranchName);
+      allResults.push(result);
+    } else if (details.type === 'dir') {
+      // Case 2: Recursively delete a directory
+      await deleteDirectoryRecursive(username, repoName, cleanContentPath, effectiveBranchName, allResults);
+    } else if (details.type === 'not_found') {
+      logger.warn(`Content not found: ${cleanContentPath} on branch ${effectiveBranchName}`);
+      return {
+        success: true,
+        message: 'Content not found, nothing to delete.',
+        results: [{
+          file: cleanContentPath, success: true, message: 'Skipped: content not found.', githubPath: cleanContentPath,
+        }],
+      };
+    } else {
+      throw new Error(`Unsupported content type '${details.type}' at path: ${cleanContentPath}`);
+    }
+
+    const overallSuccess = allResults.every((r) => r.success);
+    const successCount = allResults.filter((r) => r.success).length;
+    const failureCount = allResults.filter((r) => !r.success).length;
+
+    logger.info(`Deletion summary for ${cleanContentPath}: ${successCount} succeeded, ${failureCount} failed`);
+
+    return {
+      success: overallSuccess,
+      message: overallSuccess
+        ? `Successfully deleted ${successCount} item${successCount !== 1 ? 's' : ''}.`
+        : `Deleted ${successCount} item${successCount !== 1 ? 's' : ''} with ${failureCount} failure${failureCount !== 1 ? 's' : ''}.`,
+      results: allResults,
+      summary: {
+        total: allResults.length,
+        succeeded: successCount,
+        failed: failureCount,
+      },
+    };
   } catch (error) {
-    logger.error('Error getting default branch (exception):', username, repoName, error);
-    handleNotFoundError(error, ` for repository ${username}/${repoName}`);
+    logger.error(`Failed to execute deletion for ${cleanContentPath}: ${error.message}`);
+    return {
+      success: false,
+      message: `Fatal error during deletion: ${error.message}`,
+      results: allResults,
+      summary: {
+        total: allResults.length,
+        succeeded: allResults.filter((r) => r.success).length,
+        failed: allResults.filter((r) => !r.success).length,
+      },
+    };
   }
 }
 
@@ -555,7 +798,7 @@ async function listBranches(username, repoName) {
     if (response.status === 200) {
       return response.body.map((branch) => branch.name);
     }
-    await handleGitHubApiError(response, `listing branches for ${username}/${repoName}"`);
+    handleGitHubApiError(response, `listing branches for ${username}/${repoName}"`);
   } catch (error) {
     logger.error('Error listing branches (exception):', username, repoName, error);
     handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
@@ -616,7 +859,7 @@ async function listCommitHistory(username, repoName, repoDirName) {
     }
 
     // If the commit status isn't 200, use the helper to handle specific API error info.
-    await handleGitHubApiError(commitResponse, `listing commit history for "${repoDirName}" in "${username}/${repoName}"`);
+    handleGitHubApiError(commitResponse, `listing commit history for "${repoDirName}" in "${username}/${repoName}"`);
   } catch (error) {
     logger.error('Error listing commit history (exception):', username, repoName, repoDirName, error);
     handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
@@ -801,7 +1044,7 @@ async function createGithubPullRequest(
     if ([200, 201].includes(response.status)) {
       return response.body;
     }
-    await handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
+    handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
   } catch (error) {
     logger.error(`Error creating pull request (exception):, ${error.message}`);
     if (error.response) {
@@ -1533,7 +1776,7 @@ async function getFileContents(username, repoName, filePath, branchName = '') {
     }
     // This part handles other successful but non-200 responses if they occur
     // which is unlikely for this specific API call.
-    await handleGitHubApiError(response, `getting file contents for "${filePath}"`);
+    handleGitHubApiError(response, `getting file contents for "${filePath}"`);
   } catch (error) {
     logger.error('Error getting file contents (exception):', username, repoName, filePath, error);
     handleNotFoundError(error, ` for file "${filePath}" in repository "${username}/${repoName}"`);
@@ -1548,6 +1791,7 @@ module.exports = {
   createBranch,
   createGithubPullRequest,
   createRepo,
+  deleteContent,
   fetchRepoContentsRecursive,
   getFileContents,
   listBranches,

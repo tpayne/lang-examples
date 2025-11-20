@@ -8,6 +8,7 @@ const {
   createBranch,
   createGithubPullRequest,
   createRepo,
+  deleteContent,
   fetchRepoContentsRecursive,
   getFileContents,
   listBranches,
@@ -547,6 +548,29 @@ async function loadGitHub(sessionId) {
       },
     },
     ['username', 'repoName', 'title', 'sourceBranch', 'targetBranch'],
+  );
+
+  await registerFunction(
+    sessionId,
+    'delete_content',
+    deleteContent,
+    ['username', 'repoName', 'repoDirName', 'branchName'],
+    'Delete files or directories from a specified GitHub repository.', // Updated description if needed
+    {
+      username: { type: 'string', description: 'The GitHub username.' },
+      repoName: { type: 'string', description: 'The repository name.' },
+      repoDirName: {
+        type: 'string',
+        description:
+          'The base directory in the GitHub repository to delete files from.',
+      }, // Changed name and description
+      branchName: {
+        type: 'string',
+        description: 'The name of the branch to commit to.',
+      }, // Clarified description
+    },
+    ['username', 'repoName', 'repoDirName'], // Changed 'repoDirName' to 'repoDirName' in required params
+    false,
   );
 
   await registerFunction(
