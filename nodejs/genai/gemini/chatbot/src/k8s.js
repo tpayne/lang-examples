@@ -1,7 +1,7 @@
 const superagent = require('superagent');
 const https = require('https');
 const yaml = require('js-yaml'); // Import js-yaml
-const logger = require('./logger');
+const logger = require('./logger'); //Import logger
 
 /**
  * Executes a request to the Kubernetes API.
