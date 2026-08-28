@@ -1,0 +1,84 @@
+{
+  "name": "chatbot",
+  "version": "1.1.0",
+  "description": "Claude chatbot action demo",
+  "main": "./chatbot.js",
+  "bin": "./chatbot.js",
+  "scripts": {
+    "build": "run-s docker",
+    "docker": "docker rmi -f chatbot && docker build . --build-arg testbuild=false -t chatbot",
+    "test": "run-s test:*",
+    "test:gendoc": "npx jsdoc src -d documentation",
+    "test:lint": "run-s test:lint:*",
+    "test:lint:html": "npx linthtml 'templates/*.html'",
+    "test:lint:js": "npx eslint src/**/*.js --fix",
+    "test:lint:yaml": "npx yamllint **/*.yml"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpayne/lang-examples.git"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
+    "adm-zip": "^0.5.10",
+    "async-mutex": "0.5.0",
+    "body-parser": "2.2.0",
+    "connect-memcached": "^2.0.0",
+    "dompurify": "^3.2.6",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.0",
+    "express-session": "^1.18.2",
+    "js-yaml": "4.1.1",
+    "mongodb": "^6.18.0",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.14.3",
+    "mssql": "^12.0.0",
+    "oracledb": "^6.9.0",
+    "path": "^0.12.7",
+    "pg": "^8.11.3",
+    "pkg": "^5.8.1",
+    "properties-reader": "2.3.0",
+    "redis": "^5.8.0",
+    "signal-exit": "4.1.0",
+    "superagent": "^10.2.3",
+    "uuid": "^13.0.0",
+    "winston": "^3.0.0"    
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.26.0",
+    "@linthtml/linthtml": "^0.10.1",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-plugin-eslint-plugin": "^6.4.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-vue": "^10.1.0",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "jsdoc": "^4.0.4",
+    "nodemon": "^3.1.10",
+    "npm-run-all2": "8.0.4",
+    "typescript-eslint": "^8.33.0",
+    "yaml-lint": "1.7.0"
+  },
+  "keywords": [
+    "claude",
+    "chatbot"
+  ],
+  "author": "Tim Payne",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tpayne/lang-examples/issues"
+  },
+  "homepage": "https://github.com/tpayne/lang-examples#readme",
+  "husky": {
+    "hooks": {
+      "post-merge": "npm outdated || :",
+      "pre-commit": "npm test"
+    }
+  },
+  "eslintIgnore": [
+    "node_modules"
+  ]
+}
