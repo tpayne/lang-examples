@@ -1,21 +1,21 @@
-NodeJS Gemini Chatbot Sample
+NodeJS Claude Chatbot Sample
 ============================
 
-This repo contains a simple example chatbot that runs using the Gemini API.
+This repo contains a simple example chatbot that runs using the Claude API.
 
 The web page is a very simple interface, so if you wish to create something more complex, feel free.
 
 (Note - This sample uses a different style interface to the Python version of this bot, but the functionality is the same).
 
-By the way, the Gemini chat technology for callouts is a bit rubbish, so I would advise you to use OpenAI. It is alot better.
+By the way, the Claude chat technology for callouts is a bit rubbish, so I would advise you to use OpenAI. It is alot better.
 
-But if you want to use Gemini, here is the code.
+But if you want to use Claude, here is the code.
 
 Pre-Requisites
 --------------
 To run this sample you will need to: -
 * Have Docker installed on your machine
-* Have an Gemini account created with an GOOGLE_API_KEY that you can use for interacting with the Gemini API
+* Have an Claude account created with an GOOGLE_API_KEY that you can use for interacting with the Claude API
 
 Running the Example with Basic Ops
 ----------------------------------
@@ -364,9 +364,9 @@ docker secret create ssh_password_map ./ssh_passwords.json
 Then start Docker using the secrets map. This will require running `docker service` using swarm, rather than `docker run`
 
 ```bash
-docker service rm chatbotgemini && \
+docker service rm chatbotclaude && \
 docker service create \
-    --name chatbotgemini \
+    --name chatbotclaude \
     -p 8080:5000 \
     -p 443:8443 \
     --cap-add SYS_ADMIN \
@@ -391,12 +391,12 @@ This will delete all the items created in your session.
 Notes
 -----
 * This code does not have any unit testing or SA analysis run as part of the process
-* There is some limited support for Gemini actions. However, the functionality provided by Gemini for this is "experimental" in their words, so can be a bit... tempermental, so if you get an occasion error, just retry the operation with different verbage - that usually works after a few attempts, but yes, it is not stable
+* There is some limited support for Claude actions. However, the functionality provided by Claude for this is "experimental" in their words, so can be a bit... tempermental, so if you get an occasion error, just retry the operation with different verbage - that usually works after a few attempts, but yes, it is not stable
 
 References
 ----------
-- [Gemini AI Studio](https://aistudio.google.com/)
-- [API Docs](https://ai.google.dev/gemini-api/docs?authuser=1)
+- [Claude AI Studio](https://aistudio.google.com/)
+- [API Docs](https://ai.google.dev/claude-api/docs?authuser=1)
 - [API Details](https://googleapis.github.io/js-genai/main/classes/types.FunctionResponse.html)
 
 
