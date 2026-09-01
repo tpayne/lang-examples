@@ -378,6 +378,8 @@ docker service create \
     -e ... \
   chatbot:1.0 \
   ...
+
+docker exec $(docker ps -q -f "name=chatbotclaude") cat /app/logs/nodeapp.out.log
 ```
 
 Cleaning Up

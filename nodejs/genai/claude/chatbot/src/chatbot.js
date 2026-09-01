@@ -456,7 +456,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         break;
       }
     }
-    /* eslint-ensable no-await-in-loop, no-plusplus, no-restricted-syntax */
+    /* eslint-enable no-await-in-loop, no-plusplus, no-restricted-syntax */
 
     if (!chatResponse) {
       // If loop finished without a final text response
@@ -570,14 +570,16 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
-  // This is a critical error, the process is in an unstable state.
-  // Perform necessary cleanup and then exit.
-  shutdown('UncaughtException'); // Exit after logging
+  if (logger && typeof logger.error === 'function') {
+    logger.error('Uncaught Exception:', err);
+  } else {
+    console.error('Uncaught Exception (logger uninitialized):', err);
+  }
+  shutdown('UncaughtException');
 });
 
 const startServer = () => {
-  if (!loadProperties('resources/app.properties')) {
+  if (!loadProperties('/app/public/resources/app.properties')) {
     logger.error('Failed to load application properties. Exiting.');
     process.exit(1);
   }

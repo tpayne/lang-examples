@@ -1,5 +1,4 @@
 const winston = require('winston');
-const { getConfig } = require('./properties');
 
 // Define your severity levels.
 // With them, You can create log files,
@@ -17,7 +16,13 @@ const levels = {
 // if the server was run in development mode; otherwise,
 // if it was run in production, show only warn and error messages.
 const level = () => {
-  if (getConfig().debug === 'true') {
+  // Read directly from the environment instead of properties.js, so this
+  // module has zero dependency on app config and can't form a require
+  // cycle with it. If you need the properties-file 'debug' setting to be
+  // able to override this too, call logger.level = 'debug' from
+  // startServer() *after* loadProperties() has run, instead of wiring
+  // properties.js back into this file.
+  if (process.env.DEBUG === 'true') {
     return 'debug';
   }
   const env = process.env.NODE_ENV || 'development';
