@@ -15,7 +15,7 @@ Pre-Requisites
 --------------
 To run this sample you will need to: -
 * Have Docker installed on your machine
-* Have an Claude account created with an GOOGLE_API_KEY that you can use for interacting with the Claude API
+* Have an Claude account created with an ANTHROPIC_API_KEY that you can use for interacting with the Claude API
 
 Running the Example with Basic Ops
 ----------------------------------
