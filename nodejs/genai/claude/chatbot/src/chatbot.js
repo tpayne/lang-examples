@@ -349,19 +349,41 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     while (numSteps < maxSteps) {
       numSteps++;
 
+      const { aiModel } = getConfig();
+      if (!aiModel || typeof aiModel !== 'string' || aiModel.trim() === '') {
+        throw new Error('Invalid or missing AI model configuration. Please check the "aiModel" setting.');
+      }
+
+      // Retrieve configuration values
+      const rawTemp = getConfig().temperature;
+      const rawTopP = getConfig().top_p;
+
+      // Parse numeric values if set (ignore empty strings, null, or undefined)
+      const tempVal = (rawTemp !== undefined && rawTemp !== null && rawTemp !== '') ? Number(rawTemp) : undefined;
+      const topPVal = (rawTopP !== undefined && rawTopP !== null && rawTopP !== '') ? Number(rawTopP) : undefined;
+
+      const isTempSet = tempVal !== undefined && !Number.isNaN(tempVal) && tempVal >= 0 && tempVal <= 1;
+      const isTopPSet = topPVal !== undefined && !Number.isNaN(topPVal) && topPVal >= 0 && topPVal <= 1;
+
+      if (isTempSet && isTopPSet) {
+        throw new Error('Invalid configuration: Both "temperature" and "top_p" are set. Please set only one or neither.');
+      }
+
+      const validTools = Array.isArray(tools) && tools.length > 0 && tools.every((t) => t.name && t.description && t.input_schema)
+        ? tools
+        : undefined;
+
+      const parsedMaxTokens = Number(getConfig().maxTokens);
+      const maxTokens = (!Number.isNaN(parsedMaxTokens) && parsedMaxTokens > 0) ? parsedMaxTokens : 4096;
+
       const completionParams = {
-        model: getConfig().aiModel, // e.g., 'claude-sonnet-5', 'claude-haiku-4-5-20251001'
-        messages: xsession.history, // Send the full conversation history
-        system: systemPrompt, // Claude takes the system prompt as a top-level param, not a message
-        temperature: Number(getConfig().temperature), // Claude's temperature range is 0-1
-        top_p: Number(getConfig().top_p),
-        // Note: Claude's Messages API has no frequency_penalty / presence_penalty
-        // equivalent, so those OpenAI-only parameters are dropped here.
-        stream: false, // We are not using streaming in this example
-        // max_tokens is REQUIRED by the Messages API (no "auto"); fall back to a sane default
-        max_tokens: getConfig().maxTokens !== 'auto' ? Number(getConfig().maxTokens) : 4096,
-        tools, // Pass the tools here, in Claude's { name, description, input_schema } shape
-        // tool_choice: { type: 'auto' }, // Let the model decide whether to call a tool or respond
+        model: aiModel,
+        messages: xsession.history,
+        max_tokens: maxTokens,
+        ...(systemPrompt && typeof systemPrompt === 'string' && systemPrompt.trim() !== '' && { system: systemPrompt }),
+        ...(validTools && { tools: validTools }),
+        ...(isTempSet && { temperature: tempVal }),
+        ...(isTopPSet && { top_p: topPVal }),
       };
 
       const response = await anthropic.messages.create(completionParams);
@@ -573,6 +595,7 @@ process.on('uncaughtException', (err) => {
   if (logger && typeof logger.error === 'function') {
     logger.error('Uncaught Exception:', err);
   } else {
+    // eslint-disable-next-line no-console
     console.error('Uncaught Exception (logger uninitialized):', err);
   }
   shutdown('UncaughtException');
