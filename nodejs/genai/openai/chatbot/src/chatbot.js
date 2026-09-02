@@ -445,7 +445,7 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
         break;
       }
     }
-    /* eslint-ensable no-await-in-loop, no-plusplus, no-restricted-syntax */
+    /* eslint-enable no-await-in-loop, no-plusplus, no-restricted-syntax */
 
     if (!chatResponse) {
       // If loop finished without a final text response

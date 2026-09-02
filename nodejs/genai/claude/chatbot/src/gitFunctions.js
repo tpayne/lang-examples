@@ -1,0 +1,1803 @@
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const { Mutex } = require('async-mutex'); // Import Mutex for thread safety
+
+const GITHUB_API_VERSION = '2022-11-28';
+const USER_AGENT = 'AIBot';
+const githubToken = process.env.GITHUB_TOKEN;
+const superagent = require('superagent');
+const logger = require('./logger');
+
+const {
+  mkdir,
+  getOrCreateSessionTempDir, // Import the new function
+  readFilesInDirectory,
+} = require('./utilities');
+
+/**
+ * Manages mutexes for download URLs per session to prevent concurrent downloads
+ * of the same file.
+ * @type {Map<string, Map<string, Mutex>>}
+ */
+const downloadMutexes = new Map();
+
+/**
+ * Handles "Not Found" errors from the GitHub API.
+ * If the error message indicates "Not Found", it throws a more
+ * user-friendly error suggesting the user reword their request.
+ * Otherwise, it re-throws the original error.
+ * @param {Error} error The error object caught from the API call.
+ * @param {string} [context=''] Optional context for the error message.
+ * @throws {Error} Modified error for "Not Found" or the original.
+ */
+function handleNotFoundError(error, context = '') {
+  if (error.message === 'Not Found') {
+    throw new Error(
+      `${error} ${context}: Please reword the request as it was not understood`,
+    );
+  }
+  throw error;
+}
+
+/**
+ * Logs and throws a custom error for GitHub API responses that
+ * indicate an error status. Includes status, text, and body message.
+ * @param {object} response The SuperAgent response object.
+ * @param {string} [context=''] Optional context for the error message.
+ * @throws {Error} Custom error detailing the GitHub API error.
+ */
+function handleGitHubApiError(response, context = '') {
+  logger.error(
+    `GitHub API Error ${context} (status):`,
+    response.status,
+    response.statusText,
+    response.body,
+  );
+  let errorMessage = `GitHub API Error ${context}: ${response.status} - ${response.statusText}`;
+  if (response.body && response.body.message) {
+    errorMessage += ` - ${response.body.message}`;
+  }
+  throw new Error(errorMessage);
+}
+
+/**
+ * Gets or creates a mutex for a specific download URL within a session.
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} downloadUrl The URL of the file being downloaded.
+ * @returns {Mutex} The mutex for the download URL in the session.
+ */
+function getDownloadMutex(sessionId, downloadUrl) {
+  if (!downloadMutexes.has(sessionId)) {
+    downloadMutexes.set(sessionId, new Map());
+  }
+  const sessionMutexes = downloadMutexes.get(sessionId);
+  if (!sessionMutexes.has(downloadUrl)) {
+    sessionMutexes.set(downloadUrl, new Mutex());
+  }
+  return sessionMutexes.get(downloadUrl);
+}
+
+/**
+ * Helper function to download a file from a URL using Superagent, specific to a session.
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} url - The URL to download from.
+ * @param {string} localFilePath - The local path to save the file.
+ * @param {string|null} [token=null] - Optional GitHub token.
+ */
+async function downloadFile(sessionId, url, localFilePath, token = null) {
+  // Basic rate limiting per session to avoid concurrent downloads of the same URL
+  const downloadMutex = getDownloadMutex(sessionId, url);
+  const release = await downloadMutex.acquire();
+  try {
+    const request = superagent.get(url);
+    request.set('User-Agent', USER_AGENT);
+    if (token) {
+      request.set('Authorization', `token ${githubToken}`);
+    }
+
+    request.buffer(true);
+    request.parse(superagent.parse['application/octet-stream']);
+
+    const response = await request;
+
+    if (response.status !== 200) {
+      // Throw a specific error if the HTTP status is not 200
+      const errorMsg = `HTTP ${response.status} - ${response.text}`;
+      logger.error(
+        'Error downloading (HTTP Status):',
+        url,
+        localFilePath,
+        errorMsg,
+        `[Session: ${sessionId}]`,
+      );
+      throw new Error(`Error downloading ${url}: ${errorMsg}`);
+    }
+
+    if (Buffer.isBuffer(response.body)) {
+      logger.debug(`Downloading file: ${url} to ${localFilePath} [Session: ${sessionId}]`);
+      const stats = await fs.promises.stat(localFilePath).catch(() => null); // Check if path exists and get stats
+      if (stats && stats.isDirectory()) {
+        logger.warn(`Skipping download: ${localFilePath} is a directory.`);
+      } else {
+        await fs.promises.writeFile(localFilePath, response.body); // Use fs.promises.writeFile
+      }
+    } else {
+      const errorMsg = `Expected Buffer, received ${typeof response.body}`;
+      logger.error(
+        'Error downloading (Invalid Body):',
+        url,
+        localFilePath,
+        errorMsg,
+        `[Session: ${sessionId}]`,
+      );
+      throw new Error(`Error downloading ${url}: ${errorMsg}`);
+    }
+  } catch (error) {
+    // Log a more detailed error message including response info if available
+    const errorMessage = error.message || error;
+    const errorDetails = error.response
+      ? `Status: ${error.response.status}, Text: ${error.response.text}`
+      : 'No response details';
+    logger.error(
+      'Error downloading (exception): '
+      + `${url} `
+      + `${localFilePath} `
+      + `${errorMessage} `
+      + `${errorDetails} `
+      + `[Session: ${sessionId}]`,
+    );
+    // Re-throw the error after logging for the caller to handle
+    throw error;
+  } finally {
+    release();
+  }
+}
+
+// Define a set of common file extensions typically associated with binary or
+// non-ASCII content. This list is a heuristic and may need adjustment based on
+// specific needs.
+const BINARY_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp', // Images
+  '.svg', // Although text-based, often treated visually and can contain complex data
+  '.mp3', '.wav', '.aac', '.flac', '.ogg', // Audio
+  '.mp4', '.avi', '.mkv', '.mov', '.wmv', // Video
+  '.zip', '.tar', '.gz', '.bz2', '.rar', '.7z', // Archives
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', // Documents
+  '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.lib', '.a', // Executables/Libraries/Binary data
+  '.sqlite', '.db', // Databases
+  '.woff', '.woff2', '.ttf', '.otf', '.eot', // Fonts
+  '.ico', // Icons
+  '.swf', '.fla', // Flash
+  '.class', '.jar', // Java bytecode/archives
+  '.apk', // Android package
+  '.dmg', '.iso', // Disk images
+  '.obj', '.stl', '.3ds', // 3D models
+  // Add or remove extensions as needed
+]);
+
+/**
+ * Retrieves the default branch name for a given GitHub repository.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise<string>} The name of the default branch.
+ * @throws {Error} If the API request fails or the repository is not found.
+ */
+async function getDefaultBranch(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200 && response.body.default_branch) {
+      logger.debug(`Default branch for ${username}/${repoName} is: ${response.body.default_branch}`);
+      return response.body.default_branch;
+    }
+    handleGitHubApiError(response, `getting default branch for ${username}/${repoName}`);
+  } catch (error) {
+    logger.error('Error getting default branch (exception):', username, repoName, error);
+    handleNotFoundError(error, ` for repository ${username}/${repoName}`);
+  }
+  return null;
+}
+
+/**
+ * Helper to fetch content details (SHA, type) for a given path.
+ * This is necessary for both single file and directory deletion.
+ */
+async function fetchContentDetails(username, repoName, contentPath, effectiveBranchName) {
+  const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${contentPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
+  logger.debug(`Fetching content details for ${contentPath} at ${effectiveBranchName} from URL: ${apiUrl}`);
+  try {
+    const getResponse = await superagent
+      .get(apiUrl)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json');
+
+    if (getResponse.status === 200 && getResponse.body) {
+      if (Array.isArray(getResponse.body)) {
+        // Directory listing (returns an array of contents)
+        return {
+          type: 'dir',
+          contents: getResponse.body,
+        };
+      }
+      // Single file/item
+      return {
+        type: getResponse.body.type, // 'file' or 'dir'
+        sha: getResponse.body.sha,
+        content: getResponse.body.content, // Base64 content for file
+      };
+    }
+  } catch (getError) {
+    if (getError.response && getError.response.status === 404) {
+      logger.debug(`Content not found at path: ${contentPath} on branch ${effectiveBranchName}`);
+      return { type: 'not_found' };
+    }
+    // Re-throw other errors
+    throw new Error(`Failed to fetch content details for ${contentPath}: ${getError.message}`);
+  }
+  return { type: 'not_found' };
+}
+
+/**
+ * Recursively fetches files and directories from a GitHub repository for a specific session.
+ * Optionally skips potential binary files based on extension.
+ *
+ * @param {string} sessionId The unique identifier for the session.
+ * @param {string} username - The owner of the repository.
+ * @param {string} repoName - The name of the repository.
+ * @param {string} repoDirName - The current path being fetched within the repository.
+ * @param {string} initialrepoDirName - The original path from the first call to this function.
+ * @param {string} [localDestPath=null] - Optional local destination path.
+ * @param {boolean} [includeDotGithub=true] - Whether to include the .github directory.
+ * @param {boolean} [skipBinaryFiles=true] - Whether to skip downloading
+ * files likely to be binary (based on extension). Defaults to true.
+ * @param {number} [retryCount=0] - Internal retry counter.
+ * @param {number} [maxRetries=3] - Maximum number of retries for API requests.
+ */
+async function fetchRepoContentsRecursive(
+  sessionId,
+  username,
+  repoName,
+  repoDirName, // Current path being fetched
+  initialrepoDirName = repoDirName, // The path from the very first call
+  localDestPath = null,
+  includeDotGithub = true,
+  skipBinaryFiles = true,
+  retryCount = 0,
+  maxRetries = 3,
+) {
+  // Determine the base local destination path.
+  // If localDestPath is provided (recursive call), use it.
+  // Otherwise (initial call), get or create the session temp dir using the shared utility function.
+  let baseLocalDestPath;
+  if (localDestPath) {
+    baseLocalDestPath = localDestPath;
+  } else {
+    baseLocalDestPath = await getOrCreateSessionTempDir(sessionId);
+  }
+
+  // Construct the API URL for the current path
+  const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${repoDirName === '/' ? '' : repoDirName}`;
+
+  try {
+    // Added logging for the API URL being requested
+    logger.debug(`Workspaceing repo contents from API URL: ${apiUrl} [Session: ${sessionId}]`);
+
+    const request = superagent.get(apiUrl);
+    request.set('Accept', 'application/vnd.github.v3+json');
+    request.set('User-Agent', USER_AGENT);
+    request.set('X-GitHub-Api-Version', GITHUB_API_VERSION);
+
+    if (githubToken) {
+      request.set('Authorization', `token ${githubToken}`);
+    }
+
+    const response = await request;
+    /* eslint-disable max-len, no-promise-executor-return,
+             no-restricted-syntax,
+             no-await-in-loop,
+             no-continue */
+
+    if (response.status === 403 && response.headers['x-ratelimit-remaining'] === '0'
+      && retryCount < maxRetries) {
+      const resetTime = parseInt(response.headers['x-ratelimit-reset'], 10) * 1000;
+      const waitTime = resetTime - Date.now() + 1000; // Add a small buffer
+      logger.warn(
+        `Rate limit hit for session ${sessionId}. Retrying in ${waitTime / 1000}`
+        + ` seconds (Attempt ${retryCount + 1}/${maxRetries}).`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
+
+      return fetchRepoContentsRecursive(
+        sessionId,
+        username,
+        repoName,
+        repoDirName,
+        initialrepoDirName, // Pass initialrepoDirName in retry
+        baseLocalDestPath,
+        includeDotGithub,
+        skipBinaryFiles, // Pass the flag down
+        retryCount + 1,
+        maxRetries,
+      );
+    }
+
+    if (response.status !== 200) {
+      logger.error(
+        `GitHub API error for path "${repoDirName}" [Session: ${sessionId}]: HTTP `
+        + `${response.status} - ${response.text}`,
+      );
+      handleNotFoundError(
+        response,
+        ` for repository ${username}/${repoName} at path "${repoDirName}"`,
+      );
+      return { success: false, message: `GitHub API error: HTTP ${response.status} for ${apiUrl}` };
+    }
+
+    /** @type {GitHubItem|GitHubItem[]} */
+    const items = response.body;
+
+    // Handle the case where the API returns a single item instead of an array
+    // (e.g., requesting a specific file directly)
+    if (!Array.isArray(items)) {
+      logger.warn(
+        `Expected an array of items from API for path "${repoDirName}", but received: `
+        + `${typeof items} [Session: ${sessionId}]`,
+      );
+      if (items && items.type === 'file' && items.download_url) {
+        // Calculate local file path relative to the initialrepoDirName
+        // This preserves the subdirectory structure within baseLocalDestPath
+        // OLD: const filePath = path.join(baseLocalDestPath, path.relative(initialrepoDirName, items.path)); // Use initialrepoDirName
+        // NEW: Use the full item.path relative to the repo root to preserve structure
+        const filePath = path.join(baseLocalDestPath, items.path); // Use items.path
+
+        // --- New Logic for single file start ---
+        if (skipBinaryFiles) {
+          const extension = path.extname(items.name).toLowerCase();
+          if (BINARY_EXTENSIONS.has(extension)) {
+            logger.info(
+              `Skipping potential binary single file: "${items.name}" (Extension: `
+              + `${extension}) [Session: ${sessionId}]`,
+            );
+            // Indicate success as the skip was intentional
+            return { success: true, message: `Skipped potential binary single file at path "${repoDirName}"` };
+          }
+        }
+        // --- New Logic for single file end ---
+
+        try {
+          const parentDir = path.dirname(filePath);
+          // Only create the parent directory if it's not the base temporary directory itself
+          // and if it's not the system's temporary directory.
+          if (parentDir !== baseLocalDestPath && parentDir !== os.tmpdir()) {
+            // Check if parentDir is a subdirectory of baseLocalDestPath before creating
+            if (parentDir.startsWith(baseLocalDestPath)) {
+              logger.debug(`Creating parent directory for single file: ${parentDir} [Session: ${sessionId}]`);
+              await mkdir(parentDir);
+            } else {
+              logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
+              // Decide how to handle this - throwing an error might be appropriate
+              throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
+            }
+          } else {
+            logger.debug(`Skipping mkdir call on baseLocalDestPath for single file ${items.name}`);
+          }
+
+          await downloadFile(sessionId, items.download_url, filePath, githubToken);
+          // Return success after successful download
+          return { success: true, message: `Processed single item at path "${repoDirName}"` };
+        } catch (error) {
+          // Log a more detailed error message
+          const errorMessage = error.message || error;
+          const errorDetails = error.response
+            ? `Status: ${error.response.status}, Text: ${error.response.text}`
+            : 'No response details';
+          logger.error(
+            `Error downloading single file "${items.name}" "${filePath}" [Session: ${sessionId}]: `
+            + `${errorMessage} - ${errorDetails}`,
+            error, // Pass the error object for better logging
+          );
+          return {
+            success: false,
+            message: `Error downloading single file "${items.name}": ${errorMessage} - ${errorDetails}`,
+          };
+        }
+      }
+      // If it wasn't a downloadable single file (e.g., a directory from a single path request),
+      // just report completion.
+      return { success: true, message: `Processed non-file single item at path "${repoDirName}"` };
+    }
+
+    // Process multiple items (files and directories)
+    for (const item of items) {
+      const currentrepoDirName = item.path;
+      // Calculate local file path relative to the initialrepoDirName
+      // This preserves the subdirectory structure within baseLocalDestPath
+      // OLD: const currentLocalPath = path.join(baseLocalDestPath, path.relative(initialrepoDirName, item.path)); // Use initialrepoDirName
+      // NEW: Use the full item.path relative to the repo root to preserve structure
+      const currentLocalPath = path.join(baseLocalDestPath, item.path); // Use item.path
+
+      // Skip .github directory if includeDotGithub is false
+      if (!includeDotGithub && (item.name === '.github' || currentrepoDirName.startsWith('.github/'))) {
+        continue;
+      }
+
+      if (item.type === 'file') {
+        // --- New Logic for skipping binary files start ---
+        if (skipBinaryFiles) {
+          const extension = path.extname(item.name).toLowerCase();
+          if (BINARY_EXTENSIONS.has(extension)) {
+            logger.info(
+              `Skipping potential binary file: "${item.name}" (Extension: `
+              + `${extension}) [Session: ${sessionId}]`,
+            );
+            continue; // Skip this file and move to the next item in the loop
+          }
+        }
+        // --- New Logic for skipping binary files end ---
+
+        if (item.download_url) {
+          try {
+            // Ensure parent directory exists before downloading using recursive mkdir
+            const parentDir = path.dirname(currentLocalPath);
+            // Check if parentDir is a subdirectory of baseLocalDestPath before creating
+            if (parentDir.startsWith(baseLocalDestPath)) {
+              await mkdir(parentDir); // mkdir call is correct here for nested files/dirs
+            } else {
+              logger.warn(`Attempted to create directory outside base temp dir: ${parentDir} [Session: ${sessionId}]`);
+              // Decide how to handle this - throwing an error might be appropriate
+              throw new Error(`Attempted to create directory outside base temporary directory: ${parentDir}`);
+            }
+            await downloadFile(sessionId, item.download_url, currentLocalPath, githubToken);
+          } catch (error) {
+            // Log the error and propagate the failure with more details
+            const errorMessage = error.message || error;
+            const errorDetails = error.response
+              ? `Status: ${error.response.status}, Text: ${error.response.text}`
+              : 'No response details';
+            logger.error(
+              `Error downloading file "${item.name}" [Session: ${sessionId}]: `
+              + `${errorMessage} - ${errorDetails}`,
+              error, // Pass the error object for better logging
+            );
+            return {
+              success: false,
+              message: `Error downloading file "${item.name}": ${errorMessage} - ${errorDetails}`,
+            };
+          }
+        } else {
+          // File item might not have download_url if it's an LFS pointer or similar,
+          // but not common via contents API
+          logger.warn(`File item "${item.name}" has no download_url [Session: ${sessionId}]`);
+        }
+      } else if (item.type === 'dir') {
+        // Recursively call for subdirectories, passing initialrepoDirName
+        const result = await fetchRepoContentsRecursive(
+          sessionId,
+          username,
+          repoName,
+          item.path, // Pass the subdirectory path for the next level's fetch
+          initialrepoDirName, // Pass the original initialrepoDirName down
+          baseLocalDestPath, // Continue using the same baseLocalDestPath
+          includeDotGithub,
+          skipBinaryFiles, // Pass the flag down to recursive calls
+          0, // Reset retry count for new recursive calls
+          maxRetries,
+        );
+        // Propagate failure from subdirectory processing
+        if (!result.success) {
+          return result;
+        }
+      } else if (item.type === 'symlink') {
+        logger.warn(`Skipping symlink: ${item.name} (content not fetched) [Session: ${sessionId}]`);
+      } else if (item.type === 'submodule') {
+        logger.warn(`Skipping submodule: ${item.name} (content not fetched) [Session: ${sessionId}]`);
+      } else {
+        logger.warn(`Unknown item type "${item.type}" for item: ${item.name} [Session: ${sessionId}]`);
+      }
+    }
+    // If the loop completes without returning a failure, the directory was processed successfully
+    return {
+      success: true,
+      message:
+        `Successfully processed directory "${repoDirName}"`,
+    };
+    /* eslint-enable max-len, no-promise-executor-return, no-restricted-syntax, no-await-in-loop, no-continue */
+  } catch (error) {
+    const errorMessage = error.message || error;
+    // logger.debug(
+    //  `Error object is ${util.inspect(error, { depth: null })} [Session: ${sessionId}]`
+    // );
+    logger.error(
+      'Error in fetchRepoContentsRecursive (exception): '
+      + `${repoDirName} [Session: ${sessionId}]: ${errorMessage}`,
+      error, // Pass the error object for better logging
+    );
+    if (error.response) {
+      logger.error(
+        `Error downloading files (exception): ${error.response.text} [Session: ${sessionId}]`,
+      );
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check repo and directory names.');
+      }
+      // Handle specific GitHub API error messages if available
+      if (error.response.body && error.response.body.errors
+        && error.response.body.errors.length > 0) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      // Fallback to generic error message from response body or status
+      throw new Error(
+        error.response.body
+          ? (error.response.body.message || JSON.stringify(error.response.body))
+          : `Failed to download repo contents. Status: ${error.response.status}`,
+      );
+    } else {
+      // Re-throw non-response errors
+      throw error;
+    }
+  }
+}
+/* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
+
+/**
+ * Deletes a single file from the repository.
+ * @param {string} username - GitHub username/organization.
+ * @param {string} repoName - Repository name.
+ * @param {string} filePath - Path to the file in the repo.
+ * @param {string} fileSha - Current SHA of the file.
+ * @param {string} effectiveBranchName - Target branch.
+ * @returns {object} Result object.
+ */
+async function deleteFile(username, repoName, filePath, fileSha, effectiveBranchName) {
+  const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${filePath}`;
+
+  const deleteBody = {
+    message: `CI: Automated file deletion of ${path.basename(filePath)}`,
+    sha: fileSha,
+    branch: effectiveBranchName,
+  };
+
+  if (effectiveBranchName !== 'main') {
+    deleteBody.message += ` on branch ${effectiveBranchName}`;
+  }
+
+  logger.debug(`Preparing to delete file: ${filePath}`);
+
+  try {
+    const response = await superagent
+      .delete(apiUrl)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .send(deleteBody);
+
+    // GitHub returns 200 for successful deletions
+    if (response.status === 200 || response.status === 204) {
+      logger.info(`Successfully deleted file: ${filePath}`);
+      return {
+        file: filePath,
+        success: true,
+        message: 'File deleted successfully.',
+        githubPath: filePath,
+        sha: response.body && response.body.commit ? response.body.commit.sha : null,
+      };
+    }
+    throw new Error(`Unexpected status ${response.status} during file deletion.`);
+  } catch (deleteError) {
+    const errorMessage = (deleteError.response && deleteError.response.body && deleteError.response.body.message) || deleteError.message;
+    logger.error(`Exception during DELETE for ${filePath}: ${errorMessage}`, deleteError);
+    return {
+      file: filePath,
+      success: false,
+      message: `Failed to delete file: ${errorMessage}`,
+      githubPath: filePath,
+    };
+  }
+}
+
+/**
+ * Recursively deletes all files and subdirectories within a given directory path.
+ * NOTE: GitHub API requires files to be deleted one-by-one.
+ * @param {string} username - GitHub username/organization.
+ * @param {string} repoName - Repository name.
+ * @param {string} dirPath - Path to the directory in the repo.
+ * @param {string} effectiveBranchName - Target branch.
+ * @param {Array<object>} allResults - Accumulator for deletion results.
+ */
+async function deleteDirectoryRecursive(username, repoName, dirPath, effectiveBranchName, allResults) {
+  logger.info(`Starting recursive deletion for directory: ${dirPath}`);
+  const details = await fetchContentDetails(username, repoName, dirPath, effectiveBranchName);
+
+  if (details.type !== 'dir' || !details.contents) {
+    const errorMsg = `Path is not a valid directory or not found during recursion: ${dirPath}`;
+    logger.error(errorMsg);
+    allResults.push({
+      file: dirPath,
+      success: false,
+      message: errorMsg,
+      githubPath: dirPath,
+    });
+    return;
+  }
+
+  // Recursively process contents
+  for (const item of details.contents) {
+    const itemPath = item.path;
+    if (item.type === 'dir') {
+      // Recurse into subdirectory
+      await deleteDirectoryRecursive(username, repoName, itemPath, effectiveBranchName, allResults);
+    } else if (item.type === 'file') {
+      // Delete file
+      const result = await deleteFile(username, repoName, itemPath, item.sha, effectiveBranchName);
+      allResults.push(result);
+    } else {
+      logger.warn(`Skipping item of unknown type (${item.type}): ${itemPath}`);
+    }
+  }
+  logger.info(`Finished recursive deletion for directory: ${dirPath}`);
+}
+
+/**
+ * Lists the names of public repositories for a given GitHub username.
+ * Fetches repo data and extracts the 'name' property.
+ * Handles API errors and "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @returns {Promise<string[]>} Array of public repository names.
+ * @throws {Error} If API request fails or user is not found.
+ */
+async function listPublicRepos(username) {
+  const url = `https://api.github.com/users/${username}/repos`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200) {
+      return response.body.map((repo) => repo.name);
+    }
+    handleGitHubApiError(response, `listing repos for user "${username}"`);
+  } catch (error) {
+    logger.error('Error listing repos (exception):', username, error);
+    handleNotFoundError(error, ` for user "${username}"`);
+  }
+}
+
+/**
+ * Deletes a file or recursively deletes a directory from a GitHub repository.
+ *
+ * NOTE: Deleting a directory involves deleting all files within it recursively,
+ * as the GitHub API does not support a single directory deletion operation.
+ *
+ * @param {string} username - GitHub username/organization.
+ * @param {string} repoName - Repository name.
+ * @param {string} repoDirName - The path to the file or directory to delete.
+ * @param {string} [branchName=''] - The target branch (defaults to repository default branch).
+ * @returns {object} Result object containing success status and results array.
+ */
+async function deleteContent(
+  username,
+  repoName,
+  repoDirName,
+  branchName = '',
+) {
+  if (!username || typeof username !== 'string' || !repoName || typeof repoName !== 'string' || !repoDirName || typeof repoDirName !== 'string') {
+    throw new Error('Invalid username, repoName, or contentPath type or value');
+  }
+
+  // Normalize path
+  const cleanContentPath = (repoDirName && repoDirName !== '/') ? repoDirName.replace(/^\/|\/$/g, '') : null;
+  if (!cleanContentPath) {
+    throw new Error('Cannot delete the repository root (/)');
+  }
+
+  // Security: Prevent path traversal attacks
+  if (cleanContentPath.includes('..') || path.isAbsolute(cleanContentPath)) {
+    throw new Error('Invalid path: cannot contain ".." or be an absolute path');
+  }
+  logger.debug(`Params for deleteContent - username: ${username}, repoName: ${repoName}, contentPath: ${cleanContentPath}, branchName: ${branchName}`);
+
+  let effectiveBranchName = branchName;
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
+  }
+  const allResults = [];
+  logger.debug(`Starting deletion for content path: ${cleanContentPath} on branch: ${effectiveBranchName}`);
+  try {
+    const details = await fetchContentDetails(username, repoName, cleanContentPath, effectiveBranchName);
+
+    if (details.type === 'file') {
+      // Case 1: Delete a single file
+      const result = await deleteFile(username, repoName, cleanContentPath, details.sha, effectiveBranchName);
+      allResults.push(result);
+    } else if (details.type === 'dir') {
+      // Case 2: Recursively delete a directory
+      await deleteDirectoryRecursive(username, repoName, cleanContentPath, effectiveBranchName, allResults);
+    } else if (details.type === 'not_found') {
+      logger.warn(`Content not found: ${cleanContentPath} on branch ${effectiveBranchName}`);
+      return {
+        success: true,
+        message: 'Content not found, nothing to delete.',
+        results: [{
+          file: cleanContentPath, success: true, message: 'Skipped: content not found.', githubPath: cleanContentPath,
+        }],
+      };
+    } else {
+      throw new Error(`Unsupported content type '${details.type}' at path: ${cleanContentPath}`);
+    }
+
+    const overallSuccess = allResults.every((r) => r.success);
+    const successCount = allResults.filter((r) => r.success).length;
+    const failureCount = allResults.filter((r) => !r.success).length;
+
+    logger.info(`Deletion summary for ${cleanContentPath}: ${successCount} succeeded, ${failureCount} failed`);
+
+    return {
+      success: overallSuccess,
+      message: overallSuccess
+        ? `Successfully deleted ${successCount} item${successCount !== 1 ? 's' : ''}.`
+        : `Deleted ${successCount} item${successCount !== 1 ? 's' : ''} with ${failureCount} failure${failureCount !== 1 ? 's' : ''}.`,
+      results: allResults,
+      summary: {
+        total: allResults.length,
+        succeeded: successCount,
+        failed: failureCount,
+      },
+    };
+  } catch (error) {
+    logger.error(`Failed to execute deletion for ${cleanContentPath}: ${error.message}`);
+    return {
+      success: false,
+      message: `Fatal error during deletion: ${error.message}`,
+      results: allResults,
+      summary: {
+        total: allResults.length,
+        succeeded: allResults.filter((r) => r.success).length,
+        failed: allResults.filter((r) => !r.success).length,
+      },
+    };
+  }
+}
+
+/**
+ * Lists the names of branches for a given GitHub repository.
+ * Fetches branch data and extracts the 'name' property.
+ * Handles API errors and "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @returns {Promise<string[]>} Array of branch names.
+ * @throws {Error} If API request fails or repository is not found.
+ */
+async function listBranches(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/branches`;
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
+
+    if (response.status === 200) {
+      return response.body.map((branch) => branch.name);
+    }
+    handleGitHubApiError(response, `listing branches for ${username}/${repoName}"`);
+  } catch (error) {
+    logger.error('Error listing branches (exception):', username, repoName, error);
+    handleNotFoundError(error, ` for repository ${username}/${repoName}"`);
+  }
+}
+
+/* eslint-disable no-restricted-syntax, no-await-in-loop, consistent-return */
+/**
+ * Lists commit history for a specific file or directory in a
+ * given GitHub repository.
+ * First, verifies that the file or directory exists by
+ * querying the repository contents API.
+ * If the path exists, it fetches commit data and extracts SHA,
+ * message, author, and date.
+ * Handles API errors and "Not Found" exceptions.
+ *
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} repoDirName The path to the file or directory within the repository.
+ * @returns {Promise<Array<{ sha: string, message: string, author: string, date: string }>>}
+ * Array of commit history objects.
+ * @throws {Error} If API requests fail or file/directory not found.
+ */
+async function listCommitHistory(username, repoName, repoDirName) {
+  // Pre-validate that the file or directory exists using the GitHub contents API.
+  const contentsUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${encodeURIComponent(repoDirName)}`;
+
+  try {
+    await superagent
+      .get(contentsUrl)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github.v3+json')
+      .set('User-Agent', USER_AGENT);
+  } catch (contentsError) {
+    // Log and re-throw as a more specific error.
+    logger.error('Error fetching path contents (exception):', username, repoName, repoDirName, contentsError);
+    throw new Error(`The path "${repoDirName}" in "${username}/${repoName}" does not exist.`);
+  }
+
+  // Now that the path exists, construct the commits URL with the path filter.
+  const commitsUrl = `https://api.github.com/repos/${username}/${repoName}/commits?path=${encodeURIComponent(repoDirName)}`;
+
+  try {
+    const commitResponse = await superagent
+      .get(commitsUrl)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/json')
+      .set('User-Agent', USER_AGENT);
+
+    if (commitResponse.status === 200) {
+      return commitResponse.body.map((commit) => ({
+        sha: commit.sha,
+        message: commit.commit.message,
+        author: commit.commit.author.name,
+        date: commit.commit.author.date,
+      }));
+    }
+
+    // If the commit status isn't 200, use the helper to handle specific API error info.
+    handleGitHubApiError(commitResponse, `listing commit history for "${repoDirName}" in "${username}/${repoName}"`);
+  } catch (error) {
+    logger.error('Error listing commit history (exception):', username, repoName, repoDirName, error);
+    handleNotFoundError(error, ` for path "${repoDirName}" in "${username}/${repoName}"`);
+  }
+}
+
+/**
+ * Lists the contents of a directory (or root if no path) in a GitHub repo.
+ * Fetches content data and extracts name, type ('file'/'dir'), and path.
+ * Handles API errors and "Not Found" exceptions.
+ * Recursively lists contents if specified.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [branchName=''] Optional branch name. If not specified, the default branch will be used.
+ * @param {string} [repoDirName=''] Optional path to the directory within the repo.
+ * @param {boolean} [recursive=true] Optional recursive scan. Defaults to true.
+ *
+ * @returns {Promise<Array<{ name: string, type: string, path: string }>>}
+ * A promise that resolves to an array of directory content objects. Returns an
+ * empty array if the directory is empty.
+ * @throws {Error} If API request fails (e.g., repo/path not found, authentication, rate limit).
+ */
+async function listDirectoryContents(
+  username,
+  repoName,
+  branchName = '', // Changed default to empty string to indicate "not specified"
+  repoDirName = '',
+  recursive = true,
+) {
+  let effectiveBranchName = branchName;
+
+  // If branchName is not provided, dynamically look up the default branch
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
+  }
+
+  // Ensure repoDirName is correctly formatted for the URL (remove leading/trailing slashes unless it's the root)
+  const cleanRepoDirName = repoDirName.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
+  const url = `https://api.github.com/repos/${username}/${repoName}/contents/${cleanRepoDirName}?ref=${encodeURIComponent(effectiveBranchName)}`; // Use effectiveBranchName
+
+  try {
+    logger.debug(`Listing contents from API URL: ${url}`); // Added logging
+
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`) // Use Bearer token
+      .set('Accept', 'application/vnd.github+json') // Use v3+json for better consistency
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION) // Add API version
+      .set('User-Agent', USER_AGENT);
+
+    if (!Array.isArray(response.body)) {
+      if (response.body && response.body.type === 'file') {
+        logger.warn(`Expected directory contents for "${repoDirName}" on branch "${effectiveBranchName}", but received a single file: "${response.body.path}"`);
+        return []; // Return empty array if a file was returned when directory was expected
+      }
+      logger.warn(`Expected array of contents for "${repoDirName}" on branch "${effectiveBranchName}", but received unexpected type: ${response.body ? response.body.type : typeof response.body}`);
+      throw new Error(`Unexpected response type for "${repoDirName}" on branch "${effectiveBranchName}".`);
+    }
+
+    const contents = response.body;
+    const results = [];
+
+    if (contents.length === 0) {
+      // Directory exists but is empty. Return an empty array.
+      logger.debug(`Directory "${repoDirName}" on branch "${effectiveBranchName}" is empty.`);
+      return [];
+    }
+
+    // Process contents if not empty
+    for (const item of contents) {
+      // Decide whether to include the item based on its type and the recursive flag
+      if (item.type === 'file') {
+        results.push({
+          name: item.name,
+          type: 'file',
+          path: item.path, // Full path relative to repo root
+        });
+      } else if (item.type === 'dir') {
+        // Always include the directory entry itself in the immediate listing
+        results.push({
+          name: item.name,
+          type: 'dir',
+          path: item.path, // Full path relative to repo root
+        });
+
+        if (recursive) {
+          // Recursively call for subdirectories
+          const subDirContents = await listDirectoryContents(
+            username,
+            repoName,
+            effectiveBranchName, // Pass effective branch down
+            item.path, // Pass the full path of the subdirectory
+            recursive, // Pass recursive flag down
+          );
+          // Concatenate the recursive results
+          results.push(...subDirContents);
+        }
+      } else {
+        // Include other types found in the immediate listing
+        results.push({
+          name: item.name,
+          type: item.type, // e.g., 'symlink', 'submodule'
+          path: item.path,
+        });
+      }
+    }
+    return results; // Return the accumulated results array
+  } catch (error) {
+    // Log the error details
+    const status = (error.response && error.response.status) || 'N/A';
+    const errorMessage = (error.response && error.response.body && error.response.body.message) || error.message || error;
+    logger.error(
+      `Error listing directory contents for "${username}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}" [Status: ${status}]: ${errorMessage}`,
+      error, // Pass the error object for better logging
+    );
+
+    // Handle specific HTTP errors
+    if (error.response) {
+      if (error.response.status === 404) {
+        // Use handleNotFoundError for clarity for 404s
+        handleNotFoundError(
+          error.response,
+          ` for path "${repoDirName}" on branch "${effectiveBranchName}" in "${username}/${repoName}"`,
+        );
+      } else {
+        // Use handleGitHubApiError for other HTTP errors
+        handleGitHubApiError(
+          error.response,
+          ` listing contents for "${username}/${repoName}/${repoDirName}" on branch "${effectiveBranchName}"`,
+        );
+      }
+    } else {
+      // Re-throw non-HTTP errors (network issues, etc.)
+      throw error;
+    }
+  }
+}
+
+/**
+ * Creates a pull request on a given GitHub repository.
+ * Sends a POST request to the GitHub API.
+ * Handles API errors, including specific GitHub errors.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} title The title of the pull request.
+ * @param {string} sourceBranch The branch to merge from.
+ * @param {string} targetBranch The branch to merge into.
+ * @param {string} [body=''] Optional body of the pull request.
+ * @returns {Promise<object>} GitHub API response for the created PR.
+ * @throws {Error} If API request fails, repo/branches not found, or validation errors.
+ */
+async function createGithubPullRequest(
+  username,
+  repoName,
+  title,
+  sourceBranch,
+  targetBranch,
+  body = '',
+) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/pulls`;
+  const postData = {
+    title, head: sourceBranch, base: targetBranch, body,
+  };
+
+  try {
+    const response = await superagent
+      .post(url)
+      .set('Authorization', `token ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .send(postData);
+
+    if ([200, 201].includes(response.status)) {
+      return response.body;
+    }
+    handleGitHubApiError(response, `creating pull request for ${username}/${repoName}"`);
+  } catch (error) {
+    logger.error(`Error creating pull request (exception):, ${error.message}`);
+    if (error.response) {
+      logger.error(`Error creating pull request (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check repo and branch names.');
+      }
+      if (error.response.body && error.response.body.errors
+        && error.response.body.errors.length > 0) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to create PR');
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Lists running or queued GitHub Actions workflows and their jobs.
+ * Fetches workflow runs by status, then fetches jobs for each run.
+ * Filters jobs by 'queued' or the provided status.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} [status='in_progress'] Status to filter workflows (optional).
+ * @returns {Promise<Array<{ workflow_run_id: number, workflow_name: string,
+ * job_id: number, job_name: string, html_url: string, status: string,
+ * started_at: string }>>}
+ * Array of running/queued GitHub Action job details.
+ * @throws {Error} If API request fails or repository/user not found.
+ */
+async function listGitHubActions(username, repoName, status = 'in_progress') {
+  const urlRuns = `https://api.github.com/repos/${username}/${repoName}/actions/runs?status=${status}`;
+  try {
+    const runsResponse = await superagent
+      .get(urlRuns)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('Accept', 'application/vnd.github+json')
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT);
+
+    const runsData = runsResponse.body;
+
+    if (!runsData.workflow_runs || runsData.workflow_runs.length === 0) {
+      return [];
+    }
+
+    const runningJobs = [];
+    for (const run of runsData.workflow_runs) {
+      const urlJobs = `https://api.github.com/repos/${username}/${repoName}/actions/runs/${run.id}/jobs`;
+      const jobsResponse = await superagent
+        .get(urlJobs)
+        .set('Authorization', `Bearer ${githubToken}`)
+        .set('Accept', 'application/vnd.github+json')
+        .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+        .set('User-Agent', USER_AGENT);
+
+      const jobsData = jobsResponse.body;
+
+      if (jobsData.jobs) {
+        jobsData.jobs.forEach((job) => {
+          if (job.status === 'queued' || job.status === status) {
+            runningJobs.push({
+              workflow_run_id: run.id,
+              workflow_name: run.name,
+              job_id: job.id,
+              job_name: job.name,
+              html_url: job.html_url,
+              status: job.status,
+              started_at: job.started_at,
+            });
+          }
+        });
+      }
+    }
+    return runningJobs;
+  } catch (error) {
+    logger.error(`Error listing actions (exception): ${username} ${repoName} ${status} ${error}`);
+    if (error.response) {
+      logger.error(`Error listing actions (exception): ${error.response.text}`);
+      if (error.response.status === 404) {
+        throw new Error('Not Found: Check user and repo names.');
+      }
+      if (error.response.body && error.response.body.errors
+        && error.response.body.errors.length > 0) {
+        throw new Error(error.response.body.errors[0].message);
+      }
+      throw new Error(error.response.body.message || 'Failed to list actions');
+    } else {
+      throw error;
+    }
+  }
+}
+
+const DEFAULT_DESCRIPTION = 'Repository created by chatapp';
+
+/**
+ * Creates a GitHub repository.
+ *
+ * @async
+ * @param {string} repoName - The name of the repository to be created.
+ * @param {string} username - The name of the user owning the repo.
+ * @param {string} [orgName='user'] - The organization or user username under
+ * which the repository will be created. Defaults to 'user'.
+ * @param {string} [description=DEFAULT_DESCRIPTION] - A brief description
+ * of the repository. Defaults to 'Repository created by app'.
+ * @param {boolean} [isPrivate=false] - Whether the repository should be private.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function createRepo(repoName, username, orgName = 'user', description = DEFAULT_DESCRIPTION, isPrivate = false) {
+  const url = (orgName !== 'user' && !username)
+    ? `https://api.github.com/orgs/${orgName}/repos` : 'https://api.github.com/user/repos';
+
+  // Validate parameters
+  if (!repoName || typeof repoName !== 'string' || repoName.length < 1 || repoName.length > 100) {
+    throw new Error('Invalid repository name: must be a non-empty string with a maximum length of 100 characters');
+  }
+
+  // Additional validation for description
+  if (description && typeof description !== 'string') {
+    throw new Error('Invalid description: must be a string');
+  }
+
+  try {
+    const response = await superagent
+      .post(url)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT)
+      .send({
+        name: repoName,
+        private: isPrivate,
+        auto_init: true,
+        description,
+      });
+
+    if (response.status === 201) {
+      return { success: true, message: 'Repository created' };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    // Check if the error has a response and extract the message
+    const message = error.response && error.response.body && error.response.body.message
+      ? error.response.body.message
+      : error.message || 'Repository creation failed';
+
+    logger.error(`Error creating repo (exception): ${orgName}, ${repoName} - ${message}`);
+    throw new Error(`Failed to create repository: ${message}`);
+  }
+}
+
+/**
+ * Checks if a GitHub repository exists.
+ *
+ * This function checks if a specified repository exists under a given user or organization.
+ *
+ * @async
+ * @param {string} username - The username or organization name of the repository owner.
+ * @param {string} repoName - The name of the repository to check.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the existence of the repository.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function checkRepoExists(username, repoName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Accept', 'application/vnd.github+json')
+      .set('Authorization', `token ${githubToken}`)
+      .set('User-Agent', USER_AGENT);
+
+    // If the request is successful, the repository exists
+    return { exists: true, status: response.status };
+  } catch (error) {
+    if (error.status === 404) {
+      // Repository does not exist
+      return { exists: false, status: 404 };
+    }
+    // Handle other errors
+    logger.error('Error checking repository existence (exception):', username, repoName, error);
+    throw new Error(`Failed to check repository existence: ${error.message}`);
+  }
+}
+
+/**
+ * Checks if a GitHub branch exists in a specified repository.
+ *
+ * This function checks if a specified branch exists under a
+ * given user or organization and repository.
+ *
+ * @async
+ * @param {string} username - The username or organization name of the repository owner.
+ * @param {string} repoName - The name of the repository to check.
+ * @param {string} branchName - The name of the branch to check.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the existence of the branch.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function checkBranchExists(username, repoName, branchName) {
+  const url = `https://api.github.com/repos/${username}/${repoName}/branches/${branchName}`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Invalid branch name');
+  }
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Accept', 'application/vnd.github+json')
+      .set('Authorization', `token ${githubToken}`)
+      .set('User-Agent', USER_AGENT);
+
+    // If the request is successful, the branch exists
+    return { exists: true, status: response.status };
+  } catch (error) {
+    if (error.status === 404) {
+      // Branch does not exist
+      return { exists: false, status: 404 };
+    }
+    // Handle other errors
+    logger.error('Error checking branch existence (exception):', username, repoName, branchName, error);
+    throw new Error(`Failed to check branch existence: ${error.message}`);
+  }
+}
+
+/**
+ * Switches the default branch of a GitHub repository.
+ *
+ * This function updates the specified GitHub repository to change its default branch
+ * to the provided branch name. It uses the GitHub API to perform the update.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the default branch will be changed.
+ * @param {string} branchName - The name of the branch to set as the new default branch.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success of the operation,
+ * with a message confirming the change.
+ * @throws {Error} - Throws an error if the API request fails or if
+ * there is an issue processing the request.
+ */
+const switchBranch = async (username, repoName, branchName) => {
+  try {
+    // Update the repository to change the default branch
+    const response = await superagent
+      .patch(`https://api.github.com/repos/${username}/${repoName}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('User-Agent', USER_AGENT)
+      .set('Accept', 'application/vnd.github+json')
+      .send({
+        default_branch: branchName,
+      });
+
+    if ([200, 201].includes(response.status)) {
+      return {
+        success: true,
+        message: `Default branch changed to "${branchName}" in repository "${username}/${repoName}".`,
+      };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    logger.error(`Error processing switch branch (exception): ${username}/${repoName} - ${error.message}`);
+    throw new Error(`Error processing switch branch: ${error.message}`);
+  }
+};
+
+/**
+ * Creates a GitHub branch.
+ *
+ * This function creates a new branch in the specified repository based on an existing reference.
+ *
+ * @async
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where the branch will be created.
+ * @param {string} branchName - The name of the new branch to be created.
+ * @param {string} baseBranch - The name of the existing branch to base the new
+ * branch on (e.g., 'main').
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation.
+ * @throws {Error} - Throws an error if the API request fails.
+ */
+async function createBranch(username, repoName, branchName, baseBranch = 'main') {
+  const url = `https://api.github.com/repos/${username}/${repoName}/git/refs`;
+
+  // Validate parameters
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repository name');
+  }
+  if (!branchName || typeof branchName !== 'string') {
+    throw new Error('Invalid branch name');
+  }
+  if (!baseBranch || typeof baseBranch !== 'string') {
+    throw new Error('Invalid base branch name');
+  }
+
+  // Check if the branch already exists, if it does, then exit
+  try {
+    const resp = await checkBranchExists(username, repoName, branchName);
+    if (resp.exists) {
+      return { success: true, message: 'Branch already exists' };
+    }
+  } catch (error) {
+    logger.error(`Branch check error ${error.message}`);
+  }
+
+  try {
+    // Get the SHA of the base branch
+    const baseBranchResponse = await superagent
+      .get(`${url}/heads/${baseBranch}`)
+      .set('Authorization', `token ${githubToken}`)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+      .set('Accept', 'application/vnd.github+json')
+      .set('User-Agent', USER_AGENT);
+
+    const baseBranchSha = baseBranchResponse.body.object.sha;
+
+    // Create the new branch
+    let response = await new Promise((resolve, reject) => {
+      superagent
+        .post(url)
+        .set('Authorization', `token ${githubToken}`)
+        .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+        .set('Accept', 'application/vnd.github+json')
+        .set('User-Agent', USER_AGENT)
+        .send({
+          ref: `refs/heads/${branchName}`,
+          sha: baseBranchSha,
+        })
+        .end((err, res) => {
+          if (err) {
+            reject(err); // Removed void
+          }
+          resolve(res); // Removed void
+        });
+    });
+
+    if (response.status === 201) {
+      response = await switchBranch(username, repoName, branchName);
+      if (response.success) {
+        return { success: true, message: 'Branch created' };
+      }
+      return { success: false, message: 'Branch created, but could not switch context' };
+    }
+    return { success: false, status: response.status, message: response.body.message };
+  } catch (error) {
+    const message = (error.response && error.response.body && error.response.body.message) || error.message || 'Creation failed';
+    const status = (error.response && error.response.status) || 'Unknown status';
+    logger.error(`Error creating branch (exception): ${message} [Status: ${status}]`, error);
+    throw new Error(`Failed to create branch: ${message} [Status: ${status}]`);
+  }
+}
+
+/* eslint-disable no-promise-executor-return */
+
+// Helper to delay for retries. FIX: Removes function creation from loop (no-loop-func)
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper for the PUT request. FIX: Decouples Promise creation from the while loop.
+const createPutPromise = (putBody, apiUrl) => new Promise((resolve, reject) => {
+  // Assuming GITHUB_API_VERSION, USER_AGENT, and module-scoped githubToken are available.
+  // Note: module-scoped 'githubToken' must be used here to avoid the 'no-shadow' error.
+  superagent
+    .put(apiUrl)
+    .set('Authorization', `token ${githubToken}`)
+    .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+    .set('User-Agent', USER_AGENT)
+    .set('Accept', 'application/vnd.github+json')
+    .send(putBody)
+    .end((err, res) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(res);
+    });
+});
+
+/**
+ * Commits local file changes (create/update) to a GitHub repository branch.
+ * Files are read from a specified session's temporary directory.
+ * If `repoDirName` is provided, only files located within the corresponding
+ * subdirectory in the temporary workspace will be considered and committed
+ * into that directory within the repository. Otherwise, all files in the
+ * temporary directory are considered and committed to the root and its subdirectories.
+ *
+ * @async
+ * @function commitFiles
+ * @param {string} sessionId - The unique identifier for the session.
+ * @param {string} username - The username of the repository owner.
+ * @param {string} repoName - The name of the repository where files will be
+ * committed.
+ * @param {string} [repoDirName=null] - The name of the directory in the repository
+ * where files will be committed. If provided, only files within this scope
+ * in the temporary directory are committed here.
+ * @param {string} [branchName=''] - The branch to commit to. Defaults to ''.
+ * @param {number} [maxPutRetries=3] - Maximum number of retries for PUT requests on 409 conflict.
+ * @returns {Promise<Object>} - A promise that resolves to an object indicating
+ * the success or failure of the operation, with results for each file processed.
+ * @throws {Error} - Throws an error if initial validation or directory reading fails.
+ */
+async function commitFiles(
+  sessionId,
+  username,
+  repoName,
+  repoDirName = null,
+  branchName = '',
+  maxPutRetries = 3,
+) {
+  if (!sessionId || typeof sessionId !== 'string') {
+    throw new Error('Invalid sessionId type or value');
+  }
+  if (!username || typeof username !== 'string') {
+    throw new Error('Invalid username type or value');
+  }
+  if (!repoName || typeof repoName !== 'string') {
+    throw new Error('Invalid repoName type or value');
+  }
+  let rDirName = repoDirName;
+  if (rDirName !== null && typeof rDirName !== 'string') {
+    throw new Error('Invalid repoDirName type');
+  }
+  if (rDirName === '') {
+    rDirName = null;
+  }
+
+  let effectiveBranchName = branchName;
+  if (!effectiveBranchName) {
+    try {
+      effectiveBranchName = await getDefaultBranch(username, repoName);
+      logger.info(`No branch specified, using default branch: "${effectiveBranchName}" for ${username}/${repoName}`);
+    } catch (error) {
+      logger.error(`Failed to get default branch for ${username}/${repoName}: ${error.message}`);
+      throw new Error(`Failed to get default branch for repository "${username}/${repoName}". Please specify a branch or ensure the repository exists.`);
+    }
+  }
+
+  const cleanRepoDirName = (rDirName && rDirName !== '/') ? rDirName.replace(/^\/|\/$/g, '') : null;
+  logger.debug(`Cleaned rDirName: ${cleanRepoDirName}`);
+
+  const currentDirectoryPath = await getOrCreateSessionTempDir(sessionId);
+
+  // Assuming this returns Map<RelativePath, FileContentString>
+  const allFiles = await readFilesInDirectory(currentDirectoryPath);
+
+  const results = [];
+
+  /* eslint-disable max-len, no-restricted-syntax, no-await-in-loop */
+  // FIX: Deconstruct 'fileContent' instead of 'fullLocalFilePath'
+  for (const [relativeFilePath, fileContent] of allFiles.entries()) {
+    // FIX: Reconstruct the full local path manually for logging/basename purposes
+    const fullLocalFilePath = path.join(currentDirectoryPath, relativeFilePath);
+
+    let githubDestPath = '';
+    let existingFileSha = null;
+    let remoteFileBase64Content = null;
+    let shouldSkipFile = false;
+
+    const relativeFilePathNormalized = relativeFilePath.replace(/\\/g, '/');
+
+    if (cleanRepoDirName) {
+      const cleanRepoDirNameNormalized = cleanRepoDirName.replace(/\\/g, '/');
+      const isFileInScope = (
+        relativeFilePathNormalized.startsWith(`${cleanRepoDirNameNormalized}/`)
+        || relativeFilePathNormalized === cleanRepoDirNameNormalized
+      );
+
+      if (isFileInScope) {
+        const prefixWithSeparator = `${cleanRepoDirNameNormalized}/`;
+        if (relativeFilePathNormalized.startsWith(prefixWithSeparator)) {
+          githubDestPath = relativeFilePathNormalized;
+        } else if (relativeFilePathNormalized === cleanRepoDirNameNormalized) {
+          githubDestPath = '.';
+        } else {
+          githubDestPath = relativeFilePathNormalized;
+        }
+      } else {
+        logger.debug(`Skipping file "${relativeFilePath}" as it is outside the scope of "${cleanRepoDirName}"`);
+        results.push({
+          file: relativeFilePath,
+          success: true,
+          message: `Skipped: outside scope of "${cleanRepoDirName}"`,
+          githubPath: null,
+        });
+        shouldSkipFile = true;
+      }
+    } else {
+      githubDestPath = relativeFilePath;
+    }
+
+    if (!shouldSkipFile) {
+      if (githubDestPath === '.' || githubDestPath === '' || githubDestPath === '/') {
+        logger.debug(`Skipping commit for path "${relativeFilePath}" which resolves to repo root or empty path.`);
+        results.push({
+          file: relativeFilePath,
+          success: true,
+          message: 'Skipped commit for root or empty path.',
+          githubPath: githubDestPath,
+        });
+        shouldSkipFile = true;
+      }
+    }
+
+    const apiUrl = `https://api.github.com/repos/${username}/${repoName}/contents/${githubDestPath}?ref=${encodeURIComponent(effectiveBranchName)}`;
+
+    if (!shouldSkipFile) {
+      logger.debug(`Processing file: ${relativeFilePath}`);
+      // logger.debug(` Content preview: ${fileContent.substring(0, 50)}...`); // Optional debug
+      logger.debug(` GitHub destination path: ${githubDestPath}`);
+
+      try {
+        const getResponse = await superagent
+          .get(apiUrl)
+          .set('Authorization', `token ${githubToken}`)
+          .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+          .set('User-Agent', USER_AGENT)
+          .set('Accept', 'application/vnd.github.v3.raw');
+
+        if (getResponse.status === 200 && getResponse.body) {
+          existingFileSha = getResponse.body.sha;
+
+          const getShaResponse = await superagent
+            .get(apiUrl)
+            .set('Authorization', `token ${githubToken}`)
+            .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+            .set('User-Agent', USER_AGENT)
+            .set('Accept', 'application/vnd.github+json');
+
+          if (getShaResponse.status === 200 && getShaResponse.body.sha && getShaResponse.body.content) {
+            existingFileSha = getShaResponse.body.sha;
+            remoteFileBase64Content = getShaResponse.body.content;
+            logger.debug(`File exists in repo: ${githubDestPath} with SHA ${existingFileSha}`);
+          }
+        }
+      } catch (getError) {
+        if (getError.response && getError.response.status === 404) {
+          logger.debug(`File does not exist in repo: ${githubDestPath} on branch ${effectiveBranchName}`);
+        } else {
+          // Error handling logic...
+          const errorMessage = (getError.response && getError.response.body && getError.response.body.message) || getError.message;
+          results.push({
+            file: relativeFilePath,
+            success: false,
+            message: `Failed to check existence: ${errorMessage}`,
+            githubPath: githubDestPath,
+          });
+          shouldSkipFile = true;
+        }
+      }
+    }
+
+    if (!shouldSkipFile) {
+      try {
+        // FIX: Do not read from disk. Use the content from the Map directly.
+        // We assume 'fileContent' is already a UTF8 string based on the logs.
+        const localContent = fileContent;
+        const localBase64Content = Buffer.from(localContent).toString('base64');
+
+        // --- Content Comparison Logic ---
+        if (existingFileSha !== null) {
+          if (remoteFileBase64Content !== null
+            && remoteFileBase64Content.trim() === localBase64Content.trim()) {
+            logger.info(`File content unchanged, skipping commit for: ${githubDestPath}`);
+            results.push({
+              file: relativeFilePath,
+              success: true,
+              message: 'Skipped: content unchanged.',
+              githubPath: githubDestPath,
+            });
+            shouldSkipFile = true;
+          }
+        }
+
+        if (!shouldSkipFile) {
+          const putBody = {
+            message: `CI: Automated file update of ${path.basename(fullLocalFilePath)}`,
+            content: localBase64Content,
+            branch: effectiveBranchName,
+          };
+
+          if (effectiveBranchName !== 'main') {
+            putBody.message += ` on branch ${effectiveBranchName}`;
+          }
+
+          if (existingFileSha) {
+            putBody.sha = existingFileSha;
+          }
+
+          let putSuccess = false;
+          let currentPutRetry = 0;
+          let lastPutError = null;
+
+          while (currentPutRetry <= maxPutRetries && !putSuccess) {
+            try {
+              if (currentPutRetry > 0) {
+                await delay(1000 * currentPutRetry);
+              }
+
+              const putResponse = await createPutPromise(putBody, apiUrl);
+
+              if (putResponse.status === 200 || putResponse.status === 201) {
+                putSuccess = true;
+                logger.info(`Successfully committed file: ${githubDestPath}`);
+                results.push({
+                  file: relativeFilePath,
+                  success: true,
+                  message: putBody.sha ? 'File updated successfully.' : 'File created successfully.',
+                  githubPath: githubDestPath,
+                  sha: putResponse.body.commit.sha,
+                });
+              } else if (putResponse.status === 409 && currentPutRetry < maxPutRetries) {
+                // ... 409 Conflict handling (same as before) ...
+                const reFetchResponse = await superagent
+                  .get(apiUrl)
+                  .set('Authorization', `token ${githubToken}`)
+                  .set('X-GitHub-Api-Version', GITHUB_API_VERSION)
+                  .set('User-Agent', USER_AGENT)
+                  .set('Accept', 'application/vnd.github+json');
+
+                if (reFetchResponse.status === 200 && reFetchResponse.body.sha) {
+                  const newRemoteFileBase64Content = reFetchResponse.body.content;
+                  if (newRemoteFileBase64Content && newRemoteFileBase64Content.trim() === localBase64Content.trim()) {
+                    putSuccess = true; // Content matches now
+                  } else {
+                    putBody.sha = reFetchResponse.body.sha;
+                  }
+                } else {
+                  lastPutError = new Error('Failed to re-fetch after 409');
+                  break;
+                }
+              } else {
+                const errorMessage = (putResponse.body && putResponse.body.message) || putResponse.text;
+                lastPutError = new Error(`Failed to upload/update (Status ${putResponse.status}): ${errorMessage}`);
+                break;
+              }
+            } catch (putError) {
+              const errorMessage = (putError.response && putError.response.body && putError.response.body.message) || putError.message;
+              lastPutError = new Error(`Failed to upload/update: ${errorMessage}`);
+              break;
+            }
+            currentPutRetry += 1;
+          }
+
+          if (!putSuccess) {
+            results.push({
+              file: relativeFilePath,
+              success: false,
+              message: `Failed to upload/update: ${lastPutError ? lastPutError.message : 'Unknown error'}`,
+              githubPath: githubDestPath,
+            });
+          }
+        }
+      } catch (genError) {
+        const errorMessage = (genError.response && genError.response.body && genError.response.body.message) || genError.message;
+        logger.error(`Error processing file ${relativeFilePath}: ${errorMessage}`, genError);
+        results.push({
+          file: relativeFilePath,
+          success: false,
+          message: `General error processing file: ${errorMessage}`,
+          githubPath: githubDestPath,
+        });
+      }
+    }
+  }
+
+  return { success: true, message: 'Commit process completed.', results };
+}
+
+/**
+ * Gets the contents of a single file from a GitHub repository.
+ * Fetches the file's data, decodes the content, and returns it as a JSON object.
+ * Handles API errors, including "Not Found" exceptions.
+ * @async
+ * @param {string} username The GitHub username.
+ * @param {string} repoName The name of the repository.
+ * @param {string} filePath The path to the file within the repository.
+ * @param {string} [branchName=''] Optional branch name. If not specified, the default branch will be used.
+ * @returns {Promise<Object>} A promise that resolves to a JSON object with the file's name, path, and decoded content.
+ * @throws {Error} If API request fails, file/repo not found, or content cannot be retrieved.
+ */
+async function getFileContents(username, repoName, filePath, branchName = '') {
+  let effectiveBranchName = branchName;
+  if (!effectiveBranchName) {
+    effectiveBranchName = await getDefaultBranch(username, repoName);
+  }
+
+  const url = `https://api.github.com/repos/${username}/${repoName}`
+    + `/contents/${filePath}?ref=${encodeURIComponent(effectiveBranchName)}`;
+  logger.debug(`getFileContents called for ${username}/${repoName} at path ${filePath} with url ${url}`);
+
+  try {
+    const response = await superagent
+      .get(url)
+      .set('Authorization', `Bearer ${githubToken}`)
+      .set('User-Agent', USER_AGENT)
+      .set('X-GitHub-Api-Version', GITHUB_API_VERSION); // Remove the raw header
+
+    if (response.status === 200) {
+      const content = Buffer.from(response.body.content, 'base64').toString('utf-8');
+      return {
+        name: path.basename(filePath),
+        path: filePath,
+        content,
+      };
+    }
+    // This part handles other successful but non-200 responses if they occur
+    // which is unlikely for this specific API call.
+    handleGitHubApiError(response, `getting file contents for "${filePath}"`);
+  } catch (error) {
+    logger.error('Error getting file contents (exception):', username, repoName, filePath, error);
+    handleNotFoundError(error, ` for file "${filePath}" in repository "${username}/${repoName}"`);
+  }
+  return null; // Return null if the file was not found or an error occurred
+}
+
+module.exports = {
+  checkBranchExists,
+  checkRepoExists,
+  commitFiles,
+  createBranch,
+  createGithubPullRequest,
+  createRepo,
+  deleteContent,
+  fetchRepoContentsRecursive,
+  getFileContents,
+  listBranches,
+  listCommitHistory,
+  listDirectoryContents,
+  listGitHubActions,
+  listPublicRepos,
+  switchBranch,
+};

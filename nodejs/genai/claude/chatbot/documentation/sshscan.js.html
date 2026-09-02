@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: sshscan.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: sshscan.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// Import the 'net' module for network operations
+const net = require('net');
+// Import the 'os' module to get operating system specific information, like network interfaces
+const os = require('os');
+// Import the logger module
+// Import dns for reverse lookups and util to promisify dns.reverse
+const dns = require('dns');
+const util = require('util');
+const logger = require('./logger'); // Assumes logger.js is in the same directory or adjust path
+
+// Promisify dns.reverse for async/await usage
+const reversePromise = util.promisify(dns.reverse);
+
+/**
+ * Automatically determines the base IP address of the local network.
+ * It looks for a non-internal IPv4 address.
+ * @param {string} sessionId - A unique ID for the current scanning session (for logging).
+ * @returns {string|null} The base IP address (e.g., '192.168.1') or null if not found.
+ */
+function getNetworkBaseIp(sessionId) {
+  logger.info(`[Session: ${sessionId}] Attempting to determine network base IP automatically.`);
+  const interfaces = os.networkInterfaces();
+  let foundBaseIp = null;
+
+  // Use Object.keys() and .some() for safer iteration with early exit capability
+  Object.keys(interfaces).some((interfaceName) => {
+    const addresses = interfaces[interfaceName];
+    // Use .some() for array iteration with early exit capability
+    addresses.some((addr) => {
+      // Check for IPv4, not internal (loopback), and a common private IP range
+      if (addr.family === 'IPv4' &amp;&amp; !addr.internal) {
+        // Prioritize common private network ranges
+        if (addr.address.startsWith('192.168.') || addr.address.startsWith('10.') || addr.address.startsWith('172.16.')) {
+          const parts = addr.address.split('.');
+          if (parts.length === 4) {
+            foundBaseIp = `${parts[0]}.${parts[1]}.${parts[2]}`;
+            return true; // Return true to stop the inner .some() loop
+          }
+        }
+      }
+      return false; // Return false to continue to the next address in the inner loop
+    });
+    return !!foundBaseIp; // Return true to stop the outer .some() loop if foundBaseIp is set
+  });
+  return foundBaseIp;
+}
+
+/**
+ * Scans a given IP range for machines with an open SSH port.
+ * @param {string} sessionId - A unique ID for the current scanning session (for logging).
+ * @param {string} baseIp - The base IP address (e.g., '192.168.1').
+ * @param {number} startRange - The starting last octet of the IP range (e.g., 1).
+ * @param {number} endRange - The ending last octet of the IP range (e.g., 254).
+ * @param {number} port - The SSH port to check (default: 22).
+ * @param {number} timeout - Connection timeout in milliseconds (default: 1000).
+ * @returns {Promise&lt;Array&lt;{ip: string, hostname: string | null}>>} A promise that resolves to an array of objects
+ * with IP addresses and their corresponding hostnames (or null if not found) for open SSH ports.
+ */
+async function scanNetworkForSSH(sessionId, baseIp, startRange = 1, endRange = 254, port = 22, timeout = 1000) {
+  const openHosts = [];
+
+  let effectiveBaseIp = baseIp;
+  if (!effectiveBaseIp) {
+    logger.debug(`[Session: ${sessionId}] No base IP provided. Attempting to auto-detect...`);
+    effectiveBaseIp = getNetworkBaseIp(sessionId);
+    if (!effectiveBaseIp) {
+      logger.error(`[Session: ${sessionId}] Unable to determine base IP address. Exiting scan.`);
+      return openHosts;
+    }
+  }
+
+  logger.info(`[Session: ${sessionId}] Starting SSH network scan for ${effectiveBaseIp}.0/${startRange}-${endRange} on port ${port} with timeout ${timeout}ms.`);
+
+  const connectionPromises = [];
+
+  for (let i = startRange; i &lt;= endRange; i += 1) {
+    const ip = `${effectiveBaseIp}.${i}`;
+
+    connectionPromises.push(new Promise((resolve) => {
+      const socket = new net.Socket();
+      let resolved = false; // Flag to ensure promise is resolved only once
+      let bannerHostname = null;
+
+      // Helper to resolve the promise
+      const finishConnection = (success, hostname = null) => {
+        if (!resolved) {
+          resolved = true;
+          socket.destroy(); // Ensure socket is closed
+          resolve({ ip, success, bannerHostname: hostname });
+        }
+      };
+
+      socket.setTimeout(timeout);
+
+      // On successful connection
+      socket.on('connect', () => {
+        logger.debug(`[Session: ${sessionId}] SSH port ${port} open on ${ip}. Waiting for banner...`);
+        // Do not resolve yet, wait for banner data or subsequent timeout/error
+      });
+
+      // On data received (expecting banner)
+      socket.on('data', (data) => {
+        const banner = data.toString().split('\n')[0]; // Get the first line
+        // Use array destructuring as per ESLint's 'prefer-destructuring' rule
+        // The first element of the array is the full match, the second is the first capturing group.
+        // Use || [] to handle cases where match() returns null (no match found)
+        const [, capturedHostname] = banner.match(/^SSH-2\.0-\S+\s(\S+)/) || [];
+
+        if (capturedHostname) { // Check if the captured group is not undefined/null
+          bannerHostname = capturedHostname;
+          logger.debug(`[Session: ${sessionId}] Found banner hostname for ${ip}: ${bannerHostname}`);
+        }
+        finishConnection(true, bannerHostname); // Resolve with success and captured banner hostname
+      });
+
+      // On timeout
+      socket.on('timeout', () => {
+        logger.debug(`[Session: ${sessionId}] Connection to ${ip}:${port} timed out.`);
+        finishConnection(false); // Resolve as failure
+      });
+
+      // On error
+      socket.on('error', (err) => {
+        logger.debug(`[Session: ${sessionId}] Error connecting to ${ip}:${port}: ${err.message}`);
+        finishConnection(false); // Resolve as failure
+      });
+
+      // Attempt to connect
+      socket.connect(port, ip);
+    }));
+  }
+
+  // Await all connection and banner-read promises concurrently
+  const connectionResults = await Promise.all(connectionPromises);
+
+  const hostnameResolutionTasks = connectionResults
+    .filter((result) => result.success) // Only process successfully connected IPs
+    .map(async (result) => {
+      let hostname = null;
+      try {
+        const dnsHostnames = await reversePromise(result.ip);
+        hostname = dnsHostnames[0] || null; // Prefer DNS hostname
+        if (hostname) {
+          logger.debug(`[Session: ${sessionId}] Resolved hostname via DNS for ${result.ip}: ${hostname}`);
+        } else {
+          logger.debug(`[Session: ${sessionId}] No DNS hostname for ${result.ip}.`);
+        }
+      } catch (err) {
+        logger.debug(`[Session: ${sessionId}] DNS error for ${result.ip}: ${err.message}`);
+      }
+
+      // Fallback to banner hostname if DNS lookup failed
+      if (!hostname &amp;&amp; result.bannerHostname) {
+        hostname = result.bannerHostname;
+        logger.debug(`[Session: ${sessionId}] Falling back to banner hostname for ${result.ip}: ${hostname}`);
+      }
+
+      return { ip: result.ip, hostname };
+    });
+
+  const resolvedHosts = await Promise.all(hostnameResolutionTasks);
+  openHosts.push(...resolvedHosts); // Add all resolved hosts to openHosts
+
+  logger.info(`\n[Session: ${sessionId}] Scan complete!`);
+  if (openHosts.length > 0) {
+    logger.info(`[Session: ${sessionId}] Machines with SSH (port ${port}) open:`);
+    openHosts.forEach((host) => logger.info(`[Session: ${sessionId}] - ${host.ip}${host.hostname ? ` (${host.hostname})` : ''}`));
+  } else {
+    logger.info(`[Session: ${sessionId}] No machines with SSH (port ${port}) open found in the specified range.`);
+  }
+  return openHosts;
+}
+
+// Export the main scanning function and the IP detection function
+module.exports = {
+  scanNetworkForSSH,
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-utilities.html">utilities</a></li></ul><h3>Classes</h3><ul><li><a href="FolderFetchError.html">FolderFetchError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addResponse">addResponse</a></li><li><a href="global.html#adoApiRequest">adoApiRequest</a></li><li><a href="global.html#adoCodeReviews">adoCodeReviews</a></li><li><a href="global.html#authenticateDockerHub">authenticateDockerHub</a></li><li><a href="global.html#availableFunctionsRegistry">availableFunctionsRegistry</a></li><li><a href="global.html#bootstrapMainBranch">bootstrapMainBranch</a></li><li><a href="global.html#buildProbeUrl">buildProbeUrl</a></li><li><a href="global.html#callFunctionByName">callFunctionByName</a></li><li><a href="global.html#callKubernetesApi">callKubernetesApi</a></li><li><a href="global.html#checkAdoBranchExists">checkAdoBranchExists</a></li><li><a href="global.html#checkAdoRepoExists">checkAdoRepoExists</a></li><li><a href="global.html#checkBranchExists">checkBranchExists</a></li><li><a href="global.html#checkIfRunningInDocker">checkIfRunningInDocker</a></li><li><a href="global.html#checkRepoExists">checkRepoExists</a></li><li><a href="global.html#cleanupSession">cleanupSession</a></li><li><a href="global.html#cleanupSessionTempDir">cleanupSessionTempDir</a></li><li><a href="global.html#codeReviews">codeReviews</a></li><li><a href="global.html#collectAllServicesInfo">collectAllServicesInfo</a></li><li><a href="global.html#collectBasicSystemInfo">collectBasicSystemInfo</a></li><li><a href="global.html#collectDetailedSystemInfo">collectDetailedSystemInfo</a></li><li><a href="global.html#collectProcessInfo">collectProcessInfo</a></li><li><a href="global.html#commandMap">commandMap</a></li><li><a href="global.html#commitAdoFiles">commitAdoFiles</a></li><li><a href="global.html#commitFiles">commitFiles</a></li><li><a href="global.html#connectToDatabase">connectToDatabase</a></li><li><a href="global.html#createAdoBranch">createAdoBranch</a></li><li><a href="global.html#createAdoPipeline">createAdoPipeline</a></li><li><a href="global.html#createAdoPullRequest">createAdoPullRequest</a></li><li><a href="global.html#createAdoRepo">createAdoRepo</a></li><li><a href="global.html#createBranch">createBranch</a></li><li><a href="global.html#createGithubPullRequest">createGithubPullRequest</a></li><li><a href="global.html#createGithubWorkflowDispatch">createGithubWorkflowDispatch</a></li><li><a href="global.html#createKubernetesResource">createKubernetesResource</a></li><li><a href="global.html#createRepo">createRepo</a></li><li><a href="global.html#createUniqueTempDir">createUniqueTempDir</a></li><li><a href="global.html#deleteAdoPipeline">deleteAdoPipeline</a></li><li><a href="global.html#deleteContent">deleteContent</a></li><li><a href="global.html#deleteDirectoryRecursive">deleteDirectoryRecursive</a></li><li><a href="global.html#deleteDirectoryRecursively">deleteDirectoryRecursively</a></li><li><a href="global.html#deleteFile">deleteFile</a></li><li><a href="global.html#deleteGithubWorkflowRun">deleteGithubWorkflowRun</a></li><li><a href="global.html#deleteKubernetesResource">deleteKubernetesResource</a></li><li><a href="global.html#detectOperatingSystem">detectOperatingSystem</a></li><li><a href="global.html#disconnectFromDatabase">disconnectFromDatabase</a></li><li><a href="global.html#downloadAdoFile">downloadAdoFile</a></li><li><a href="global.html#downloadFile">downloadFile</a></li><li><a href="global.html#downloadMutexes">downloadMutexes</a></li><li><a href="global.html#dumpDatabaseStructure">dumpDatabaseStructure</a></li><li><a href="global.html#encodePat">encodePat</a></li><li><a href="global.html#fetchAdoRepoContentsRecursive">fetchAdoRepoContentsRecursive</a></li><li><a href="global.html#fetchContentDetails">fetchContentDetails</a></li><li><a href="global.html#fetchRepoContentsRecursive">fetchRepoContentsRecursive</a></li><li><a href="global.html#funcsMetadata">funcsMetadata</a></li><li><a href="global.html#generateGoogleMapsLink">generateGoogleMapsLink</a></li><li><a href="global.html#getAdoDefaultBranch">getAdoDefaultBranch</a></li><li><a href="global.html#getAdoFileContents">getAdoFileContents</a></li><li><a href="global.html#getAdoPipelineRunLogs">getAdoPipelineRunLogs</a></li><li><a href="global.html#getAuthToken">getAuthToken</a></li><li><a href="global.html#getAvailableFunctions">getAvailableFunctions</a></li><li><a href="global.html#getChatResponse">getChatResponse</a></li><li><a href="global.html#getDefaultBranch">getDefaultBranch</a></li><li><a href="global.html#getDiskInfo">getDiskInfo</a></li><li><a href="global.html#getDockerImageTags">getDockerImageTags</a></li><li><a href="global.html#getDownloadMutex">getDownloadMutex</a></li><li><a href="global.html#getFileContents">getFileContents</a></li><li><a href="global.html#getFunctionDefinitionsForTool">getFunctionDefinitionsForTool</a></li><li><a href="global.html#getGeneralInfo">getGeneralInfo</a></li><li><a href="global.html#getGithubWorkflowRunLogs">getGithubWorkflowRunLogs</a></li><li><a href="global.html#getHardwareInfo">getHardwareInfo</a></li><li><a href="global.html#getIdentifiableServices">getIdentifiableServices</a></li><li><a href="global.html#getKernelInfo">getKernelInfo</a></li><li><a href="global.html#getKey">getKey</a></li><li><a href="global.html#getKubernetesDeploymentDetails">getKubernetesDeploymentDetails</a></li><li><a href="global.html#getKubernetesNodeDetails">getKubernetesNodeDetails</a></li><li><a href="global.html#getKubernetesPodDetails">getKubernetesPodDetails</a></li><li><a href="global.html#getKubernetesPodLogs">getKubernetesPodLogs</a></li><li><a href="global.html#getKubernetesSecretDetails">getKubernetesSecretDetails</a></li><li><a href="global.html#getKubernetesServiceDetails">getKubernetesServiceDetails</a></li><li><a href="global.html#getKubernetesVersion">getKubernetesVersion</a></li><li><a href="global.html#getNetworkBaseIp">getNetworkBaseIp</a></li><li><a href="global.html#getNetworkServices">getNetworkServices</a></li><li><a href="global.html#getOrCreateSessionTempDir">getOrCreateSessionTempDir</a></li><li><a href="global.html#getProcessInfo">getProcessInfo</a></li><li><a href="global.html#getRepoByName">getRepoByName</a></li><li><a href="global.html#getResponse">getResponse</a></li><li><a href="global.html#getServices">getServices</a></li><li><a href="global.html#getSessionFuncsMetadata">getSessionFuncsMetadata</a></li><li><a href="global.html#getSessionFunctionRegistry">getSessionFunctionRegistry</a></li><li><a href="global.html#getSessionTokenMutex">getSessionTokenMutex</a></li><li><a href="global.html#getVehicleHistory">getVehicleHistory</a></li><li><a href="global.html#getprojectByName">getprojectByName</a></li><li><a href="global.html#handleAzureDevopsApiError">handleAzureDevopsApiError</a></li><li><a href="global.html#handleGitHubApiError">handleGitHubApiError</a></li><li><a href="global.html#handleNotFoundError">handleNotFoundError</a></li><li><a href="global.html#initializeSshConfig">initializeSshConfig</a></li><li><a href="global.html#listAdoBranches">listAdoBranches</a></li><li><a href="global.html#listAdoCommitHistory">listAdoCommitHistory</a></li><li><a href="global.html#listAdoDirectoryContents">listAdoDirectoryContents</a></li><li><a href="global.html#listAdoPipelineRuns">listAdoPipelineRuns</a></li><li><a href="global.html#listAdoPipelines">listAdoPipelines</a></li><li><a href="global.html#listAdoProjects">listAdoProjects</a></li><li><a href="global.html#listAdoRepos">listAdoRepos</a></li><li><a href="global.html#listBranches">listBranches</a></li><li><a href="global.html#listCommitHistory">listCommitHistory</a></li><li><a href="global.html#listDatabaseSchemas">listDatabaseSchemas</a></li><li><a href="global.html#listDirectoryContents">listDirectoryContents</a></li><li><a href="global.html#listGitHubActions">listGitHubActions</a></li><li><a href="global.html#listGithubWorkflowRuns">listGithubWorkflowRuns</a></li><li><a href="global.html#listGithubWorkflows">listGithubWorkflows</a></li><li><a href="global.html#listKubernetesConfigMaps">listKubernetesConfigMaps</a></li><li><a href="global.html#listKubernetesCronJobs">listKubernetesCronJobs</a></li><li><a href="global.html#listKubernetesDaemonSets">listKubernetesDaemonSets</a></li><li><a href="global.html#listKubernetesDeployments">listKubernetesDeployments</a></li><li><a href="global.html#listKubernetesEvents">listKubernetesEvents</a></li><li><a href="global.html#listKubernetesIngresses">listKubernetesIngresses</a></li><li><a href="global.html#listKubernetesJobs">listKubernetesJobs</a></li><li><a href="global.html#listKubernetesNamespaces">listKubernetesNamespaces</a></li><li><a href="global.html#listKubernetesNodes">listKubernetesNodes</a></li><li><a href="global.html#listKubernetesPersistentVolumeClaims">listKubernetesPersistentVolumeClaims</a></li><li><a href="global.html#listKubernetesPersistentVolumes">listKubernetesPersistentVolumes</a></li><li><a href="global.html#listKubernetesPods">listKubernetesPods</a></li><li><a href="global.html#listKubernetesReplicaSets">listKubernetesReplicaSets</a></li><li><a href="global.html#listKubernetesSecrets">listKubernetesSecrets</a></li><li><a href="global.html#listKubernetesServices">listKubernetesServices</a></li><li><a href="global.html#listKubernetesStatefulSets">listKubernetesStatefulSets</a></li><li><a href="global.html#listPublicRepos">listPublicRepos</a></li><li><a href="global.html#listSchemaObjects">listSchemaObjects</a></li><li><a href="global.html#loadAdoIntegration">loadAdoIntegration</a></li><li><a href="global.html#loadDatabaseFunctions">loadDatabaseFunctions</a></li><li><a href="global.html#loadKubernetes">loadKubernetes</a></li><li><a href="global.html#loadMappingFunctions">loadMappingFunctions</a></li><li><a href="global.html#loadSystemInfoFunctions">loadSystemInfoFunctions</a></li><li><a href="global.html#mkdir">mkdir</a></li><li><a href="global.html#parseJdbcUri">parseJdbcUri</a></li><li><a href="global.html#planRoute">planRoute</a></li><li><a href="global.html#readContext">readContext</a></li><li><a href="global.html#readDockerSecret">readDockerSecret</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registryMutex">registryMutex</a></li><li><a href="global.html#runAdhocSql">runAdhocSql</a></li><li><a href="global.html#runAdoPipeline">runAdoPipeline</a></li><li><a href="global.html#runCommand">runCommand</a></li><li><a href="global.html#saveCodeToFile">saveCodeToFile</a></li><li><a href="global.html#scaleKubernetesDeployment">scaleKubernetesDeployment</a></li><li><a href="global.html#scanNetworkForSSH">scanNetworkForSSH</a></li><li><a href="global.html#searchDockerImages">searchDockerImages</a></li><li><a href="global.html#selectDatabaseData">selectDatabaseData</a></li><li><a href="global.html#sessionAuthTokens">sessionAuthTokens</a></li><li><a href="global.html#sessionTokenExpiries">sessionTokenExpiries</a></li><li><a href="global.html#sessionTokenMutexes">sessionTokenMutexes</a></li><li><a href="global.html#sessions">sessions</a></li><li><a href="global.html#switchAdoBranch">switchAdoBranch</a></li><li><a href="global.html#switchBranch">switchBranch</a></li><li><a href="global.html#testSshConnect">testSshConnect</a></li><li><a href="global.html#testTcpConnection">testTcpConnection</a></li><li><a href="global.html#updateKubernetesResource">updateKubernetesResource</a></li><li><a href="global.html#walkDir">walkDir</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Sep 02 2026 11:52:22 GMT+0100 (British Summer Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
