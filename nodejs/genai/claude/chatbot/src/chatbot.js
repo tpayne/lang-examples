@@ -332,7 +332,12 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
 
     let chatResponse = null;
     let numSteps = 0;
-    const maxSteps = getConfig().maxChatSteps; // Limit steps (API calls + function calls)
+    const maxSteps = (() => {
+      const parsed = Number(getConfig().maxChatSteps);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+      logger.warn(`Claude API: 'maxChatSteps' missing or invalid in config (got ${JSON.stringify(getConfig().maxChatSteps)}); defaulting to 10 [Session: ${sessionId}]`);
+      return 10;
+    })(); // Limit steps (API calls + function calls)
 
     // Build the system prompt. Claude has no JSON response_format param
     // (unlike OpenAI), so a forced-JSON request is implemented by appending
@@ -480,10 +485,13 @@ const getChatResponse = async (sessionId, userInput, forceJson = false) => {
     }
     /* eslint-enable no-await-in-loop, no-plusplus, no-restricted-syntax */
 
-    if (!chatResponse) {
-      // If loop finished without a final text response
+    if (chatResponse === null) {
+      // Loop actually exhausted maxSteps without ever setting a response
       logger.warn(`Claude API: Max steps reached without final text response [Session: ${sessionId}]`);
       chatResponse = 'Reached maximum processing steps without a final text response.';
+    } else if (chatResponse === '') {
+      logger.warn(`Claude API: Received an empty text response [Session: ${sessionId}]`);
+      chatResponse = 'I didn\'t receive a complete response — could you try rephrasing your request?';
     }
 
     // Ensure history doesn't grow indefinitely — keep the last N turns.
