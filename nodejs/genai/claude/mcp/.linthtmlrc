@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "indent-style": false,
+    "id-class-style": false,
+    "tag-bans": false
+  }
+}

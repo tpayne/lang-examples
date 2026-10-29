@@ -564,8 +564,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (historyIndex > 0) {
                 historyIndex--;
-                // Load the previous message from history
-                userInput.innerHTML = messageHistory[historyIndex];
+                // Load the previous message from history.
+                // Use textContent, not innerHTML: messageHistory holds plain
+                // text (see sendMessage's htmlToPlainText conversion), so a
+                // message like "<img src=x onerror=...>" must not be
+                // reinterpreted as markup when recalled here.
+                userInput.textContent = messageHistory[historyIndex];
                 // Place cursor at the end of the loaded text (optional but good UX)
                 placeCaretAtEnd(userInput);
             }
@@ -765,11 +769,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     .replace(/<li>/g, '* ') // List items (simple bullet)
                     .replace(/<\/li>/g, '\n') // List items
                     .replace(/<pre>(.*?)<\/pre>/gs, '```\n$1\n```') // Code blocks
-                    .replace(/&amp;/g, '&') // Decode HTML entities
-                    .replace(/&lt;/g, '<') // Decode HTML entities
-                    .replace(/&gt;/g, '>') // Decode HTML entities
-                    .replace(/&quot;/g, '"') // Decode HTML entities
-                    .replace(/&#39;/g, "'") // Decode HTML entities
+                    // Decode HTML entities - '&amp;' must run LAST, after
+                    // every other entity decode, or an original '&amp;lt;'
+                    // becomes '&lt;' here and then gets wrongly decoded a
+                    // second time into '<' by the next line (double-unescaping).
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&amp;/g, '&')
                     .replace(/\n\s*\n/g, '\n\n'); // Normalize multiple newlines
             }
 

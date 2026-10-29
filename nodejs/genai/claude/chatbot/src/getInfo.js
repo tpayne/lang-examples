@@ -242,23 +242,24 @@ async function runCommand(commandKey, targetHost = false, overridePlatform = det
     const cmd = commandsToTry[index];
     const finalCommand = `${prefix}${cmd}`;
 
-    let loggableCommand = finalCommand;
-    if (USE_SSH_FOR_HOST_INFO) {
-      loggableCommand = finalCommand.replace(/-p '.*?'/, '').trim(); // Remove password from the command entirely
-    }
-    logger.debug(`Attempting to execute (${executionContext}): ${loggableCommand}`);
+    // Always log just `cmd`, in every mode - never `prefix` or
+    // `finalCommand` (which embed the SSH password when
+    // USE_SSH_FOR_HOST_INFO is true), not even in a branch that only runs
+    // for the non-SSH case: a static analyzer that isn't path-sensitive to
+    // USE_SSH_FOR_HOST_INFO would still see `finalCommand` reachable from
+    // a conditional expression assigned to the logged variable.
+    // `executionContext` already tells the reader local vs. SSH.
+    logger.debug(`Attempting to execute (${executionContext}): ${cmd}`);
 
     try {
       const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash', timeout: 20000, killSignal: 'SIGTERM' });
       return stdout.trim(); // Return on first success
     } catch (error) {
-      let errorLogCommand = finalCommand;
-      let errorMessage = error.message || 'Unknown error';
-      if (USE_SSH_FOR_HOST_INFO) {
-        errorLogCommand = finalCommand.replace(/-p '.*?'/, '').trim();
-        errorMessage = error.message.replace(/-p '.*?'/, '').trim();
-      }
-      logger.debug(`Command failed (${executionContext}): "${errorLogCommand}" - ${errorMessage}`);
+      // `error.message` can itself embed the full failed command line
+      // (including the password, for the SSH case) - log the exit code
+      // only, never the message text, in every mode.
+      const exitCode = error.code !== undefined ? error.code : 'unknown';
+      logger.debug(`Command failed (${executionContext}): "${cmd}" - exit code ${exitCode}`);
 
       if (executionContext === 'host via SSH') {
         if (error.message.includes('Permission denied')) {

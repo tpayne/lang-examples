@@ -22,11 +22,14 @@ async function authenticateDockerHub(username, password) {
     }
     throw new Error('No token received from Docker Hub authentication.');
   } catch (error) {
-    const errorMessage = error.response
-      ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
-      : error.message;
-    logger.error(`Failed to authenticate with Docker Hub for user ${username}: ${errorMessage}`, error);
-    throw new Error(`Docker Hub authentication failed: ${errorMessage}`);
+    // Never reference `error` (or `username`/`password`) here at all: this
+    // request's body carried the plaintext password, and superagent
+    // attaches the original request/response pair to HTTP errors, so even
+    // a seemingly-safe derived value (a status code, a username already
+    // known to the caller) risks a static analyzer treating it as reachable
+    // from that password. A fully static message has no such path.
+    logger.error('Failed to authenticate with Docker Hub.');
+    throw new Error('Docker Hub authentication failed.');
   }
 }
 
