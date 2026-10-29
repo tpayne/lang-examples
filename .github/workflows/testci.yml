@@ -195,6 +195,29 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/chatbot:1.0 && \
           sleep 10 && curl localhost:8080/status && \
           curl localhost:8080/)
-  
+
+      - name: Stop containers...
+        run: (docker stop $(docker container ls -q))
+
+      - name: Build the NodeJS Claude MCP chatbot Docker image...
+        id: nodejsclaudemcpchatbot-image
+        run: |
+          IMAGE_ID=${{ secrets.DOCKERHUB_USERNAME }}/nodejsclaudemcpchatbot
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "::set-output name=image::$IMAGE_ID"
+          echo "::set-output name=tag::$IMAGE_TAG"
+
+          # The Docker build runs `npm test` (lint + unit tests, including
+          # the mcpClient <-> mcpServer stdio integration test) in its
+          # prebuild stage, so a bad change here fails the build itself.
+          (cd nodejs/genai/claude/mcp && \
+            docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsclaudemcpchatbot:1.0 && \
+            docker run --rm -t -d -p 8080:5000 \
+              -e ANTHROPIC_API_KEY=ABCD \
+              ${{ secrets.DOCKERHUB_USERNAME }}/nodejsclaudemcpchatbot:1.0 && \
+            sleep 10 && curl localhost:8080/status && \
+            curl -H "Content-Type: application/json" -d '{"message":"help"}' \
+              -X POST localhost:8080/chat)
+
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
