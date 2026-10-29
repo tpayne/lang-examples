@@ -1,5 +1,7 @@
 const assert = require('node:assert/strict');
-const { test, describe, beforeEach, afterEach } = require('node:test');
+const {
+  test, describe, beforeEach, afterEach,
+} = require('node:test');
 
 const { createServer } = require('../src/mcpServer');
 

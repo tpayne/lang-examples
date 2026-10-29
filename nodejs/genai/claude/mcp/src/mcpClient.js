@@ -2,10 +2,16 @@
  * Thin MCP client wrapper used by chatbot.js.
  *
  * Replaces the old in-process function registry from functions.js:
- * chatbot.js no longer calls tool implementations directly - it spawns the
- * MCP server in mcpServer.js as a child process (once, lazily, on first
- * use) and talks to it exclusively over the Model Context Protocol
- * (stdio transport).
+ * chatbot.js no longer calls tool implementations directly - it talks to
+ * the MCP server in mcpServer.js exclusively over the Model Context
+ * Protocol, using one of two transports:
+ *
+ *  - stdio (default): spawns mcpServer.js as a local child process. Used
+ *    whenever MCP_SERVER_URL is not set.
+ *  - Streamable HTTPS (remote): connects to an already-running MCP server
+ *    (started with MCP_TRANSPORT=httpStream - see mcpServer.js) over the
+ *    network, when MCP_SERVER_URL is set. MCP_SERVER_AUTH_TOKEN must match
+ *    that server's MCP_HTTP_AUTH_TOKEN.
  *
  * `sessionId` is never exposed to Claude as a tool parameter (see
  * getClaudeToolDefinitions), but every tool call is annotated with the
@@ -20,6 +26,8 @@ const path = require('path');
 const { Client } = require('@modelcontextprotocol/sdk/client');
 // eslint-disable-next-line import/no-unresolved, import/extensions
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
+// eslint-disable-next-line import/no-unresolved, import/extensions
+const { StreamableHTTPClientTransport } = require('@modelcontextprotocol/sdk/client/streamableHttp.js');
 
 const logger = require('./logger');
 
@@ -29,8 +37,35 @@ const MCP_SERVER_PATH = path.join(__dirname, 'mcpServer.js');
 let clientPromise = null;
 
 /**
- * Lazily spawns the MCP server (src/mcpServer.js) as a child process and
- * connects an MCP client to it over stdio. Subsequent calls reuse the same
+ * Builds the transport to reach the MCP server with, based on whether
+ * MCP_SERVER_URL is set.
+ * @returns {import('@modelcontextprotocol/sdk/shared/transport.js').Transport} The transport to connect with.
+ */
+function buildTransport() {
+  const remoteUrl = process.env.MCP_SERVER_URL;
+
+  if (remoteUrl) {
+    const headers = {};
+    if (process.env.MCP_SERVER_AUTH_TOKEN) {
+      headers.Authorization = `Bearer ${process.env.MCP_SERVER_AUTH_TOKEN}`;
+    } else {
+      logger.warn('MCP_SERVER_URL is set but MCP_SERVER_AUTH_TOKEN is not - the remote MCP server will likely reject this connection with 401.');
+    }
+    logger.info(`Connecting to remote MCP server at ${remoteUrl}`);
+    return new StreamableHTTPClientTransport(new URL(remoteUrl), { requestInit: { headers } });
+  }
+
+  return new StdioClientTransport({
+    command: process.execPath, // The currently running `node` binary
+    args: [MCP_SERVER_PATH],
+    env: process.env,
+  });
+}
+
+/**
+ * Lazily connects to the MCP server - spawning it locally over stdio, or
+ * connecting to a remote instance over Streamable HTTPS, depending on
+ * MCP_SERVER_URL (see buildTransport). Subsequent calls reuse the same
  * connection; a dropped connection is reconnected on the next call.
  * @returns {Promise<Client>} A connected MCP client.
  */
@@ -40,12 +75,7 @@ async function getMcpClient() {
   }
 
   clientPromise = (async () => {
-    const transport = new StdioClientTransport({
-      command: process.execPath, // The currently running `node` binary
-      args: [MCP_SERVER_PATH],
-      env: process.env,
-    });
-
+    const transport = buildTransport();
     const client = new Client({ name: 'chatbot-mcp-client', version: '1.0.0' });
 
     transport.onerror = (err) => {

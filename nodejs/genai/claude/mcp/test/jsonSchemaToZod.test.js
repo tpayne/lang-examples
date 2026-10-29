@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const { test, describe } = require('node:test');
+const { z } = require('zod');
 
 const { jsonSchemaPropToZod, buildZodShape } = require('../src/jsonSchemaToZod');
 
@@ -81,7 +82,6 @@ describe('buildZodShape', () => {
       },
       ['username', 'repoName'],
     );
-    const { z } = require('zod');
     const schema = z.object(shape);
 
     assert.deepEqual(
@@ -92,14 +92,12 @@ describe('buildZodShape', () => {
   });
 
   test('defaults required to none when omitted, making every property optional', () => {
-    const { z } = require('zod');
     const shape = buildZodShape({ namespace: { type: 'string' } });
     const schema = z.object(shape);
     assert.deepEqual(schema.parse({}), {});
   });
 
   test('handles an empty parametersSchema (tools with no parameters)', () => {
-    const { z } = require('zod');
     const shape = buildZodShape({}, []);
     const schema = z.object(shape);
     assert.deepEqual(schema.parse({}), {});

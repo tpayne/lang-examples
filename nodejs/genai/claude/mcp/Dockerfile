@@ -4,8 +4,11 @@ ARG alpineVersion=3.18
 ARG testbuild=
 
 FROM node:${nodeVersion}-alpine${alpineVersion} AS prebuild
-# Combined apk install and upgrade
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
+# Combined apk install and upgrade. openssl is required by `npm test` -
+# test/mcpServer.httpStream.test.js generates a throwaway self-signed
+# certificate at test time to exercise the MCP server's Streamable HTTPS
+# transport, rather than committing a private key to the repo.
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main openssl \
      && apk -U upgrade
 
 WORKDIR /source
@@ -42,6 +45,11 @@ EXPOSE 11211
 EXPOSE 8080
 # Expose the HTTPS port
 EXPOSE 8443
+# Only relevant if this image is run as a standalone remote MCP server
+# (MCP_TRANSPORT=httpStream - see README.md "Running the MCP Server"). The
+# default supervisord.conf does not start the MCP server as a separate
+# network service; chatbot.js spawns it locally over stdio instead.
+EXPOSE 8181
 
 ARG account=nodejs
 # Combined addgroup and adduser commands

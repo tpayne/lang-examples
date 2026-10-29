@@ -12,10 +12,133 @@ of being registered directly into the chatbot process.
   still unmodified in `gitFunctions.js`, `k8s.js`, etc).
 * `src/mcpServer.js` turns those declarations into FastMCP tools and serves them over
   stdio.
-* `src/mcpClient.js` is used by `src/chatbot.js`: it spawns the MCP server as a child
-  process, lists its tools to build Claude's `tools` parameter, and calls tools over MCP
-  when Claude requests them - the chatbot process itself no longer contains any
-  integration logic.
+* `src/mcpClient.js` is used by `src/chatbot.js`: it connects to the MCP server, lists
+  its tools to build Claude's `tools` parameter, and calls tools over MCP when Claude
+  requests them - the chatbot process itself no longer contains any integration logic.
+
+Running the MCP Server
+-----------------------
+The MCP server supports two transports, chosen with the `MCP_TRANSPORT` environment
+variable on the **server** side:
+
+| `MCP_TRANSPORT`            | Who uses it                                           | Transport                                  |
+|-----------------------------|--------------------------------------------------------|---------------------------------------------|
+| _(unset, default)_ `stdio`  | `chatbot.js`, automatically, on every run              | Local - the server is spawned as a child process over stdin/stdout |
+| `httpStream`                | A standalone, remotely-reachable deployment            | MCP's Streamable HTTP transport, served over **HTTPS only** |
+
+### Local (default - nothing to configure)
+
+This is what happens automatically whenever you run `chatbot.js` (including inside the
+Docker image): on the first `/chat` request, `src/mcpClient.js` spawns
+`node src/mcpServer.js` as a child process of the chatbot and talks to it over stdio.
+There is no separate process to manage, no port to expose, and no authentication needed
+(only the chatbot's own process can reach it).
+
+To run the MCP server standalone for manual testing or inspection (e.g. with the
+[MCP Inspector](https://github.com/modelcontextprotocol/inspector)), from this directory:
+
+```bash
+npm run mcp-server
+```
+
+This starts the same server over stdio; pipe an MCP client at it the same way the
+[MCP Inspector](https://github.com/modelcontextprotocol/inspector) or any other stdio MCP
+client would (`npx @modelcontextprotocol/inspector node src/mcpServer.js`).
+
+### Remote (Streamable HTTPS)
+
+To run the MCP server as its own standalone, network-reachable deployment - for example,
+so several chatbot instances can share one set of integrations, or so the tools can run
+on a host with different network access than the chatbot itself - start it with
+`MCP_TRANSPORT=httpStream`. **This transport is HTTPS-only**: these tools can run
+arbitrary SSH, Kubernetes, and database operations, so the server refuses to start in
+this mode without both a valid TLS certificate/key pair and a bearer-token auth secret.
+
+| Environment variable       | Required? | Default                    | Purpose                                                        |
+|-----------------------------|-----------|-----------------------------|-----------------------------------------------------------------|
+| `MCP_TRANSPORT`             | Yes (to enable this mode) | `stdio`      | Set to `httpStream` to serve over the network                   |
+| `MCP_HTTP_AUTH_TOKEN`       | **Yes**   | _(none - server refuses to start)_ | Shared-secret bearer token clients must present       |
+| `MCP_HTTPS_CERT_PATH`       | No        | `<MCP_HTTPS_CERTS_DIR>/server.crt` | Path to the TLS certificate                            |
+| `MCP_HTTPS_KEY_PATH`        | No        | `<MCP_HTTPS_CERTS_DIR>/server.key` | Path to the TLS private key                            |
+| `MCP_HTTPS_CA_PATH`         | No        | _(none)_                    | Path to a CA bundle, if your cert needs one                     |
+| `MCP_HTTPS_CERTS_DIR`       | No        | `/app/certs`                 | Directory the two paths above default into (reuses the same certs `chatbot.js`'s own HTTPS server uses, when co-located) |
+| `MCP_HTTP_PORT`             | No        | `8181`                        | Port to listen on                                               |
+| `MCP_HTTP_HOST`             | No        | `0.0.0.0`                     | Host/interface to bind                                          |
+| `MCP_HTTP_ENDPOINT`         | No        | `/mcp`                        | HTTP path the Streamable HTTP endpoint is served at              |
+
+Example - starting it on its own host, with its own certificate:
+
+```bash
+export MCP_TRANSPORT=httpStream
+export MCP_HTTP_AUTH_TOKEN=$(openssl rand -hex 32)   # generate and store this securely
+export MCP_HTTPS_CERT_PATH=/etc/ssl/mcp/server.crt
+export MCP_HTTPS_KEY_PATH=/etc/ssl/mcp/server.key
+export MCP_HTTP_PORT=8181
+
+# plus whichever integration env vars you want enabled, e.g.:
+export GITHUB_TOKEN=...
+export KUBERNETES_API_ENDPOINT=...
+export KUBERNETES_BEARER_TOKEN=...
+
+node src/mcpServer.js
+```
+
+A misconfigured deployment fails fast with a clear error at startup (never falling back
+to plain HTTP or skipping auth) - for example, if `MCP_HTTP_AUTH_TOKEN` is unset, or the
+certificate/key can't be read.
+
+### Pointing the chatbot client at a remote MCP server
+
+By default (`MCP_SERVER_URL` unset), `chatbot.js` spawns and talks to a **local** MCP
+server over stdio, as described above. To instead have it talk to the **remote** server
+started above, set these on the **chatbot** side:
+
+| Environment variable       | Purpose                                                           |
+|-----------------------------|--------------------------------------------------------------------|
+| `MCP_SERVER_URL`             | The remote server's Streamable HTTPS endpoint, e.g. `https://mcp.example.com:8181/mcp` |
+| `MCP_SERVER_AUTH_TOKEN`      | Must match that server's `MCP_HTTP_AUTH_TOKEN`                      |
+
+```bash
+docker run --rm -p 8080:5000 \
+    -e ANTHROPIC_API_KEY=<YourKey> \
+    -e MCP_SERVER_URL=https://mcp.example.com:8181/mcp \
+    -e MCP_SERVER_AUTH_TOKEN=<the same token the remote server was started with> \
+    chatbot-mcp:1.0
+```
+
+If the remote server's certificate is self-signed or issued by a private CA, trust it by
+setting `NODE_EXTRA_CA_CERTS` to that CA's certificate file **when starting the chatbot
+process** (this env var is only read once, at Node startup):
+
+```bash
+docker run --rm -p 8080:5000 \
+    -e ANTHROPIC_API_KEY=<YourKey> \
+    -e MCP_SERVER_URL=https://mcp.example.com:8181/mcp \
+    -e MCP_SERVER_AUTH_TOKEN=<token> \
+    -e NODE_EXTRA_CA_CERTS=/path/to/mcp-ca.crt \
+    -v /path/to/mcp-ca.crt:/path/to/mcp-ca.crt:ro \
+    chatbot-mcp:1.0
+```
+
+Do not use `NODE_TLS_REJECT_UNAUTHORIZED=0` for this - it disables certificate
+verification entirely, for every HTTPS connection the process makes, not just this one.
+`NODE_EXTRA_CA_CERTS` adds exactly one more trusted CA without weakening anything else.
+
+### Verifying the client is actually talking to the server
+
+Since tool definitions are loaded from the MCP server on every `/chat` request (even for
+commands like `help` that never call the Anthropic API), the simplest smoke test is:
+
+```bash
+curl -s localhost:8080/status
+curl -s -H "Content-Type: application/json" -d '{"message":"help"}' -X POST localhost:8080/chat
+```
+
+If the second call returns `{"response":"Sample *Help* text"}`, the chatbot successfully
+connected to the MCP server (local or remote, whichever is configured), listed its tools,
+and got a response back - the full round trip this feature depends on. If instead it
+hangs or errors, check the chatbot's logs for `Connected to MCP tools server` (success)
+or `MCP server transport error` (the connection/auth/TLS problem to investigate).
 
 This repo contains a simple example chatbot that runs using the Claude API.
 
@@ -408,7 +531,10 @@ This will delete all the items created in your session.
 
 Notes
 -----
-* This code does not have any unit testing or SA analysis run as part of the process
+* Unlike `claude/chatbot`, this variant has a `test/` suite (Node's built-in test runner -
+  `npm run test:unit`, or `npm test` for lint + unit tests together), covering the
+  JSON-schema-to-Zod conversion, the per-integration tool gating, and real stdio and
+  Streamable HTTPS round trips against the MCP server.
 * There is some limited support for Claude actions. However, the functionality provided by Claude for this is "experimental" in their words, so can be a bit... tempermental, so if you get an occasion error, just retry the operation with different verbage - that usually works after a few attempts, but yes, it is not stable
 
 References
