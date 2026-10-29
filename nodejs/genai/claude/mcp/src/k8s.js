@@ -1,5 +1,4 @@
 const superagent = require('superagent');
-const https = require('https');
 const yaml = require('js-yaml'); // Import js-yaml
 const logger = require('./logger'); // Import logger
 
@@ -18,8 +17,11 @@ async function callKubernetesApi(sessionId, path, method = 'GET', body = null) {
   const kubernetesApiEndpoint = process.env.KUBERNETES_API_ENDPOINT;
   const kubernetesBearerToken = process.env.KUBERNETES_BEARER_TOKEN;
 
-  // KUBERNETES_TLS_SKIP_VERIFY should only be used for development/testing, NEVER in production.
   const skipTlsVerify = process.env.KUBERNETES_TLS_SKIP_VERIFY === 'true';
+
+  if (skipTlsVerify) {
+    throw new Error('KUBERNETES_TLS_SKIP_VERIFY=true is not allowed because it disables TLS certificate validation. Configure trusted CA certificates instead.');
+  }
 
   if (!kubernetesApiEndpoint) {
     throw new Error('Kubernetes API endpoint is not configured. Please set KUBERNETES_API_ENDPOINT in your .env or properties file.');
@@ -67,18 +69,6 @@ async function callKubernetesApi(sessionId, path, method = 'GET', body = null) {
         logger.debug(`[Session: ${sessionId}] Sending body for ${method} request: ${JSON.stringify(body)}`);
         request.set('Content-Type', 'application/json');
       }
-    }
-
-    // WARNING: Skipping TLS verification is INSECURE and should ONLY be used for development/testing.
-    // This is an explicit, off-by-default opt-in (KUBERNETES_TLS_SKIP_VERIFY, checked above) for
-    // connecting to dev/test clusters with self-signed certificates, loudly logged whenever it's
-    // used - the intended, documented mitigation CodeQL's own advice recommends for this rule.
-    if (skipTlsVerify) {
-      logger.warn(`[Session: ${sessionId}] Skipping Kubernetes TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
-      const insecureAgent = new https.Agent({
-        rejectUnauthorized: false, // lgtm[js/disabling-certificate-validation]
-      });
-      request = request.agent(insecureAgent);
     }
 
     const response = await request;
