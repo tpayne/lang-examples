@@ -22,14 +22,14 @@ async function authenticateDockerHub(username, password) {
     }
     throw new Error('No token received from Docker Hub authentication.');
   } catch (error) {
-    // Never log or rethrow anything derived from `error.response`/`.message`
-    // here: this request's body carried the plaintext password, and
-    // superagent's error carries the original request/response pair, so
-    // any text pulled from it risks echoing the password back out. A
-    // numeric HTTP status code is all that's safe to surface.
-    const status = error.status || 'unknown';
-    logger.error(`Failed to authenticate with Docker Hub for user ${username} (status: ${status}).`);
-    throw new Error(`Docker Hub authentication failed (status: ${status}).`);
+    // Never reference `error` (or `username`/`password`) here at all: this
+    // request's body carried the plaintext password, and superagent
+    // attaches the original request/response pair to HTTP errors, so even
+    // a seemingly-safe derived value (a status code, a username already
+    // known to the caller) risks a static analyzer treating it as reachable
+    // from that password. A fully static message has no such path.
+    logger.error('Failed to authenticate with Docker Hub.');
+    throw new Error('Docker Hub authentication failed.');
   }
 }
 

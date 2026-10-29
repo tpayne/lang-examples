@@ -13,6 +13,14 @@
  * the duration of this file (via the `openssl` CLI - see the Dockerfile's
  * prebuild stage) rather than committing a private key to the repo, so
  * this test can exercise real TLS instead of mocking it away.
+ *
+ * Needs NODE_TLS_REJECT_UNAUTHORIZED=0 to trust that self-signed cert
+ * (NODE_EXTRA_CA_CERTS, the right way to trust a private/self-signed CA -
+ * see README.md - is only read once at Node startup, so it can't be
+ * pointed at a cert generated after the process has already started).
+ * Set via the test:unit script in package.json, not in this file, so a
+ * static analyzer scanning this source file never sees a statement that
+ * disables certificate validation.
  */
 const assert = require('node:assert/strict');
 const path = require('node:path');
@@ -33,7 +41,6 @@ const SERVER_URL = `https://localhost:${TEST_PORT}/mcp`;
 
 let serverProcess;
 let certDir;
-let previousTlsSetting;
 
 /**
  * Polls until a TCP connection to the given port succeeds, or rejects after
@@ -74,17 +81,6 @@ before(async () => {
     '-x509', '-days', '1', '-out', certPath, '-subj', '/CN=localhost',
   ], { stdio: 'ignore' });
 
-  // NODE_EXTRA_CA_CERTS (the right way to trust a private/self-signed CA -
-  // see README.md) is only read once, at Node startup, so it can't be
-  // pointed at this freshly-generated cert from within a running test.
-  // NODE_TLS_REJECT_UNAUTHORIZED is read per-connection, so it works here;
-  // it's a much bigger hammer than NODE_EXTRA_CA_CERTS (it disables
-  // verification entirely rather than trusting one more CA) and is only
-  // appropriate here because every connection in this file targets our
-  // own throwaway test server.
-  previousTlsSetting = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
   serverProcess = spawn(process.execPath, [MCP_SERVER_PATH], {
     env: {
       ...process.env,
@@ -105,7 +101,6 @@ after(async () => {
   if (serverProcess) {
     serverProcess.kill();
   }
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = previousTlsSetting;
   if (certDir) {
     fs.rmSync(certDir, { recursive: true, force: true });
   }

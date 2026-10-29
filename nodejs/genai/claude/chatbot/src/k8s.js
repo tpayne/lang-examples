@@ -76,8 +76,7 @@ async function callKubernetesApi(sessionId, path, method = 'GET', body = null) {
     if (skipTlsVerify) {
       logger.warn(`[Session: ${sessionId}] Skipping Kubernetes TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
       const insecureAgent = new https.Agent({
-        // codeql[js/disabling-certificate-validation]
-        rejectUnauthorized: false,
+        rejectUnauthorized: false, // lgtm[js/disabling-certificate-validation]
       });
       request = request.agent(insecureAgent);
     }

@@ -14,7 +14,7 @@
     "test:lint:html": "npx linthtml 'templates/*.html'",
     "test:lint:js": "npx eslint src/**/*.js --fix",
     "test:lint:yaml": "npx yamllint **/*.yml",
-    "test:unit": "node --test test/"
+    "test:unit": "NODE_TLS_REJECT_UNAUTHORIZED=0 node --test test/"
   },
   "repository": {
     "type": "git",

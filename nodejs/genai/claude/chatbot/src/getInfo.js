@@ -242,28 +242,24 @@ async function runCommand(commandKey, targetHost = false, overridePlatform = det
     const cmd = commandsToTry[index];
     const finalCommand = `${prefix}${cmd}`;
 
-    // Log only `cmd` for the SSH case - never a value derived from
-    // `prefix` (which embeds the password via `sshpass -p '...'`) or
-    // `finalCommand`. A regex-based scrub of the password out of the
-    // command string can miss it if it contains a single quote; not
-    // deriving the logged value from the password-carrying string at all
-    // avoids that risk entirely.
-    const loggableCommand = USE_SSH_FOR_HOST_INFO ? `[${executionContext}] ${cmd}` : finalCommand;
-    logger.debug(`Attempting to execute (${executionContext}): ${loggableCommand}`);
+    // Always log just `cmd`, in every mode - never `prefix` or
+    // `finalCommand` (which embed the SSH password when
+    // USE_SSH_FOR_HOST_INFO is true), not even in a branch that only runs
+    // for the non-SSH case: a static analyzer that isn't path-sensitive to
+    // USE_SSH_FOR_HOST_INFO would still see `finalCommand` reachable from
+    // a conditional expression assigned to the logged variable.
+    // `executionContext` already tells the reader local vs. SSH.
+    logger.debug(`Attempting to execute (${executionContext}): ${cmd}`);
 
     try {
       const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash', timeout: 20000, killSignal: 'SIGTERM' });
       return stdout.trim(); // Return on first success
     } catch (error) {
       // `error.message` can itself embed the full failed command line
-      // (including the password) - for the SSH case, log only `cmd` and
-      // the exit code, never anything derived from the caught error's
-      // message text.
-      const errorLogCommand = USE_SSH_FOR_HOST_INFO ? `[${executionContext}] ${cmd}` : finalCommand;
-      const errorMessage = USE_SSH_FOR_HOST_INFO
-        ? `exit code ${error.code !== undefined ? error.code : 'unknown'}`
-        : (error.message || 'Unknown error');
-      logger.debug(`Command failed (${executionContext}): "${errorLogCommand}" - ${errorMessage}`);
+      // (including the password, for the SSH case) - log the exit code
+      // only, never the message text, in every mode.
+      const exitCode = error.code !== undefined ? error.code : 'unknown';
+      logger.debug(`Command failed (${executionContext}): "${cmd}" - exit code ${exitCode}`);
 
       if (executionContext === 'host via SSH') {
         if (error.message.includes('Permission denied')) {

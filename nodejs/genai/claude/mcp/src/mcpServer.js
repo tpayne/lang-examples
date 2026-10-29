@@ -207,13 +207,12 @@ function createServer() {
 if (require.main === module) {
   const server = createServer();
 
-  let startOptions;
-  try {
-    startOptions = resolveStartOptions();
-  } catch (err) {
-    logger.error(`Failed to configure MCP server transport: ${err.message}`);
-    process.exit(1);
-  }
+  // Deliberately uncaught: resolveStartOptions()'s error messages are
+  // already descriptive (missing auth token, unreadable cert/key), and
+  // letting Node print them directly avoids routing anything derived from
+  // the httpStream config (which touches MCP_HTTP_AUTH_TOKEN) through our
+  // own logger.
+  const startOptions = resolveStartOptions();
 
   server.start(startOptions);
 
