@@ -1,5 +1,10 @@
 # Image builder...
 ARG nodeVersion=18
+# Only used to run the @yao-pkg/pkg CLI tool below - its dependencies
+# (undici's global File, into-stream's ESM-only build) need a newer host
+# Node than 18/20 provide. The packaged binary's runtime is still pinned to
+# node18 via `pkg -t`.
+ARG pkgBuilderNodeVersion=22
 ARG alpineVersion=3.18
 ARG testbuild=
 
@@ -23,7 +28,7 @@ COPY templates ./templates
 # Combined npm install and test
 RUN npm install && npm test
 
-FROM node:${nodeVersion}-alpine${alpineVersion} AS imagebuilder
+FROM node:${pkgBuilderNodeVersion}-alpine AS imagebuilder
 # Combined apk install and upgrade
 RUN apk add --no-cache xdg-utils --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main \
         && apk -U upgrade
@@ -39,9 +44,16 @@ COPY templates ./src/templates
 COPY public ./src/public
 
 # Combined npm install, pkg install, and pkg build
+# Uses the @yao-pkg/pkg fork, not the archived vercel/pkg: vercel/pkg's node18
+# base binary is frozen at Node 18.5.0, which predates
+# diagnostics_channel.tracingChannel (added in Node 18.19) that the mssql
+# driver requires at require-time, crashing the packaged binary immediately
+# on startup. Targeting node22 (not node18/20) because Node 18 is EOL and
+# @yao-pkg/pkg's remote cache no longer publishes prebuilt alpine-musl
+# binaries for it, which would otherwise force a slow from-source Node build.
 RUN npm install --omit=dev && \
-     npm install -g pkg && \
-     pkg -t node18 ./src/ -o nodeexe --no-sign
+     npm install -g @yao-pkg/pkg && \
+     pkg -t node22-alpine-x64 ./src/ -o nodeexe --no-signature
 
 # Image runner...
 FROM node:lts-alpine${alpineVersion} AS runner
