@@ -66,30 +66,16 @@ app.use(session({
     hosts: ['127.0.0.1:11211'],
   }),
   cookie: {
-    // Set secure to true only if running HTTPS, false for HTTP fallback
-    // This will be handled dynamically based on which server starts
-    secure: false, // Initially set to false, will be updated if HTTPS starts
+    // 'auto' asks express-session to set secure based on whether the
+    // *individual request* arrived over TLS, so the cookie is marked
+    // secure automatically when the HTTPS server handles it and left
+    // unmarked on the HTTP fallback - no need to re-register this
+    // middleware once the server type is known.
+    secure: 'auto',
     httpOnly: true, // Prevent client-side access to the cookie
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   },
 }));
-
-// Function to update session cookie secure flag
-const setSessionSecure = (isSecure) => {
-  app.use(session({
-    secret: process.env.SESSION_SECRET || process.env.ANTHROPIC_API_KEY,
-    resave: false,
-    saveUninitialized: true,
-    store: new MemcachedStore({
-      hosts: ['127.0.0.1:11211'],
-    }),
-    cookie: {
-      secure: isSecure, // Set based on whether HTTPS is running
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  }));
-};
 
 app.use(bodyParser.json());
 app.use(morganMiddleware);
@@ -579,7 +565,6 @@ const startServer = () => {
 
     httpsServer.listen(httpsPort, host, () => {
       logger.info(`HTTPS Listening on ${host}:${httpsPort}`);
-      setSessionSecure(true); // Set session cookie to secure
     });
 
     logger.info('HTTPS server started successfully.');
@@ -599,7 +584,6 @@ const startServer = () => {
 
     httpServer.listen(httpPort, host, () => {
       logger.info(`HTTP Listening on ${host}:${httpPort}`);
-      setSessionSecure(false); // Ensure session cookie is not secure for HTTP
     });
 
     logger.info('HTTP server started as fallback.');

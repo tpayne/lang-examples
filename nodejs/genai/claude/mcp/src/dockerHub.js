@@ -25,7 +25,10 @@ async function authenticateDockerHub(username, password) {
     const errorMessage = error.response
       ? `Status: ${error.status}, Body: ${error.response.text || JSON.stringify(error.response.body)}`
       : error.message;
-    logger.error(`Failed to authenticate with Docker Hub for user ${username}: ${errorMessage}`, error);
+    // Don't log the raw `error` object - superagent attaches the original
+    // request (including the POST body, which carries the password) to
+    // HTTP errors, and logging it would leak credentials.
+    logger.error(`Failed to authenticate with Docker Hub for user ${username}: ${errorMessage}`);
     throw new Error(`Docker Hub authentication failed: ${errorMessage}`);
   }
 }

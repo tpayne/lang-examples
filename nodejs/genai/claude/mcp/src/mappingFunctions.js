@@ -133,8 +133,9 @@ async function planRoute(sessionId, params) {
   if (params.arrival_time) queryParams.arrival_time = params.arrival_time;
   if (params.traffic_model) queryParams.traffic_model = params.traffic_model;
 
+  // Never log queryParams directly - it carries the Maps API key.
   logger.debug(`Invoking Google Maps Directions API [Session: ${sessionId}] `
-    + `with params: ${JSON.stringify(queryParams)}`);
+    + `with params: ${JSON.stringify({ ...queryParams, key: '[REDACTED]' })}`);
 
   try {
     const response = await superagent
