@@ -1,5 +1,4 @@
 const fs = require('fs');
-const logger = require('./logger');
 
 const config = {};
 const getConfig = () => config;
@@ -23,14 +22,14 @@ const loadProperties = (propFile) => {
     for (const key in config) {
       if (process.env[key]) {
         config[key] = process.env[key].trim();
-        logger.info(`Configuration '${key}' overridden by environment variable.`);
+        console.log(`Configuration '${key}' overridden by environment variable.`);
       }
     }
     /* eslint-enable no-restricted-syntax */
 
     return true;
   } catch (err) {
-    logger.error(`Cannot load ${propFile}: ${err.message || err}`);
+    console.error(`Cannot load ${propFile}: ${err.message || err}`);
     return false;
   }
 };
@@ -57,14 +56,14 @@ const loadPropertiesAsync = async (propFile) => {
     for (const key in config) {
       if (process.env[key]) {
         config[key] = process.env[key].trim();
-        logger.info(`Configuration '${key}' overridden by environment variable.`);
+        console.log(`Configuration '${key}' overridden by environment variable.`);
       }
     }
     /* eslint-enable no-restricted-syntax */
 
     return true;
   } catch (err) {
-    logger.error(`Cannot load ${propFile}: ${err.message || err}`);
+    console.error(`Cannot load ${propFile}: ${err.message || err}`);
     return false;
   }
 };

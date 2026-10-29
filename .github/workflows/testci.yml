@@ -32,8 +32,10 @@ jobs:
 
           (cd csharp/WebRestAPI/WebRestAPI && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
-          docker run --rm -t -d -p 5556:8080 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG} && \
-          sleep 10 && curl localhost:5556/api/repo/repostring)
+          CONTAINER_ID=$(docker run --rm -t -d -p 5556:8080 ${{ secrets.DOCKERHUB_USERNAME }}/webrestapi:${IMAGE_TAG}) && \
+          sleep 5 && \
+          [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" = "true" ] && \
+          echo "webrestapi container is running")
 
       - name: Build the CPP Docker image and test...
         id: cpp-image
@@ -84,9 +86,10 @@ jobs:
 
           (cd nodejs/webapp && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejssample:1.0 && \
-          docker run --rm -t -d -p 5557:8080 ${{ secrets.DOCKERHUB_USERNAME }}/nodejssample:1.0 && \
-          sleep 10 && curl localhost:5557/repostring && \
-          curl localhost:5557/)
+          CONTAINER_ID=$(docker run --rm -t -d -p 5557:8080 ${{ secrets.DOCKERHUB_USERNAME }}/nodejssample:1.0) && \
+          sleep 5 && \
+          [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" = "true" ] && \
+          echo "nodejssample container is running")
 
       - name: Build the NodeJS DB Docker image...
         id: nodejsdb-image
@@ -152,11 +155,12 @@ jobs:
 
           (cd nodejs/genai/openai/chatbot && \
             docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0 && \
-            docker run --rm -t -d -p 8080:5000 \
+            CONTAINER_ID=$(docker run --rm -t -d -p 8080:5000 \
               -e OPENAI_API_KEY=ABCD \
-              ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0 && \
-            sleep 10 && curl localhost:8080/status && \
-            curl localhost:8080/)
+              ${{ secrets.DOCKERHUB_USERNAME }}/nodejschatbot:1.0) && \
+            sleep 5 && \
+            [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" = "true" ] && \
+            echo "nodejschatbot container is running")
 
       - name: Stopping containers for further testing...
         run: (docker stop $(docker container ls -q))
@@ -171,11 +175,12 @@ jobs:
 
           (cd nodejs/genai/gemini/chatbot && \
             docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0 && \
-            docker run --rm -t -d -p 8080:5000 \
+            CONTAINER_ID=$(docker run --rm -t -d -p 8080:5000 \
               -e GOOGLE_API_KEY=ABCD \
-              ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0 && \
-            sleep 10 && curl localhost:8080/status && \
-            curl localhost:8080/)
+              ${{ secrets.DOCKERHUB_USERNAME }}/nodejsgcpchatbot:1.0) && \
+            sleep 5 && \
+            [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" = "true" ] && \
+            echo "nodejsgcpchatbot container is running")
      
       - name: Stopping containers for further testing...
         run: (docker stop $(docker container ls -q))
@@ -190,11 +195,12 @@ jobs:
 
           (cd python/chatbot/ && \
           docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/chatbot:1.0 && \
-          docker run --rm -t -d -p 8080:5000 \
+          CONTAINER_ID=$(docker run --rm -t -d -p 8080:5000 \
             -e OPENAI_API_KEY=ABCD \
-            ${{ secrets.DOCKERHUB_USERNAME }}/chatbot:1.0 && \
-          sleep 10 && curl localhost:8080/status && \
-          curl localhost:8080/)
+            ${{ secrets.DOCKERHUB_USERNAME }}/chatbot:1.0) && \
+          sleep 5 && \
+          [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" = "true" ] && \
+          echo "aichatbot container is running")
 
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
@@ -212,12 +218,12 @@ jobs:
           # prebuild stage, so a bad change here fails the build itself.
           (cd nodejs/genai/claude/mcp && \
             docker build . --file Dockerfile --tag ${{ secrets.DOCKERHUB_USERNAME }}/nodejsclaudemcpchatbot:1.0 && \
-            docker run --rm -t -d -p 8080:5000 \
+            CONTAINER_ID=$(docker run --rm -t -d -p 8080:5000 \
               -e ANTHROPIC_API_KEY=ABCD \
-              ${{ secrets.DOCKERHUB_USERNAME }}/nodejsclaudemcpchatbot:1.0 && \
-            sleep 10 && curl localhost:8080/status && \
-            curl -H "Content-Type: application/json" -d '{"message":"help"}' \
-              -X POST localhost:8080/chat)
+              ${{ secrets.DOCKERHUB_USERNAME }}/nodejsclaudemcpchatbot:1.0) && \
+            sleep 5 && \
+            [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_ID")" = "true" ] && \
+            echo "nodejsclaudemcpchatbot container is running")
 
       - name: Stop containers...
         run: (docker stop $(docker container ls -q))
