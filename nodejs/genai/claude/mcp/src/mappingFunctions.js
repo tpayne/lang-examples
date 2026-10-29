@@ -133,9 +133,12 @@ async function planRoute(sessionId, params) {
   if (params.arrival_time) queryParams.arrival_time = params.arrival_time;
   if (params.traffic_model) queryParams.traffic_model = params.traffic_model;
 
-  // Never log queryParams directly - it carries the Maps API key.
+  // Never log queryParams directly - it carries the Maps API key. Exclude
+  // it via rest destructuring (not spread-then-overwrite) so the logged
+  // object structurally never contains it.
+  const { key: _mapsApiKey, ...paramsWithoutKey } = queryParams;
   logger.debug(`Invoking Google Maps Directions API [Session: ${sessionId}] `
-    + `with params: ${JSON.stringify({ ...queryParams, key: '[REDACTED]' })}`);
+    + `with params: ${JSON.stringify(paramsWithoutKey)}`);
 
   try {
     const response = await superagent

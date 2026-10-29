@@ -73,10 +73,10 @@ async function callKubernetesApi(sessionId, path, method = 'GET', body = null) {
     // This is an explicit, off-by-default opt-in (KUBERNETES_TLS_SKIP_VERIFY, checked above) for
     // connecting to dev/test clusters with self-signed certificates, loudly logged whenever it's
     // used - the intended, documented mitigation CodeQL's own advice recommends for this rule.
-    // codeql[js/disabling-certificate-validation]
     if (skipTlsVerify) {
       logger.warn(`[Session: ${sessionId}] Skipping Kubernetes TLS verification for ${url}. This is INSECURE and should ONLY be used for development/testing.`);
       const insecureAgent = new https.Agent({
+        // codeql[js/disabling-certificate-validation]
         rejectUnauthorized: false,
       });
       request = request.agent(insecureAgent);

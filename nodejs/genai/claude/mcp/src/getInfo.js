@@ -16,21 +16,6 @@ let SSH_HOST_PASSWORD = ''; // WARNING: Storing and passing passwords directly i
 // This file is expected to contain a JSON object where keys are "user@hostname" and values are passwords.
 const SSH_PASSWORD_MAP_SECRET_PATH = '/run/secrets/ssh_password_map';
 
-/**
- * Removes every literal occurrence of a secret value from a string before
- * it's logged. Used as a second, more robust pass after the regex-based
- * `sshpass -p '...'` scrubbing below, which can miss the password if it
- * contains a single quote (the regex is non-greedy and stops at the first
- * `'` it finds).
- * @param {string} str - The string to redact.
- * @param {string} secret - The secret value to remove, if any.
- * @returns {string} str with every occurrence of secret replaced by '[REDACTED]'.
- */
-function redactSecret(str, secret) {
-  if (!secret || !str) return str;
-  return str.split(secret).join('[REDACTED]');
-}
-
 const {
   checkIfRunningInDocker,
 } = require('./utilities');
@@ -257,26 +242,27 @@ async function runCommand(commandKey, targetHost = false, overridePlatform = det
     const cmd = commandsToTry[index];
     const finalCommand = `${prefix}${cmd}`;
 
-    let loggableCommand = finalCommand;
-    if (USE_SSH_FOR_HOST_INFO) {
-      // Remove password from the command entirely. The regex pass handles
-      // the common case; redactSecret is a second, literal-value pass in
-      // case the password contains a single quote (which would make the
-      // non-greedy regex above stop short and leave part of it behind).
-      loggableCommand = redactSecret(finalCommand.replace(/-p '.*?'/, '').trim(), SSH_HOST_PASSWORD);
-    }
+    // Log only `cmd` for the SSH case - never a value derived from
+    // `prefix` (which embeds the password via `sshpass -p '...'`) or
+    // `finalCommand`. A regex-based scrub of the password out of the
+    // command string can miss it if it contains a single quote; not
+    // deriving the logged value from the password-carrying string at all
+    // avoids that risk entirely.
+    const loggableCommand = USE_SSH_FOR_HOST_INFO ? `[${executionContext}] ${cmd}` : finalCommand;
     logger.debug(`Attempting to execute (${executionContext}): ${loggableCommand}`);
 
     try {
       const { stdout } = await execPromise(finalCommand, { shell: '/bin/bash', timeout: 20000, killSignal: 'SIGTERM' });
       return stdout.trim(); // Return on first success
     } catch (error) {
-      let errorLogCommand = finalCommand;
-      let errorMessage = error.message || 'Unknown error';
-      if (USE_SSH_FOR_HOST_INFO) {
-        errorLogCommand = redactSecret(finalCommand.replace(/-p '.*?'/, '').trim(), SSH_HOST_PASSWORD);
-        errorMessage = redactSecret(error.message.replace(/-p '.*?'/, '').trim(), SSH_HOST_PASSWORD);
-      }
+      // `error.message` can itself embed the full failed command line
+      // (including the password) - for the SSH case, log only `cmd` and
+      // the exit code, never anything derived from the caught error's
+      // message text.
+      const errorLogCommand = USE_SSH_FOR_HOST_INFO ? `[${executionContext}] ${cmd}` : finalCommand;
+      const errorMessage = USE_SSH_FOR_HOST_INFO
+        ? `exit code ${error.code !== undefined ? error.code : 'unknown'}`
+        : (error.message || 'Unknown error');
       logger.debug(`Command failed (${executionContext}): "${errorLogCommand}" - ${errorMessage}`);
 
       if (executionContext === 'host via SSH') {
