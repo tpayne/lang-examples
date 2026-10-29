@@ -15,7 +15,7 @@ Pre-Requisites
 --------------
 To run this sample you will need to: -
 * Have Docker installed on your machine
-* Have an Claude account created with an GOOGLE_API_KEY that you can use for interacting with the Claude API
+* Have an Claude account created with an ANTHROPIC_API_KEY that you can use for interacting with the Claude API
 
 Running the Example with Basic Ops
 ----------------------------------
@@ -25,7 +25,7 @@ To run this solution please do the following steps. They will build and run the 
 
     docker build . --tag chatbot:1.0 && \
      docker run --rm -p 8080:5000 \
-        -e GOOGLE_API_KEY=<YourKey> \
+        -e ANTHROPIC_API_KEY=<YourKey> \
         -e GITHUB_TOKEN=<YourKey> \
         chatbot:1.0 
 
