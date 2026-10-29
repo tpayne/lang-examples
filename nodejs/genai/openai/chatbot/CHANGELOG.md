@@ -1,4 +1,7 @@
 # Changelog
+## 2026-10-29	(23:39:00-UTC+0000)
+- **Fix**:  replace flaky curl connectivity checks with container-running checks (in nodejs/genai/openai/chatbot/Dockerfile)
+- **Fix**:  replace flaky curl connectivity checks with container-running checks (in nodejs/genai/openai/chatbot/src/properties.js)
 ## 2025-11-20	(20:24:57-UTC+0000)
 - **Other**: Updates (in nodejs/genai/openai/chatbot/documentation/FolderFetchError.html)
 - **Other**: Updates (in nodejs/genai/openai/chatbot/documentation/adoFunctions.js.html)
