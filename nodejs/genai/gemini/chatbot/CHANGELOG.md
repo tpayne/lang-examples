@@ -1,4 +1,6 @@
 # Changelog
+## 2026-10-29	(23:38:50-UTC+0000)
+- **Fix**:  replace flaky curl connectivity checks with container-running checks (in nodejs/genai/gemini/chatbot/src/properties.js)
 ## 2025-11-20	(19:45:54-UTC+0000)
 - **Other**: Add delete directory functionality for GH (in nodejs/genai/gemini/chatbot/src/functions.js)
 - **Other**: Add delete directory functionality for GH (in nodejs/genai/gemini/chatbot/src/gitFunctions.js)
