@@ -21,7 +21,7 @@
     "url": "git+https://github.com/tpayne/lang-examples.git"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.137.0",
+    "@anthropic-ai/sdk": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "adm-zip": "^0.6.0",
     "async-mutex": "0.5.0",
